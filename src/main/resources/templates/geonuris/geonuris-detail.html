@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoNURIS 라이선스 상세 - SW 관리 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .container { max-width: 860px; margin: 0 auto; padding: 24px 20px; }
+
+        .header { background: white; padding: 20px 24px; border-radius: 8px;
+                  margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                  display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 22px; color: #1a5276; }
+        .header p  { color: #666; font-size: 13px; margin-top: 3px; }
+
+        .btn { display: inline-flex; align-items: center; gap: 4px;
+               padding: 8px 14px; border-radius: 6px;
+               text-decoration: none; font-size: 13px; font-weight: 500;
+               cursor: pointer; border: none; transition: 0.2s;
+               white-space: nowrap; line-height: 1.4; }
+        .btn:hover { opacity: 0.88; }
+        .btn-edit     { background: #e67e22; color: white; }
+        .btn-delete   { background: #dc3545; color: white; }
+        .btn-home     { background: #6c757d; color: white; }
+        .btn-home:hover { background: #5a6268; }
+        .btn-list     { background: #6f42c1; color: white; }
+        .btn-list:hover { background: #5a32a3; }
+        .btn-download { background: #17a2b8; color: white; font-size: 15px; padding: 11px 30px; }
+        .btn-download:hover { background: #138496; }
+
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 18px; }
+        .card-title { padding: 14px 20px; border-bottom: 1px solid #eee; font-size: 15px;
+                      font-weight: bold; color: #333; }
+        .card-body  { padding: 0; }
+
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table th { background: #f8f9fa; padding: 11px 16px; text-align: left;
+                         font-size: 13px; color: #555; font-weight: 600;
+                         border-bottom: 1px solid #eee; width: 150px; white-space: nowrap; }
+        .info-table td { padding: 11px 16px; font-size: 14px; border-bottom: 1px solid #eee; }
+
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .badge-gss30   { background: #cce5ff; color: #004085; }
+        .badge-gss35   { background: #d1ecf1; color: #0c5460; }
+        .badge-desktop { background: #e2d9f3; color: #4a2080; }
+        .badge-setl_agent { background: #d4edda; color: #155724; }
+        .badge-setl_proxy { background: #fff3cd; color: #856404; }
+
+        .status-ok      { color: #28a745; font-weight: bold; }
+        .status-expired { color: #dc3545; font-weight: bold; }
+        .status-warning { color: #fd7e14; font-weight: bold; }
+
+        .plugin-yes { display: inline-block; background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .plugin-no  { display: inline-block; background: #f8f9fa; color: #999; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+        .download-box { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        padding: 24px; text-align: center; }
+        .download-box .filename { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .download-box .desc { color: #666; font-size: 13px; margin-bottom: 18px; }
+        .no-file { color: #999; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- 헤더 -->
+    <div class="header">
+        <div>
+            <h1>🔑 라이선스 상세
+                <span th:class="'badge badge-' + ${license.licenseType.toLowerCase()}"
+                      th:text="${license.licenseTypeLabel}" style="font-size:14px; vertical-align:middle; margin-left:8px;"></span>
+            </h1>
+            <p>발급 ID: #<span th:text="${license.id}"></span></p>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <a th:if="${isAdmin}" th:href="@{/geonuris/license/{id}/edit(id=${license.id})}"
+               class="btn btn-edit">✏️ 수정</a>
+            <form th:if="${isAdmin}" th:action="@{/geonuris/license/{id}/delete(id=${license.id})}"
+                  method="post" style="margin:0;"
+                  th:attr="data-id=${license.id}"
+                  onsubmit="return confirm('정말 삭제하시겠습니까?\n삭제된 라이선스는 복구할 수 없습니다.\n\nID: #' + this.dataset.id);">
+                <button type="submit" class="btn btn-delete">🗑️ 삭제</button>
+            </form>
+            <a th:href="@{/geonuris/license/list}" class="btn btn-list">📋 목록</a>
+            <a th:href="@{/}" class="btn btn-home">🏠 메인</a>
+        </div>
+    </div>
+
+    <!-- 알림 메시지 -->
+    <div th:if="${success}" style="background:#d4edda; border:1px solid #c3e6cb; color:#155724;
+         padding:12px 16px; border-radius:5px; margin-bottom:16px; font-size:14px;">
+        ✅ <span th:text="${message}"></span>
+    </div>
+    <div th:if="${error}" style="background:#f8d7da; border:1px solid #f5c6cb; color:#721c24;
+         padding:12px 16px; border-radius:5px; margin-bottom:16px; font-size:14px;">
+        ❌ <span th:text="${message}"></span>
+    </div>
+
+    <!-- ① 수혜자 정보 -->
+    <div class="card">
+        <div class="card-title">👤 수혜자 정보</div>
+        <div class="card-body">
+            <table class="info-table">
+                <tr>
+                    <th>사용자</th>
+                    <td th:text="${license.userName}">-</td>
+                    <th>기관/회사</th>
+                    <td th:text="${license.organization}">-</td>
+                </tr>
+                <tr>
+                    <th>연락처</th>
+                    <td th:text="${license.phone}">-</td>
+                    <th>이메일</th>
+                    <td th:text="${license.email}">-</td>
+                </tr>
+                <tr>
+                    <th>발급자</th>
+                    <td th:text="${license.issuer}">-</td>
+                    <th>발급일시</th>
+                    <td th:text="${#temporals.format(license.createdAt, 'yyyy-MM-dd HH:mm:ss')}">-</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ② 라이선스 정보 -->
+    <div class="card">
+        <div class="card-title">⚙️ 라이선스 정보</div>
+        <div class="card-body">
+            <table class="info-table">
+                <tr>
+                    <th>라이선스 종류</th>
+                    <td>
+                        <span th:class="'badge badge-' + ${license.licenseType.toLowerCase()}"
+                              th:text="${license.licenseTypeLabel}"></span>
+                    </td>
+                    <th>파일명</th>
+                    <td><code th:text="${license.fileName}"></code></td>
+                </tr>
+                <tr>
+                    <th>MAC 주소</th>
+                    <td th:text="${license.macAddress}">-</td>
+                    <th>권한</th>
+                    <td th:text="${license.permission}">-</td>
+                </tr>
+                <tr>
+                    <th>발효일</th>
+                    <td th:text="${#temporals.format(license.startDate, 'yyyy-MM-dd')}">-</td>
+                    <th>만료일</th>
+                    <td>
+                        <span th:text="${#temporals.format(license.expiryDate, 'yyyy-MM-dd')}"></span>
+                        <span th:if="${license.expired}" class="status-expired"> (만료됨)</span>
+                        <span th:unless="${license.expired}">
+                            <span th:if="${license.daysRemaining < 30}" class="status-warning">
+                                (D-[[${license.daysRemaining}]])
+                            </span>
+                            <span th:unless="${license.daysRemaining < 30}" class="status-ok">
+                                (D-[[${license.daysRemaining}]])
+                            </span>
+                        </span>
+                    </td>
+                </tr>
+                <!-- GSS/SETL DBMS -->
+                <tr th:if="${license.dbmsType != null}">
+                    <th>DBMS</th>
+                    <td th:text="${license.dbmsType}">-</td>
+                    <th>SETL 동시접속</th>
+                    <td th:text="${license.setlCount == -1 ? '무한' : (license.setlCount + '개')}">-</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ③ Desktop 플러그인 (DESKTOP 타입만) -->
+    <div class="card" th:if="${license.licenseType == 'DESKTOP'}">
+        <div class="card-title">🔌 Desktop 플러그인</div>
+        <div class="card-body">
+            <table class="info-table">
+                <tr>
+                    <th>Edit Plugin</th>
+                    <td>
+                        <span th:if="${license.pluginEdit}"   class="plugin-yes">✅ 허용</span>
+                        <span th:unless="${license.pluginEdit}" class="plugin-no">❌ 미허용</span>
+                    </td>
+                    <th>GDM Plugin</th>
+                    <td>
+                        <span th:if="${license.pluginGdm}"   class="plugin-yes">✅ 허용</span>
+                        <span th:unless="${license.pluginGdm}" class="plugin-no">❌ 미허용</span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>TMBuilder Plugin</th>
+                    <td>
+                        <span th:if="${license.pluginTmbuilder}"   class="plugin-yes">✅ 허용</span>
+                        <span th:unless="${license.pluginTmbuilder}" class="plugin-no">❌ 미허용</span>
+                    </td>
+                    <th>SETL Plugin</th>
+                    <td>
+                        <span th:if="${license.pluginSetl}"   class="plugin-yes">✅ 허용</span>
+                        <span th:unless="${license.pluginSetl}" class="plugin-no">❌ 미허용</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- ④ 다운로드 -->
+    <div class="download-box">
+        <div th:if="${license.licenseData != null}">
+            <div class="filename">📄 <span th:text="${license.fileName}">license.lic</span></div>
+            <div class="desc">
+                라이선스 파일을 다운로드합니다.
+                GeoNURIS 설치 경로에 복사하여 사용하세요.
+            </div>
+            <a th:href="@{/geonuris/license/{id}/download(id=${license.id})}" class="btn btn-download">
+                ⬇️ 라이선스 파일 다운로드
+            </a>
+        </div>
+        <div th:unless="${license.licenseData != null}" class="no-file">
+            ⚠️ 라이선스 파일 데이터가 없습니다. (JAR 미실행 또는 생성 오류)
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

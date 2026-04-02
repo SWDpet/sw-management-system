@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SW 사업 현황 | 관리자 모드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --dark-navy: #1a237e;
+            --bg-color: #f4f7f6;
+            --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 40px 20px; color: #444;
+        }
+
+        .admin-container {
+            max-width: 1500px; margin: 0 auto;
+            background: white; border-radius: 12px;
+            box-shadow: var(--card-shadow); overflow: hidden;
+        }
+
+        /* 헤더 스타일 */
+        .page-header {
+            background: var(--dark-navy); color: white;
+            padding: 25px 30px; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .page-header h2 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+
+        .header-btns { display: flex; gap: 10px; }
+        .btn-top {
+            background: rgba(255, 255, 255, 0.15); color: white;
+            padding: 8px 16px; border-radius: 6px; text-decoration: none;
+            font-size: 0.85rem; transition: 0.3s; border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex; align-items: center; gap: 5px;
+        }
+        .btn-top:hover { background: white; color: var(--dark-navy); }
+
+        /* 검색 바 스타일 */
+        .search-row {
+            padding: 20px 30px; background: #f8f9fc; border-bottom: 1px solid #e3e6f0;
+            display: flex; justify-content: flex-end;
+            align-items: flex-start; flex-direction: column; gap: 8px;
+        }
+        .search-form { display: flex; gap: 10px; width: 100%; justify-content: flex-end; }
+        .search-input {
+            padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 6px; width: 480px; font-size: 0.95rem; outline: none;
+        }
+        .search-input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(78,115,223,0.15); }
+        .btn-search {
+            background: var(--primary-color); color: white; border: none; padding: 8px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px;
+            white-space: nowrap;
+        }
+        .btn-search:hover { opacity: 0.9; }
+        .search-hint {
+            font-size: 0.78rem; color: #8e9ab5;
+            display: flex; justify-content: flex-end; width: 100%;
+            gap: 14px; flex-wrap: wrap;
+        }
+        .search-hint .hint-tag {
+            background: #e8ecf8; color: #4e73df; border-radius: 4px;
+            padding: 2px 7px; font-weight: 600; font-size: 0.85em; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .search-hint .hint-tag:hover { background: #d0d9f5; }
+        /* & 구분자 강조 */
+        .search-input.multi-mode { border-color: #4e73df; background: #f5f7ff; }
+
+        /* 테이블 영역 */
+        .table-area { padding: 30px; }
+        .table-responsive { overflow-x: auto; border: 1px solid #e3e6f0; border-radius: 8px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { 
+            background: #f8f9fc; padding: 15px; text-align: center; 
+            border-bottom: 2px solid #e3e6f0; color: var(--dark-navy); 
+            font-size: 0.85rem; font-weight: 700;
+            white-space: nowrap; 
+        }
+        td { 
+            padding: 12px 15px; border-bottom: 1px solid #e3e6f0; 
+            text-align: center; font-size: 0.9rem; color: #5a5c69;
+            white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        tr:hover { background-color: #f8f9ff; }
+
+        .proj-nm-cell { text-align: left !important; max-width: 400px; }
+        .amt { text-align: right; padding-right: 20px; font-weight: 600; color: #1a237e; }
+        .status-1 { color: #4e73df; font-weight: 800; background: #eaecf4; padding: 4px 8px; border-radius: 4px; }
+        .status-2 { color: #1cc88a; font-weight: 800; background: #e2f9f1; padding: 4px 8px; border-radius: 4px; }
+        
+        .proj-link { color: var(--primary-color); text-decoration: none; font-weight: 700; }
+        .proj-link:hover { text-decoration: underline; }
+
+        /* 페이징 스타일 */
+        .pagination-container {
+            display: flex; justify-content: center;
+            padding: 25px 0; background: #f8f9fc; border-top: 1px solid #e3e6f0;
+        }
+        .pagination { display: flex; list-style: none; padding: 0; gap: 5px; }
+        .page-item a {
+            display: block; padding: 8px 16px; border-radius: 6px;
+            text-decoration: none; color: var(--primary-color);
+            background: white; border: 1px solid #d1d3e2;
+            font-weight: 600; transition: 0.3s;
+        }
+        .page-item.active a { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .page-item a:hover:not(.active) { background: #eaecf4; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <div class="page-header">
+            <h2><i class="fas fa-list-ul"></i> SW 사업 추진 현황 리스트</h2>
+            <div class="header-btns">
+                <a th:href="@{/}" class="btn-top"><i class="fas fa-home"></i> 메인으로</a>
+                
+                <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') 
+                                or (#authentication.principal instanceof T(com.swmanager.system.config.CustomUserDetails) 
+                                    and #authentication.principal.user?.authProject == 'EDIT')}">
+                    <a th:href="@{/projects/new}" class="btn-top" style="background: #1cc88a;">
+                        <i class="fas fa-plus"></i> 신규 사업 등록
+                    </a>
+                </th:block>
+
+                <a th:href="@{/person/list}" class="btn-top"><i class="fas fa-users-cog"></i> 담당자 현황 보기</a>
+            </div>
+        </div>
+
+        <div class="search-row">
+            <form th:action="@{/projects/status}" method="get" class="search-form" id="searchForm">
+                <input type="hidden" name="size" value="10">
+                <input type="text" name="kw" id="kwInput" th:value="${kw}"
+                       class="search-input"
+                       placeholder="통합 검색 — 여러 조건은 &amp;로 구분 (예: 2024&amp;UPIS)"
+                       autocomplete="off">
+                <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
+            </form>
+            <!-- 검색 힌트 바 -->
+            <div class="search-hint">
+                <span>💡 <strong>&amp;</strong> 로 조건 추가 →</span>
+                <span class="hint-tag" onclick="appendHint('&amp;진행중')">진행중</span>
+                <span class="hint-tag" onclick="appendHint('&amp;완료')">완료</span>
+                <span class="hint-tag" th:each="y : ${#numbers.sequence(2020, 2026)}"
+                      th:onclick="'appendHint(\'&amp;' + ${y} + '\')'"
+                      th:text="${y}">연도</span>
+                <!-- 현재 검색어가 & 포함 시 조건 뱃지 표시 -->
+                <span th:if="${kw != null and kw.contains('&')}" style="margin-left:8px; color:#4e73df; font-weight:600;">
+                    🔍 AND 검색 적용 중:
+                    <span th:each="t, i : ${kw.split('&amp;')}"
+                          style="background:#dde3f8; border-radius:4px; padding:1px 7px; margin-left:4px;"
+                          th:text="${t.trim()}"></span>
+                </span>
+            </div>
+        </div>
+        <script>
+            // 검색어에 & 포함 시 input 강조
+            (function() {
+                var inp = document.getElementById('kwInput');
+                if (inp) {
+                    function checkMulti() {
+                        if (inp.value.includes('&')) {
+                            inp.classList.add('multi-mode');
+                        } else {
+                            inp.classList.remove('multi-mode');
+                        }
+                    }
+                    inp.addEventListener('input', checkMulti);
+                    checkMulti(); // 초기 상태 반영
+                }
+            })();
+
+            // 힌트 태그 클릭 시 검색창에 토큰 추가
+            function appendHint(token) {
+                var inp = document.getElementById('kwInput');
+                if (!inp) return;
+                var current = inp.value.trim();
+                // 이미 해당 토큰이 있으면 추가하지 않음
+                var clean = token.replace(/^&/, '').trim();
+                if (current.split('&').map(function(t){return t.trim();}).includes(clean)) return;
+                inp.value = current ? (current + token) : clean;
+                inp.dispatchEvent(new Event('input'));
+                inp.focus();
+            }
+        </script>
+
+        <div class="table-area">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>년도</th>
+                            <th>시도명</th>
+                            <th>시군구명</th>
+                            <th>시스템명(영문)</th>
+                            <th>PMS코드</th>
+                            <th>사업명</th>
+                            <th>발주처</th>
+                            <th>계약금액</th>
+                            <th>계약상태</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${paging.content}">
+                            <td th:text="${p.year}">2026</td>
+                            <td th:text="${p.cityNm}">-</td>
+                            <td th:text="${p.distNm}">-</td>
+                            <td th:text="${p.sysNmEn}">-</td>
+                            <td th:text="${p.pmsCd}">-</td>
+                            <td class="proj-nm-cell">
+                                <a th:href="@{/projects/detail/{id}(id=${p.projId})}" 
+                                   th:text="${p.projNm}" class="proj-link">사업명</a>
+                            </td>
+                            <td th:text="${p.client}">-</td>
+                            <td class="amt" th:text="${p.contAmt != null ? #numbers.formatInteger(p.contAmt, 0, 'COMMA') : '0'}">0</td>
+                            <td>
+                                <span th:if="${p.stat == '1'}" class="status-1">진행중</span>
+                                <span th:if="${p.stat == '2'}" class="status-2">완료</span>
+                                <span th:unless="${p.stat == '1' or p.stat == '2'}">-</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${paging.totalElements == 0}">
+                            <td colspan="9" style="padding: 100px 0; color: #858796;">등록된 사업 정보가 없습니다.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="pagination-container" th:if="${paging.totalPages > 1}">
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${!paging.hasPrevious} ? 'disabled'">
+                    <a th:href="@{/projects/status(page=${paging.number - 1}, kw=${kw != null ? kw : ''}, size=10)}">이전</a>
+                </li>
+                
+                <li th:each="page: ${#numbers.sequence(0, paging.totalPages - 1)}"
+                    th:if="${page >= paging.number - 5 and page <= paging.number + 5}"
+                    class="page-item" th:classappend="${page == paging.number} ? 'active'">
+                    <a th:text="${page + 1}" th:href="@{/projects/status(page=${page}, kw=${kw != null ? kw : ''}, size=10)}"></a>
+                </li>
+                
+                <li class="page-item" th:classappend="${!paging.hasNext} ? 'disabled'">
+                    <a th:href="@{/projects/status(page=${paging.number + 1}, kw=${kw != null ? kw : ''}, size=10)}">다음</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+</html>

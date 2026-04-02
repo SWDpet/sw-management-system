@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역 담당자 현황 | 관리자 모드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --dark-navy: #1a237e;
+            --bg-color: #f4f7f6;
+            --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 40px 20px; color: #444;
+        }
+
+        .admin-container {
+            max-width: 1600px; margin: 0 auto;
+            background: white; border-radius: 12px;
+            box-shadow: var(--card-shadow); overflow: hidden;
+        }
+
+        /* 헤더 스타일 */
+        .page-header {
+            background: var(--dark-navy); color: white;
+            padding: 25px 30px; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .page-header h2 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+
+        .header-btns { display: flex; gap: 10px; }
+        .btn-top {
+            background: rgba(255, 255, 255, 0.15); color: white;
+            padding: 8px 16px; border-radius: 6px; text-decoration: none;
+            font-size: 0.85rem; transition: 0.3s; border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex; align-items: center; gap: 5px;
+        }
+        .btn-top:hover { background: white; color: var(--dark-navy); }
+
+        /* 검색 바 스타일 */
+        .search-row {
+            padding: 20px 30px; background: #f8f9fc; border-bottom: 1px solid #e3e6f0;
+            display: flex; justify-content: flex-end; /* 오른쪽 정렬 */
+            align-items: center;
+        }
+        .search-form { display: flex; gap: 10px; }
+        .search-input {
+            padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 6px; width: 450px;
+            font-size: 0.95rem; outline: none;
+        }
+        .btn-search {
+            background: var(--primary-color); color: white; border: none; padding: 8px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 5px;
+        }
+        .btn-search:hover { opacity: 0.9; }
+
+        /* 테이블 영역 */
+        .table-area { padding: 30px; }
+        .table-responsive { overflow-x: auto; border: 1px solid #e3e6f0; border-radius: 8px; }
+        
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        th { 
+            background: #f8f9fc; padding: 15px; text-align: center; 
+            border-bottom: 2px solid #e3e6f0; color: var(--dark-navy); 
+            font-size: 0.85rem; font-weight: 700; white-space: nowrap; 
+        }
+        td { 
+            padding: 12px 15px; border-bottom: 1px solid #e3e6f0; 
+            text-align: center; font-size: 0.9rem; color: #5a5c69;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        tr:hover { background-color: #f8f9ff; }
+
+        .link-cell a { color: var(--primary-color); font-weight: 700; text-decoration: none; }
+        .link-cell a:hover { text-decoration: underline; }
+
+        /* 페이징 스타일 */
+        .pagination-container {
+            display: flex; justify-content: center;
+            padding: 25px 0; background: #f8f9fc; border-top: 1px solid #e3e6f0;
+        }
+        .pagination { display: flex; list-style: none; padding: 0; gap: 5px; }
+        .page-item a {
+            display: block; padding: 8px 16px; border-radius: 6px;
+            text-decoration: none; color: var(--primary-color);
+            background: white; border: 1px solid #d1d3e2;
+            font-weight: 600; transition: 0.3s;
+        }
+        .page-item.active a { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .page-item a:hover:not(.active) { background: #eaecf4; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <div class="page-header">
+            <h2><i class="fas fa-address-book"></i> 지역 담당자 현황</h2>
+            <div class="header-btns">
+                <a th:href="@{/}" class="btn-top"><i class="fas fa-home"></i> 메인으로</a>
+                
+                <a th:href="@{/projects/status}" class="btn-top"><i class="fas fa-list-ul"></i> 사업 현황</a>
+
+                <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') 
+                                or (#authentication.principal instanceof T(com.swmanager.system.config.CustomUserDetails) 
+                                    and #authentication.principal.user?.authPerson == 'EDIT')}">
+                    <a th:href="@{/person/new}" class="btn-top" style="background: #1cc88a;">
+                        <i class="fas fa-user-plus"></i> 신규 담당자 등록
+                    </a>
+                </th:block>
+            </div>
+        </div>
+
+        <div class="search-row">
+            <form th:action="@{/person/list}" method="get" class="search-form">
+                <input type="text" name="kw" th:value="${kw}" class="search-input" 
+                       placeholder="통합 검색 (시도, 시군구, 기관, 시스템(EN), 부서, 팀, 성명, 직급, 연락처, 이메일)">
+                <button type="submit" class="search-btn"><i class="fas fa-search"></i> 검색</button>
+            </form>
+        </div>
+
+        <div class="table-area">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>시도</th>
+                            <th>시군구</th>
+                            <th>기관명</th>
+                            <th>시스템(EN)</th>
+                            <th>부서명</th>
+                            <th>팀명</th>
+                            <th>성명</th>
+                            <th>직급</th>
+                            <th>연락처</th>
+                            <th>이메일</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${paging.content}">
+                            <td th:text="${p.cityNm}">-</td>
+                            <td th:text="${p.distNm}">-</td>
+                            
+                            <td class="link-cell">
+                                <a th:href="@{/person/detail/{id}(id=${p.id})}" th:text="${p.orgNm}">기관명</a>
+                            </td>
+                            
+                            <td th:text="${p.sysNmEn}">-</td>
+                            <td th:text="${p.deptNm}">-</td>
+                            <td th:text="${p.teamNm}">-</td>
+                            
+                            <td th:text="${p.userNm}">-</td>
+                            
+                            <td th:text="${p.pos}">-</td>
+                            <td th:text="${p.tel}">-</td>
+                            <td th:text="${p.email}">-</td>
+                        </tr>
+                        <tr th:if="${paging.totalElements == 0}">
+                            <td colspan="10" style="padding: 100px 0; color: #858796;">
+                                <i class="fas fa-search-minus" style="font-size: 2rem; margin-bottom: 10px;"></i><br>
+                                검색 결과가 없습니다.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="pagination-container" th:if="${paging.totalPages > 1}">
+            <ul class="pagination">
+                <li class="page-item" th:classappend="${!paging.hasPrevious} ? 'disabled'">
+                    <a th:href="@{|/person/list?page=${paging.number - 1}&kw=${kw != null ? kw : ''}|}">이전</a>
+                </li>
+                
+                <li th:each="page: ${#numbers.sequence(0, paging.totalPages - 1)}"
+                    th:if="${page >= paging.number - 5 and page <= paging.number + 5}"
+                    class="page-item" th:classappend="${page == paging.number} ? 'active'">
+                    <a th:text="${page + 1}" th:href="@{|/person/list?page=${page}&kw=${kw != null ? kw : ''}|}"></a>
+                </li>
+                
+                <li class="page-item" th:classappend="${!paging.hasNext} ? 'disabled'">
+                    <a th:href="@{|/person/list?page=${paging.number + 1}&kw=${kw != null ? kw : ''}|}">다음</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+</html>

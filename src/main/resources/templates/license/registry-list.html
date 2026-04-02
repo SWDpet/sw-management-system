@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>라이선스 대장 - SW 관리 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-left h1 { font-size: 24px; color: #333; margin-bottom: 5px; }
+        .header-left p { color: #666; font-size: 14px; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
+        .upload-date { font-size: 14px; color: #007bff; font-weight: bold; }
+        
+        /* 검색 영역 */
+        .search-area { display: flex; gap: 10px; align-items: center; }
+        .search-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 250px; font-size: 14px; }
+        .search-input:focus { outline: none; border-color: #007bff; }
+        
+        .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        
+        .filter-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .filter-btn { padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; text-align: center; transition: all 0.2s; text-decoration: none; color: #333; display: block; }
+        .filter-btn:hover { background: #f8f9fa; }
+        .filter-btn.active { background: #007bff; color: white; border-color: #007bff; }
+        .filter-count { display: block; font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+        .filter-label { display: block; font-size: 12px; }
+        
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .table-header h2 { font-size: 18px; color: #333; }
+        
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { 
+            padding: 12px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd; 
+            font-size: 14px; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: default;
+        }
+        th { background: #f8f9fa; font-weight: bold; color: #333; position: sticky; top: 0; }
+        tr:hover { background: #f8f9fa; }
+        
+        /* 툴팁이 있는 셀 강조 */
+        td[title]:hover {
+            background: #e9ecef;
+            position: relative;
+        }
+        
+        /* 컬럼별 너비 조정 */
+        th:nth-child(1), td:nth-child(1) { width: 10%; } /* License ID */
+        th:nth-child(2), td:nth-child(2) { width: 8%; }  /* Product ID */
+        th:nth-child(3), td:nth-child(3) { width: 10%; } /* 등록자 */
+        th:nth-child(4), td:nth-child(4) { width: 10%; } /* 회사 */
+        th:nth-child(5), td:nth-child(5) { width: 12%; } /* 이메일 */
+        th:nth-child(6), td:nth-child(6) { width: 8%; }  /* 발급자 */
+        th:nth-child(7), td:nth-child(7) { width: 9%; }  /* 발급일 */
+        th:nth-child(8), td:nth-child(8) { width: 9%; }  /* 만료일 */
+        th:nth-child(9), td:nth-child(9) { width: 9%; }  /* 상태 */
+        th:nth-child(10), td:nth-child(10) { width: 15%; } /* Actions */
+        
+        .badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        
+        .btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 14px; border: none; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-home { background: #6c757d; color: white; }
+        .btn-home:hover { background: #5a6268; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        
+        .btn-sort { background: #6f42c1; color: white; }
+        .btn-sort:hover { background: #5a32a3; }
+        .btn-sort.active { background: #28a745; }
+        .btn-sort.active:hover { background: #218838; }
+        
+        .no-data { text-align: center; padding: 40px; color: #666; }
+        
+        .actions { white-space: nowrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <h1>📋 라이선스 대장</h1>
+                    <p>License Manager에서 발급된 라이선스 현황</p>
+                </div>
+                <div class="header-right">
+                    <div class="upload-date" th:if="${latestUploadDate != null}">
+                        📅 기준: <span th:text="${#temporals.format(latestUploadDate, 'yyyy-MM-dd HH:mm')}"></span>
+                    </div>
+                    <!-- 메인 대시보드 버튼 -->
+                    <a th:href="@{/}" class="btn btn-home">🏠 메인으로</a>
+                    <!-- GeoNURIS 라이선스 발급 대장 -->
+                    <a th:href="@{/geonuris/license/list}" class="btn"
+                       style="background:#1a5276; color:white;">🔑 GeoNURIS 라이선스</a>
+                    <!-- QR 라이선스 발급 -->
+                    <a th:href="@{/qr-license/issue}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR발급</a>
+                    <!-- QR 라이선스 대장 -->
+                    <a th:href="@{/qr-license/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR대장</a>
+                </div>
+            </div>
+            
+            <!-- 검색 영역 -->
+            <div class="search-area">
+                <input type="text" id="searchInput" class="search-input" 
+                       placeholder="🔍 License ID, 제품명, 등록자, 회사명으로 검색..." 
+                       onkeyup="searchTable()">
+                <select id="productFilter" class="search-input" style="width: 200px;" onchange="filterByProduct()">
+                    <option value="">전체 제품</option>
+                    <option th:each="entry : ${productStats}" 
+                            th:value="${entry.key}" 
+                            th:text="${entry.key} + ' (' + ${entry.value} + ')'"
+                            th:selected="${selectedProductId == entry.key}"></option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- 업로드 성공 메시지 -->
+        <div th:if="${uploadMessage != null}" class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <span th:text="${uploadMessage}"></span>
+        </div>
+        
+        <!-- 일반 성공 메시지 -->
+        <div th:if="${success != null and success and message != null}" class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            ✅ <span th:text="${message}"></span>
+        </div>
+        
+        <!-- 에러 메시지 -->
+        <div th:if="${error != null and error and message != null}" class="alert" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            ❌ <span th:text="${message}"></span>
+        </div>
+        
+        <!-- 제품별 필터 -->
+        <div class="filter-section" th:if="${productStats != null && !productStats.isEmpty()}">
+            <div class="filter-grid">
+                <!-- 전체 버튼 -->
+                <a th:href="@{/license/registry/list}"
+                   class="filter-btn"
+                   th:classappend="${selectedProductId == null ? 'active' : ''}">
+                    <span class="filter-count" th:text="${licenses.size()}">0</span>
+                    <span class="filter-label">전체</span>
+                </a>
+                
+                <!-- 제품별 버튼 -->
+                <a th:each="entry : ${productStats}"
+                   th:href="@{/license/registry/list(productId=${entry.key})}"
+                   class="filter-btn"
+                   th:classappend="${selectedProductId == entry.key ? 'active' : ''}">
+                    <span class="filter-count" th:text="${entry.value}">0</span>
+                    <span class="filter-label" th:text="${entry.key}"></span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 대장 테이블 -->
+        <div class="table-section">
+            <div class="table-header">
+                <h2>
+                    라이선스 목록 
+                    <span style="color: #666; font-weight: normal; font-size: 14px;">
+                        (총 <strong id="totalCount" th:text="${licenses.size()}">0</strong>건
+                        <span id="filteredInfo" style="display:none;"> / 필터링: <strong id="filteredCount">0</strong>건</span>)
+                    </span>
+                </h2>
+                <div style="display: flex; gap: 10px;">
+                    <!-- 비한글 사용자 상단 정렬 버튼 -->
+                    <button id="sortForeignBtn" class="btn btn-sort" onclick="toggleForeignSort()" title="한글이 아닌 등록자를 맨 위로 정렬">
+                        🌐 외국인 등록자 상단
+                    </button>
+                    <!-- CSV 다운로드 버튼 (모든 권한) -->
+                    <a th:href="@{/license/registry/download/csv}" class="btn btn-primary">
+                        📥 CSV 다운로드
+                    </a>
+                    <!-- CSV 업로드 버튼 (EDIT 권한만) -->
+                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn btn-success">
+                        📤 CSV 업로드
+                    </a>
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table id="licenseTable" th:if="${licenses != null && !licenses.isEmpty()}">
+                    <thead>
+                        <tr>
+                            <th>License ID</th>
+                            <th>제품</th>
+                            <th>등록자</th>
+                            <th>회사</th>
+                            <th>이메일</th>
+                            <th>발급자</th>
+                            <th>발급일</th>
+                            <th>만료일</th>
+                            <th>상태</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="lic : ${licenses}">
+                            <td th:title="${lic.licenseId}">
+                                <a th:href="@{'/license/registry/detail/' + ${lic.id}}" 
+                                   style="color: #007bff; text-decoration: none; font-weight: bold;">
+                                    <span th:text="${lic.licenseId}"></span>
+                                </a>
+                            </td>
+                            <td th:title="${lic.productId}">
+                                <strong th:text="${lic.productId}"></strong>
+                            </td>
+                            <td th:title="${lic.registeredTo}">
+                                <div th:text="${lic.registeredTo}"></div>
+                            </td>
+                            <td th:title="${lic.company}">
+                                <div th:text="${lic.company}"></div>
+                            </td>
+                            <td th:title="${lic.email}" th:text="${lic.email ?: '-'}"></td>
+                            <td th:title="${lic.country}" th:text="${lic.country ?: '-'}"></td>
+                            <td th:text="${lic.generationDateTime != null ? #temporals.format(lic.generationDateTime, 'yyyy-MM-dd') : '-'}"></td>
+                            <td th:text="${lic.expiryDate != null ? #temporals.format(lic.expiryDate, 'yyyy-MM-dd') : '무제한'}"></td>
+                            <td>
+                                <span th:if="${lic.expiryDate == null}" class="badge badge-success">무제한</span>
+                                <span th:if="${lic.expiryDate != null && !lic.expired}" class="badge badge-success">
+                                    정상 (D-<span th:text="${lic.daysRemaining}"></span>)
+                                </span>
+                                <span th:if="${lic.expiryDate != null && lic.daysRemaining <= 30 && !lic.expired}" 
+                                      class="badge badge-warning">
+                                    곧 만료 (D-<span th:text="${lic.daysRemaining}"></span>)
+                                </span>
+                                <span th:if="${lic.expired}" class="badge badge-danger">만료됨</span>
+                            </td>
+                            <td class="actions">
+                                <a th:href="@{'/license/registry/detail/' + ${lic.id}}" 
+                                   class="btn btn-primary btn-sm">상세</a>
+                                <a th:if="${hasEditPermission}" 
+                                   th:href="@{'/license/registry/download/' + ${lic.id}}" 
+                                   class="btn btn-success btn-sm">다운로드</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="no-data" th:if="${licenses == null || licenses.isEmpty()}">
+                    <p style="font-size: 18px; margin-bottom: 10px;">📋 등록된 라이선스가 없습니다</p>
+                    <p style="color: #999;">CSV 파일을 업로드하여 대장을 등록하세요.</p>
+                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn btn-success" style="margin-top: 20px;">
+                        📤 CSV 업로드
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 테이블 검색 기능
+        function searchTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('licenseTable');
+            const tr = table.getElementsByTagName('tr');
+            
+            let visibleCount = 0;
+            
+            for (let i = 1; i < tr.length; i++) {
+                const row = tr[i];
+                const cells = row.getElementsByTagName('td');
+                let found = false;
+                
+                // License ID, 제품, 등록자, 회사 컬럼에서 검색
+                for (let j = 0; j < 4; j++) {
+                    if (cells[j]) {
+                        const txtValue = cells[j].textContent || cells[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (found) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+            
+            // 필터링 정보 표시
+            updateFilterInfo(visibleCount);
+        }
+        
+        // 제품별 필터링
+        function filterByProduct() {
+            const select = document.getElementById('productFilter');
+            const productId = select.value;
+            
+            if (productId) {
+                window.location.href = '/license/registry/list?productId=' + encodeURIComponent(productId);
+            } else {
+                window.location.href = '/license/registry/list';
+            }
+        }
+        
+        // 필터링 정보 업데이트
+        function updateFilterInfo(filteredCount) {
+            const totalCount = document.querySelectorAll('#licenseTable tbody tr').length;
+            const filteredInfo = document.getElementById('filteredInfo');
+            const filteredCountSpan = document.getElementById('filteredCount');
+            
+            if (filteredCount < totalCount) {
+                filteredInfo.style.display = 'inline';
+                filteredCountSpan.textContent = filteredCount;
+            } else {
+                filteredInfo.style.display = 'none';
+            }
+        }
+        // 한글 여부 판별
+        function isKorean(str) {
+            return /[가-힣]/.test(str);
+        }
+
+        // 비한글 등록자 상단 정렬
+        function applyForeignSort() {
+            const table = document.getElementById('licenseTable');
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const foreign = rows.filter(r => {
+                const name = r.cells[2] ? r.cells[2].textContent.trim() : '';
+                return name !== '' && !isKorean(name);
+            });
+            const korean = rows.filter(r => {
+                const name = r.cells[2] ? r.cells[2].textContent.trim() : '';
+                return name === '' || isKorean(name);
+            });
+            [...foreign, ...korean].forEach(r => tbody.appendChild(r));
+        }
+
+        // 비한글 등록자 상단 정렬 토글
+        function toggleForeignSort() {
+            const btn = document.getElementById('sortForeignBtn');
+            const isActive = sessionStorage.getItem('foreignSortActive') === 'true';
+
+            if (!isActive) {
+                sessionStorage.setItem('foreignSortActive', 'true');
+                applyForeignSort();
+                btn.classList.add('active');
+                btn.textContent = '✅ 외국인 등록자 상단';
+            } else {
+                sessionStorage.setItem('foreignSortActive', 'false');
+                location.reload(); // 원래 서버 순서 복원
+            }
+        }
+
+        // 페이지 로드 시 저장된 정렬 상태 복원
+        window.addEventListener('DOMContentLoaded', function () {
+            if (sessionStorage.getItem('foreignSortActive') === 'true') {
+                applyForeignSort();
+                const btn = document.getElementById('sortForeignBtn');
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.textContent = '✅ 외국인 등록자 상단';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

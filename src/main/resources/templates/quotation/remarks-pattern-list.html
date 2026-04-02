@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>비고 패턴 관리 - SW Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6B3EF0;
+            --primary2: #5330C8;
+            --primary-lt: #f0ebff;
+            --bg: #f5f5f5;
+            --surface: #ffffff;
+            --text-primary: #222222;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border: #e8e8e8;
+            --border-light: #f0f0f0;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--text-primary);
+        }
+
+        .header-actions { display: flex; gap: 10px; }
+
+        /* Buttons */
+        .btn {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(107, 62, 240, 0.25); }
+        .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg); border-color: var(--text-secondary); }
+        .btn-danger { background: #fee2e2; color: var(--error); }
+        .btn-danger:hover { background: #fecaca; }
+        .btn-small { padding: 6px 12px; font-size: 0.8rem; }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .count-badge {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Table */
+        .pattern-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .pattern-table thead {
+            background: #fafafa;
+            border-top: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .pattern-table th {
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .pattern-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: top;
+        }
+
+        .pattern-table tbody tr:hover { background: #fafafa; }
+        .pattern-table .col-no { width: 50px; text-align: center; }
+        .pattern-table .col-name { width: 200px; }
+        .pattern-table .col-content { /* auto */ }
+        .pattern-table .col-action { width: 120px; text-align: center; }
+
+        .content-preview {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            white-space: pre-line;
+            max-height: 80px;
+            overflow: hidden;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state p { font-size: 1rem; margin-bottom: 16px; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-head {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-head h2 { font-size: 1.15rem; font-weight: 800; }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        .modal-close:hover { background: var(--bg); }
+
+        .modal-body { padding: 20px 24px; }
+
+        .modal-foot {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Form */
+        .fg { margin-bottom: 16px; }
+        .fg label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .fg .req { color: var(--error); }
+
+        .fg input, .fg select, .fg textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .fg input:focus, .fg select:focus, .fg textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-lt);
+        }
+
+        .fg textarea { resize: vertical; min-height: 150px; line-height: 1.6; }
+
+        /* Alert */
+        .alert-container { position: fixed; top: 70px; right: 20px; z-index: 2000; }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .alert-success { background: #dcfce7; color: var(--success); border: 1px solid #bbf7d0; }
+        .alert-error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; }
+    </style>
+</head>
+<body>
+
+<!-- GNB -->
+<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem; font-family:'Inter',sans-serif;">S</span>
+            <span style="font-weight:800; font-size:1.08rem; color:#222; letter-spacing:-0.01em; font-family:'Noto Sans KR',sans-serif;">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">마이페이지</a>
+
+            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">서버관리</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">사업현황</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">담당자관리</a>
+            </div>
+
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">라이선스 대장</a>
+            </div>
+
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/quotation/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">견적서</a>
+                <a th:href="@{/quotation/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">견적대장</a>
+                <a th:href="@{/quotation/patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">패턴관리</a>
+                <a th:href="@{/quotation/remarks-patterns}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">비고패턴</a>
+                <a th:href="@{/quotation/wage-rates}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">노임단가</a>
+            </div>
+
+            <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" th:href="@{/admin/users}" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; margin-left:4px;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''">사용자승인</a>
+
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Alert Container -->
+<div id="alertContainer" class="alert-container"></div>
+
+<!-- Main -->
+<div class="container">
+    <div class="page-header">
+        <h1>비고 패턴 관리</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal()">+ 패턴 추가</button>
+        </div>
+    </div>
+
+    <div class="card" style="padding:12px 24px;">
+        <span class="count-badge" id="countBadge"></span>
+    </div>
+
+    <!-- Pattern Table -->
+    <div class="card" style="padding:0;">
+        <div id="tableContainer" style="overflow-x:auto;">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="remarksModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h2 id="modalTitle">비고 패턴 추가</h2>
+            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editPatternId"/>
+            <div class="fg">
+                <label>패턴 이름 <span class="req">*</span></label>
+                <input type="text" id="mName" placeholder="예: 기본 비고, 유지보수 비고" required>
+            </div>
+            <div class="fg">
+                <label>비고 내용 <span class="req">*</span></label>
+                <textarea id="mContent" placeholder="비고 내용을 입력하세요&#10;&#10;예:&#10;1. 상기 견적금액은 제안 내용 기준이며, 세부 사항은 협의에 따라 변경될 수 있습니다.&#10;2. 본 견적서의 유효기간은 발행일로부터 30일입니다."></textarea>
+            </div>
+            <div class="fg">
+                <label>정렬 순서</label>
+                <input type="number" id="mSortOrder" value="0" min="0" placeholder="0">
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+            <button class="btn btn-primary" id="modalSubmitBtn" onclick="submitPattern()">추가</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    function fetchApi(url, options = {}) {
+        if (!options.headers) options.headers = {};
+        if (csrfHeader && csrfToken) options.headers[csrfHeader] = csrfToken;
+        if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(options.body);
+        }
+        return fetch(url, options);
+    }
+
+    let allPatterns = [];
+
+    async function loadPatterns() {
+        try {
+            const res = await fetch('/api/quotation/remarks-patterns');
+            if (res.ok) {
+                allPatterns = await res.json();
+                renderTable();
+            }
+        } catch (e) {
+            console.error('Error loading remarks patterns:', e);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderTable() {
+        const container = document.getElementById('tableContainer');
+        document.getElementById('countBadge').textContent = '총 ' + allPatterns.length + '건';
+
+        if (allPatterns.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>등록된 비고 패턴이 없습니다.</p><button class="btn btn-primary" onclick="openModal()">+ 첫 패턴 추가하기</button></div>';
+            return;
+        }
+
+        let html = '<table class="pattern-table"><thead><tr>' +
+            '<th class="col-no">No</th>' +
+            '<th class="col-name">패턴 이름</th>' +
+            '<th class="col-content">비고 내용</th>' +
+            '<th class="col-action">관리</th>' +
+            '</tr></thead><tbody>';
+
+        allPatterns.forEach((p, idx) => {
+            const contentPreview = escapeHtml(p.content || '');
+            html += '<tr>' +
+                '<td style="text-align:center;">' + (idx + 1) + '</td>' +
+                '<td style="font-weight:600;">' + escapeHtml(p.patternName) + '</td>' +
+                '<td><div class="content-preview">' + contentPreview + '</div></td>' +
+                '<td style="text-align:center;">' +
+                '<button class="btn btn-secondary btn-small" onclick="editPattern(' + p.patternId + ')" style="margin-right:4px;">수정</button>' +
+                '<button class="btn btn-danger btn-small" onclick="deletePattern(' + p.patternId + ', \'' + escapeHtml(p.patternName).replace(/'/g, "\\'") + '\')">삭제</button>' +
+                '</td></tr>';
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // Modal
+    function openModal(pattern) {
+        document.getElementById('remarksModal').classList.add('active');
+        if (pattern) {
+            document.getElementById('modalTitle').textContent = '비고 패턴 수정';
+            document.getElementById('modalSubmitBtn').textContent = '저장';
+            document.getElementById('editPatternId').value = pattern.patternId;
+            document.getElementById('mName').value = pattern.patternName || '';
+            document.getElementById('mContent').value = pattern.content || '';
+            document.getElementById('mSortOrder').value = pattern.sortOrder || 0;
+        } else {
+            document.getElementById('modalTitle').textContent = '비고 패턴 추가';
+            document.getElementById('modalSubmitBtn').textContent = '추가';
+            document.getElementById('editPatternId').value = '';
+            document.getElementById('mName').value = '';
+            document.getElementById('mContent').value = '';
+            document.getElementById('mSortOrder').value = 0;
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('remarksModal').classList.remove('active');
+    }
+
+    function editPattern(id) {
+        const pattern = allPatterns.find(p => p.patternId === id);
+        if (pattern) openModal(pattern);
+    }
+
+    async function submitPattern() {
+        const name = document.getElementById('mName').value.trim();
+        const content = document.getElementById('mContent').value.trim();
+
+        if (!name || !content) {
+            showAlert('패턴 이름과 비고 내용을 모두 입력해주세요.', 'error');
+            return;
+        }
+
+        const data = {
+            patternName: name,
+            content: content,
+            sortOrder: parseInt(document.getElementById('mSortOrder').value) || 0
+        };
+
+        const editId = document.getElementById('editPatternId').value;
+        const isEdit = !!editId;
+
+        try {
+            const url = isEdit ? '/api/quotation/remarks-pattern/' + editId : '/api/quotation/remarks-pattern';
+            const method = isEdit ? 'PUT' : 'POST';
+            const res = await fetchApi(url, { method, body: data });
+            if (res.ok) {
+                closeModal();
+                showAlert(isEdit ? '패턴이 수정되었습니다.' : '패턴이 추가되었습니다.', 'success');
+                await loadPatterns();
+            } else {
+                showAlert('저장에 실패했습니다.', 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        }
+    }
+
+    async function deletePattern(id, name) {
+        if (!confirm('"' + name + '" 패턴을 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetchApi('/api/quotation/remarks-pattern/' + id, { method: 'DELETE' });
+            if (res.ok) {
+                showAlert('패턴이 삭제되었습니다.', 'success');
+                await loadPatterns();
+            } else {
+                showAlert('삭제에 실패했습니다.', 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        }
+    }
+
+    function showAlert(message, type) {
+        const container = document.getElementById('alertContainer');
+        const div = document.createElement('div');
+        div.className = 'alert alert-' + type;
+        div.textContent = message;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', loadPatterns);
+</script>
+
+</body>
+</html>

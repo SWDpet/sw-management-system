@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SW Manager — 로그인</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f5f5f5;
+            background-image: url('/images/back.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* 배경 오버레이 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(107,62,240,0.82) 0%, rgba(40,20,120,0.75) 100%);
+            z-index: 0;
+        }
+
+        /* 배경 도형 장식 */
+        .bg-circle-1 {
+            position: fixed;
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            top: -120px; right: -100px;
+            z-index: 0;
+        }
+        .bg-circle-2 {
+            position: fixed;
+            width: 320px; height: 320px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            bottom: -80px; left: -80px;
+            z-index: 0;
+        }
+
+        /* 카드 */
+        .login-wrap {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 420px;
+            padding: 0 20px;
+        }
+
+        /* 로그인 카드 */
+        .login-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 36px 32px 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+
+        .login-card h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 6px;
+        }
+        .login-card .subtitle {
+            font-size: 0.82rem;
+            color: #888;
+            margin-bottom: 28px;
+        }
+
+        /* 인풋 라벨 그룹 */
+        .input-group {
+            margin-bottom: 14px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+            letter-spacing: 0.02em;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-family: 'Noto Sans KR', sans-serif;
+            color: #222;
+            background: #fafafa;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: #6B3EF0;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(107,62,240,0.1);
+        }
+        .input-group input::placeholder { color: #bbb; }
+
+        /* 로그인 버튼 */
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6B3EF0, #5330C8);
+            color: #fff;
+            font-size: 0.96rem;
+            font-weight: 700;
+            font-family: 'Noto Sans KR', sans-serif;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: transform 0.18s, box-shadow 0.18s;
+            box-shadow: 0 4px 16px rgba(107,62,240,0.35);
+            letter-spacing: 0.04em;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(107,62,240,0.45);
+        }
+        .btn-login:active { transform: translateY(0); }
+
+        /* 에러/로그아웃 메시지 */
+        .msg-error {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff5f5;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.84rem;
+            font-weight: 500;
+        }
+        .msg-logout {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0ebff;
+            border: 1px solid #c4b5fd;
+            color: #5330C8;
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.84rem;
+            font-weight: 500;
+        }
+
+        /* 구분선 + 회원가입 */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 22px 0 18px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #ebebeb;
+        }
+        .divider span {
+            font-size: 0.75rem;
+            color: #bbb;
+            white-space: nowrap;
+        }
+
+        .signup-link {
+            text-align: center;
+            font-size: 0.84rem;
+            color: #666;
+        }
+        .signup-link a {
+            color: #6B3EF0;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .signup-link a:hover { text-decoration: underline; }
+
+        /* 푸터 */
+        .login-footer {
+            position: relative; z-index: 1;
+            margin-top: 24px;
+            font-size: 0.74rem;
+            color: rgba(255,255,255,0.45);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-circle-1"></div>
+    <div class="bg-circle-2"></div>
+
+    <div class="login-wrap">
+        <!-- 로그인 카드 -->
+        <div class="login-card">
+            <h2>로그인</h2>
+            <p class="subtitle">시스템 이용을 위해 로그인해 주세요.</p>
+
+            <form th:action="@{/login}" method="post">
+
+                <!-- 에러 메시지 -->
+                <div th:if="${param.error}" class="msg-error">
+                    <span>⚠️</span>
+                    아이디/비밀번호가 틀렸거나 승인 대기 중입니다.
+                </div>
+                <!-- 로그아웃 메시지 -->
+                <div th:if="${param.logout}" class="msg-logout">
+                    <span>✅</span>
+                    로그아웃 되었습니다.
+                </div>
+
+                <div class="input-group">
+                    <label for="userid">아이디</label>
+                    <input type="text" id="userid" name="userid"
+                           placeholder="아이디를 입력하세요"
+                           required autofocus autocomplete="username">
+                </div>
+
+                <div class="input-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" id="password" name="password"
+                           placeholder="비밀번호를 입력하세요"
+                           required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-login">로그인</button>
+            </form>
+
+            <div class="divider"><span>계정이 없으신가요?</span></div>
+            <div class="signup-link">
+                <a th:href="@{/signup}">회원가입 신청하기</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-footer">© SW Management System. All rights reserved.</div>
+</body>
+</html>

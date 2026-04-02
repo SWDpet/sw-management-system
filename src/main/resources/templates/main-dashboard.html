@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>SW 사업 통합 대시보드</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary:   #6B3EF0;
+            --primary2:  #5330C8;
+            --primary-lt:#f0ebff;
+            --bg:        #f5f5f5;
+            --surface:   #ffffff;
+            --border:    #e8e8e8;
+            --border2:   #d4d4d4;
+            --text:      #222222;
+            --text2:     #444444;
+            --muted:     #888888;
+            --muted2:    #bbbbbb;
+            --green:     #2e7d32;
+            --orange:    #e64a19;
+            --teal:      #0277bd;
+            --purple:    #7B1FA2;
+        }
+
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); font-size: 13.5px; }
+        .container { max-width: 1700px; margin: auto; padding: 28px 32px 56px; }
+
+        /* ── 헤더 타이틀 ── */
+        .page-title {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 22px;
+        }
+        .page-title h2 {
+            margin: 0; font-size: 1.45rem; color: var(--text); font-weight: 700;
+        }
+        .page-title .year-badge {
+            background: var(--primary); color: #fff;
+            padding: 4px 14px; border-radius: 20px;
+            font-size: 0.82rem; font-weight: 600;
+            font-family: 'Inter', sans-serif; letter-spacing: 0.03em;
+        }
+
+        /* ── 상단 요약 카드 ── */
+        .summary-container { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card {
+            background: var(--surface); padding: 20px 18px 16px; border-radius: 12px;
+            flex: 1; min-width: 170px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            text-align: center; border-top: 4px solid var(--primary);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(107,62,240,0.15); }
+        .card h3 { margin: 0 0 8px; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+        .card .value { font-size: 1.95rem; font-weight: 700; color: var(--primary); font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; }
+        .card .sub-pct { font-size: 0.8rem; color: var(--muted); margin-top: 5px; }
+        .card .sub-pct strong { color: var(--primary); font-size: 0.88rem; }
+
+        /* 완료 카드 */
+        .card.comp-card  { border-top-color: #00b894; }
+        .card.comp-card  .value { color: #00a87a; }
+        .card.comp-card  .sub-pct strong { color: #00a87a; }
+        .card.comp-card:hover { box-shadow: 0 6px 20px rgba(0,168,122,0.15); }
+
+        /* 진행 카드 */
+        .card.prog-card  { border-top-color: #ff7043; }
+        .card.prog-card  .value { color: #e64a19; }
+        .card.prog-card  .sub-pct strong { color: #e64a19; }
+        .card.prog-card:hover { box-shadow: 0 6px 20px rgba(230,74,25,0.15); }
+
+        /* 라이선스 카드 */
+        .card.license-card { border-top-color: #9C27B0; cursor: pointer; }
+        .card.license-card .value { color: #7B1FA2; }
+        .card.license-card .lic-sub { font-size: 0.78em; margin-top: 7px; line-height: 1.7; color: var(--muted2); }
+        .card.license-card:hover { box-shadow: 0 6px 20px rgba(123,31,162,0.15); }
+
+        /* GeoNURIS 카드 */
+        .card.geonuris-card { border-top-color: #0288d1; cursor: pointer; }
+        .card.geonuris-card .value { color: #0277bd; }
+        .card.geonuris-card .lic-sub { font-size: 0.78em; margin-top: 7px; line-height: 1.7; color: var(--muted2); }
+        .card.geonuris-card:hover { box-shadow: 0 6px 20px rgba(2,119,189,0.15); }
+        .btn-geonuris-icon { color: #0277bd !important; margin-left: 4px !important; font-size: 1em !important; transition: 0.2s; }
+        .btn-geonuris-icon:hover { color: #0d6efd !important; transform: scale(1.1); }
+
+        /* ── 툴바 ── */
+        .toolbar {
+            background: var(--surface); padding: 12px 20px; border-radius: 12px;
+            margin-bottom: 18px; display: flex; align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+        }
+        .filter-group { display: flex; align-items: center; gap: 12px; font-size: 0.84rem; font-weight: 500; }
+        select {
+            padding: 7px 13px; border-radius: 8px; border: 1.5px solid var(--border2);
+            font-size: 0.84rem; outline: none; background: var(--bg);
+            color: var(--text); font-family: 'Noto Sans KR', sans-serif;
+            transition: border-color 0.18s; cursor: pointer;
+        }
+        select:focus { border-color: var(--primary); }
+        .nav-links { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+        .nav-links a {
+            text-decoration: none; color: var(--text2); font-weight: 600;
+            margin-left: 10px; font-size: 0.82em; display: flex; align-items: center; gap: 4px;
+            padding: 5px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s;
+        }
+        .nav-links a:hover { background: var(--primary-lt); color: var(--primary); }
+        .btn-add-icon     { color: #00a87a !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
+        .btn-add-icon:hover { color: #00875f !important; transform: scale(1.15); }
+        .btn-add-icon-red { color: #e74a3b !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
+        .btn-add-icon-red:hover { color: #c0392b !important; transform: scale(1.15); }
+        .btn-license-icon { color: #7B1FA2 !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
+        .btn-license-icon:hover { color: #6a1691 !important; transform: scale(1.15); }
+
+        /* ── 테이블 ── */
+        .table-section {
+            background: var(--surface); padding: 20px 22px;
+            border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            overflow-x: auto; border: 1px solid var(--border);
+        }
+        .table-title {
+            font-size: 0.95rem; font-weight: 700; color: var(--text);
+            margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+        }
+        .table-title i { color: var(--primary); }
+        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
+        th {
+            background: var(--bg); padding: 11px 8px;
+            font-size: 0.78em; border-bottom: 2px solid var(--border2);
+            text-align: center; white-space: nowrap; color: var(--muted);
+            font-weight: 600; letter-spacing: 0.02em;
+        }
+        th.th-group-amt { background: #ede9ff; color: var(--primary2); }
+        td {
+            padding: 11px 8px; border-bottom: 1px solid var(--border);
+            text-align: right; font-size: 0.85em; white-space: nowrap;
+            font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; color: var(--text2);
+        }
+        .td-sys    { text-align: left; font-weight: 700; color: var(--text); min-width: 110px; font-family: 'Noto Sans KR', sans-serif; }
+        .td-sysen  { text-align: left; color: var(--muted); font-size: 0.82em; min-width: 80px; }
+        .td-cnt    { text-align: center; font-weight: 700; color: var(--text); font-family: 'Inter', sans-serif; }
+        .td-comp   { text-align: center; color: #00a87a; font-weight: 700; }
+        .td-prog   { text-align: center; color: #e64a19; font-weight: 700; }
+        .td-total  { background: #f3f0ff; font-weight: 700; color: var(--primary2); }
+        tr:hover   { background-color: #faf9ff; }
+
+        /* 합계 행 */
+        tfoot td {
+            background: #ede9ff; font-weight: 700; color: var(--primary2);
+            border-top: 2px solid #c5b8f0; padding: 11px 8px;
+            white-space: nowrap; font-family: 'Inter', sans-serif;
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body>
+
+<!-- T world 스타일 GNB -->
+<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem; font-family:'Inter',sans-serif;">S</span>
+            <span style="font-weight:800; font-size:1.08rem; color:#222; letter-spacing:-0.01em; font-family:'Noto Sans KR',sans-serif;">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👤 마이페이지</a>
+
+            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">🖥️ 서버관리</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authInfra == 'EDIT'}" th:href="@{/infra/new}" class="btn-add-icon-red" title="인프라/서버 신규 등록"><i class="fas fa-plus-circle"></i></a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 사업현황</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authProject == 'EDIT'}" th:href="@{/projects/new}" class="btn-add-icon" title="신규 사업 바로 등록"><i class="fas fa-plus-circle"></i></a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👥 담당자관리</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authPerson == 'EDIT'}" th:href="@{/person/new}" class="btn-add-icon" title="신규 담당자 바로 등록"><i class="fas fa-plus-circle"></i></a>
+            </div>
+
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 라이선스 대장</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}" th:href="@{/license/registry/upload}" class="btn-license-icon" title="CSV 업로드"><i class="fas fa-upload"></i></a>
+                <a th:href="@{/geonuris/license/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">🔑 GeoNURIS</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}" th:href="@{/geonuris/license/new}" class="btn-geonuris-icon" title="GeoNURIS 라이선스 바로 발급"><i class="fas fa-key"></i></a>
+            </div>
+
+            <!-- ✨ 견적서 메뉴 추가 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/quotation/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📝 견적서</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authQuotation == 'EDIT'}" th:href="@{/quotation/new}" class="btn-add-icon" title="견적서 바로 작성"><i class="fas fa-plus-circle"></i></a>
+            </div>
+
+            <!-- 사업현황(계약관리) 메뉴 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authContract != null and #authentication.principal.user.authContract != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/contract/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e1f5fe';this.style.color='#0277bd'" onmouseout="this.style.background='';this.style.color='#444'">📊 사업현황</a>
+                <a th:href="@{/contract/dashboard}" style="text-decoration:none; color:#444; font-size:0.75rem; padding:4px 8px; border-radius:4px;" onmouseover="this.style.background='#e1f5fe';this.style.color='#0277bd'" onmouseout="this.style.background='';this.style.color='#444'" title="진행현황 대시보드"><i class="fas fa-columns"></i></a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authContract == 'EDIT'}" th:href="@{/contract/new}" class="btn-add-icon" title="사업 등록"><i class="fas fa-plus-circle"></i></a>
+            </div>
+
+            <!-- 업무계획 메뉴 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e8f5e9';this.style.color='#2e7d32'" onmouseout="this.style.background='';this.style.color='#444'">📅 업무계획</a>
+            </div>
+
+            <!-- 문서관리 메뉴 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authDocument != null and #authentication.principal.user.authDocument != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/document/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#fbe9e7';this.style.color='#e64a19'" onmouseout="this.style.background='';this.style.color='#444'">📄 문서관리</a>
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authDocument == 'EDIT'}" th:href="@{/document/create}" class="btn-add-icon" title="문서 작성"><i class="fas fa-plus-circle"></i></a>
+            </div>
+
+            <!-- 성과통계 메뉴 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authPerformance != null and #authentication.principal.user.authPerformance != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/performance/personal}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f3e5f5';this.style.color='#7B1FA2'" onmouseout="this.style.background='';this.style.color='#444'">📈 성과통계</a>
+            </div>
+
+            <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" th:href="@{/admin/users}" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; margin-left:4px;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''">⚙️ 사용자승인</a>
+
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- 페이지 타이틀 -->
+    <div class="page-title">
+        <i class="fas fa-chart-bar" style="color:#1a237e; font-size:1.4rem;"></i>
+        <h2>SW 사업 추진 현황 대시보드</h2>
+        <span class="year-badge" th:text="${selectedYear != null ? selectedYear + '년' : '전체'}">2026년</span>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div>
+        <div class="summary-container">
+
+            <!-- 전체 등록 사업 -->
+            <div class="card">
+                <h3><i class="fas fa-folder-open"></i> 전체 등록 사업</h3>
+                <div class="value" th:text="${totalProjects} + '건'">0건</div>
+            </div>
+
+            <!-- 완료 사업 -->
+            <div class="card comp-card">
+                <h3><i class="fas fa-check-circle"></i> 완료 사업</h3>
+                <div class="value" th:text="${totalCompleted} + '건'">0건</div>
+                <div class="sub-pct">
+                    전체 대비 <strong th:text="${compPercent} + '%'">0%</strong>
+                </div>
+            </div>
+
+            <!-- 진행 사업 -->
+            <div class="card prog-card">
+                <h3><i class="fas fa-spinner"></i> 진행 사업</h3>
+                <div class="value" th:text="${totalInProgress} + '건'">0건</div>
+                <div class="sub-pct">
+                    전체 대비 <strong th:text="${progPercent} + '%'">0%</strong>
+                </div>
+            </div>
+
+            <!-- 라이선스 대장 카드 -->
+            <div class="card license-card"
+                 onclick="location.href='/license/registry/list'">
+                <h3><i class="fas fa-clipboard-list"></i> 라이선스 대장</h3>
+                <div class="value" id="licenseCount">-</div>
+                <div class="lic-sub">
+                    <span style="color:#28a745; font-weight:700;">🆕 신규 <span id="licenseNewCount">-</span>건</span>
+                    &nbsp;|&nbsp;
+                    <span>기존 <span id="licenseExistingCount">-</span>건</span><br>
+                    <span id="licenseUploadDate" style="color:#aaa; font-size:0.92em;">기준일: -</span>
+                </div>
+            </div>
+
+            <!-- GeoNURIS 라이선스 카드 -->
+            <div class="card geonuris-card"
+                 onclick="location.href='/geonuris/license/list'">
+                <h3><i class="fas fa-key"></i> GeoNURIS 라이선스</h3>
+                <div class="value" id="geonurisCount">-</div>
+                <div class="lic-sub">발급 대장 바로가기</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 툴바: 연도 필터만 -->
+    <div class="toolbar">
+        <div class="filter-group">
+            <strong>📅 조회 연도:</strong>
+            <form id="yearForm" method="get" action="/">
+                <select name="year" onchange="this.form.submit()">
+                    <option value="0" th:selected="${selectedYear == null}">전체 연도</option>
+                    <option th:each="y : ${years}"
+                            th:value="${y}"
+                            th:text="${y} + '년'"
+                            th:selected="${y == selectedYear}">2026년</option>
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- 시스템별 통계 테이블 -->
+    <div class="table-section">
+        <div class="table-title">
+            <i class="fas fa-table"></i>
+            시스템별 사업 현황
+            <span style="font-size:0.85rem; color:#888; font-weight:400;"
+                  th:text="${selectedYear != null ? '(' + selectedYear + '년 기준)' : '(전체 연도 기준)'}">
+                (2026년 기준)
+            </span>
+        </div>
+
+        <div>
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">시스템명</th>
+                        <th rowspan="2">총개수</th>
+                        <th rowspan="2" style="color:#2e7d32;">완료</th>
+                        <th rowspan="2" style="color:#e64a19;">진행중</th>
+                        <th rowspan="2" class="th-group-amt">금액 합계</th>
+                        <th colspan="7" class="th-group-amt">항목별 금액 (단위: 원)</th>
+                    </tr>
+                    <tr>
+                        <th class="th-group-amt">SW금액</th>
+                        <th class="th-group-amt">컨설팅</th>
+                        <th class="th-group-amt">DB구축</th>
+                        <th class="th-group-amt">패키지SW</th>
+                        <th class="th-group-amt">시스템개발</th>
+                        <th class="th-group-amt">HW금액</th>
+                        <th class="th-group-amt">기타</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="row : ${stats}">
+                        <td class="td-sys" th:text="${row.sysNm}"></td>
+                        <td class="td-cnt" th:text="${#numbers.formatInteger(row.totalCnt, 1, 'COMMA')}"></td>
+                        <td class="td-comp" th:text="${#numbers.formatInteger(row.compCnt, 1, 'COMMA')}"></td>
+                        <td class="td-prog" th:text="${#numbers.formatInteger(row.progCnt, 1, 'COMMA')}"></td>
+                        <td class="td-total" th:text="${#numbers.formatInteger(row.sumCont, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumSw, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumCnslt, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumDb, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumPkg, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumDev, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumHw, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(row.sumEtc, 1, 'COMMA')}"></td>
+                    </tr>
+                </tbody>
+                <!-- 합계 행 -->
+                <tfoot>
+                    <tr>
+                        <td style="text-align:left;">합 계</td>
+                        <td class="td-cnt" th:text="${#numbers.formatInteger(totalProjects, 1, 'COMMA')}"></td>
+                        <td class="td-comp" th:text="${#numbers.formatInteger(totalCompleted, 1, 'COMMA')}"></td>
+                        <td class="td-prog" th:text="${#numbers.formatInteger(totalInProgress, 1, 'COMMA')}"></td>
+                        <td class="td-total" th:text="${#numbers.formatInteger(totalContAmt, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumSw, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumCnslt, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumDb, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumPkg, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumDev, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumHw, 1, 'COMMA')}"></td>
+                        <td th:text="${#numbers.formatInteger(totalSumEtc, 1, 'COMMA')}"></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            
+        </div>
+
+        
+    </div>
+
+</div>
+
+<!-- 라이선스 통계 비동기 로드 -->
+<script>
+/*<![CDATA[*/
+window.addEventListener('DOMContentLoaded', function() {
+    var authLicense = "EDIT";
+
+    if (authLicense && authLicense !== 'NONE') {
+        fetch('/geonuris/license/stats-count')
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function(data) {
+                var el = document.getElementById('geonurisCount');
+                if (el) el.textContent = (data.total || 0) + '건';
+            })
+            .catch(function() {
+                var el = document.getElementById('geonurisCount');
+                if (el) el.textContent = '0건';
+            });
+    }
+
+    if (authLicense && authLicense !== 'NONE') {
+        fetch('/license/registry/dashboard-stats')
+            .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function(data) {
+                var c = document.getElementById('licenseCount');
+                if (c) c.textContent = (data.totalCount || 0) + '건';
+
+                var n = document.getElementById('licenseNewCount');
+                if (n) n.textContent = (data.newCount || 0);
+
+                var e = document.getElementById('licenseExistingCount');
+                if (e) e.textContent = (data.existingCount || 0);
+
+                var d = document.getElementById('licenseUploadDate');
+                if (d) {
+                    d.textContent = data.latestUploadDate
+                        ? '기준일: ' + data.latestUploadDate.split('T')[0]
+                        : '데이터 없음';
+                }
+            })
+            .catch(function() {
+                var c = document.getElementById('licenseCount');
+                if (c) c.textContent = '0건';
+                var d = document.getElementById('licenseUploadDate');
+                if (d) d.textContent = '업로드 필요';
+            });
+    }
+});
+/*]]>*/
+</script>
+</body>
+</html>

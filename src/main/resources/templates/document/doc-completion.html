@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>준공계 작성</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
+        .btn-save { background: #1cc88a; color: white; }
+        .btn-cancel { background: #858796; color: white; }
+
+        /* 탭 네비 */
+        .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
+        .tab-nav button.active { background: white; color: #1565c0; border-bottom-color: #1565c0; }
+
+        /* 섹션 */
+        .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-section.active { display: block; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+
+        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table textarea { height: 80px; resize: vertical; }
+        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .required { color: #e74a3b; }
+        .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
+
+        /* 동적 행 */
+        .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
+        .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
+        .dynamic-table input, .dynamic-table select, .dynamic-table textarea { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
+        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+
+        .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
+        .fault-text { font-size: 0.82em; color: #555; line-height: 1.6; background: #fafafa; padding: 10px; border-radius: 4px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-file-contract"></i> 준공계 작성 (5종 세트)</h2>
+            <div class="header-actions">
+                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            </div>
+        </div>
+
+        <!-- 5종 탭 -->
+        <div class="tab-nav">
+            <button class="active" onclick="showSection(0, this)">① 공문</button>
+            <button onclick="showSection(1, this)">② 준공계</button>
+            <button onclick="showSection(2, this)">③ 준공검사원</button>
+            <button onclick="showSection(3, this)">④ 유지보수대상</button>
+            <button onclick="showSection(4, this)">⑤ 점검내역요약</button>
+        </div>
+
+        <!-- ① 준공 공문 -->
+        <div class="form-section active" id="section-0">
+            <h3><i class="fas fa-envelope"></i> ① 준공 공문 (정도UIT 레터헤드)</h3>
+            <table class="form-table">
+<tr><th>사업 선택 <span class="required">*</span></th>
+    <td colspan="3">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="selYear" onchange="onYearChange()" style="width:auto; min-width:100px;">
+                <option value="">연도</option>
+            </select>
+            <select id="selCity" onchange="onCityChange()" style="width:auto; min-width:180px;">
+                <option value="">-- 연도 먼저 선택 --</option>
+            </select>
+            <select id="selSystem" onchange="onSystemChange()" style="width:auto; min-width:130px;">
+                <option value="">-- 지자체 먼저 선택 --</option>
+            </select>
+        </div>
+    </td>
+</tr>
+<tr><th>사업명</th>
+    <td colspan="3">
+        <select id="projId" onchange="loadProjectInfo()" style="font-weight:600;">
+            <option value="">-- 위 조건을 선택하세요 --</option>
+        </select>
+        <span class="help-text" id="projHint"></span>
+    </td>
+</tr>
+                <tr><th>수신</th><td id="letter_recipient" colspan="3"><input type="text" id="letter_to" placeholder="수신 지자체명 (자동입력)"></td></tr>
+                <tr><th>담당</th><td><input type="text" id="letter_manager" placeholder="담당자명"></td>
+                    <th>연락처</th><td><input type="text" id="letter_tel" placeholder="연락처"></td></tr>
+                <tr><th>문서번호</th><td><input type="text" id="letter_docNo" placeholder="자동 채번" readonly style="background:#f0f0f0;"></td>
+                    <th>시행일자</th><td><input type="date" id="letter_date"></td></tr>
+                <tr><th>제목</th><td colspan="3"><input type="text" id="letter_title" placeholder="「연도 용역명」 준공계 제출 건 (자동생성)"></td></tr>
+                <tr><th>본문</th><td colspan="3"><textarea id="letter_body" placeholder="본문 내용"></textarea></td></tr>
+            </table>
+        </div>
+
+        <!-- ② 준공계 -->
+        <div class="form-section" id="section-1">
+            <h3><i class="fas fa-file-alt"></i> ② 준공계</h3>
+            <table class="form-table">
+                <tr><th>용역명 <span class="required">*</span></th><td colspan="3"><input type="text" id="comp_name" placeholder="용역명"></td></tr>
+                <tr><th>계약금액</th><td><input type="number" id="comp_amount" placeholder="숫자 입력" oninput="updateCompletionAmount()"></td>
+                    <th>한글금액</th><td><span class="amount-text" id="comp_amount_kr">금 원정</span></td></tr>
+                <tr><th>계약년월일</th><td><input type="date" id="comp_contract_date"></td>
+                    <th>준공년월일</th><td><input type="date" id="comp_completion_date"></td></tr>
+                <tr><th>준공예정일</th><td><input type="date" id="comp_scheduled_date"></td>
+                    <th>실제준공일</th><td><input type="date" id="comp_actual_date"></td></tr>
+                <tr><th>감독경유란</th><td colspan="3"><textarea id="comp_supervisor_remarks" placeholder="감독경유 의견"></textarea></td></tr>
+                <tr><th>수신</th><td colspan="3"><input type="text" id="comp_recipient" placeholder="지자체장 직함 귀하"></td></tr>
+            </table>
+        </div>
+
+        <!-- ③ 준공검사원 -->
+        <div class="form-section" id="section-2">
+            <h3><i class="fas fa-clipboard-list"></i> ③ 준공검사원</h3>
+            <table class="form-table">
+                <tr><th>용역명</th><td colspan="3"><input type="text" id="insp_name" placeholder="용역명 (자동)"></td></tr>
+                <tr><th>계약금액</th><td><input type="number" id="insp_amount" placeholder="숫자 입력" oninput="updateInspectorAmount()"></td>
+                    <th>한글금액</th><td><span class="amount-text" id="insp_amount_kr">금 원정</span></td></tr>
+                <tr><th>계약년월일</th><td><input type="date" id="insp_contract_date"></td>
+                    <th>준공년월일</th><td><input type="date" id="insp_completion_date"></td></tr>
+                <tr><th>준공예정일</th><td><input type="date" id="insp_scheduled_date"></td>
+                    <th>실제준공일</th><td><input type="date" id="insp_actual_date"></td></tr>
+                <tr><th>감독경유란</th><td colspan="3"><textarea id="insp_supervisor_remarks" placeholder="감독경유 의견"></textarea></td></tr>
+            </table>
+            <div class="fault-text">
+                <strong>하자서약:</strong> 발주자가 본 사업에 대해 준공을 인정함으로써 시공자는 선량한 관리자의 주의의무로 유지보수 기간 내 발견된 하자를 신속히 처리할 의무를 다하고, 발주자는 정상적인 사용범위 내에서의 제반 피해에 대해 시공자에게 책임을 지우지 않기로 함.
+            </div>
+        </div>
+
+        <!-- ④ 유지보수대상 -->
+        <div class="form-section" id="section-3">
+            <h3><i class="fas fa-tools"></i> ④ 유지보수대상</h3>
+            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">유지보수 대상 시스템</p>
+            <table class="dynamic-table" id="targetTable">
+                <thead><tr><th>대상구분</th><th>제품명</th><th>세부사양</th><th>수량</th><th></th></tr></thead>
+                <tbody id="targetBody">
+                    <tr>
+                        <td><select><option value="">S/W</option><option>H/W</option></select></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><input type="number"></td>
+                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addTargetRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 대상 추가</button>
+        </div>
+
+        <!-- ⑤ 점검내역요약 -->
+        <div class="form-section" id="section-4">
+            <h3><i class="fas fa-check-circle"></i> ⑤ 점검내역요약</h3>
+            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">점검 현황</p>
+            <table class="dynamic-table" id="inspectTable">
+                <thead><tr><th>확인일시</th><th>점검대상(SW목록)</th><th>점검결과</th><th></th></tr></thead>
+                <tbody id="inspectBody">
+                    <tr>
+                        <td><input type="datetime-local"></td>
+                        <td><input type="text"></td>
+                        <td><select><option value="">선택</option><option value="PASS">합격</option><option value="FAIL">부적격</option></select></td>
+                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addInspectRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
+        </div>
+    </div>
+
+    <script>
+        function showSection(idx, btn) {
+            document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
+            document.getElementById('section-' + idx).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function addTargetRow() {
+            var html = '<tr><td><select><option value="">S/W</option><option>H/W</option></select></td>' +
+                '<td><input type="text"></td><td><input type="text"></td><td><input type="number"></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('targetBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function addInspectRow() {
+            var html = '<tr><td><input type="datetime-local"></td><td><input type="text"></td>' +
+                '<td><select><option value="">선택</option><option value="PASS">합격</option><option value="FAIL">부적격</option></select></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('inspectBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function updateCompletionAmount() {
+            var num = parseInt(document.getElementById('comp_amount').value) || 0;
+            document.getElementById('comp_amount_kr').textContent = '금 ' + convertToKorean(num) + '원정';
+        }
+
+        function updateInspectorAmount() {
+            var num = parseInt(document.getElementById('insp_amount').value) || 0;
+            document.getElementById('insp_amount_kr').textContent = '금 ' + convertToKorean(num) + '원정';
+        }
+
+        function convertToKorean(num) {
+            if (num === 0) return '영';
+            var units = ['', '만', '억', '조'];
+            var nums = ['영', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'];
+            var parts = [];
+            var unitIdx = 0;
+            while (num > 0) {
+                var part = num % 10000;
+                if (part > 0) {
+                    var partStr = '';
+                    var thousands = Math.floor(part / 1000); if (thousands > 0) partStr += nums[thousands] + '천';
+                    var hundreds = Math.floor((part % 1000) / 100); if (hundreds > 0) partStr += nums[hundreds] + '백';
+                    var tens = Math.floor((part % 100) / 10); if (tens > 0) partStr += nums[tens] + '십';
+                    var ones = part % 10; if (ones > 0) partStr += nums[ones];
+                    parts.unshift(partStr + units[unitIdx]);
+                }
+                num = Math.floor(num / 10000);
+                unitIdx++;
+            }
+            return parts.join('');
+        }
+
+        // === 3단계 사업 선택 ===
+        (function() {
+            fetch('/document/api/project-years')
+                .then(function(r) { return r.json(); })
+                .then(function(years) {
+                    var sel = document.getElementById('selYear');
+                    years.forEach(function(y) {
+                        var opt = document.createElement('option');
+                        opt.value = y; opt.textContent = y + '년';
+                        sel.appendChild(opt);
+                    });
+                });
+        })();
+
+        function onYearChange() {
+            var year = document.getElementById('selYear').value;
+            var citySel = document.getElementById('selCity');
+            var sysSel = document.getElementById('selSystem');
+            var projSel = document.getElementById('projId');
+            citySel.innerHTML = '<option value="">불러오는 중...</option>';
+            sysSel.innerHTML = '<option value="">-- 지자체 먼저 선택 --</option>';
+            projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
+            document.getElementById('projHint').textContent = '';
+            if (!year) { citySel.innerHTML = '<option value="">-- 연도 먼저 선택 --</option>'; return; }
+            fetch('/document/api/project-cities?year=' + year)
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    citySel.innerHTML = '<option value="">지자체 선택</option>';
+                    list.forEach(function(c) {
+                        var opt = document.createElement('option');
+                        opt.value = c.cityNm + '|' + c.distNm;
+                        opt.textContent = c.label;
+                        opt.dataset.city = c.cityNm;
+                        opt.dataset.dist = c.distNm;
+                        citySel.appendChild(opt);
+                    });
+                });
+        }
+
+        function onCityChange() {
+            var citySel = document.getElementById('selCity');
+            var opt = citySel.options[citySel.selectedIndex];
+            var sysSel = document.getElementById('selSystem');
+            var projSel = document.getElementById('projId');
+            sysSel.innerHTML = '<option value="">불러오는 중...</option>';
+            projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
+            document.getElementById('projHint').textContent = '';
+            if (!citySel.value) { sysSel.innerHTML = '<option value="">-- 지자체 먼저 선택 --</option>'; return; }
+            var city = opt.dataset.city;
+            var dist = opt.dataset.dist;
+            var year = document.getElementById('selYear').value;
+            if (document.getElementById('letter_to')) {
+                document.getElementById('letter_to').value = buildRecipient(city, dist);
+            }
+            fetch('/document/api/project-systems?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist))
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    sysSel.innerHTML = '<option value="">시스템 선택</option>';
+                    list.forEach(function(s) {
+                        var o = document.createElement('option');
+                        o.value = s; o.textContent = s;
+                        sysSel.appendChild(o);
+                    });
+                });
+        }
+
+        function onSystemChange() {
+            var year = document.getElementById('selYear').value;
+            var citySel = document.getElementById('selCity');
+            var cityOpt = citySel.options[citySel.selectedIndex];
+            var sysNmEn = document.getElementById('selSystem').value;
+            var projSel = document.getElementById('projId');
+            if (!sysNmEn || !cityOpt || !cityOpt.dataset.city) {
+                projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
+                return;
+            }
+            var city = cityOpt.dataset.city;
+            var dist = cityOpt.dataset.dist;
+            projSel.innerHTML = '<option value="">불러오는 중...</option>';
+            fetch('/document/api/projects?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist) + '&sysNmEn=' + encodeURIComponent(sysNmEn))
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    projSel.innerHTML = '<option value="">사업 선택</option>';
+                    if (list.length === 0) {
+                        projSel.innerHTML = '<option value="">해당 조건의 사업이 없습니다</option>';
+                        document.getElementById('projHint').textContent = '';
+                        return;
+                    }
+                    document.getElementById('projHint').textContent = list.length + '건';
+                    list.forEach(function(p) {
+                        var o = document.createElement('option');
+                        o.value = p.projId;
+                        o.textContent = (p.projNm || p.sysNm || '') + (p.contAmt ? ' (' + Number(p.contAmt).toLocaleString() + '원)' : '');
+                        projSel.appendChild(o);
+                    });
+                    if (list.length === 1) { projSel.selectedIndex = 1; loadProjectInfo(); }
+                });
+        }
+
+        function buildRecipient(city, dist) {
+            if (!city) return '';
+            var isMetro = city.indexOf('광역시') >= 0 || city.indexOf('특별시') >= 0;
+            var isSejong = city.indexOf('세종') >= 0;
+            if (isSejong) return city + '청';
+            if (isMetro) return dist ? (city + ' ' + dist + '청') : (city + '청');
+            return dist ? (dist + '청') : (city + '청');
+        }
+
+        function formatContDt(dtStr) {
+            // "2025-12-30" → "2025. 12. 30."
+            if (!dtStr) return '';
+            var parts = dtStr.split('-');
+            return parts[0] + '. ' + parseInt(parts[1]) + '. ' + parseInt(parts[2]) + '.';
+        }
+
+        function loadProjectInfo() {
+            var projId = document.getElementById('projId').value;
+            if (!projId) return;
+            fetch('/document/api/project/' + projId)
+                .then(function(r) { return r.json(); })
+                .then(function(p) {
+                    var projName = p.projNm || p.sysNm || '';
+                    var recipient = buildRecipient(p.cityNm, p.distNm);
+
+                    // 공문 자동 채우기
+                    document.getElementById('letter_to').value = recipient;
+                    document.getElementById('letter_title').value = '\u300E' + projName + '\u300F \uc900\uacf5\uacc4 \uc81c\ucd9c \uac74';
+
+                    // 공문 본문 자동생성
+                    var contDtFmt = formatContDt(p.contDt);
+                    var body = '1. \uadc0 \uae30\uad00\uc758 \ubb34\uad81\ud55c \ubc1c\uc804\uc744 \uae30\uc6d0\ud569\ub2c8\ub2e4.\n\n' +
+                               '2. \uadc0 \uae30\uad00\uacfc \ub2f9\uc0ac \uac04\uc5d0 \uacc4\uc57d(' + contDtFmt + ')\ud55c \u300E' + projName + '\u300F\uc5d0 \uad00\ud558\uc5ec ' +
+                               '\ubd99\uc784\uacfc \uac19\uc774 \uc900\uacf5\uacc4\ub97c \uc81c\ucd9c\ud569\ub2c8\ub2e4.\n\n\n' +
+                               '\u203b \ubd99 \uc784 : 1. \uc900\uacf5\uacc4 2\ubd80. \ub05d.';
+                    document.getElementById('letter_body').value = body;
+
+                    // 준공계 자동 채우기
+                    document.getElementById('comp_name').value = projName;
+                    if (p.contAmt) {
+                        document.getElementById('comp_amount').value = p.contAmt;
+                        updateCompletionAmount();
+                    }
+                    if (p.contDt) document.getElementById('comp_contract_date').value = p.contDt;
+                    if (p.endDt) document.getElementById('comp_scheduled_date').value = p.endDt;
+                    document.getElementById('comp_recipient').value = recipient.replace('\uccad', '\uccad\uc7a5') + ' \uadc0\ud558';
+                    // 준공검사원 자동 채우기
+                    document.getElementById('insp_name').value = projName;
+                    if (p.contAmt) {
+                        document.getElementById('insp_amount').value = p.contAmt;
+                        updateInspectorAmount();
+                    }
+                    if (p.contDt) document.getElementById('insp_contract_date').value = p.contDt;
+                    if (p.endDt) document.getElementById('insp_scheduled_date').value = p.endDt;
+                });
+        }
+
+        function saveDocument() {
+            var projId = document.getElementById('projId').value;
+            var title = document.getElementById('letter_title').value || document.getElementById('comp_name').value || '준공계';
+
+            var targetRows = [];
+            document.querySelectorAll('#targetBody tr').forEach(function(row) {
+                var cells = row.cells;
+                targetRows.push({
+                    category: cells[0].querySelector('select').value,
+                    productName: cells[1].querySelector('input').value,
+                    specification: cells[2].querySelector('input').value,
+                    quantity: cells[3].querySelector('input').value
+                });
+            });
+
+            var inspectRows = [];
+            document.querySelectorAll('#inspectBody tr').forEach(function(row) {
+                var cells = row.cells;
+                inspectRows.push({
+                    datetime: cells[0].querySelector('input').value,
+                    targetList: cells[1].querySelector('input').value,
+                    result: cells[2].querySelector('select').value
+                });
+            });
+
+            var sections = [
+                { sectionKey: 'letter', sectionData: {
+                    to: document.getElementById('letter_to').value,
+                    manager: document.getElementById('letter_manager').value,
+                    tel: document.getElementById('letter_tel').value,
+                    date: document.getElementById('letter_date').value,
+                    title: document.getElementById('letter_title').value,
+                    body: document.getElementById('letter_body').value
+                }},
+                { sectionKey: 'completion', sectionData: {
+                    name: document.getElementById('comp_name').value,
+                    amount: document.getElementById('comp_amount').value,
+                    contractDate: document.getElementById('comp_contract_date').value,
+                    completionDate: document.getElementById('comp_completion_date').value,
+                    scheduledDate: document.getElementById('comp_scheduled_date').value,
+                    actualDate: document.getElementById('comp_actual_date').value,
+                    supervisorRemarks: document.getElementById('comp_supervisor_remarks').value,
+                    recipient: document.getElementById('comp_recipient').value
+                }},
+                { sectionKey: 'inspector', sectionData: {
+                    name: document.getElementById('insp_name').value,
+                    amount: document.getElementById('insp_amount').value,
+                    contractDate: document.getElementById('insp_contract_date').value,
+                    completionDate: document.getElementById('insp_completion_date').value,
+                    scheduledDate: document.getElementById('insp_scheduled_date').value,
+                    actualDate: document.getElementById('insp_actual_date').value,
+                    supervisorRemarks: document.getElementById('insp_supervisor_remarks').value
+                }},
+                { sectionKey: 'target', sectionData: { targets: targetRows }},
+                { sectionKey: 'inspect_summary', sectionData: { inspections: inspectRows }}
+            ];
+
+            fetch('/document/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docType: 'COMPLETION',
+                    infraId: null,
+                    projId: projId || null,
+                    title: title,
+                    sections: sections
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('저장되었습니다. 문서번호: ' + data.docNo);
+                    location.href = '/document/detail/' + data.docId;
+                } else {
+                    alert(data.error || '저장 실패');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>신규 라이선스 목록 - SW 관리 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        /* ── 헤더 ── */
+        .header {
+            background: #fff; padding: 22px 24px; border-radius: 10px;
+            margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-left: 6px solid #667eea;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .header-left h1 { font-size: 22px; color: #333; display: flex; align-items: center; gap: 8px; }
+        .header-left h1 .badge-new {
+            background: #667eea; color: #fff;
+            font-size: 12px; font-weight: 700;
+            padding: 3px 10px; border-radius: 12px;
+            vertical-align: middle;
+        }
+        .header-left .sub {
+            margin-top: 6px; color: #666; font-size: 13px;
+        }
+        .header-left .sub strong { color: #667eea; }
+        .header-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+
+        /* ── 통계 바 ── */
+        .stats-bar {
+            display: flex; gap: 16px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #fff; border-radius: 10px; padding: 16px 22px;
+            flex: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .stat-card .num  { font-size: 2em; font-weight: 700; color: #667eea; }
+        .stat-card .lbl  { font-size: 0.82em; color: #888; margin-top: 4px; }
+
+        /* ── 검색 ── */
+        .search-bar {
+            background: #fff; padding: 16px 20px; border-radius: 10px;
+            margin-bottom: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex; gap: 10px; align-items: center;
+        }
+        .search-bar input {
+            flex: 1; padding: 10px 14px; border: 1px solid #ddd;
+            border-radius: 6px; font-size: 14px; outline: none;
+        }
+        .search-bar input:focus { border-color: #667eea; }
+
+        /* ── 테이블 ── */
+        .table-section {
+            background: #fff; padding: 20px; border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow-x: auto;
+        }
+        .table-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .table-header h2 { font-size: 16px; color: #333; }
+        .table-header .count { color: #888; font-size: 13px; font-weight: normal; }
+
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td {
+            padding: 12px 10px; text-align: left;
+            border-bottom: 1px solid #eee; font-size: 13px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        th { background: #f8f9fa; font-weight: 600; color: #444; }
+        tr:hover { background: #f4f5ff; }
+
+        /* 컬럼 너비 */
+        th:nth-child(1), td:nth-child(1) { width: 12%; }  /* License ID */
+        th:nth-child(2), td:nth-child(2) { width: 10%; }  /* Product */
+        th:nth-child(3), td:nth-child(3) { width: 12%; }  /* 등록자 */
+        th:nth-child(4), td:nth-child(4) { width: 12%; }  /* 회사 */
+        th:nth-child(5), td:nth-child(5) { width: 13%; }  /* 이메일 */
+        th:nth-child(6), td:nth-child(6) { width: 8%;  }  /* 발급자 */
+        th:nth-child(7), td:nth-child(7) { width: 10%; }  /* 발급일 */
+        th:nth-child(8), td:nth-child(8) { width: 10%; }  /* 업로드일 */
+        th:nth-child(9), td:nth-child(9) { width: 13%; }  /* Actions */
+
+        /* ── 버튼 ── */
+        .btn {
+            padding: 9px 18px; border-radius: 6px; text-decoration: none;
+            display: inline-block; font-size: 13px; border: none; cursor: pointer;
+            font-weight: 500; transition: opacity 0.15s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary  { background: #667eea; color: #fff; }
+        .btn-success  { background: #28a745; color: #fff; }
+        .btn-outline  { background: #fff; color: #667eea; border: 1px solid #667eea; }
+        .btn-home     { background: #6c757d; color: #fff; }
+        .btn-sm       { padding: 5px 11px; font-size: 12px; }
+
+        .no-data { text-align: center; padding: 60px; color: #aaa; font-size: 15px; }
+        .no-data p:first-child { font-size: 18px; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-top">
+            <div class="header-left">
+                <h1>
+                    📋 신규 라이선스 목록
+                    <span class="badge-new">NEW</span>
+                </h1>
+                <p class="sub" th:if="${latestHistory != null}">
+                    최신 업로드 기준:
+                    <strong th:text="${#temporals.format(latestHistory.uploadDate, 'yyyy-MM-dd HH:mm')}"></strong>
+                    &nbsp;|&nbsp; 파일명:
+                    <strong th:text="${latestHistory.fileName}"></strong>
+                </p>
+                <p class="sub" th:if="${latestHistory == null}">업로드 이력이 없습니다.</p>
+            </div>
+            <div class="header-right">
+                <a th:href="@{/license/registry/list}" class="btn btn-outline">← 전체 목록</a>
+                <a th:href="@{/}" class="btn btn-home">🏠 메인으로</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 통계 바 -->
+    <div class="stats-bar" th:if="${latestHistory != null}">
+        <div class="stat-card">
+            <div class="num" th:text="${latestHistory.totalCount ?: 0}">0</div>
+            <div class="lbl">CSV 총 건수</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" style="color:#28a745;" th:text="${latestHistory.successCount ?: 0}">0</div>
+            <div class="lbl">신규 등록</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" style="color:#fd7e14;"
+                 th:text="${(latestHistory.totalCount ?: 0) - (latestHistory.successCount ?: 0) - (latestHistory.failCount ?: 0)}">0</div>
+            <div class="lbl">중복 스킵</div>
+        </div>
+        <div class="stat-card">
+            <div class="num" style="color:#dc3545;" th:text="${latestHistory.failCount ?: 0}">0</div>
+            <div class="lbl">실패</div>
+        </div>
+    </div>
+
+    <!-- 검색 + 다운로드 -->
+    <div class="search-bar">
+        <input type="text" id="searchInput"
+               placeholder="🔍 License ID, 제품명, 등록자, 회사명으로 검색..."
+               oninput="searchTable()">
+        <a th:href="@{/license/registry/new/download/csv}" class="btn btn-primary">
+            📥 신규 CSV 다운로드
+        </a>
+    </div>
+
+    <!-- 테이블 -->
+    <div class="table-section">
+        <div class="table-header">
+            <h2>
+                신규 라이선스
+                <span class="count">
+                    (총 <strong id="totalCount" th:text="${licenses != null ? licenses.size() : 0}">0</strong>건
+                    <span id="filteredInfo" style="display:none;"> / 검색: <strong id="filteredCount">0</strong>건</span>)
+                </span>
+            </h2>
+        </div>
+
+        <table id="licenseTable" th:if="${licenses != null and !licenses.isEmpty()}">
+            <thead>
+                <tr>
+                    <th>License ID</th>
+                    <th>제품</th>
+                    <th>등록자</th>
+                    <th>회사</th>
+                    <th>이메일</th>
+                    <th>발급자</th>
+                    <th>발급일</th>
+                    <th>업로드일</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="lic : ${licenses}">
+                    <td th:title="${lic.licenseId}">
+                        <a th:href="@{'/license/registry/detail/' + ${lic.id}}"
+                           style="color:#667eea; text-decoration:none; font-weight:600;"
+                           th:text="${lic.licenseId}"></a>
+                    </td>
+                    <td th:title="${lic.productId}">
+                        <strong th:text="${lic.productId}"></strong>
+                    </td>
+                    <td th:title="${lic.registeredTo}" th:text="${lic.registeredTo ?: '-'}"></td>
+                    <td th:title="${lic.company}"      th:text="${lic.company ?: '-'}"></td>
+                    <td th:title="${lic.email}"        th:text="${lic.email ?: '-'}"></td>
+                    <td th:title="${lic.country}"      th:text="${lic.country ?: '-'}"></td>
+                    <td th:text="${lic.generationDateTime != null
+                                  ? #temporals.format(lic.generationDateTime, 'yyyy-MM-dd')
+                                  : '-'}"></td>
+                    <td th:text="${lic.uploadDate != null
+                                  ? #temporals.format(lic.uploadDate, 'yyyy-MM-dd HH:mm')
+                                  : '-'}"></td>
+                    <td>
+                        <a th:href="@{'/license/registry/detail/' + ${lic.id}}"
+                           class="btn btn-outline btn-sm">상세</a>
+                        <a th:if="${hasEditPermission}"
+                           th:href="@{'/license/registry/download/' + ${lic.id}}"
+                           class="btn btn-success btn-sm">다운로드</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="no-data" th:if="${licenses == null or licenses.isEmpty()}">
+            <p>📋 신규 등록된 라이선스가 없습니다</p>
+            <p>CSV 파일을 업로드하면 신규 목록이 여기에 표시됩니다.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function searchTable() {
+        const filter = document.getElementById('searchInput').value.toUpperCase();
+        const table  = document.getElementById('licenseTable');
+        if (!table) return;
+
+        const rows = table.querySelectorAll('tbody tr');
+        let visible = 0;
+
+        rows.forEach(function(row) {
+            const cells = row.querySelectorAll('td');
+            let found = false;
+            // License ID(0), Product(1), 등록자(2), 회사(3) 검색
+            for (let i = 0; i < 4; i++) {
+                if (cells[i] && cells[i].textContent.toUpperCase().includes(filter)) {
+                    found = true;
+                    break;
+                }
+            }
+            row.style.display = found ? '' : 'none';
+            if (found) visible++;
+        });
+
+        const total = rows.length;
+        document.getElementById('filteredInfo').style.display = (visible < total) ? 'inline' : 'none';
+        document.getElementById('filteredCount').textContent = visible;
+    }
+</script>
+</body>
+</html>

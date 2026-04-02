@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>패치내역서 작성</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
+        .btn-save { background: #1cc88a; color: white; }
+        .btn-cancel { background: #858796; color: white; }
+
+        .form-section { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+
+        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table textarea { height: 100px; resize: vertical; }
+        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .required { color: #e74a3b; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 15px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.88em; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-wrench"></i> 패치내역서 작성</h2>
+            <div class="header-actions">
+                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3><i class="fas fa-file-alt"></i> 패치내역서</h3>
+            <table class="form-table">
+                <tr><th>지자체 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <select id="infraId">
+                            <option value="">선택</option>
+                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
+                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
+                                    th:selected="${infra.infraId == infraId}"></option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><th>패치일 <span class="required">*</span></th>
+                    <td><input type="date" id="patch_date"></td>
+                    <th>담당자 <span class="required">*</span></th>
+                    <td><select id="patch_user">
+                        <option value="">선택</option>
+                        <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.username}"></option>
+                    </select></td>
+                </tr>
+                <tr><th>대상SW <span class="required">*</span></th>
+                    <td colspan="3"><input type="text" id="patch_target_sw" placeholder="패치 대상 SW명"></td>
+                </tr>
+                <tr><th>현재버전 <span class="required">*</span></th>
+                    <td><input type="text" id="patch_current_version" placeholder="현재 버전"></td>
+                    <th>패치버전 <span class="required">*</span></th>
+                    <td><input type="text" id="patch_new_version" placeholder="패치 후 버전"></td>
+                </tr>
+                <tr><th>패치내용/변경사항</th>
+                    <td colspan="3"><textarea id="patch_content" placeholder="패치 내용 및 변경사항"></textarea></td>
+                </tr>
+                <tr><th>적용서버</th>
+                    <td colspan="3"><input type="text" id="patch_applied_server" placeholder="패치 적용 서버 (예: 운영서버, 개발서버)"></td>
+                </tr>
+                <tr><th>적용절차</th>
+                    <td colspan="3"><textarea id="patch_procedure" placeholder="패치 적용 절차 및 방법"></textarea></td>
+                </tr>
+                <tr><th>백업여부</th>
+                    <td colspan="3">
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="patch_backup"> 백업 수행함</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr><th>정상작동확인</th>
+                    <td colspan="3">
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="patch_confirmed"> 정상 작동 확인됨</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function saveDocument() {
+            var infraId = document.getElementById('infraId').value;
+            var title = '패치내역서';
+
+            var sections = [
+                { sectionKey: 'patch', sectionData: {
+                    infraId: infraId,
+                    userId: document.getElementById('patch_user').value,
+                    patchDate: document.getElementById('patch_date').value,
+                    targetSw: document.getElementById('patch_target_sw').value,
+                    currentVersion: document.getElementById('patch_current_version').value,
+                    newVersion: document.getElementById('patch_new_version').value,
+                    content: document.getElementById('patch_content').value,
+                    appliedServer: document.getElementById('patch_applied_server').value,
+                    procedure: document.getElementById('patch_procedure').value,
+                    backup: document.getElementById('patch_backup').checked,
+                    confirmed: document.getElementById('patch_confirmed').checked
+                }}
+            ];
+
+            fetch('/document/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docType: 'PATCH',
+                    infraId: infraId || null,
+                    title: title,
+                    sections: sections
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('저장되었습니다. 문서번호: ' + data.docNo);
+                    location.href = '/document/detail/' + data.docId;
+                } else {
+                    alert(data.error || '저장 실패');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

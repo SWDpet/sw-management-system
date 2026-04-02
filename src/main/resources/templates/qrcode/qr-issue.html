@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>QR 라이선스 발급 - SW Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6B3EF0; --primary2: #5330C8; --primary-lt: #f0ebff;
+            --bg: #f5f5f5; --surface: #ffffff;
+            --text-primary: #222; --text-secondary: #666; --text-tertiary: #999;
+            --border: #e8e8e8; --border-light: #f0f0f0;
+            --success: #10b981; --error: #ef4444;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text-primary); line-height:1.5; }
+        .container { max-width:1200px; margin:0 auto; padding:32px; }
+
+        .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; padding-bottom:20px; border-bottom:2px solid var(--border-light); }
+        .page-header h1 { font-size:1.75rem; font-weight:900; }
+
+        .btn { font-family:inherit; border:none; border-radius:8px; padding:10px 18px; font-size:0.875rem; font-weight:600; cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px; }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-primary:hover { background:var(--primary2); transform:translateY(-1px); box-shadow:0 4px 12px rgba(107,62,240,0.25); }
+        .btn-secondary { background:var(--surface); color:var(--text-primary); border:1px solid var(--border); }
+        .btn-secondary:hover { background:var(--bg); }
+
+        .card { background:var(--surface); border-radius:12px; padding:24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+
+        /* Tabs */
+        .tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid var(--border); }
+        .tab-btn { padding:10px 24px; background:none; border:none; font-family:inherit; font-size:0.9rem; font-weight:600; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.2s; }
+        .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+        .tab-btn:hover { color:var(--primary); }
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+
+        /* Form */
+        .fg { margin-bottom:14px; }
+        .fg label { display:block; margin-bottom:5px; font-weight:600; font-size:0.85rem; color:var(--text-primary); }
+        .fg .label-en { color:var(--text-secondary); font-weight:400; font-size:0.78rem; margin-left:6px; }
+        .fg .req { color:var(--error); }
+        .fg input, .fg textarea { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:0.875rem; transition:all 0.2s; }
+        .fg input:focus, .fg textarea:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-lt); }
+        .fg textarea { resize:vertical; min-height:60px; }
+        .fg-row { display:flex; gap:12px; }
+        .fg-row .fg { flex:1; }
+
+        /* Layout */
+        .issue-layout { display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start; }
+        @media (max-width:900px) { .issue-layout { grid-template-columns:1fr; } }
+
+        /* QR Preview */
+        .qr-preview-box { text-align:center; padding:24px; }
+        .qr-preview-box img { max-width:260px; border:1px solid var(--border); border-radius:8px; }
+        .qr-placeholder { width:260px; height:260px; margin:0 auto; display:flex; align-items:center; justify-content:center; background:#fafafa; border:2px dashed var(--border); border-radius:8px; color:var(--text-tertiary); font-size:0.9rem; }
+
+        /* Alert */
+        .alert-container { position:fixed; top:70px; right:20px; z-index:2000; }
+        .alert { padding:12px 16px; border-radius:8px; margin-bottom:8px; font-size:0.875rem; font-weight:500; box-shadow:0 4px 12px rgba(0,0,0,0.1); animation:slideIn 0.3s; }
+        @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        .alert-success { background:#dcfce7; color:var(--success); border:1px solid #bbf7d0; }
+        .alert-error { background:#fee2e2; color:var(--error); border:1px solid #fecaca; }
+    </style>
+</head>
+<body>
+
+<!-- GNB -->
+<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem;">S</span>
+            <span style="font-weight:800; font-size:1.08rem; color:#222;">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">마이페이지</a>
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">라이선스 대장</a>
+                <a th:href="@{/qr-license/issue}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">QR발급</a>
+                <a th:href="@{/qr-license/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR대장</a>
+            </div>
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<div id="alertContainer" class="alert-container"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1 th:text="${qr != null ? 'QR 라이선스 수정' : 'QR 라이선스 발급'}">QR 라이선스 발급</h1>
+        <div style="display:flex; gap:10px;">
+            <a href="/qr-license/ledger" class="btn btn-secondary">발급 대장</a>
+        </div>
+    </div>
+
+    <div class="issue-layout">
+        <!-- Left: Form -->
+        <div>
+            <div class="card">
+                <div class="tabs">
+                    <button type="button" class="tab-btn active" onclick="switchTab('en')">English</button>
+                    <button type="button" class="tab-btn" onclick="switchTab('ko')">한글</button>
+                </div>
+
+                <!-- English Tab -->
+                <div id="tab-en" class="tab-content active">
+                    <div class="fg">
+                        <label>End User Name <span class="req">*</span></label>
+                        <input type="text" id="endUserName" placeholder="End user name" th:value="${qr?.endUserName}">
+                    </div>
+                    <div class="fg">
+                        <label>Address</label>
+                        <input type="text" id="address" placeholder="Address" th:value="${qr?.address}">
+                    </div>
+                    <div class="fg-row">
+                        <div class="fg">
+                            <label>Tel</label>
+                            <input type="text" id="tel" placeholder="Telephone" th:value="${qr?.tel}">
+                        </div>
+                        <div class="fg">
+                            <label>Fax</label>
+                            <input type="text" id="fax" placeholder="Fax" th:value="${qr?.fax}">
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>Products <span class="req">*</span></label>
+                        <input type="text" id="products" placeholder="Product name" th:value="${qr?.products}">
+                    </div>
+                    <div class="fg-row">
+                        <div class="fg">
+                            <label>User/Units</label>
+                            <input type="text" id="userUnits" placeholder="e.g. 5 Users" th:value="${qr?.userUnits}">
+                        </div>
+                        <div class="fg">
+                            <label>Version</label>
+                            <input type="text" id="version" placeholder="e.g. v3.5" th:value="${qr?.version}">
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>License Type</label>
+                        <input type="text" id="licenseType" placeholder="e.g. Perpetual, Subscription" th:value="${qr?.licenseType}">
+                    </div>
+                    <div class="fg">
+                        <label>Serial Number</label>
+                        <input type="text" id="serialNumber" placeholder="Serial number" th:value="${qr?.serialNumber}">
+                    </div>
+                    <div class="fg">
+                        <label>Application Name</label>
+                        <input type="text" id="applicationName" placeholder="Application name" th:value="${qr?.applicationName}">
+                    </div>
+                </div>
+
+                <!-- Korean Tab -->
+                <div id="tab-ko" class="tab-content">
+                    <div class="fg">
+                        <label>최종 사용자명 <span class="label-en">End User Name</span></label>
+                        <input type="text" id="endUserNameKo" placeholder="최종 사용자명" th:value="${qr?.endUserNameKo}">
+                    </div>
+                    <div class="fg">
+                        <label>주소 <span class="label-en">Address</span></label>
+                        <input type="text" id="addressKo" placeholder="주소" th:value="${qr?.addressKo}">
+                    </div>
+                    <div class="fg-row">
+                        <div class="fg">
+                            <label>전화번호 <span class="label-en">Tel</span></label>
+                            <input type="text" id="telKo" placeholder="전화번호" th:value="${qr?.telKo}">
+                        </div>
+                        <div class="fg">
+                            <label>팩스 <span class="label-en">Fax</span></label>
+                            <input type="text" id="faxKo" placeholder="팩스" th:value="${qr?.faxKo}">
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>제품명 <span class="label-en">Products</span></label>
+                        <input type="text" id="productsKo" placeholder="제품명" th:value="${qr?.productsKo}">
+                    </div>
+                    <div class="fg-row">
+                        <div class="fg">
+                            <label>사용자/유닛수 <span class="label-en">User/Units</span></label>
+                            <input type="text" id="userUnitsKo" placeholder="예: 5 사용자" th:value="${qr?.userUnitsKo}">
+                        </div>
+                        <div class="fg">
+                            <label>버전 <span class="label-en">Version</span></label>
+                            <input type="text" id="versionKo" placeholder="예: v3.5" th:value="${qr?.versionKo}">
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>라이선스 유형 <span class="label-en">License Type</span></label>
+                        <input type="text" id="licenseTypeKo" placeholder="예: 영구, 구독" th:value="${qr?.licenseTypeKo}">
+                    </div>
+                    <div class="fg">
+                        <label>시리얼 번호 <span class="label-en">Serial Number</span></label>
+                        <input type="text" id="serialNumberKo" placeholder="시리얼 번호" th:value="${qr?.serialNumberKo}">
+                    </div>
+                    <div class="fg">
+                        <label>애플리케이션 명 <span class="label-en">Application Name</span></label>
+                        <input type="text" id="applicationNameKo" placeholder="애플리케이션 명" th:value="${qr?.applicationNameKo}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remarks -->
+            <div class="card">
+                <div class="fg" style="margin-bottom:0;">
+                    <label>비고</label>
+                    <textarea id="remarks" rows="2" placeholder="비고 사항" th:text="${qr?.remarks}"></textarea>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-secondary" onclick="previewQr()">QR 미리보기</button>
+                <button class="btn btn-primary" id="submitBtn" onclick="submitForm()">
+                    <span th:text="${qr != null ? '수정' : '발급'}">발급</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right: QR Preview -->
+        <div class="card qr-preview-box" style="position:sticky; top:80px;">
+            <h3 style="font-size:1rem; font-weight:700; margin-bottom:16px; color:var(--text-primary);">QR 코드 미리보기</h3>
+            <div id="qrPreview">
+                <div th:if="${qr != null and qr.qrImageData != null}">
+                    <img th:src="'data:image/png;base64,' + ${qr.qrImageData}" alt="QR Code">
+                </div>
+                <div th:if="${qr == null or qr.qrImageData == null}" class="qr-placeholder">
+                    정보를 입력 후<br>미리보기를 클릭하세요
+                </div>
+            </div>
+            <p style="font-size:0.75rem; color:var(--text-tertiary); margin-top:12px;">발급 시 자동으로 QR이 생성됩니다</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const EDIT_ID = /*[[${qr?.qrId}]]*/ null;
+
+    function fetchApi(url, opts = {}) {
+        if (!opts.headers) opts.headers = {};
+        if (csrfHeader && csrfToken) opts.headers[csrfHeader] = csrfToken;
+        if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(opts.body);
+        }
+        return fetch(url, opts);
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function getFormData() {
+        return {
+            endUserName: document.getElementById('endUserName').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            tel: document.getElementById('tel').value.trim(),
+            fax: document.getElementById('fax').value.trim(),
+            products: document.getElementById('products').value.trim(),
+            userUnits: document.getElementById('userUnits').value.trim(),
+            version: document.getElementById('version').value.trim(),
+            licenseType: document.getElementById('licenseType').value.trim(),
+            serialNumber: document.getElementById('serialNumber').value.trim(),
+            applicationName: document.getElementById('applicationName').value.trim(),
+            endUserNameKo: document.getElementById('endUserNameKo').value.trim(),
+            addressKo: document.getElementById('addressKo').value.trim(),
+            telKo: document.getElementById('telKo').value.trim(),
+            faxKo: document.getElementById('faxKo').value.trim(),
+            productsKo: document.getElementById('productsKo').value.trim(),
+            userUnitsKo: document.getElementById('userUnitsKo').value.trim(),
+            versionKo: document.getElementById('versionKo').value.trim(),
+            licenseTypeKo: document.getElementById('licenseTypeKo').value.trim(),
+            serialNumberKo: document.getElementById('serialNumberKo').value.trim(),
+            applicationNameKo: document.getElementById('applicationNameKo').value.trim(),
+            remarks: document.getElementById('remarks').value.trim()
+        };
+    }
+
+    function buildQrText(data) {
+        let lines = ['[License Certificate]'];
+        if (data.endUserName) lines.push('End User: ' + data.endUserName);
+        if (data.address) lines.push('Address: ' + data.address);
+        if (data.tel) lines.push('Tel: ' + data.tel);
+        if (data.fax) lines.push('Fax: ' + data.fax);
+        if (data.products) lines.push('Products: ' + data.products);
+        if (data.userUnits) lines.push('User/Units: ' + data.userUnits);
+        if (data.version) lines.push('Version: ' + data.version);
+        if (data.licenseType) lines.push('License Type: ' + data.licenseType);
+        if (data.serialNumber) lines.push('Serial No: ' + data.serialNumber);
+        if (data.applicationName) lines.push('Application: ' + data.applicationName);
+        return lines.join('\n');
+    }
+
+    async function previewQr() {
+        const data = getFormData();
+        const content = buildQrText(data);
+        if (content === '[License Certificate]') {
+            showAlert('QR에 포함할 정보를 입력해주세요.', 'error');
+            return;
+        }
+        try {
+            const res = await fetchApi('/api/qr-license/preview', { method: 'POST', body: { content } });
+            const result = await res.json();
+            if (result.success) {
+                document.getElementById('qrPreview').innerHTML = '<img src="data:image/png;base64,' + result.image + '" alt="QR Code">';
+            } else {
+                showAlert('QR 생성 실패: ' + (result.error || ''), 'error');
+            }
+        } catch (e) {
+            showAlert('QR 미리보기 오류', 'error');
+        }
+    }
+
+    async function submitForm() {
+        const data = getFormData();
+        if (!data.endUserName) { showAlert('End User Name을 입력해주세요.', 'error'); return; }
+        if (!data.products) { showAlert('Products를 입력해주세요.', 'error'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '처리 중...';
+
+        try {
+            const url = EDIT_ID ? '/api/qr-license/' + EDIT_ID : '/api/qr-license';
+            const method = EDIT_ID ? 'PUT' : 'POST';
+            const res = await fetchApi(url, { method, body: data });
+            const result = await res.json();
+            if (result.success) {
+                showAlert(EDIT_ID ? 'QR 라이선스가 수정되었습니다.' : 'QR 라이선스가 발급되었습니다.', 'success');
+                setTimeout(() => {
+                    window.location.href = EDIT_ID ? '/qr-license/' + EDIT_ID : '/qr-license/' + result.qrId;
+                }, 1000);
+            } else {
+                showAlert('실패: ' + (result.error || ''), 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = EDIT_ID ? '수정' : '발급';
+        }
+    }
+
+    function showAlert(msg, type) {
+        const c = document.getElementById('alertContainer');
+        const d = document.createElement('div');
+        d.className = 'alert alert-' + type;
+        d.textContent = msg;
+        c.appendChild(d);
+        setTimeout(() => d.remove(), 4000);
+    }
+</script>
+</body>
+</html>

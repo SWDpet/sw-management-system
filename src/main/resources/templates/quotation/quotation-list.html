@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>견적서 목록 - SW Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <style>
+        :root { --primary:#6B3EF0; --primary2:#5330C8; --primary-lt:#f0ebff; --bg:#f5f5f5; --surface:#ffffff; --border:#e8e8e8; --border2:#d4d4d4; --text:#222; --text2:#444; --muted:#888; }
+        body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); margin:0; color:var(--text); font-size:13.5px; }
+        .container { max-width:1700px; margin:auto; padding:28px 32px 56px; }
+        .page-title { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+        .page-title h2 { margin:0; font-size:1.45rem; font-weight:700; }
+        .summary-container { display:flex; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+        .card { background:var(--surface); padding:20px 18px 16px; border-radius:12px; flex:1; min-width:170px; box-shadow:0 2px 10px rgba(0,0,0,0.07); text-align:center; border-top:4px solid var(--primary); transition:transform 0.2s; }
+        .card:hover { transform:translateY(-3px); }
+        .card h3 { margin:0 0 8px; color:var(--muted); font-size:0.8rem; font-weight:600; }
+        .card .value { font-size:1.95rem; font-weight:700; color:var(--primary); font-family:'Inter',sans-serif; }
+        .card .sub-pct { font-size:0.8rem; color:var(--muted); margin-top:5px; }
+        .card.green { border-top-color:#2e7d32; } .card.green .value { color:#2e7d32; }
+        .card.orange { border-top-color:#e64a19; } .card.orange .value { color:#e64a19; }
+        .card.purple { border-top-color:#9C27B0; } .card.purple .value { color:#7B1FA2; }
+        .toolbar { background:var(--surface); padding:12px 20px; border-radius:12px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 6px rgba(0,0,0,0.06); border:1px solid var(--border); }
+        .filter-group { display:flex; align-items:center; gap:12px; font-size:0.84rem; font-weight:500; }
+        select { padding:7px 13px; border-radius:8px; border:1.5px solid var(--border2); font-size:0.84rem; background:var(--bg); font-family:'Noto Sans KR',sans-serif; cursor:pointer; }
+        .btn { display:inline-flex; align-items:center; gap:5px; padding:7px 16px; border-radius:8px; font-size:0.84rem; font-weight:600; text-decoration:none; border:none; cursor:pointer; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif; }
+        .btn-primary { background:var(--primary); color:#fff; } .btn-primary:hover { background:var(--primary2); }
+        .btn-outline { background:#fff; color:var(--primary); border:1.5px solid var(--primary); } .btn-outline:hover { background:var(--primary-lt); }
+        .btn-sm { padding:4px 10px; font-size:0.78rem; }
+        .table-section { background:var(--surface); padding:20px 22px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.07); overflow-x:auto; border:1px solid var(--border); }
+        table { width:100%; border-collapse:collapse; }
+        th { background:var(--bg); padding:11px 8px; font-size:0.78em; border-bottom:2px solid var(--border2); text-align:center; white-space:nowrap; color:var(--muted); font-weight:600; }
+        td { padding:11px 8px; border-bottom:1px solid var(--border); font-size:0.85em; white-space:nowrap; color:var(--text2); }
+        tr:hover { background:#faf9ff; }
+        .text-right { text-align:right; }
+        .text-center { text-align:center; }
+        .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.75em; font-weight:600; }
+        .badge-용역 { background:#E8F5E9; color:#2E7D32; }
+        .badge-제품 { background:#E3F2FD; color:#1565C0; }
+        .badge-유지보수 { background:#FFF3E0; color:#E65100; }
+        .badge-발행완료 { background:#E8F5E9; color:#2E7D32; }
+        .badge-작성중 { background:#FFF9C4; color:#F57F17; }
+        .badge-취소 { background:#FFEBEE; color:#C62828; }
+        a.link { color:var(--primary); text-decoration:none; font-weight:600; }
+        a.link:hover { text-decoration:underline; }
+    </style>
+</head>
+<body>
+<!-- GNB (메인 대시보드와 동일) -->
+<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem; font-family:'Inter',sans-serif;">S</span>
+            <span style="font-weight:800; font-size:1.08rem; color:#222; letter-spacing:-0.01em; font-family:'Noto Sans KR',sans-serif;">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👤 마이페이지</a>
+
+            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">🖥️ 서버관리</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 사업현황</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👥 담당자관리</a>
+            </div>
+
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 라이선스 대장</a>
+            </div>
+
+            <!-- ✨ 견적서 메뉴 (현재 활성) -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/quotation/list}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">📝 견적서</a>
+                <a th:href="@{/quotation/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 견적대장</a>
+                <a th:href="@{/quotation/patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">패턴관리</a>
+                <a th:href="@{/quotation/remarks-patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">비고패턴</a>
+                <a th:href="@{/quotation/wage-rates}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">노임단가</a>
+            </div>
+
+            <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" th:href="@{/admin/users}" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; margin-left:4px;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''">⚙️ 사용자승인</a>
+
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="page-title">
+        <i class="fas fa-file-invoice" style="color:var(--primary); font-size:1.4rem;"></i>
+        <h2>견적서 목록</h2>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div class="summary-container">
+        <div class="card">
+            <h3><i class="fas fa-folder-open"></i> 전체 견적서</h3>
+            <div class="value" th:text="${stats['total']} + '건'">0건</div>
+        </div>
+        <div class="card green">
+            <h3><i class="fas fa-wrench"></i> 용역</h3>
+            <div class="value" th:text="${stats['용역_count']} + '건'">0건</div>
+        </div>
+        <div class="card" style="border-top-color:#1565C0;">
+            <h3><i class="fas fa-box"></i> 제품</h3>
+            <div class="value" style="color:#1565C0;" th:text="${stats['제품_count']} + '건'">0건</div>
+        </div>
+        <div class="card orange">
+            <h3><i class="fas fa-tools"></i> 유지보수</h3>
+            <div class="value" th:text="${stats['유지보수_count']} + '건'">0건</div>
+        </div>
+    </div>
+
+    <!-- 필터 툴바 -->
+    <div class="toolbar">
+        <div class="filter-group">
+            <strong>🔍 조회:</strong>
+            <form id="filterForm" method="get" action="/quotation/list" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <select name="category" onchange="this.form.submit()">
+                    <option value="">전체 분류</option>
+                    <option value="용역" th:selected="${selectedCategory == '용역'}">용역</option>
+                    <option value="제품" th:selected="${selectedCategory == '제품'}">제품</option>
+                    <option value="유지보수" th:selected="${selectedCategory == '유지보수'}">유지보수</option>
+                </select>
+                <select name="year" onchange="this.form.submit()">
+                    <option value="2026" th:selected="${selectedYear == 2026}">2026년</option>
+                    <option value="2025" th:selected="${selectedYear == 2025}">2025년</option>
+                    <option value="2024" th:selected="${selectedYear == 2024}">2024년</option>
+                </select>
+                <select name="status" onchange="this.form.submit()">
+                    <option value="">전체 상태</option>
+                    <option value="발행완료" th:selected="${selectedStatus == '발행완료'}">발행완료</option>
+                    <option value="작성중" th:selected="${selectedStatus == '작성중'}">작성중</option>
+                    <option value="취소" th:selected="${selectedStatus == '취소'}">취소</option>
+                </select>
+                <input type="text" name="keyword" th:value="${selectedKeyword}" placeholder="견적번호, 건명, 수신, 작성자 검색"
+                       style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.84rem; width:240px;"
+                       onkeydown="if(event.key==='Enter'){this.form.submit();}">
+                <button type="submit" style="padding:6px 14px; background:#6B3EF0; color:#fff; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;">검색</button>
+            </form>
+        </div>
+        <a href="/quotation/new" class="btn btn-primary" th:if="${canEdit}"><i class="fas fa-plus"></i> 견적서 작성</a>
+    </div>
+
+    <!-- 테이블 -->
+    <div class="table-section">
+        <table>
+            <thead>
+                <tr>
+                    <th>견적번호</th>
+                    <th>분류</th>
+                    <th>건명</th>
+                    <th>수신</th>
+                    <th>견적금액</th>
+                    <th>견적일자</th>
+                    <th>상태</th>
+                    <th>작성자</th>
+                    <th style="width:50px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="q : ${quotations}">
+                    <td class="text-center">
+                        <a th:href="@{'/quotation/' + ${q.quoteId}}" class="link" th:text="${q.quoteNumber}"></a>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge" th:classappend="'badge-' + ${q.category}" th:text="${q.category}"></span>
+                    </td>
+                    <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; font-weight:600;" th:text="${q.projectName}"></td>
+                    <td th:text="${q.recipient}"></td>
+                    <td class="text-right" style="font-weight:700; font-family:'Inter',sans-serif;" th:text="${#numbers.formatInteger(q.grandTotal != null ? q.grandTotal : q.totalAmount, 1, 'COMMA')} + '원'"></td>
+                    <td class="text-center" th:text="${q.quoteDate}"></td>
+                    <td class="text-center">
+                        <span class="badge" th:classappend="'badge-' + ${q.status}" th:text="${q.status}"></span>
+                    </td>
+                    <td class="text-center" th:text="${q.createdBy}"></td>
+                    <td class="text-center">
+                        <a th:href="@{'/quotation/' + ${q.quoteId} + '/preview'}" target="_blank" title="미리보기" style="color:#6B3EF0; font-size:1.05rem;"><i class="fas fa-eye"></i></a>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(quotations)}">
+                    <td colspan="9" style="text-align:center; padding:40px; color:var(--muted);">등록된 견적서가 없습니다.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

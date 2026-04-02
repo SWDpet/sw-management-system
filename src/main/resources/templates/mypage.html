@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>마이페이지</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #f4f7f6; padding: 40px; margin: 0; }
+        .card { max-width: 700px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); }
+        h2 { color: #1a237e; border-bottom: 2px solid #1a237e; padding-bottom: 15px; margin-bottom: 30px; font-weight: 700; }
+        h3 { font-size: 1.1em; color: #4e73df; margin-top: 40px; border-left: 4px solid #4e73df; padding-left: 10px; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #444; font-size: 0.85em; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; background: #fff; font-size: 0.95em; }
+        input[readonly] { background: #f8f9fa; cursor: not-allowed; color: #888; border: 1px solid #eee; }
+        select { width: 100%; padding: 12px; border: 1px solid #4e73df; border-radius: 6px; font-size: 0.95em; background: #fff; }
+        .btn-submit { width: 100%; padding: 16px; background: #1a237e; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-submit:hover { background: #10154c; }
+        .btn-pw-change { width: 100%; padding: 16px; background: #4e73df; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-pw-change:hover { background: #2e59d9; }
+        .info-box { background: #e3f2fd; border: 1px solid #90caf9; color: #1565c0; padding: 15px; border-radius: 6px; margin-top: 20px; font-size: 0.85em; text-align: center; }
+        .warning-box { background: #fff3e0; border: 1px solid #ffe0b2; color: #e65100; padding: 15px; border-radius: 6px; margin-top: 20px; font-size: 0.85em; text-align: center; }
+        .alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; text-align: center; font-size: 0.9em; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>👤 마이페이지</h2>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <form th:action="@{/mypage/update}" method="post" onsubmit="return confirmUpdate();">
+        <h3>1. 기본 정보 (수정 불가)</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>아이디 (ID)</label>
+                <input type="text" th:value="${user.userid}" readonly>
+            </div>
+            <div class="form-group">
+                <label>성명 (Name)</label>
+                <input type="text" th:value="${user.username}" readonly>
+            </div>
+            <div class="form-group">
+                <label>소속 기관</label>
+                <input type="text" th:value="${user.orgNm}" readonly>
+            </div>
+        </div>
+
+        <h3>2. 인적 사항 정보 (수정 가능)</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>부서명</label>
+                <input type="text" name="deptNm" th:value="${user.deptNm}" required>
+            </div>
+            <div class="form-group">
+                <label>팀명</label>
+                <input type="text" name="teamNm" th:value="${user.teamNm}" required>
+            </div>
+            <div class="form-group">
+                <label>연락처</label>
+                <input type="text" name="tel" th:value="${user.tel}" required>
+            </div>
+            <div class="form-group">
+                <label>이메일</label>
+                <input type="email" name="email" th:value="${user.email}" required>
+            </div>
+        </div>
+
+        <h3>3. 권한 재요청</h3>
+        <div class="form-grid">
+            <div class="form-group"><label>대시보드</label>
+                <select name="authDashboard">
+                    <option value="NONE" th:selected="${user.authDashboard == 'NONE'}">❌ 권한없음</option>
+                    <option value="VIEW" th:selected="${user.authDashboard == 'VIEW'}">👁️ 조회</option>
+                    <option value="EDIT" th:selected="${user.authDashboard == 'EDIT'}">✏️ 편집</option>
+                </select>
+            </div>
+            <div class="form-group"><label>사업관리</label>
+                <select name="authProject">
+                    <option value="NONE" th:selected="${user.authProject == 'NONE'}">❌ 권한없음</option>
+                    <option value="VIEW" th:selected="${user.authProject == 'VIEW'}">👁️ 조회</option>
+                    <option value="EDIT" th:selected="${user.authProject == 'EDIT'}">✏️ 편집</option>
+                </select>
+            </div>
+            <div class="form-group"><label>담당자관리</label>
+                <select name="authPerson">
+                    <option value="NONE" th:selected="${user.authPerson == 'NONE'}">❌ 권한없음</option>
+                    <option value="VIEW" th:selected="${user.authPerson == 'VIEW'}">👁️ 조회</option>
+                    <option value="EDIT" th:selected="${user.authPerson == 'EDIT'}">✏️ 편집</option>
+                </select>
+            </div>
+            <div class="form-group"><label>서버관리</label>
+                <select name="authInfra">
+                    <option value="NONE" th:selected="${user.authInfra == 'NONE'}">❌ 권한없음</option>
+                    <option value="VIEW" th:selected="${user.authInfra == 'VIEW'}">👁️ 조회</option>
+                    <option value="EDIT" th:selected="${user.authInfra == 'EDIT'}">✏️ 편집</option>
+                </select>
+            </div>
+            <div class="form-group"><label>라이선스</label>
+                <select name="authLicense">
+                    <option value="NONE" th:selected="${user.authLicense == null or user.authLicense == 'NONE'}">❌ 권한없음</option>
+                    <option value="VIEW" th:selected="${user.authLicense == 'VIEW'}">👁️ 조회</option>
+                    <option value="EDIT" th:selected="${user.authLicense == 'EDIT'}">✏️ 편집</option>
+                </select>
+            </div>
+            <div class="form-group"><label>견적서</label>
+                <select name="authQuotation">
+                    <option value="NONE" th:selected="${user.authQuotation == null or user.authQuotation == 'NONE'}">❌ 권한없음</option>
+                    <option value="VIEW" th:selected="${user.authQuotation == 'VIEW'}">👁️ 조회</option>
+                    <option value="EDIT" th:selected="${user.authQuotation == 'EDIT'}">✏️ 편집</option>
+                </select>
+            </div>
+        </div>
+
+        <th:block sec:authorize="hasRole('ROLE_ADMIN')">
+            <button type="submit" class="btn-submit">정보 수정 (관리자 즉시 반영)</button>
+            <div class="info-box">※ 관리자 권한이므로 즉시 수정됩니다.</div>
+        </th:block>
+
+        <th:block sec:authorize="!hasRole('ROLE_ADMIN')">
+            <button type="submit" class="btn-submit">수정 요청 및 로그아웃</button>
+            <div class="warning-box">※ 일반 사용자는 정보 수정 시 재승인이 필요하여 로그아웃됩니다.</div>
+        </th:block>
+    </form>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 40px 0;">
+
+    <form th:action="@{/mypage/password}" method="post" onsubmit="return validatePassword();">
+        <h3>4. 비밀번호 변경</h3>
+        <div class="form-group">
+            <label>현재 비밀번호</label>
+            <input type="password" name="currentPw" required placeholder="현재 사용 중인 비밀번호">
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>새 비밀번호</label>
+                <input type="password" id="newPw" name="newPw" required placeholder="변경할 새 비밀번호">
+            </div>
+            <div class="form-group">
+                <label>새 비밀번호 확인</label>
+                <input type="password" id="confirmPw" name="confirmPw" required placeholder="새 비밀번호 다시 입력">
+            </div>
+        </div>
+        <button type="submit" class="btn-pw-change">비밀번호 변경하기</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <a th:href="@{/}" style="color: #666; text-decoration: none;">← 메인으로</a>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function confirmUpdate() {
+        var isAdmin = /*[[${#authorization.expression('hasRole(''ROLE_ADMIN'')')}]]*/ false;
+        if (isAdmin) return confirm("관리자 권한으로 정보를 즉시 수정하시겠습니까?");
+        else return confirm("수정 시 재승인이 필요하며 자동 로그아웃됩니다.\n진행하시겠습니까?");
+    }
+
+    function validatePassword() {
+        const newPw = document.getElementById('newPw').value;
+        const confirmPw = document.getElementById('confirmPw').value;
+
+        if (newPw.length < 4) {
+            alert("비밀번호는 최소 4자 이상이어야 합니다.");
+            return false;
+        }
+        if (newPw !== confirmPw) {
+            alert("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+            return false;
+        }
+        return confirm("정말로 비밀번호를 변경하시겠습니까?");
+    }
+</script>
+</body>
+</html>

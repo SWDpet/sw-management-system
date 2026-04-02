@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 40px 0; background: #f4f7f6; margin: 0; }
+        .card { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 450px; }
+        h2 { text-align: center; color: #1a237e; margin-bottom: 25px; }
+        label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: #1a237e; color: white; font-weight: bold; cursor: pointer; border: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>신규 계정 신청</h2>
+        <form th:action="@{/signup}" method="post">
+            
+            <label>아이디 (ID) *</label>
+            <input type="text" name="userid" placeholder="로그인용 아이디" required autofocus>
+
+            <label>성명 (실명) *</label>
+            <input type="text" name="username" placeholder="사용자 성명" required>
+
+            <label>비밀번호 *</label>
+            <input type="password" name="password" placeholder="비밀번호" required>
+
+            <label>소속 기관명 *</label>
+            <input type="text" name="orgNm" placeholder="예: OO시청" required>
+
+            <label>부서명</label>
+            <input type="text" name="deptNm" placeholder="예: 정보통신과">
+
+            <label>팀명</label>
+            <input type="text" name="teamNm" placeholder="예: 운영팀">
+
+            <label>연락처</label>
+            <input type="text" name="tel" placeholder="010-0000-0000">
+
+            <label>이메일</label>
+            <input type="email" name="email" placeholder="email@example.com">
+
+            <button type="submit">가입 승인 요청</button>
+        </form>
+        <div style="text-align: center; margin-top: 10px;">
+            <a th:href="@{/login}" style="color: #666; text-decoration: none;">로그인으로 이동</a>
+        </div>
+    </div>
+</body>
+</html>

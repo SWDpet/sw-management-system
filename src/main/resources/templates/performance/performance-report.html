@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>성과 리포트</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; }
+        .btn { padding: 8px 16px; border: none; border-radius: 5px; font-size: 0.85em; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-primary { background: #1565c0; color: white; }
+        .btn-success { background: #1cc88a; color: white; }
+        .btn-secondary { background: #858796; color: white; }
+        .btn-excel { background: #217346; color: white; }
+
+        /* 검색 폼 */
+        .search-box { background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,0.15); }
+        .search-box h4 { margin: 0 0 15px; color: #333; }
+        .search-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 0.78em; color: #888; font-weight: 600; }
+        .form-group select, .form-group input { padding: 7px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.85em; }
+        .period-sep { font-size: 1.1em; font-weight: 700; color: #888; padding-bottom: 8px; }
+
+        /* 리포트 결과 */
+        .report-result { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,0.15); }
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #1565c0; }
+        .report-header h3 { margin: 0; color: #1565c0; }
+        .report-meta { font-size: 0.82em; color: #888; }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-item { background: #f8f9fc; border-radius: 8px; padding: 18px; text-align: center; }
+        .stat-item .stat-label { font-size: 0.78em; color: #888; margin-bottom: 6px; }
+        .stat-item .stat-value { font-size: 1.6em; font-weight: 700; color: #4e73df; }
+        .stat-item .stat-unit { font-size: 0.75em; color: #888; }
+
+        .rate-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .rate-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 20px; color: white; text-align: center; }
+        .rate-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .rate-card .rate-label { font-size: 0.85em; opacity: 0.9; margin-bottom: 8px; }
+        .rate-card .rate-value { font-size: 2.2em; font-weight: 700; }
+
+        .detail-table { margin-top: 20px; }
+        .detail-table h4 { margin: 0 0 12px; color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: center; font-size: 0.85em; border-bottom: 1px solid #e3e6f0; }
+        th { background: #f8f9fc; color: #5a5c69; font-weight: 600; }
+        tr:hover { background: #f8f9fc; }
+
+        .chart-wrap { margin-top: 25px; }
+        .chart-wrap canvas { max-height: 300px; }
+
+        .no-data { text-align: center; padding: 50px; color: #aaa; font-size: 1em; }
+        .no-data i { font-size: 3em; margin-bottom: 15px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="page-header">
+            <h2><i class="fas fa-file-alt"></i> 성과 리포트 (S-03)</h2>
+            <div style="display:flex; gap:8px;">
+                <a th:href="@{/performance/personal}" class="btn btn-secondary"><i class="fas fa-chart-line"></i> 개인현황</a>
+                <a th:href="@{/performance/dept}" class="btn btn-secondary"><i class="fas fa-users"></i> 부서현황</a>
+                <a href="/" class="btn" style="background:#5a5c69; color:white;"><i class="fas fa-home"></i> 홈</a>
+            </div>
+        </div>
+
+        <!-- 검색 조건 -->
+        <div class="search-box">
+            <h4><i class="fas fa-filter"></i> 조회 조건</h4>
+            <form method="get" th:action="@{/performance/report}" class="search-form">
+                <div class="form-group">
+                    <label>직원</label>
+                    <select name="userId">
+                        <option value="">-- 선택 --</option>
+                        <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.username}" th:selected="${u.userSeq == userId}">사용자</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>시작 연도</label>
+                    <select name="fromYear">
+                        <option th:each="y : ${#numbers.sequence(2020, 2030)}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == fromYear}">연도</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>시작 월</label>
+                    <select name="fromMonth">
+                        <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == fromMonth}">월</option>
+                    </select>
+                </div>
+                <div class="period-sep">~</div>
+                <div class="form-group">
+                    <label>종료 연도</label>
+                    <select name="toYear">
+                        <option th:each="y : ${#numbers.sequence(2020, 2030)}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == toYear}">연도</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>종료 월</label>
+                    <select name="toMonth">
+                        <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == toMonth}">월</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 조회</button>
+                <button type="button" class="btn btn-excel" onclick="downloadExcel()"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+            </form>
+        </div>
+
+        <!-- 결과 -->
+        <div th:if="${reportData != null}" class="report-result">
+            <div class="report-header">
+                <h3><i class="fas fa-user"></i> <span th:text="${targetUser != null ? targetUser.username : '-'}">홍길동</span> 성과 리포트</h3>
+                <div class="report-meta">
+                    <span th:text="${fromYear + '년 ' + fromMonth + '월'}">2026년 1월</span> ~ <span th:text="${toYear + '년 ' + toMonth + '월'}">2026년 12월</span>
+                </div>
+            </div>
+
+            <!-- 업무 건수 -->
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label"><i class="fas fa-server"></i> 설치</div>
+                    <div class="stat-value" th:text="${reportData['installTotal']}">0</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label"><i class="fas fa-code-branch"></i> 패치</div>
+                    <div class="stat-value" th:text="${reportData['patchTotal']}">0</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label"><i class="fas fa-exclamation-triangle"></i> 장애</div>
+                    <div class="stat-value" th:text="${reportData['faultTotal']}">0</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label"><i class="fas fa-hands-helping"></i> 업무지원</div>
+                    <div class="stat-value" th:text="${reportData['supportTotal']}">0</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label"><i class="fas fa-file-signature"></i> 기성</div>
+                    <div class="stat-value" th:text="${reportData['interimTotal']}">0</div>
+                    <div class="stat-unit">건</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label"><i class="fas fa-check-double"></i> 준공</div>
+                    <div class="stat-value" th:text="${reportData['completionTotal']}">0</div>
+                    <div class="stat-unit">건</div>
+                </div>
+            </div>
+
+            <!-- 수행율 카드 -->
+            <div class="rate-cards">
+                <div class="rate-card">
+                    <div class="rate-label"><i class="fas fa-clipboard-check"></i> 정기점검 수행율</div>
+                    <div class="rate-value"><span th:text="${reportData['inspectRate']}">0</span>%</div>
+                </div>
+                <div class="rate-card green">
+                    <div class="rate-label"><i class="fas fa-calendar-check"></i> 일정 준수율</div>
+                    <div class="rate-value"><span th:text="${reportData['ontimeRate']}">0</span>%</div>
+                </div>
+            </div>
+
+            <!-- 월별 상세 차트 -->
+            <div class="chart-wrap" th:if="${reportData['details'] != null and !reportData['details'].isEmpty()}">
+                <h4><i class="fas fa-chart-area"></i> 기간별 추이</h4>
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <!-- 월별 상세 테이블 -->
+            <div class="detail-table" th:if="${reportData['details'] != null and !reportData['details'].isEmpty()}">
+                <h4><i class="fas fa-list"></i> 월별 상세</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>기간</th>
+                            <th>설치</th>
+                            <th>패치</th>
+                            <th>장애</th>
+                            <th>지원</th>
+                            <th>기성</th>
+                            <th>준공</th>
+                            <th>점검(완료/계획)</th>
+                            <th>일정준수</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="d : ${reportData['details']}">
+                            <td th:text="${d.periodYear + '년 ' + d.periodMonth + '월'}">2026년 1월</td>
+                            <td th:text="${d.installCount != null ? d.installCount : 0}">0</td>
+                            <td th:text="${d.patchCount != null ? d.patchCount : 0}">0</td>
+                            <td th:text="${d.faultCount != null ? d.faultCount : 0}">0</td>
+                            <td th:text="${d.supportCount != null ? d.supportCount : 0}">0</td>
+                            <td th:text="${d.interimCount != null ? d.interimCount : 0}">0</td>
+                            <td th:text="${d.completionCount != null ? d.completionCount : 0}">0</td>
+                            <td th:text="${(d.inspectDoneCount != null ? d.inspectDoneCount : 0) + '/' + (d.inspectPlanCount != null ? d.inspectPlanCount : 0)}">0/0</td>
+                            <td>
+                                <span th:if="${d.planTotalCount != null and d.planTotalCount > 0}"
+                                      th:text="${#numbers.formatDecimal(d.planOntimeCount * 100.0 / d.planTotalCount, 0, 0) + '%'}">0%</span>
+                                <span th:unless="${d.planTotalCount != null and d.planTotalCount > 0}">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 데이터 없음 -->
+        <div th:if="${reportData == null}" class="report-result">
+            <div class="no-data">
+                <i class="fas fa-search"></i>
+                직원을 선택하고 조회 버튼을 클릭하세요.
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        var reportData = /*[[${reportData}]]*/ null;
+
+        if (reportData && reportData.details && reportData.details.length > 0) {
+            var labels = reportData.details.map(function(d) { return d.periodYear + '.' + d.periodMonth; });
+            var installData = reportData.details.map(function(d) { return d.installCount || 0; });
+            var patchData = reportData.details.map(function(d) { return d.patchCount || 0; });
+            var faultData = reportData.details.map(function(d) { return d.faultCount || 0; });
+            var supportData = reportData.details.map(function(d) { return d.supportCount || 0; });
+
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '설치', data: installData, borderColor: '#4e73df', backgroundColor: 'rgba(78,115,223,0.1)', fill: true, tension: 0.3 },
+                        { label: '패치', data: patchData, borderColor: '#1cc88a', backgroundColor: 'rgba(28,200,138,0.1)', fill: true, tension: 0.3 },
+                        { label: '장애', data: faultData, borderColor: '#e74a3b', backgroundColor: 'rgba(231,74,59,0.1)', fill: true, tension: 0.3 },
+                        { label: '업무지원', data: supportData, borderColor: '#f6c23e', backgroundColor: 'rgba(246,194,62,0.1)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        function downloadExcel() {
+            var userId = document.querySelector('select[name="userId"]').value;
+            if (!userId) { alert('직원을 선택하세요.'); return; }
+            var fromYear = document.querySelector('select[name="fromYear"]').value;
+            var fromMonth = document.querySelector('select[name="fromMonth"]').value;
+            var toYear = document.querySelector('select[name="toYear"]').value;
+            var toMonth = document.querySelector('select[name="toMonth"]').value;
+            window.location.href = '/performance/api/excel?userId=' + userId +
+                '&fromYear=' + fromYear + '&fromMonth=' + fromMonth +
+                '&toYear=' + toYear + '&toMonth=' + toMonth;
+        }
+    </script>
+</body>
+</html>

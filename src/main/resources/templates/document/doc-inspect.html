@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>점검내역서 작성</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
+        .btn-save { background: #1cc88a; color: white; }
+        .btn-cancel { background: #858796; color: white; }
+
+        /* 탭 네비 */
+        .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
+        .tab-nav button.active { background: white; color: #1565c0; border-bottom-color: #1565c0; }
+
+        /* 섹션 */
+        .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-section.active { display: block; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+
+        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table textarea { height: 80px; resize: vertical; }
+        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .required { color: #e74a3b; }
+        .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
+
+        /* 동적 행 */
+        .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
+        .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
+        .dynamic-table input, .dynamic-table select, .dynamic-table textarea { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
+        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+
+        .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
+        .checkbox-cell { text-align: center; }
+        .checkbox-cell input[type="checkbox"] { width: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-file-contract"></i> 점검내역서 작성</h2>
+            <div class="header-actions">
+                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            </div>
+        </div>
+
+        <!-- 3종 탭 -->
+        <div class="tab-nav">
+            <button class="active" onclick="showSection(0, this)">① 표지</button>
+            <button onclick="showSection(1, this)">② 점검리포트</button>
+            <button onclick="showSection(2, this)">③ 정기점검상세</button>
+        </div>
+
+        <!-- ① 표지 -->
+        <div class="form-section active" id="section-0">
+            <h3><i class="fas fa-file-alt"></i> ① 표지</h3>
+            <table class="form-table">
+                <tr><th>지자체 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <select id="infraId" onchange="loadInfraInfo()">
+                            <option value="">선택</option>
+                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
+                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
+                                    th:selected="${infra.infraId == infraId}"
+                                    th:data-city="${infra.cityNm}" th:data-dist="${infra.distNm}" th:data-sys="${infra.sysNm}"></option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><th>용역명</th><td colspan="3"><input type="text" id="cover_name" placeholder="용역명 (자동입력)"></td></tr>
+                <tr><th>시스템유형 <span class="required">*</span></th>
+                    <td><select id="sys_type" onchange="updateCoverTitle()">
+                        <option value="">선택</option>
+                        <option value="UPIS">UPIS</option>
+                        <option value="KRAS">KRAS</option>
+                        <option value="IPSS">IPSS</option>
+                    </select></td>
+                    <th>문서제목</th><td><input type="text" id="cover_title" placeholder="시스템 유형에 따라 자동 생성" readonly style="background:#f0f0f0;"></td>
+                </tr>
+                <tr><th>점검년월</th><td><input type="month" id="cover_month"></td>
+                    <th>점검자 회사명</th><td><input type="text" id="cover_inspector_company" placeholder="회사명"></td></tr>
+                <tr><th>점검자 담당자</th><td><input type="text" id="cover_inspector_name" placeholder="담당자명"></td>
+                    <th>확인자 기관부서</th><td><input type="text" id="cover_approver_org" placeholder="기관 담당부서"></td></tr>
+                <tr><th>확인자 담당자</th><td><input type="text" id="cover_approver_name" placeholder="담당자명"></td></tr>
+            </table>
+        </div>
+
+        <!-- ② 점검리포트 -->
+        <div class="form-section" id="section-1">
+            <h3><i class="fas fa-clipboard-list"></i> ② 점검리포트</h3>
+            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">월별 점검 및 장애조치 이력</p>
+            <table class="dynamic-table" id="reportTable">
+                <thead><tr><th>년/월/일</th><th>업무</th><th>증상</th><th>조치내용</th><th></th></tr></thead>
+                <tbody id="reportBody">
+                    <tr>
+                        <td><input type="date"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addReportRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
+
+            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">점검대상 시스템</p>
+            <table class="dynamic-table" id="targetTable">
+                <thead><tr><th>제품명</th><th>버전</th><th>수량</th><th>용도</th><th>설치일</th><th></th></tr></thead>
+                <tbody id="targetBody">
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><input type="number"></td>
+                        <td><input type="text"></td>
+                        <td><input type="date"></td>
+                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addTargetRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 제품 추가</button>
+
+            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">시스템구성도</p>
+            <table class="form-table">
+                <tr><th>구성도</th><td colspan="3"><textarea id="report_diagram" placeholder="시스템 구성도 설명 또는 이미지 링크"></textarea></td></tr>
+            </table>
+        </div>
+
+        <!-- ③ 정기점검상세 -->
+        <div class="form-section" id="section-2">
+            <h3><i class="fas fa-check-circle"></i> ③ 정기점검상세</h3>
+            <table class="form-table">
+                <tr><th>점검년월</th><td><input type="month" id="detail_month" placeholder="점검 대상 년월"></td></tr>
+            </table>
+
+            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">GIS SW 점검결과</p>
+            <table class="dynamic-table" id="detailTable">
+                <thead><tr><th>대상</th><th>점검내용 및 방법</th><th colspan="2">점검결과</th><th></th></tr></thead>
+                <tbody id="detailBody">
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td class="checkbox-cell"><label><input type="checkbox" value="NORMAL"> 정상 ✓</label></td>
+                        <td class="checkbox-cell"><label><input type="checkbox" value="INSPECT"> 점검 ☐</label></td>
+                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addDetailRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
+
+            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">추가 점검 내역</p>
+            <table class="form-table">
+                <tr><th>비고</th><td colspan="3"><textarea id="detail_remarks" placeholder="추가 점검사항 또는 특이사항"></textarea></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function showSection(idx, btn) {
+            document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
+            document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
+            document.getElementById('section-' + idx).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function loadInfraInfo() {
+            var sel = document.getElementById('infraId');
+            var opt = sel.options[sel.selectedIndex];
+            if (opt.value) {
+                var sys = opt.dataset.sys || '';
+                document.getElementById('cover_name').value = sys;
+            }
+        }
+
+        function updateCoverTitle() {
+            var sysType = document.getElementById('sys_type').value;
+            var titles = {
+                'UPIS': 'UPIS 시스템 점검내역서',
+                'KRAS': 'KRAS 시스템 점검내역서',
+                'IPSS': 'IPSS 시스템 점검내역서'
+            };
+            document.getElementById('cover_title').value = titles[sysType] || '점검내역서';
+        }
+
+        function addReportRow() {
+            var html = '<tr><td><input type="date"></td><td><input type="text"></td>' +
+                '<td><input type="text"></td><td><input type="text"></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('reportBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function addTargetRow() {
+            var html = '<tr><td><input type="text"></td><td><input type="text"></td>' +
+                '<td><input type="number"></td><td><input type="text"></td><td><input type="date"></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('targetBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function addDetailRow() {
+            var html = '<tr><td><input type="text"></td><td><input type="text"></td>' +
+                '<td class="checkbox-cell"><label><input type="checkbox" value="NORMAL"> 정상 ✓</label></td>' +
+                '<td class="checkbox-cell"><label><input type="checkbox" value="INSPECT"> 점검 ☐</label></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('detailBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function saveDocument() {
+            var infraId = document.getElementById('infraId').value;
+            var sysType = document.getElementById('sys_type').value;
+            var title = document.getElementById('cover_title').value || '점검내역서';
+
+            var reportRows = [];
+            document.querySelectorAll('#reportBody tr').forEach(function(row) {
+                var cells = row.cells;
+                reportRows.push({
+                    date: cells[0].querySelector('input').value,
+                    work: cells[1].querySelector('input').value,
+                    symptom: cells[2].querySelector('input').value,
+                    action: cells[3].querySelector('input').value
+                });
+            });
+
+            var targetRows = [];
+            document.querySelectorAll('#targetBody tr').forEach(function(row) {
+                var cells = row.cells;
+                targetRows.push({
+                    productName: cells[0].querySelector('input').value,
+                    version: cells[1].querySelector('input').value,
+                    quantity: cells[2].querySelector('input').value,
+                    purpose: cells[3].querySelector('input').value,
+                    installDate: cells[4].querySelector('input').value
+                });
+            });
+
+            var detailRows = [];
+            document.querySelectorAll('#detailBody tr').forEach(function(row) {
+                var cells = row.cells;
+                var normalCheck = cells[2].querySelector('input[value="NORMAL"]').checked;
+                var inspectCheck = cells[3].querySelector('input[value="INSPECT"]').checked;
+                detailRows.push({
+                    target: cells[0].querySelector('input').value,
+                    inspectionContent: cells[1].querySelector('input').value,
+                    result: normalCheck ? 'NORMAL' : (inspectCheck ? 'INSPECT' : '')
+                });
+            });
+
+            var sections = [
+                { sectionKey: 'cover', sectionData: {
+                    name: document.getElementById('cover_name').value,
+                    sysType: sysType,
+                    title: document.getElementById('cover_title').value,
+                    month: document.getElementById('cover_month').value,
+                    inspectorCompany: document.getElementById('cover_inspector_company').value,
+                    inspectorName: document.getElementById('cover_inspector_name').value,
+                    approverOrg: document.getElementById('cover_approver_org').value,
+                    approverName: document.getElementById('cover_approver_name').value
+                }},
+                { sectionKey: 'report', sectionData: {
+                    reports: reportRows,
+                    targets: targetRows,
+                    diagram: document.getElementById('report_diagram').value
+                }},
+                { sectionKey: 'monthly_detail', sectionData: {
+                    month: document.getElementById('detail_month').value,
+                    details: detailRows,
+                    remarks: document.getElementById('detail_remarks').value
+                }}
+            ];
+
+            fetch('/document/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docType: 'INSPECT',
+                    infraId: infraId || null,
+                    title: title,
+                    sections: sections
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('저장되었습니다. 문서번호: ' + data.docNo);
+                    location.href = '/document/detail/' + data.docId;
+                } else {
+                    alert(data.error || '저장 실패');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

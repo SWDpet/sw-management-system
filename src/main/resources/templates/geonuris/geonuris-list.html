@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoNURIS 라이선스 대장 - SW 관리 시스템</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1500px; margin: 0 auto; padding: 20px; }
+
+        /* 헤더 */
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-left h1 { font-size: 24px; color: #1a5276; margin-bottom: 4px; }
+        .header-left p { color: #666; font-size: 13px; }
+        .header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        /* 버튼 */
+        .btn { display: inline-flex; align-items: center; gap: 4px;
+               padding: 8px 14px; border-radius: 6px; text-decoration: none;
+               font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+               transition: all 0.2s; white-space: nowrap; line-height: 1.4; }
+        .btn:hover { opacity: 0.88; }
+        .btn-primary  { background: #007bff; color: white; }
+        .btn-primary:hover { background: #0056b3; }
+        .btn-success  { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        .btn-home     { background: #6c757d; color: white; }
+        .btn-home:hover { background: #5a6268; }
+        .btn-registry { background: #6f42c1; color: white; }
+        .btn-registry:hover { background: #5a32a3; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        .btn-outline { background: white; border: 1px solid #007bff; color: #007bff; }
+        .btn-outline:hover { background: #007bff; color: white; }
+        .btn-download { background: #17a2b8; color: white; }
+        .btn-download:hover { background: #138496; }
+        .btn-csv { background: #1e8449; color: white; font-size:12px; padding:6px 12px; }
+        .btn-csv:hover { background: #196f3d; }
+        .stat-csv { display:inline-block; margin-left:6px; padding:2px 7px; border-radius:4px;
+                    background:#1e8449; color:white; font-size:11px; text-decoration:none;
+                    vertical-align:middle; opacity:0.85; transition:opacity 0.2s; }
+        .stat-csv:hover { opacity:1; color:white; text-decoration:none; }
+
+        /* 검색 */
+        .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-input { padding: 9px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .search-input:focus { outline: none; border-color: #007bff; }
+
+        /* 통계 카드 */
+        .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .stat-card { background: white; border-radius: 8px; padding: 14px 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+                     cursor: pointer; text-decoration: none; transition: all 0.2s; min-width: 110px; text-align: center; }
+        .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .stat-card.active { border: 2px solid #007bff; }
+        .stat-num { font-size: 24px; font-weight: bold; color: #1a5276; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 2px; }
+        .stat-card.gss30  .stat-num { color: #2471a3; }
+        .stat-card.gss35  .stat-num { color: #1a5276; }
+        .stat-card.desktop .stat-num { color: #6f42c1; }
+        .stat-card.setla  .stat-num { color: #28a745; }
+        .stat-card.setlp  .stat-num { color: #fd7e14; }
+
+        /* 메시지 */
+        .alert { padding: 12px 16px; border-radius: 5px; margin-bottom: 16px; font-size: 14px; }
+        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .alert-error   { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .alert-new-badge { display: inline-block; background: #007bff; color: white;
+                           font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+
+        /* 테이블 */
+        .table-section { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .table-header { display: flex; justify-content: space-between; align-items: center;
+                        padding: 16px 20px; border-bottom: 1px solid #eee; }
+        .table-header h2 { font-size: 16px; color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; padding: 11px 10px; text-align: left; font-size: 13px;
+             color: #555; border-bottom: 2px solid #dee2e6; white-space: nowrap; }
+        td { padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; vertical-align: middle; }
+        tr:hover td { background: #f8f9fa; }
+
+        /* 뱃지 */
+        .badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .badge-gss30   { background: #cce5ff; color: #004085; }
+        .badge-gss35   { background: #d1ecf1; color: #0c5460; }
+        .badge-desktop { background: #e2d9f3; color: #4a2080; }
+        .badge-setl_agent { background: #d4edda; color: #155724; }
+        .badge-setl_proxy { background: #fff3cd; color: #856404; }
+
+        .expired-row td { color: #aaa; }
+        .expiring-soon { color: #e74c3c !important; font-weight: bold; }
+        .no-data { text-align: center; padding: 50px; color: #999; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ── 헤더 ── -->
+    <div class="header">
+        <div class="header-top">
+            <div class="header-left">
+                <h1>🔑 GeoNURIS 라이선스 대장</h1>
+                <p>GeoNURIS 제품군 라이선스 발급 이력 관리</p>
+            </div>
+            <div class="header-right">
+                <a th:href="@{/}" class="btn btn-home">🏠 메인으로</a>
+                <a th:href="@{/license/registry/list}" class="btn btn-registry">📋 라이선스 대장</a>
+                <a th:if="${hasEditPermission}" th:href="@{/geonuris/license/new}" class="btn btn-success">➕ 라이선스 발급</a>
+                <a th:href="@{/geonuris/license/download/csv}" class="btn btn-csv">⬇ 전체 CSV</a>
+                <!-- QR 라이선스 발급 -->
+                <a th:href="@{/qr-license/issue}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR발급</a>
+                <!-- QR 라이선스 대장 -->
+                <a th:href="@{/qr-license/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR대장</a>
+            </div>
+        </div>
+
+        <!-- 검색 -->
+        <form th:action="@{/geonuris/license/list}" method="get" class="search-row">
+            <input type="text" name="keyword" class="search-input" style="width:280px;"
+                   placeholder="🔍 사용자, 기관, 이메일, MAC 주소 검색..."
+                   th:value="${keyword}">
+            <button type="submit" class="btn btn-primary">검색</button>
+            <a th:href="@{/geonuris/license/list}" class="btn btn-outline">초기화</a>
+        </form>
+    </div>
+
+    <!-- ── 통계 카드 ── -->
+    <div class="stats-row" th:if="${stats != null}">
+        <a th:href="@{/geonuris/license/list}" class="stat-card"
+           th:classappend="${selectedType == null ? ' active' : ''}">
+            <div class="stat-num" th:text="${stats.total}">0</div>
+            <div class="stat-label">전체</div>
+        </a>
+        <a th:href="@{/geonuris/license/list(type='GSS30')}" class="stat-card gss30"
+           th:classappend="${selectedType == 'GSS30' ? ' active' : ''}">
+            <div class="stat-num" th:text="${stats.gss30}">0</div>
+            <div class="stat-label">GSS 3.0</div>
+        </a>
+        <a th:href="@{/geonuris/license/download/csv(type='GSS30')}" class="stat-csv" title="GSS 3.0 CSV 다운로드">CSV ⬇</a>
+        <a th:href="@{/geonuris/license/list(type='GSS35')}" class="stat-card gss35"
+           th:classappend="${selectedType == 'GSS35' ? ' active' : ''}">
+            <div class="stat-num" th:text="${stats.gss35}">0</div>
+            <div class="stat-label">GSS 3.5</div>
+        </a>
+        <a th:href="@{/geonuris/license/download/csv(type='GSS35')}" class="stat-csv" title="GSS 3.5 CSV 다운로드">CSV ⬇</a>
+        <a th:href="@{/geonuris/license/list(type='DESKTOP')}" class="stat-card desktop"
+           th:classappend="${selectedType == 'DESKTOP' ? ' active' : ''}">
+            <div class="stat-num" th:text="${stats.desktop}">0</div>
+            <div class="stat-label">Desktop</div>
+        </a>
+        <a th:href="@{/geonuris/license/download/csv(type='DESKTOP')}" class="stat-csv" title="Desktop CSV 다운로드">CSV ⬇</a>
+        <a th:href="@{/geonuris/license/list(type='SETL_AGENT')}" class="stat-card setla"
+           th:classappend="${selectedType == 'SETL_AGENT' ? ' active' : ''}">
+            <div class="stat-num" th:text="${stats.setlAgent}">0</div>
+            <div class="stat-label">SETL Agent</div>
+        </a>
+        <a th:href="@{/geonuris/license/download/csv(type='SETL_AGENT')}" class="stat-csv" title="SETL Agent CSV 다운로드">CSV ⬇</a>
+        <a th:href="@{/geonuris/license/list(type='SETL_PROXY')}" class="stat-card setlp"
+           th:classappend="${selectedType == 'SETL_PROXY' ? ' active' : ''}">
+            <div class="stat-num" th:text="${stats.setlProxy}">0</div>
+            <div class="stat-label">SETL Proxy</div>
+        </a>
+        <a th:href="@{/geonuris/license/download/csv(type='SETL_PROXY')}" class="stat-csv" title="SETL Proxy CSV 다운로드">CSV ⬇</a>
+    </div>
+
+    <!-- ── 메시지 ── -->
+    <div th:if="${success}" class="alert alert-success">
+        ✅ <span th:text="${message}"></span>
+        <span th:if="${newId != null}" class="alert-new-badge">NEW</span>
+        <a th:if="${newId != null}" th:href="@{/geonuris/license/{id}(id=${newId})}"
+           style="margin-left:10px; color:#155724; font-weight:bold;">상세보기 →</a>
+    </div>
+    <div th:if="${error}" class="alert alert-error">
+        ❌ <span th:text="${message}"></span>
+    </div>
+
+    <!-- ── 목록 테이블 ── -->
+    <div class="table-section">
+        <div class="table-header">
+            <h2>라이선스 목록
+                <span style="color:#666; font-weight:normal; font-size:13px;">
+                    (총 <strong th:text="${licenses != null ? licenses.size() : 0}">0</strong>건)
+                </span>
+            </h2>
+            <!-- 현재 필터 기준으로 CSV 다운로드 -->
+            <a th:if="${selectedType != null}"
+               th:href="@{/geonuris/license/download/csv(type=${selectedType})}"
+               class="btn btn-csv">⬇ 현재 필터 CSV</a>
+            <a th:if="${selectedType == null}"
+               th:href="@{/geonuris/license/download/csv}"
+               class="btn btn-csv">⬇ 전체 CSV</a>
+        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>라이선스 종류</th>
+                <th>사용자</th>
+                <th>기관/회사</th>
+                <th>연락처</th>
+                <th>이메일</th>
+                <th>발급자</th>
+                <th>발급일시</th>
+                <th>만료일시</th>
+                <th style="text-align:center;">상세</th>
+                <th th:if="${isAdmin}" style="text-align:center;">관리</th>
+                <th style="text-align:center;">다운로드</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${licenses == null or licenses.isEmpty()}">
+                <td th:colspan="${isAdmin ? 12 : 11}" class="no-data">📭 발급된 라이선스가 없습니다.</td>
+            </tr>
+            <tr th:each="lic : ${licenses}"
+                th:classappend="${lic.expired ? 'expired-row' : ''}">
+                <td th:text="${lic.id}" style="color:#999; font-size:12px;"></td>
+                <td>
+                    <span th:class="'badge badge-' + ${lic.licenseType.toLowerCase()}"
+                          th:text="${lic.licenseTypeLabel}"></span>
+                </td>
+                <td th:text="${lic.userName}">-</td>
+                <td th:text="${lic.organization}">-</td>
+                <td th:text="${lic.phone}">-</td>
+                <td th:text="${lic.email}">-</td>
+                <td th:text="${lic.issuer}">-</td>
+                <td th:text="${#temporals.format(lic.createdAt, 'yyyy-MM-dd HH:mm')}">-</td>
+                <td>
+                    <span th:if="${lic.expired}" style="color:#aaa;"
+                          th:text="${#temporals.format(lic.expiryDate, 'yyyy-MM-dd')}"></span>
+                    <span th:unless="${lic.expired}"
+                          th:classappend="${lic.daysRemaining < 30 ? 'expiring-soon' : ''}"
+                          th:text="${#temporals.format(lic.expiryDate, 'yyyy-MM-dd')}"></span>
+                    <small th:if="${!lic.expired and lic.daysRemaining < 30}"
+                           class="expiring-soon"> (D-[[${lic.daysRemaining}]])</small>
+                    <small th:if="${lic.expired}" style="color:#ccc;"> (만료)</small>
+                </td>
+                <td style="text-align:center;">
+                    <a th:href="@{/geonuris/license/{id}(id=${lic.id})}"
+                       class="btn btn-sm btn-outline">상세</a>
+                </td>
+                <td th:if="${isAdmin}" style="text-align:center; white-space:nowrap;">
+                    <a th:href="@{/geonuris/license/{id}/edit(id=${lic.id})}"
+                       class="btn btn-sm" style="background:#e67e22; color:white;">✏️</a>
+                    <form th:action="@{/geonuris/license/{id}/delete(id=${lic.id})}"
+                          method="post" style="display:inline; margin:0;"
+                          th:attr="data-name=${lic.userName}"
+                          onsubmit="return confirm('삭제하시겠습니까?\n사용자: ' + this.dataset.name);">
+                        <button type="submit" class="btn btn-sm" style="background:#dc3545; color:white; border:none;">🗑️</button>
+                    </form>
+                </td>
+                <td style="text-align:center;">
+                    <a th:if="${lic.licenseData != null}"
+                       th:href="@{/geonuris/license/{id}/download(id=${lic.id})}"
+                       class="btn btn-sm btn-download">⬇ 다운로드</a>
+                    <span th:unless="${lic.licenseData != null}" style="color:#ccc; font-size:12px;">없음</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>

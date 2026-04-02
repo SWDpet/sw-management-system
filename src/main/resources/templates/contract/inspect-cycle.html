@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>점검주기 관리</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 40px 20px; color: #333; }
+        .container { max-width: 1400px; margin: auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); }
+        .page-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #00897b; }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table th { background: #e0f2f1; color: #00695c; padding: 12px 10px; border: 1px solid #b2dfdb; text-align: center; font-weight: 700; font-size: 0.9em; }
+        .data-table td { padding: 10px; border: 1px solid #e3e6f0; text-align: center; font-size: 0.9em; }
+        .data-table tbody tr:hover { background: #f0faf9; }
+        .data-table tbody tr:nth-child(even) { background: #fafbfc; }
+
+        .cycle-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; color: white; }
+        .cycle-monthly { background: #e74a3b; }
+        .cycle-quarterly { background: #2196f3; }
+        .cycle-half { background: #ff9800; }
+
+        .btn-back { padding: 10px 25px; background: #858796; color: white; border: none; border-radius: 5px; font-weight: 700; text-decoration: none; }
+        .btn-back:hover { opacity: 0.9; }
+
+        /* 등록 폼 */
+        .add-form { background: #f8f9fc; border: 1px solid #e0e0e0; border-radius: 8px; padding: 25px; margin-bottom: 30px; }
+        .add-form h3 { margin: 0 0 15px 0; color: #00695c; font-size: 1.05em; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+        .form-row label { font-weight: 600; font-size: 0.9em; min-width: 100px; color: #555; }
+        .form-row select, .form-row input { padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.9em; }
+        .form-row select { min-width: 180px; }
+        .form-row input { min-width: 150px; }
+        .btn-save { padding: 10px 25px; background: #00897b; color: white; border: none; border-radius: 5px; font-weight: 700; cursor: pointer; }
+        .btn-save:hover { background: #00695c; }
+        .btn-del { background: #e74a3b; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; font-size: 0.85em; }
+        .btn-del:hover { background: #c0392b; }
+
+        .empty-msg { padding: 40px; text-align: center; color: #999; }
+        .summary { font-size: 0.9em; color: #666; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-sync-alt"></i> 점검주기 관리</h2>
+            <a href="/contract/list" class="btn-back"><i class="fas fa-arrow-left"></i> 사업현황 목록</a>
+        </div>
+
+        <!-- 등록 폼 -->
+        <th:block th:if="${userAuth == 'EDIT'}">
+            <div class="add-form">
+                <h3><i class="fas fa-plus-circle"></i> 점검주기 등록</h3>
+                <form action="/contract/inspect-cycle/save" method="post">
+                    <div class="form-row">
+                        <label>지자체 (인프라)</label>
+                        <select name="infraId" required>
+                            <option value="">-- 지자체 선택 --</option>
+                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
+                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' (' + infra.sysNm + ')'}"></option>
+                        </select>
+
+                        <label>점검주기</label>
+                        <select name="cycleType" required>
+                            <option value="MONTHLY">매월</option>
+                            <option value="QUARTERLY" selected>분기</option>
+                            <option value="HALF_YEARLY">반기</option>
+                        </select>
+
+                        <label>담당자</label>
+                        <select name="assigneeId">
+                            <option value="">-- 선택 --</option>
+                            <option th:each="user : ${users}" th:value="${user.userSeq}"
+                                    th:text="${user.username + ' (' + (user.position != null ? user.position : '') + ')'}"></option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>담당자(지자체)</label>
+                        <input type="text" name="contactName" placeholder="지자체 담당자명">
+                        <label>연락처</label>
+                        <input type="text" name="contactPhone" placeholder="ex) 063-123-4567">
+                        <label>이메일</label>
+                        <input type="text" name="contactEmail" placeholder="이메일">
+                        <label>사전연락(일)</label>
+                        <input type="number" name="preContactDays" value="7" style="width: 80px; text-align: center;">
+                    </div>
+                    <div style="text-align: right; margin-top: 10px;">
+                        <button type="submit" class="btn-save"><i class="fas fa-save"></i> 등록</button>
+                    </div>
+                </form>
+            </div>
+        </th:block>
+
+        <div class="summary">총 <strong th:text="${#lists.size(cycles)}">0</strong>건의 점검주기가 등록되어 있습니다.</div>
+
+        <!-- 목록 -->
+        <table class="data-table" th:if="${!#lists.isEmpty(cycles)}">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No</th>
+                    <th style="width: 8%;">시도</th>
+                    <th style="width: 10%;">시군구</th>
+                    <th style="width: 13%;">시스템</th>
+                    <th style="width: 8%;">점검주기</th>
+                    <th style="width: 10%;">우리측 담당</th>
+                    <th style="width: 10%;">지자체 담당</th>
+                    <th style="width: 10%;">연락처</th>
+                    <th style="width: 10%;">이메일</th>
+                    <th style="width: 6%;">사전연락</th>
+                    <th th:if="${userAuth == 'EDIT'}" style="width: 6%;">삭제</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="c, stat : ${cycles}">
+                    <td th:text="${stat.index + 1}"></td>
+                    <td th:text="${c.infra?.cityNm}"></td>
+                    <td th:text="${c.infra?.distNm}"></td>
+                    <td style="text-align: left; padding-left: 15px;" th:text="${c.infra?.sysNm}"></td>
+                    <td>
+                        <span class="cycle-badge"
+                              th:classappend="${c.cycleType == 'MONTHLY'} ? 'cycle-monthly' : (${c.cycleType == 'QUARTERLY'} ? 'cycle-quarterly' : 'cycle-half')"
+                              th:text="${c.cycleType == 'MONTHLY'} ? '매월' : (${c.cycleType == 'QUARTERLY'} ? '분기' : '반기')"></span>
+                    </td>
+                    <td th:text="${c.assignee?.username}"></td>
+                    <td th:text="${c.contactName}"></td>
+                    <td th:text="${c.contactPhone}"></td>
+                    <td th:text="${c.contactEmail}"></td>
+                    <td th:text="${c.preContactDays + '일 전'}"></td>
+                    <td th:if="${userAuth == 'EDIT'}">
+                        <form th:action="@{/contract/inspect-cycle/delete/{id}(id=${c.cycleId})}" method="post" style="display: inline;"
+                              onsubmit="return confirm('삭제하시겠습니까?');">
+                            <button type="submit" class="btn-del"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div th:if="${#lists.isEmpty(cycles)}" class="empty-msg">
+            <i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 10px;"></i><br>
+            등록된 점검주기가 없습니다.
+        </div>
+    </div>
+</body>
+</html>

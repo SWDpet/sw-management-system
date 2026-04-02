@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>라이선스 상세 정보</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        .detail-section {
+            margin-bottom: 40px;
+        }
+        .detail-row {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .detail-label {
+            flex: 0 0 200px;
+            font-weight: bold;
+            color: #555;
+        }
+        .detail-value {
+            flex: 1;
+        }
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .form-input:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+        .form-input.readonly {
+            background-color: #f9f9f9;
+            border-color: #e0e0e0;
+        }
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .badge-success { background-color: #28a745; color: white; }
+        .badge-warning { background-color: #ffc107; color: #333; }
+        .badge-danger { background-color: #dc3545; color: white; }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 라이선스 상세 정보</h1>
+        
+        <!-- 성공 메시지 -->
+        <div th:if="${success != null and success and message != null}" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            ✅ <span th:text="${message}"></span>
+        </div>
+        
+        <!-- 에러 메시지 -->
+        <div th:if="${error != null and error and message != null}" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            ❌ <span th:text="${message}"></span>
+        </div>
+        
+        <form id="licenseForm" th:action="@{/license/registry/update}" method="post">
+            <input type="hidden" name="id" th:value="${license.id}" />
+            
+            <!-- 기본 정보 섹션 -->
+            <div class="detail-section">
+                <h3 style="margin-bottom: 20px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+                    📝 기본 정보
+                </h3>
+                
+                <div class="detail-row">
+                    <div class="detail-label">License ID</div>
+                    <div class="detail-value">
+                        <input type="text" name="licenseId" class="form-input readonly" 
+                               th:value="${license.licenseId}" readonly />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Product ID</div>
+                    <div class="detail-value">
+                        <input type="text" name="productId" class="form-input readonly" 
+                               th:value="${license.productId}" readonly />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Full Name</div>
+                    <div class="detail-value">
+                        <input type="text" name="fullName" class="form-input" 
+                               th:value="${license.fullName}" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Registered To</div>
+                    <div class="detail-value">
+                        <input type="text" name="registeredTo" class="form-input" 
+                               th:value="${license.registeredTo}" placeholder="한글/영문 이름" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Company</div>
+                    <div class="detail-value">
+                        <input type="text" name="company" class="form-input" 
+                               th:value="${license.company}" placeholder="한글/영문 회사명" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">E-Mail</div>
+                    <div class="detail-value">
+                        <input type="email" name="email" class="form-input" 
+                               th:value="${license.email}" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Telephone</div>
+                    <div class="detail-value">
+                        <input type="text" name="telephone" class="form-input" 
+                               th:value="${license.telephone}" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Country (발급자)</div>
+                    <div class="detail-value">
+                        <input type="text" name="country" class="form-input" 
+                               th:value="${license.country}" disabled />
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 라이선스 정보 섹션 -->
+            <div class="detail-section">
+                <h3 style="margin-bottom: 20px; color: #333; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+                    📅 라이선스 정보
+                </h3>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Generation DateTime</div>
+                    <div class="detail-value">
+                        <input type="datetime-local" name="generationDateTime" class="form-input" 
+                               th:value="${license.generationDateTime != null ? #temporals.format(license.generationDateTime, 'yyyy-MM-dd''T''HH:mm') : ''}" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Validity Period (일)</div>
+                    <div class="detail-value">
+                        <input type="number" name="validityPeriod" class="form-input" 
+                               th:value="${license.validityPeriod}" placeholder="0 = 무제한" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">상태</div>
+                    <div class="detail-value">
+                        <span th:if="${license.expiryDate == null}" class="badge badge-success">무제한</span>
+                        <span th:if="${license.expiryDate != null && !license.expired}" class="badge badge-success">
+                            정상 (D-<span th:text="${license.daysRemaining}"></span>)
+                        </span>
+                        <span th:if="${license.expiryDate != null && license.daysRemaining <= 30 && !license.expired}" 
+                              class="badge badge-warning">
+                            곧 만료 (D-<span th:text="${license.daysRemaining}"></span>)
+                        </span>
+                        <span th:if="${license.expired}" class="badge badge-danger">만료됨</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 기술 정보 섹션 -->
+            <div class="detail-section">
+                <h3 style="margin-bottom: 20px; color: #333; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">
+                    🔧 기술 정보
+                </h3>
+                
+                <div class="detail-row">
+                    <div class="detail-label">Hardware ID</div>
+                    <div class="detail-value">
+                        <input type="text" name="hardwareId" class="form-input" 
+                               th:value="${license.hardwareId}" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">License Type</div>
+                    <div class="detail-value">
+                        <input type="text" name="licenseType" class="form-input" 
+                               th:value="${license.licenseType}" disabled />
+                    </div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">License String</div>
+                    <div class="detail-value">
+                        <textarea name="licenseString" class="form-input" 
+                                  th:text="${license.licenseString}" disabled></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 버튼 그룹 -->
+            <div class="button-group">
+                <!-- EDIT 권한이 있을 때만 수정 버튼 표시 -->
+                <button type="button" id="editBtn" class="btn btn-warning"
+                        th:if="${hasEditPermission}" onclick="toggleEditMode()">
+                    ✏️ 수정
+                </button>
+
+                <button type="submit" id="saveBtn" class="btn btn-success"
+                        th:if="${hasEditPermission}" style="display: none;">
+                    💾 저장
+                </button>
+
+                <button type="button" id="cancelBtn" class="btn btn-secondary"
+                        th:if="${hasEditPermission}" style="display: none;" onclick="cancelEdit()">
+                    🔄 취소
+                </button>
+
+                <a th:href="@{/license/registry/list}" class="btn btn-secondary">
+                    ← 목록으로
+                </a>
+
+                <!-- QR 라이선스 발급 -->
+                <a th:href="@{/qr-license/issue}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR발급</a>
+                <!-- QR 라이선스 대장 -->
+                <a th:href="@{/qr-license/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR대장</a>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        let originalValues = {};
+        
+        function toggleEditMode() {
+            // 모든 입력 필드 활성화 (readonly 제외)
+            const inputs = document.querySelectorAll('.form-input:not(.readonly)');
+            inputs.forEach(input => {
+                if (!input.disabled) return;
+                input.disabled = false;
+                // 원본 값 저장
+                if (input.tagName === 'TEXTAREA') {
+                    originalValues[input.name] = input.value;
+                } else {
+                    originalValues[input.name] = input.value;
+                }
+            });
+            
+            // 버튼 전환
+            document.getElementById('editBtn').style.display = 'none';
+            document.getElementById('saveBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+        }
+        
+        function cancelEdit() {
+            // 모든 입력 필드 비활성화 및 원본 값 복원
+            const inputs = document.querySelectorAll('.form-input:not(.readonly)');
+            inputs.forEach(input => {
+                input.disabled = true;
+                if (originalValues[input.name] !== undefined) {
+                    input.value = originalValues[input.name];
+                }
+            });
+            
+            // 버튼 전환
+            document.getElementById('editBtn').style.display = 'inline-block';
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            
+            // 원본 값 초기화
+            originalValues = {};
+        }
+
+        // ── 단축키: Insert → 수정, End → 저장 ──
+        document.addEventListener('keydown', function(e) {
+            const editBtn  = document.getElementById('editBtn');
+            const saveBtn  = document.getElementById('saveBtn');
+
+            if (e.key === 'Insert') {
+                e.preventDefault();
+                if (editBtn && editBtn.style.display !== 'none') {
+                    toggleEditMode();
+                }
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                if (saveBtn && saveBtn.style.display !== 'none') {
+                    saveBtn.closest('form').requestSubmit(saveBtn);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

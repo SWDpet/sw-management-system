@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where psql:*)",
+      "Bash(\"C:/Users/PUJ/PostgreSQL/16/bin/psql.exe\" -h 192.168.10.194 -p 5880 -U SW_Dept -d SW_Dept -c \"SELECT version\\(\\);\")",
+      "Bash(PGPASSWORD='1qkrdnrwls!' \"C:/Users/PUJ/PostgreSQL/16/bin/psql.exe\" -h 192.168.10.194 -p 5880 -U SW_Dept -d SW_Dept -c \"SELECT version\\(\\);\")",
+      "Bash(PGPASSWORD='1qkrdnrwls!' \"C:/Users/PUJ/PostgreSQL/16/bin/psql.exe\" -h 192.168.10.194 -p 5880 -U SW_Dept -d SW_Dept -w -c \"\\\\conninfo\")",
+      "Bash(export PGPASSWORD='1qkrdnrwls!')",
+      "Bash(\"C:/Users/PUJ/PostgreSQL/16/bin/psql.exe\" \"host=192.168.10.194 port=5880 dbname=SW_Dept user=SW_Dept password=1qkrdnrwls!\" -c \"SELECT 1;\")",
+      "Bash(\"C:/Users/PUJ/PostgreSQL/16/bin/psql.exe\" \"postgresql://SW_Dept:1qkrdnrwls!@192.168.10.194:5880/SW_Dept\" -c \"SELECT version\\(\\);\")",
+      "Bash(~/AppData/Roaming/postgresql/pgpass.conf)",
+      "Bash(mkdir -p ~/AppData/Roaming/postgresql)",
+      "Bash(mkdir -p \"C:/Users/PUJ/AppData/Roaming/postgresql\")",
+      "Bash(\"C:/Users/PUJ/AppData/Roaming/postgresql/pgpass.conf\")",
+      "Bash(\"C:/Users/PUJ/PostgreSQL/16/bin/psql.exe\" -h 192.168.10.194 -p 5880 -U SW_Dept -d SW_Dept -w -c \"SELECT version\\(\\);\")",
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(\"C:/Users/PUJ/eclipse-workspace/swmanager/mvnw.cmd\" -version)",
+      "Bash(git --version)"
+    ]
+  }
+}

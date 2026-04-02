@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>업무 캘린더</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1600px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+
+        /* 필터 바 */
+        .filter-bar { background: white; border-radius: 10px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 0.1rem 0.75rem 0 rgba(58,59,69,0.1); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .filter-bar label { font-size: 0.85em; font-weight: 600; color: #5a5c69; }
+        .filter-bar select { padding: 7px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.85em; }
+        .filter-bar .btn-filter { padding: 7px 15px; border: none; border-radius: 5px; font-size: 0.85em; cursor: pointer; font-weight: 600; }
+        .btn-reset { background: #858796; color: white; }
+
+        /* 유형 범례 */
+        .legend { display: flex; gap: 12px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.8em; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+        /* 캘린더 영역 */
+        .calendar-wrap { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); }
+        #calendar { min-height: 650px; }
+
+        /* FullCalendar 커스텀 */
+        .fc .fc-toolbar-title { font-size: 1.3em; font-weight: 700; color: #333; }
+        .fc .fc-button-primary { background: #1565c0; border-color: #1565c0; }
+        .fc .fc-button-primary:hover { background: #0d47a1; }
+        .fc .fc-button-primary:not(:disabled).fc-button-active { background: #0d47a1; }
+        .fc .fc-daygrid-event { border-radius: 4px; padding: 2px 5px; font-size: 0.8em; }
+        .fc .fc-event-title { font-weight: 600; }
+        .fc .fc-day-today { background-color: #e3f2fd !important; }
+        .fc .fc-col-header-cell { background: #f8f9fc; }
+
+        /* 이벤트 상세 팝오버 */
+        .event-popover { position: absolute; z-index: 9999; background: white; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); padding: 20px; min-width: 320px; max-width: 400px; display: none; }
+        .event-popover .pop-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .event-popover .pop-title { font-size: 1.05em; font-weight: 700; color: #333; flex: 1; }
+        .event-popover .pop-close { cursor: pointer; color: #aaa; font-size: 1.2em; padding: 0 5px; }
+        .event-popover .pop-close:hover { color: #333; }
+        .event-popover .pop-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600; color: white; margin-right: 5px; }
+        .event-popover .pop-info { font-size: 0.85em; color: #666; margin: 6px 0; }
+        .event-popover .pop-info i { width: 18px; color: #888; }
+        .event-popover .pop-actions { margin-top: 15px; padding-top: 12px; border-top: 1px solid #eee; display: flex; gap: 8px; }
+        .event-popover .pop-actions a, .event-popover .pop-actions button {
+            padding: 6px 14px; border-radius: 5px; font-size: 0.82em; font-weight: 600; cursor: pointer; text-decoration: none; border: none;
+        }
+        .btn-edit { background: #1565c0; color: white; }
+        .btn-delete { background: #e74a3b; color: white; }
+        .btn-status { background: #f6c23e; color: #333; }
+
+        /* 버튼 */
+        .btn-new { padding: 10px 20px; background: #1cc88a; color: white; border: none; border-radius: 5px; font-weight: 700; text-decoration: none; font-size: 0.9em; }
+        .btn-new:hover { background: #17a673; }
+        .btn-back { padding: 10px 20px; background: #858796; color: white; border: none; border-radius: 5px; font-weight: 700; text-decoration: none; font-size: 0.9em; }
+
+        /* 상태변경 모달 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 30px; min-width: 380px; }
+        .modal-content h3 { margin: 0 0 20px 0; color: #333; }
+        .modal-content select, .modal-content textarea { width: 100%; padding: 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.9em; margin-bottom: 12px; }
+        .modal-content textarea { height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; }
+        .modal-actions button { padding: 8px 20px; border-radius: 5px; border: none; font-weight: 600; cursor: pointer; }
+        .btn-confirm { background: #1cc88a; color: white; }
+        .btn-cancel { background: #858796; color: white; }
+
+        /* 알림 */
+        .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 알림 -->
+        <div th:if="${successMessage}" class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
+        </div>
+
+        <!-- 헤더 -->
+        <div class="page-header">
+            <h2><i class="fas fa-calendar-alt"></i> 업무 캘린더</h2>
+            <div class="header-actions">
+                <a th:if="${userAuth == 'EDIT'}" href="/workplan/new" class="btn-new"><i class="fas fa-plus"></i> 업무등록</a>
+                <a href="/" class="btn-back"><i class="fas fa-home"></i> 메인</a>
+            </div>
+        </div>
+
+        <!-- 필터 -->
+        <div class="filter-bar">
+            <label>담당자</label>
+            <select id="filterAssignee">
+                <option value="">전체</option>
+                <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.username}"></option>
+            </select>
+
+            <label>유형</label>
+            <select id="filterType">
+                <option value="">전체</option>
+                <option value="CONTRACT">계약</option>
+                <option value="INSTALL">설치</option>
+                <option value="PATCH">패치</option>
+                <option value="INSPECT">점검</option>
+                <option value="PRE_CONTACT">사전연락</option>
+                <option value="FAULT">장애처리</option>
+                <option value="SUPPORT">업무지원</option>
+                <option value="SETTLE">기성/준공</option>
+                <option value="COMPLETE">정산</option>
+            </select>
+
+            <button class="btn-filter btn-reset" onclick="resetFilter()"><i class="fas fa-redo"></i> 초기화</button>
+
+            <div style="flex: 1;"></div>
+
+            <!-- 범례 -->
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#1565c0;"></div>계약</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#2e7d32;"></div>설치</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#00897b;"></div>패치</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#ff9800;"></div>점검</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#9e9e9e;"></div>사전연락</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#e74a3b;"></div>장애</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#6a1b9a;"></div>지원</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#5c6bc0;"></div>기성</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#37474f;"></div>정산</div>
+            </div>
+        </div>
+
+        <!-- 캘린더 -->
+        <div class="calendar-wrap">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <!-- 이벤트 상세 팝오버 -->
+    <div id="eventPopover" class="event-popover">
+        <div class="pop-header">
+            <div class="pop-title" id="popTitle"></div>
+            <span class="pop-close" onclick="closePopover()">&times;</span>
+        </div>
+        <div>
+            <span class="pop-badge" id="popTypeBadge"></span>
+            <span class="pop-badge" id="popStatusBadge" style="background:#858796;"></span>
+        </div>
+        <div class="pop-info" id="popStep"><i class="fas fa-tasks"></i> <span></span></div>
+        <div class="pop-info" id="popInfra"><i class="fas fa-building"></i> <span></span></div>
+        <div class="pop-info" id="popAssignee"><i class="fas fa-user"></i> <span></span></div>
+        <div class="pop-info" id="popDate"><i class="fas fa-calendar"></i> <span></span></div>
+        <div class="pop-actions" id="popActions" th:if="${userAuth == 'EDIT'}">
+            <a id="popEditLink" href="#" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
+            <button class="btn-status" onclick="openStatusModal()"><i class="fas fa-exchange-alt"></i> 상태변경</button>
+            <button class="btn-delete" onclick="confirmDelete()"><i class="fas fa-trash"></i> 삭제</button>
+        </div>
+    </div>
+
+    <!-- 상태변경 모달 -->
+    <div id="statusModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3><i class="fas fa-exchange-alt"></i> 상태 변경</h3>
+            <select id="modalStatus">
+                <option value="PLANNED">예정</option>
+                <option value="CONTACTED">연락완료</option>
+                <option value="CONFIRMED">확정</option>
+                <option value="IN_PROGRESS">진행중</option>
+                <option value="COMPLETED">완료</option>
+                <option value="POSTPONED">연기</option>
+                <option value="CANCELLED">취소</option>
+            </select>
+            <textarea id="modalReason" placeholder="사유 입력 (선택)"></textarea>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeStatusModal()">취소</button>
+                <button class="btn-confirm" onclick="submitStatusChange()">변경</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
+    <script>
+        var calendar;
+        var currentEventId = null;
+        var userAuth = '[[${userAuth}]]';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ko',
+                headerToolbar: {
+                    left: 'prev,today,next',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listMonth'
+                },
+                buttonText: {
+                    today: '오늘',
+                    month: '월간',
+                    week: '주간',
+                    list: '목록'
+                },
+                height: 'auto',
+                navLinks: true,
+                editable: false,
+                dayMaxEvents: 4,
+                moreLinkText: '개 더보기',
+
+                // 이벤트 소스: API에서 불러오기
+                events: function(info, successCallback, failureCallback) {
+                    var assigneeId = document.getElementById('filterAssignee').value;
+                    var url = '/workplan/api/events?start=' + info.startStr + '&end=' + info.endStr;
+                    if (assigneeId) url += '&assigneeId=' + assigneeId;
+
+                    fetch(url)
+                        .then(function(resp) { return resp.json(); })
+                        .then(function(data) {
+                            // 유형 필터 적용 (클라이언트 사이드)
+                            var filterType = document.getElementById('filterType').value;
+                            if (filterType) {
+                                data = data.filter(function(e) {
+                                    return e.extendedProps && e.extendedProps.planType === filterType;
+                                });
+                            }
+                            successCallback(data);
+                        })
+                        .catch(function(err) {
+                            console.error('이벤트 로딩 실패:', err);
+                            failureCallback(err);
+                        });
+                },
+
+                // 날짜 클릭: 등록 페이지로 이동
+                dateClick: function(info) {
+                    if (userAuth === 'EDIT') {
+                        window.location.href = '/workplan/new?date=' + info.dateStr;
+                    }
+                },
+
+                // 이벤트 클릭: 팝오버 표시
+                eventClick: function(info) {
+                    info.jsEvent.preventDefault();
+                    showPopover(info.event, info.jsEvent);
+                },
+
+                // 이벤트 렌더링 커스텀
+                eventDidMount: function(info) {
+                    var ep = info.event.extendedProps;
+                    if (ep.statusLabel) {
+                        info.el.title = ep.planTypeLabel + ' | ' + ep.statusLabel + (ep.assigneeName ? ' | ' + ep.assigneeName : '');
+                    }
+                }
+            });
+
+            calendar.render();
+
+            // 필터 변경 시 캘린더 리프레시
+            document.getElementById('filterAssignee').addEventListener('change', function() { calendar.refetchEvents(); });
+            document.getElementById('filterType').addEventListener('change', function() { calendar.refetchEvents(); });
+
+            // 팝오버 외부 클릭 시 닫기
+            document.addEventListener('click', function(e) {
+                var popover = document.getElementById('eventPopover');
+                if (popover.style.display === 'block' && !popover.contains(e.target) && !e.target.closest('.fc-event')) {
+                    closePopover();
+                }
+            });
+        });
+
+        function showPopover(event, jsEvent) {
+            var pop = document.getElementById('eventPopover');
+            var ep = event.extendedProps;
+
+            currentEventId = event.id;
+
+            document.getElementById('popTitle').textContent = event.title;
+
+            var typeBadge = document.getElementById('popTypeBadge');
+            typeBadge.textContent = ep.planTypeLabel;
+            typeBadge.style.background = event.backgroundColor || '#858796';
+
+            var statusBadge = document.getElementById('popStatusBadge');
+            statusBadge.textContent = ep.statusLabel;
+
+            var stepEl = document.getElementById('popStep');
+            if (ep.stepLabel && ep.processStep > 0) {
+                stepEl.style.display = 'block';
+                stepEl.querySelector('span').textContent = ep.stepLabel;
+            } else {
+                stepEl.style.display = 'none';
+            }
+
+            var infraEl = document.getElementById('popInfra');
+            if (ep.infraName && ep.infraName.trim()) {
+                infraEl.style.display = 'block';
+                infraEl.querySelector('span').textContent = ep.infraName;
+            } else {
+                infraEl.style.display = 'none';
+            }
+
+            var assigneeEl = document.getElementById('popAssignee');
+            if (ep.assigneeName) {
+                assigneeEl.style.display = 'block';
+                assigneeEl.querySelector('span').textContent = ep.assigneeName;
+            } else {
+                assigneeEl.style.display = 'none';
+            }
+
+            var dateEl = document.getElementById('popDate');
+            var dateText = event.startStr;
+            if (event.endStr && event.endStr !== event.startStr) {
+                dateText += ' ~ ' + event.endStr;
+            }
+            dateEl.querySelector('span').textContent = dateText;
+
+            // 수정 링크
+            var editLink = document.getElementById('popEditLink');
+            if (editLink) editLink.href = '/workplan/edit/' + event.id;
+
+            // 위치 계산
+            var x = jsEvent.pageX;
+            var y = jsEvent.pageY;
+            pop.style.left = Math.min(x, window.innerWidth - 420) + 'px';
+            pop.style.top = Math.min(y, window.innerHeight - 300) + 'px';
+            pop.style.display = 'block';
+        }
+
+        function closePopover() {
+            document.getElementById('eventPopover').style.display = 'none';
+            currentEventId = null;
+        }
+
+        function resetFilter() {
+            document.getElementById('filterAssignee').value = '';
+            document.getElementById('filterType').value = '';
+            calendar.refetchEvents();
+        }
+
+        function openStatusModal() {
+            closePopover();
+            document.getElementById('statusModal').style.display = 'block';
+        }
+
+        function closeStatusModal() {
+            document.getElementById('statusModal').style.display = 'none';
+            document.getElementById('modalReason').value = '';
+        }
+
+        function submitStatusChange() {
+            if (!currentEventId) return;
+
+            var status = document.getElementById('modalStatus').value;
+            var reason = document.getElementById('modalReason').value;
+
+            var formData = new FormData();
+            formData.append('status', status);
+            if (reason) formData.append('reason', reason);
+
+            fetch('/workplan/api/status/' + currentEventId, {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    closeStatusModal();
+                    calendar.refetchEvents();
+                } else {
+                    alert(data.error || '상태 변경에 실패했습니다.');
+                }
+            })
+            .catch(function() {
+                alert('상태 변경에 실패했습니다.');
+            });
+        }
+
+        function confirmDelete() {
+            if (!currentEventId) return;
+            if (confirm('이 업무계획을 삭제하시겠습니까?')) {
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/workplan/delete/' + currentEventId;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>

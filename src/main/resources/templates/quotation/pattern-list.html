@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>품명 패턴 관리 - SW Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6B3EF0;
+            --primary2: #5330C8;
+            --primary-lt: #f0ebff;
+            --bg: #f5f5f5;
+            --surface: #ffffff;
+            --text-primary: #222222;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border: #e8e8e8;
+            --border-light: #f0f0f0;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1700px; margin: 0 auto; padding: 32px; }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--text-primary);
+        }
+
+        .header-actions { display: flex; gap: 10px; }
+
+        /* Buttons */
+        .btn {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(107, 62, 240, 0.25); }
+        .btn-secondary { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg); border-color: var(--text-secondary); }
+        .btn-danger { background: #fee2e2; color: var(--error); }
+        .btn-danger:hover { background: #fecaca; }
+        .btn-success { background: #dcfce7; color: var(--success); }
+        .btn-success:hover { background: #bbf7d0; }
+        .btn-small { padding: 6px 12px; font-size: 0.8rem; }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Filter */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .filter-bar select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-lt);
+        }
+
+        .filter-bar .count-badge {
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Table */
+        .pattern-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .pattern-table thead {
+            background: #fafafa;
+            border-top: 1px solid var(--border);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .pattern-table th {
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .pattern-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: top;
+        }
+
+        .pattern-table tbody tr:hover { background: #fafafa; }
+
+        .pattern-table .col-cat { width: 70px; }
+        .pattern-table .col-group { width: 150px; }
+        .pattern-table .col-name { /* auto */ }
+        .pattern-table .col-unit { width: 60px; text-align: center; }
+        .pattern-table .col-price { width: 120px; text-align: right; }
+        .pattern-table .col-sub { width: 250px; }
+        .pattern-table .col-action { width: 120px; text-align: center; }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .badge-용역 { background: #E8F5E9; color: #2E7D32; }
+        .badge-제품 { background: #E3F2FD; color: #1565C0; }
+        .badge-유지보수 { background: #FFF3E0; color: #E65100; }
+
+        /* Sub-items preview */
+        .sub-preview {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            max-height: 60px;
+            overflow: hidden;
+            white-space: pre-line;
+        }
+
+        /* Group header row */
+        .group-row td {
+            background: var(--primary-lt);
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.85rem;
+            padding: 6px 14px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state p { font-size: 1rem; margin-bottom: 16px; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-head {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-head h2 {
+            font-size: 1.15rem;
+            font-weight: 800;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        .modal-close:hover { background: var(--bg); }
+
+        .modal-body { padding: 20px 24px; }
+
+        .modal-foot {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Form */
+        .fg { margin-bottom: 16px; }
+        .fg label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .fg .req { color: var(--error); }
+
+        .fg input, .fg select, .fg textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .fg input:focus, .fg select:focus, .fg textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-lt);
+        }
+
+        .fg textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+        .fg-row { display: flex; gap: 12px; }
+        .fg-row .fg { flex: 1; }
+
+        /* Alert */
+        .alert-container { position: fixed; top: 70px; right: 20px; z-index: 2000; }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .alert-success { background: #dcfce7; color: var(--success); border: 1px solid #bbf7d0; }
+        .alert-error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; }
+    </style>
+</head>
+<body>
+
+<!-- GNB -->
+<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem; font-family:'Inter',sans-serif;">S</span>
+            <span style="font-weight:800; font-size:1.08rem; color:#222; letter-spacing:-0.01em; font-family:'Noto Sans KR',sans-serif;">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">마이페이지</a>
+
+            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">서버관리</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">사업현황</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">담당자관리</a>
+            </div>
+
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">라이선스 대장</a>
+            </div>
+
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/quotation/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">견적서</a>
+                <a th:href="@{/quotation/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">견적대장</a>
+                <a th:href="@{/quotation/patterns}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">패턴관리</a>
+                <a th:href="@{/quotation/remarks-patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">비고패턴</a>
+                <a th:href="@{/quotation/wage-rates}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">노임단가</a>
+            </div>
+
+            <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" th:href="@{/admin/users}" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; margin-left:4px;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''">사용자승인</a>
+
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Alert Container -->
+<div id="alertContainer" class="alert-container"></div>
+
+<!-- Main -->
+<div class="container">
+    <div class="page-header">
+        <h1>품명 패턴 관리</h1>
+        <div class="header-actions">
+            <div id="copyBar" style="display:none;align-items:center;gap:8px;">
+                <span id="selectedCount" style="font-size:0.85rem;font-weight:600;color:var(--primary);"></span>
+                <select id="targetCategory" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+                    <option value="">복사할 분류 선택</option>
+                    <option value="용역">용역</option>
+                    <option value="제품">제품</option>
+                    <option value="유지보수">유지보수</option>
+                </select>
+                <button class="btn btn-success btn-small" onclick="copySelectedPatterns()">복사</button>
+                <button class="btn btn-secondary btn-small" onclick="clearSelection()">취소</button>
+            </div>
+            <button class="btn btn-danger" onclick="confirmResetAll()" th:if="${isAdmin}">전체 초기화</button>
+            <button class="btn btn-primary" onclick="openModal()">+ 패턴 추가</button>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card">
+        <div class="filter-bar">
+            <label style="font-weight:600;font-size:0.85rem;color:var(--text-secondary);">분류:</label>
+            <select id="filterCategory" onchange="filterPatterns()">
+                <option value="">전체</option>
+                <option value="용역" th:selected="${selectedCategory == '용역'}">용역</option>
+                <option value="제품" th:selected="${selectedCategory == '제품'}">제품</option>
+                <option value="유지보수" th:selected="${selectedCategory == '유지보수'}">유지보수</option>
+            </select>
+            <span class="count-badge" id="countBadge"></span>
+        </div>
+    </div>
+
+    <!-- Pattern Table -->
+    <div class="card" style="padding:0;">
+        <div id="tableContainer" style="overflow-x:auto;">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div id="patternModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h2 id="modalTitle">패턴 추가</h2>
+            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editPatternId"/>
+            <div class="fg-row">
+                <div class="fg">
+                    <label>분류 <span class="req">*</span></label>
+                    <select id="mCategory" required>
+                        <option value="">선택</option>
+                        <option value="용역">용역</option>
+                        <option value="제품">제품</option>
+                        <option value="유지보수">유지보수</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>패턴그룹 <span class="req">*</span></label>
+                    <input type="text" id="mGroup" placeholder="예: GIS SW 유지보수" required>
+                </div>
+            </div>
+            <div class="fg">
+                <label>품명 <span class="req">*</span></label>
+                <input type="text" id="mName" placeholder="예: GeoNURIS for KRAS v1.0(GIS S/W) 유지보수" required>
+            </div>
+            <div class="fg">
+                <label>계산 유형</label>
+                <select id="mCalcType" onchange="toggleLaborFields()">
+                    <option value="NORMAL">일반 (수동 입력)</option>
+                    <option value="LABOR">인건비 자동계산</option>
+                </select>
+            </div>
+            <div class="fg-row">
+                <div class="fg">
+                    <label>기본단위 <span class="req">*</span></label>
+                    <input type="text" id="mUnit" placeholder="식" value="식" required>
+                </div>
+                <div class="fg">
+                    <label>기본단가</label>
+                    <input type="number" id="mPrice" placeholder="0" min="0" value="0">
+                </div>
+            </div>
+            <div id="laborFields" style="display:none;">
+                <div class="fg-row">
+                    <div class="fg">
+                        <label>재경비율 (%)</label>
+                        <input type="number" id="mOverheadRate" step="0.01" value="110" placeholder="110">
+                    </div>
+                    <div class="fg">
+                        <label>기술료율 (%)</label>
+                        <input type="number" id="mTechFeeRate" step="0.01" value="20" placeholder="20">
+                    </div>
+                </div>
+                <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:0.8rem;color:#1e40af;line-height:1.6;">
+                    인건비 자동계산: 견적서 작성 시 기술등급·투입일수만 입력하면<br>
+                    직접인건비 = 노임단가(M/D) × 투입일수<br>
+                    재경비 = 직접인건비 × 재경비율(%)<br>
+                    기술료 = (직접인건비+재경비) × 기술료율(%)
+                </div>
+            </div>
+            <div class="fg">
+                <label>내용 (하위항목)</label>
+                <textarea id="mSubItems" placeholder="줄바꿈으로 구분하여 입력&#10;예:&#10;- 제품명 : GeoNURIS for KRAS v1.0&#10;- GeoNURIS Desktop 1식&#10;- 유지보수 기간 : 2026년 1월 1일~ 12월 31일"></textarea>
+            </div>
+            <div class="fg">
+                <label>설명</label>
+                <input type="text" id="mDesc" placeholder="패턴에 대한 설명 (선택)">
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+            <button class="btn btn-primary" id="modalSubmitBtn" onclick="submitPattern()">추가</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    function fetchApi(url, options = {}) {
+        if (!options.headers) options.headers = {};
+        if (csrfHeader && csrfToken) options.headers[csrfHeader] = csrfToken;
+        if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(options.body);
+        }
+        return fetch(url, options);
+    }
+
+    let allPatterns = [];
+    let selectedIds = new Set();
+
+    // Load patterns via AJAX
+    async function loadPatterns() {
+        try {
+            const res = await fetch('/api/quotation/patterns');
+            if (res.ok) {
+                allPatterns = await res.json();
+                renderTable();
+            }
+        } catch (e) {
+            console.error('Error loading patterns:', e);
+        }
+    }
+
+    function filterPatterns() {
+        renderTable();
+    }
+
+    function getFilteredPatterns() {
+        const cat = document.getElementById('filterCategory').value;
+        if (!cat) return allPatterns;
+        return allPatterns.filter(p => p.category === cat);
+    }
+
+    function formatCurrency(val) {
+        return new Intl.NumberFormat('ko-KR').format(val || 0);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function renderTable() {
+        const patterns = getFilteredPatterns();
+        const container = document.getElementById('tableContainer');
+        document.getElementById('countBadge').textContent = '총 ' + patterns.length + '건';
+
+        if (patterns.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>등록된 패턴이 없습니다.</p><button class="btn btn-primary" onclick="openModal()">+ 첫 패턴 추가하기</button></div>';
+            return;
+        }
+
+        let html = '<table class="pattern-table"><thead><tr>' +
+            '<th style="width:36px;text-align:center;"><input type="checkbox" onchange="toggleAllCheckbox(this)" title="전체 선택"></th>' +
+            '<th class="col-cat">분류</th>' +
+            '<th class="col-group">패턴그룹</th>' +
+            '<th class="col-name">품명</th>' +
+            '<th class="col-unit">단위</th>' +
+            '<th class="col-price">기본단가</th>' +
+            '<th class="col-sub">내용 (하위항목)</th>' +
+            '<th class="col-action">관리</th>' +
+            '</tr></thead><tbody>';
+
+        let lastGroup = '';
+        patterns.forEach(p => {
+            const groupKey = p.category + '|' + p.patternGroup;
+            if (groupKey !== lastGroup) {
+                html += '<tr class="group-row"><td colspan="8">' + escapeHtml(p.patternGroup) + '</td></tr>';
+                lastGroup = groupKey;
+            }
+
+            const subPreview = p.subItems ? escapeHtml(p.subItems).substring(0, 120) + (p.subItems.length > 120 ? '...' : '') : '<span style="color:#ccc;">-</span>';
+
+            const laborBadge = (p.calcType === 'LABOR') ? '<span style="display:inline-block;padding:2px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;background:#dbeafe;color:#1d4ed8;margin-left:6px;">자동계산</span>' : '';
+
+            const checked = selectedIds.has(p.patternId) ? ' checked' : '';
+            html += '<tr>' +
+                '<td style="text-align:center;"><input type="checkbox" class="pattern-chk" value="' + p.patternId + '" onchange="togglePatternCheck(this)"' + checked + '></td>' +
+                '<td><span class="badge badge-' + p.category + '">' + p.category + '</span></td>' +
+                '<td>' + escapeHtml(p.patternGroup) + '</td>' +
+                '<td style="font-weight:600;">' + escapeHtml(p.productName) + laborBadge + (p.description ? '<div style="font-size:0.78rem;color:#999;margin-top:2px;">' + escapeHtml(p.description) + '</div>' : '') + '</td>' +
+                '<td style="text-align:center;">' + escapeHtml(p.defaultUnit) + '</td>' +
+                '<td style="text-align:right;">' + formatCurrency(p.defaultUnitPrice) + '</td>' +
+                '<td><div class="sub-preview">' + subPreview + '</div></td>' +
+                '<td style="text-align:center;">' +
+                '<button class="btn btn-secondary btn-small" onclick="editPattern(' + p.patternId + ')" style="margin-right:4px;">수정</button>' +
+                '<button class="btn btn-danger btn-small" onclick="deletePattern(' + p.patternId + ', \'' + escapeHtml(p.productName).replace(/'/g, "\\'") + '\')">삭제</button>' +
+                '</td></tr>';
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function toggleLaborFields() {
+        const calcType = document.getElementById('mCalcType').value;
+        const isLabor = (calcType === 'LABOR');
+        document.getElementById('laborFields').style.display = isLabor ? 'block' : 'none';
+        // 인건비 자동계산 시 하위항목은 자동생성되므로 안내 표시
+        const subItems = document.getElementById('mSubItems');
+        if (isLabor) {
+            subItems.placeholder = '인건비 자동계산 패턴에서는 견적서 작성 시\n기술등급·투입일수 기반으로 내용이 자동 생성됩니다.\n\n필요 시 여기에 추가 항목을 입력할 수 있습니다.';
+        } else {
+            subItems.placeholder = '줄바꿈으로 구분하여 입력\n예:\n- 제품명 : GeoNURIS for KRAS v1.0\n- GeoNURIS Desktop 1식\n- 유지보수 기간 : 2026년 1월 1일~ 12월 31일';
+        }
+    }
+
+    // Modal
+    function openModal(pattern) {
+        document.getElementById('patternModal').classList.add('active');
+        if (pattern) {
+            document.getElementById('modalTitle').textContent = '패턴 수정';
+            document.getElementById('modalSubmitBtn').textContent = '저장';
+            document.getElementById('editPatternId').value = pattern.patternId;
+            document.getElementById('mCategory').value = pattern.category || '';
+            document.getElementById('mGroup').value = pattern.patternGroup || '';
+            document.getElementById('mName').value = pattern.productName || '';
+            document.getElementById('mUnit').value = pattern.defaultUnit || '식';
+            document.getElementById('mPrice').value = pattern.defaultUnitPrice || 0;
+            document.getElementById('mCalcType').value = pattern.calcType || 'NORMAL';
+            document.getElementById('mOverheadRate').value = pattern.overheadRate || 110;
+            document.getElementById('mTechFeeRate').value = pattern.techFeeRate || 20;
+            document.getElementById('mSubItems').value = pattern.subItems || '';
+            document.getElementById('mDesc').value = pattern.description || '';
+        } else {
+            document.getElementById('modalTitle').textContent = '패턴 추가';
+            document.getElementById('modalSubmitBtn').textContent = '추가';
+            document.getElementById('editPatternId').value = '';
+            document.getElementById('mCategory').value = '';
+            document.getElementById('mGroup').value = '';
+            document.getElementById('mName').value = '';
+            document.getElementById('mUnit').value = '식';
+            document.getElementById('mPrice').value = 0;
+            document.getElementById('mCalcType').value = 'NORMAL';
+            document.getElementById('mOverheadRate').value = 110;
+            document.getElementById('mTechFeeRate').value = 20;
+            document.getElementById('mSubItems').value = '';
+            document.getElementById('mDesc').value = '';
+        }
+        toggleLaborFields();
+    }
+
+    function closeModal() {
+        document.getElementById('patternModal').classList.remove('active');
+    }
+
+    function editPattern(id) {
+        const pattern = allPatterns.find(p => p.patternId === id);
+        if (pattern) openModal(pattern);
+    }
+
+    async function submitPattern() {
+        const cat = document.getElementById('mCategory').value;
+        const group = document.getElementById('mGroup').value.trim();
+        const name = document.getElementById('mName').value.trim();
+        const unit = document.getElementById('mUnit').value.trim();
+
+        if (!cat || !group || !name || !unit) {
+            showAlert('필수 항목을 모두 입력해주세요.', 'error');
+            return;
+        }
+
+        const calcType = document.getElementById('mCalcType').value;
+        const data = {
+            category: cat,
+            patternGroup: group,
+            productName: name,
+            defaultUnit: unit,
+            defaultUnitPrice: parseInt(document.getElementById('mPrice').value) || 0,
+            calcType: calcType,
+            overheadRate: calcType === 'LABOR' ? parseFloat(document.getElementById('mOverheadRate').value) || 110 : 110,
+            techFeeRate: calcType === 'LABOR' ? parseFloat(document.getElementById('mTechFeeRate').value) || 20 : 20,
+            subItems: document.getElementById('mSubItems').value,
+            description: document.getElementById('mDesc').value.trim(),
+            usageCount: 0
+        };
+
+        const editId = document.getElementById('editPatternId').value;
+        const isEdit = !!editId;
+
+        try {
+            const url = isEdit ? '/api/quotation/pattern/' + editId : '/api/quotation/pattern';
+            const method = isEdit ? 'PUT' : 'POST';
+            const res = await fetchApi(url, { method, body: data });
+            if (res.ok) {
+                closeModal();
+                showAlert(isEdit ? '패턴이 수정되었습니다.' : '패턴이 추가되었습니다.', 'success');
+                await loadPatterns();
+            } else {
+                showAlert('저장에 실패했습니다.', 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        }
+    }
+
+    async function deletePattern(id, name) {
+        if (!confirm('"' + name + '" 패턴을 삭제하시겠습니까?')) return;
+        try {
+            const res = await fetchApi('/api/quotation/pattern/' + id, { method: 'DELETE' });
+            if (res.ok) {
+                showAlert('패턴이 삭제되었습니다.', 'success');
+                await loadPatterns();
+            } else {
+                showAlert('삭제에 실패했습니다.', 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        }
+    }
+
+    async function confirmResetAll() {
+        if (!confirm('전체 패턴을 초기화하시겠습니까?\n\n모든 패턴 데이터가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.')) return;
+        if (!confirm('정말 삭제하시겠습니까? (2차 확인)')) return;
+        try {
+            const res = await fetchApi('/api/quotation/patterns/all', { method: 'DELETE' });
+            if (res.ok) {
+                const data = await res.json();
+                showAlert(data.deleted + '건의 패턴이 초기화되었습니다.', 'success');
+                await loadPatterns();
+            } else {
+                showAlert('초기화에 실패했습니다.', 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        }
+    }
+
+    function showAlert(message, type) {
+        const container = document.getElementById('alertContainer');
+        const div = document.createElement('div');
+        div.className = 'alert alert-' + type;
+        div.textContent = message;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+    }
+
+    // Close modal on Escape only (외부 클릭으로 닫히지 않도록 변경)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    // ===== 패턴 복사 기능 =====
+
+    function togglePatternCheck(cb) {
+        const id = parseInt(cb.value);
+        if (cb.checked) {
+            selectedIds.add(id);
+        } else {
+            selectedIds.delete(id);
+        }
+        updateCopyBar();
+    }
+
+    function toggleAllCheckbox(cb) {
+        const filtered = getFilteredPatterns();
+        const checkboxes = document.querySelectorAll('.pattern-chk');
+        if (cb.checked) {
+            filtered.forEach(p => selectedIds.add(p.patternId));
+            checkboxes.forEach(c => c.checked = true);
+        } else {
+            filtered.forEach(p => selectedIds.delete(p.patternId));
+            checkboxes.forEach(c => c.checked = false);
+        }
+        updateCopyBar();
+    }
+
+    function updateCopyBar() {
+        const bar = document.getElementById('copyBar');
+        if (selectedIds.size > 0) {
+            bar.style.display = 'flex';
+            document.getElementById('selectedCount').textContent = selectedIds.size + '건 선택';
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+
+    function clearSelection() {
+        selectedIds.clear();
+        document.querySelectorAll('.pattern-chk').forEach(c => c.checked = false);
+        const allChk = document.querySelector('.pattern-table thead input[type="checkbox"]');
+        if (allChk) allChk.checked = false;
+        updateCopyBar();
+    }
+
+    async function copySelectedPatterns() {
+        const target = document.getElementById('targetCategory').value;
+        if (!target) {
+            showAlert('복사할 대상 분류를 선택해주세요.', 'error');
+            return;
+        }
+        if (selectedIds.size === 0) {
+            showAlert('복사할 패턴을 선택해주세요.', 'error');
+            return;
+        }
+
+        const ids = Array.from(selectedIds);
+        // 같은 분류에 속하는 패턴이 있는지 경고
+        const sameCategory = allPatterns.filter(p => ids.includes(p.patternId) && p.category === target);
+        if (sameCategory.length > 0) {
+            if (!confirm('선택한 패턴 중 ' + sameCategory.length + '건이 이미 "' + target + '" 분류에 속해 있습니다.\n동일 분류로 복사하면 중복 패턴이 생성됩니다. 계속하시겠습니까?')) return;
+        }
+
+        try {
+            const res = await fetchApi('/api/quotation/patterns/copy', {
+                method: 'POST',
+                body: { patternIds: ids, targetCategory: target }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                showAlert(data.copied + '건의 패턴이 "' + target + '" 분류로 복사되었습니다.', 'success');
+                clearSelection();
+                await loadPatterns();
+            } else {
+                showAlert('복사에 실패했습니다.', 'error');
+            }
+        } catch (e) {
+            showAlert('오류가 발생했습니다.', 'error');
+        }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', loadPatterns);
+</script>
+
+</body>
+</html>

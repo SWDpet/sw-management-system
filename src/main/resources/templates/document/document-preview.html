@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>문서 미리보기</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #4a4a4a; margin: 0; padding: 0; }
+
+        /* 상단 도구바 */
+        .toolbar { background: #333; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .toolbar h3 { margin: 0; font-size: 1em; }
+        .toolbar-actions { display: flex; gap: 8px; }
+        .toolbar-actions a, .toolbar-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; }
+        .btn-pdf { background: #e74a3b; color: white; }
+        .btn-sign { background: #1cc88a; color: white; }
+        .btn-attach { background: #f6c23e; color: #333; }
+        .btn-back { background: #858796; color: white; }
+
+        /* 문서 영역 */
+        .preview-container { max-width: 900px; margin: 30px auto; padding: 0 20px 60px; }
+        .document-paper { background: white; border-radius: 2px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); padding: 50px 60px; min-height: 800px; }
+
+        /* 전자서명 모달 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 30px; width: 500px; }
+        .modal-content h3 { margin: 0 0 20px; color: #333; }
+        .modal-content .form-row { margin-bottom: 12px; }
+        .modal-content label { display: block; font-size: 0.85em; font-weight: 600; color: #5a5c69; margin-bottom: 4px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+
+        /* 서명 캔버스 */
+        .sign-canvas-wrap { border: 2px dashed #d1d3e2; border-radius: 8px; padding: 10px; margin-top: 8px; }
+        #signCanvas { width: 100%; height: 150px; cursor: crosshair; display: block; }
+        .canvas-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .canvas-actions button { padding: 6px 14px; border: none; border-radius: 4px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .btn-clear { background: #858796; color: white; }
+        .btn-save-sign { background: #1cc88a; color: white; }
+        .btn-close { background: #e74a3b; color: white; }
+
+        /* 첨부파일 모달 */
+        .attach-list { margin-top: 12px; }
+        .attach-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border: 1px solid #e3e6f0; border-radius: 5px; margin-bottom: 6px; font-size: 0.85em; }
+        .attach-item .fname { color: #333; font-weight: 600; }
+        .attach-item .fsize { color: #888; font-size: 0.82em; }
+        .btn-del-attach { background: #e74a3b; color: white; border: none; border-radius: 3px; padding: 3px 8px; font-size: 0.75em; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <!-- 도구바 -->
+    <div class="toolbar">
+        <h3><i class="fas fa-file-pdf"></i> 문서 미리보기 (D-11)</h3>
+        <div class="toolbar-actions">
+            <a th:href="@{'/document/api/pdf/' + ${docId}}" class="btn-pdf"><i class="fas fa-download"></i> PDF 다운로드</a>
+            <button onclick="openSignModal()" class="btn-sign"><i class="fas fa-signature"></i> 전자서명</button>
+            <button onclick="openAttachModal()" class="btn-attach"><i class="fas fa-paperclip"></i> 첨부파일</button>
+            <a th:href="@{'/document/detail/' + ${docId}}" class="btn-back"><i class="fas fa-arrow-left"></i> 돌아가기</a>
+        </div>
+    </div>
+
+    <!-- 문서 미리보기 -->
+    <div class="preview-container">
+        <div class="document-paper" th:utext="${htmlContent}">
+            문서 내용이 렌더링됩니다.
+        </div>
+    </div>
+
+    <!-- 전자서명 모달 -->
+    <div id="signModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3><i class="fas fa-signature"></i> 전자서명</h3>
+            <div class="form-row">
+                <label>서명자 유형</label>
+                <select id="signerType">
+                    <option value="INSPECTOR">점검자</option>
+                    <option value="CONFIRMER">확인자</option>
+                    <option value="REPRESENTATIVE">대표자</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>서명자 이름</label>
+                <input type="text" id="signerName" placeholder="성명">
+            </div>
+            <div class="form-row">
+                <label>소속</label>
+                <input type="text" id="signerOrg" placeholder="소속 기관/부서">
+            </div>
+            <div class="form-row">
+                <label>서명</label>
+                <div class="sign-canvas-wrap">
+                    <canvas id="signCanvas" width="460" height="150"></canvas>
+                </div>
+            </div>
+            <div class="canvas-actions">
+                <button class="btn-clear" onclick="clearCanvas()"><i class="fas fa-eraser"></i> 지우기</button>
+                <button class="btn-save-sign" onclick="saveSignature()"><i class="fas fa-check"></i> 서명 저장</button>
+                <button class="btn-close" onclick="closeSignModal()"><i class="fas fa-times"></i> 닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 첨부파일 모달 -->
+    <div id="attachModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3><i class="fas fa-paperclip"></i> 첨부파일 관리</h3>
+            <div class="form-row">
+                <label>파일 업로드</label>
+                <input type="file" id="attachFile" multiple>
+                <button onclick="uploadFile()" style="margin-top:8px; padding:6px 14px; background:#4e73df; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.82em; font-weight:600;"><i class="fas fa-upload"></i> 업로드</button>
+            </div>
+            <div class="attach-list" id="attachList">
+                <!-- 동적 로딩 -->
+            </div>
+            <div class="canvas-actions" style="margin-top:15px;">
+                <button class="btn-close" onclick="closeAttachModal()"><i class="fas fa-times"></i> 닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var docId = [[${docId}]];
+        var canvas, ctx, isDrawing = false, lastX, lastY;
+
+        // === 전자서명 Canvas ===
+        document.addEventListener('DOMContentLoaded', function() {
+            canvas = document.getElementById('signCanvas');
+            ctx = canvas.getContext('2d');
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+
+            canvas.addEventListener('mousedown', function(e) {
+                isDrawing = true;
+                var rect = canvas.getBoundingClientRect();
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+            });
+            canvas.addEventListener('mousemove', function(e) {
+                if (!isDrawing) return;
+                var rect = canvas.getBoundingClientRect();
+                var x = e.clientX - rect.left;
+                var y = e.clientY - rect.top;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                lastX = x;
+                lastY = y;
+            });
+            canvas.addEventListener('mouseup', function() { isDrawing = false; });
+            canvas.addEventListener('mouseout', function() { isDrawing = false; });
+
+            // 터치 지원
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                var rect = canvas.getBoundingClientRect();
+                isDrawing = true;
+                lastX = touch.clientX - rect.left;
+                lastY = touch.clientY - rect.top;
+            });
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                if (!isDrawing) return;
+                var touch = e.touches[0];
+                var rect = canvas.getBoundingClientRect();
+                var x = touch.clientX - rect.left;
+                var y = touch.clientY - rect.top;
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                lastX = x;
+                lastY = y;
+            });
+            canvas.addEventListener('touchend', function() { isDrawing = false; });
+        });
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function openSignModal() { document.getElementById('signModal').style.display = 'block'; }
+        function closeSignModal() { document.getElementById('signModal').style.display = 'none'; }
+        function openAttachModal() {
+            document.getElementById('attachModal').style.display = 'block';
+            loadAttachments();
+        }
+        function closeAttachModal() { document.getElementById('attachModal').style.display = 'none'; }
+
+        function saveSignature() {
+            var imageData = canvas.toDataURL('image/png');
+            fetch('/document/api/signature/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docId: docId,
+                    signerType: document.getElementById('signerType').value,
+                    signerName: document.getElementById('signerName').value,
+                    signerOrg: document.getElementById('signerOrg').value,
+                    signatureImage: imageData
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('서명이 저장되었습니다.');
+                    closeSignModal();
+                    clearCanvas();
+                } else {
+                    alert(data.error || '서명 저장 실패');
+                }
+            });
+        }
+
+        // === 첨부파일 ===
+        function loadAttachments() {
+            fetch('/document/api/attachments/' + docId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var html = '';
+                    data.forEach(function(a) {
+                        var size = (a.fileSize / 1024).toFixed(1) + ' KB';
+                        html += '<div class="attach-item">' +
+                            '<div><span class="fname">' + a.fileName + '</span> <span class="fsize">(' + size + ')</span></div>' +
+                            '<button class="btn-del-attach" onclick="deleteAttach(' + a.attachId + ')"><i class="fas fa-trash"></i></button>' +
+                            '</div>';
+                    });
+                    if (data.length === 0) html = '<div style="text-align:center; color:#aaa; padding:20px;">첨부파일 없음</div>';
+                    document.getElementById('attachList').innerHTML = html;
+                });
+        }
+
+        function uploadFile() {
+            var fileInput = document.getElementById('attachFile');
+            if (!fileInput.files.length) { alert('파일을 선택하세요.'); return; }
+
+            Array.from(fileInput.files).forEach(function(file) {
+                var formData = new FormData();
+                formData.append('file', file);
+                fetch('/document/api/attachment/upload/' + docId, { method: 'POST', body: formData })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) { loadAttachments(); }
+                        else { alert(data.error || '업로드 실패'); }
+                    });
+            });
+            fileInput.value = '';
+        }
+
+        function deleteAttach(attachId) {
+            if (!confirm('삭제하시겠습니까?')) return;
+            fetch('/document/api/attachment/delete/' + attachId, { method: 'POST' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { if (data.success) loadAttachments(); });
+        }
+    </script>
+</body>
+</html>

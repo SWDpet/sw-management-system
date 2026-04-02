@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>QR 발급 대장 - SW Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6B3EF0; --primary2: #5330C8; --primary-lt: #f0ebff;
+            --bg: #f5f5f5; --surface: #ffffff;
+            --text-primary: #222; --text-secondary: #666; --text-tertiary: #999;
+            --border: #e8e8e8; --border-light: #f0f0f0;
+            --success: #10b981; --error: #ef4444;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text-primary); line-height:1.5; }
+        .container { max-width:1400px; margin:0 auto; padding:32px; }
+
+        .page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; padding-bottom:20px; border-bottom:2px solid var(--border-light); }
+        .page-header h1 { font-size:1.75rem; font-weight:900; }
+        .header-actions { display:flex; gap:10px; align-items:center; }
+
+        .btn { font-family:inherit; border:none; border-radius:8px; padding:10px 18px; font-size:0.875rem; font-weight:600; cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; gap:6px; }
+        .btn-primary { background:var(--primary); color:#fff; }
+        .btn-primary:hover { background:var(--primary2); transform:translateY(-1px); box-shadow:0 4px 12px rgba(107,62,240,0.25); }
+        .btn-secondary { background:var(--surface); color:var(--text-primary); border:1px solid var(--border); }
+        .btn-secondary:hover { background:var(--bg); }
+        .btn-danger { background:#fee2e2; color:var(--error); }
+        .btn-danger:hover { background:#fecaca; }
+        .btn-small { padding:6px 12px; font-size:0.8rem; }
+
+        .card { background:var(--surface); border-radius:12px; padding:24px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+
+        /* Search */
+        .search-bar { display:flex; gap:10px; align-items:center; }
+        .search-bar input { flex:1; max-width:350px; padding:9px 12px; border:1px solid var(--border); border-radius:6px; font-family:inherit; font-size:0.875rem; }
+        .search-bar input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-lt); }
+
+        .count-badge { margin-left:auto; font-size:0.85rem; color:var(--text-secondary); font-weight:600; }
+
+        /* Table */
+        .data-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+        .data-table thead { background:#fafafa; border-top:1px solid var(--border); border-bottom:2px solid var(--border); }
+        .data-table th { padding:11px 12px; text-align:left; font-weight:700; color:var(--text-primary); white-space:nowrap; }
+        .data-table td { padding:10px 12px; border-bottom:1px solid var(--border-light); vertical-align:middle; }
+        .data-table tbody tr:hover { background:#fafafa; cursor:pointer; }
+
+        .qr-thumb { width:40px; height:40px; border-radius:4px; border:1px solid var(--border); }
+
+        .empty-state { text-align:center; padding:60px 24px; color:var(--text-tertiary); }
+        .empty-state p { font-size:1rem; margin-bottom:16px; }
+
+        /* Alert */
+        .alert-container { position:fixed; top:70px; right:20px; z-index:2000; }
+        .alert { padding:12px 16px; border-radius:8px; margin-bottom:8px; font-size:0.875rem; font-weight:500; box-shadow:0 4px 12px rgba(0,0,0,0.1); animation:slideIn 0.3s; }
+        @keyframes slideIn { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        .alert-success { background:#dcfce7; color:var(--success); border:1px solid #bbf7d0; }
+        .alert-error { background:#fee2e2; color:var(--error); border:1px solid #fecaca; }
+    </style>
+</head>
+<body>
+
+<!-- GNB -->
+<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem;">S</span>
+            <span style="font-weight:800; font-size:1.08rem; color:#222;">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">마이페이지</a>
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">라이선스 대장</a>
+                <a th:href="@{/qr-license/issue}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR발급</a>
+                <a th:href="@{/qr-license/ledger}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">QR대장</a>
+            </div>
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<div id="alertContainer" class="alert-container"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1>QR 발급 대장</h1>
+        <div class="header-actions">
+            <a href="/qr-license/issue" class="btn btn-primary">+ QR 발급</a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="card">
+        <form class="search-bar" method="get" action="/qr-license/ledger">
+            <input type="text" name="keyword" th:value="${keyword}" placeholder="사용자명, 제품명, 시리얼번호 검색...">
+            <button type="submit" class="btn btn-secondary">검색</button>
+            <th:block th:if="${keyword != null and !keyword.isEmpty()}">
+                <a href="/qr-license/ledger" class="btn btn-secondary">초기화</a>
+            </th:block>
+            <span class="count-badge" th:text="'총 ' + ${list.size()} + '건'"></span>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="padding:0;">
+        <div style="overflow-x:auto;">
+            <table class="data-table" th:if="${!list.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th style="width:50px;">No</th>
+                        <th style="width:50px;">QR</th>
+                        <th>End User Name</th>
+                        <th>최종 사용자명</th>
+                        <th>Products</th>
+                        <th>Serial Number</th>
+                        <th>License Type</th>
+                        <th style="width:80px;">발급자</th>
+                        <th style="width:130px;">발급일시</th>
+                        <th style="width:100px;">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="q, stat : ${list}" th:onclick="'window.location.href=\'/qr-license/' + ${q.qrId} + '\''">
+                        <td style="text-align:center;" th:text="${stat.count}"></td>
+                        <td>
+                            <img th:if="${q.qrImageData != null}" th:src="'data:image/png;base64,' + ${q.qrImageData}" class="qr-thumb" alt="QR">
+                            <span th:if="${q.qrImageData == null}" style="color:#ccc;">-</span>
+                        </td>
+                        <td style="font-weight:600;" th:text="${q.endUserName}"></td>
+                        <td th:text="${q.endUserNameKo}"></td>
+                        <td th:text="${q.products}"></td>
+                        <td th:text="${q.serialNumber}"></td>
+                        <td th:text="${q.licenseType}"></td>
+                        <td th:text="${q.issuedBy}"></td>
+                        <td th:text="${q.issuedAt != null ? #temporals.format(q.issuedAt, 'yyyy-MM-dd HH:mm') : ''}"></td>
+                        <td style="text-align:center;" onclick="event.stopPropagation();">
+                            <a th:href="@{'/qr-license/' + ${q.qrId} + '/edit'}" class="btn btn-secondary btn-small" style="margin-right:2px;">수정</a>
+                            <button class="btn btn-danger btn-small" th:onclick="'deleteQr(' + ${q.qrId} + ')'">삭제</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div th:if="${list.isEmpty()}" class="empty-state">
+                <p>발급된 QR 라이선스가 없습니다.</p>
+                <a href="/qr-license/issue" class="btn btn-primary">+ 첫 QR 발급하기</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    async function deleteQr(id) {
+        if (!confirm('이 QR 라이선스를 삭제하시겠습니까?')) return;
+        try {
+            const headers = {};
+            if (csrfHeader && csrfToken) headers[csrfHeader] = csrfToken;
+            const res = await fetch('/api/qr-license/' + id, { method: 'DELETE', headers });
+            const data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('삭제 실패: ' + (data.error || ''));
+            }
+        } catch (e) {
+            alert('오류가 발생했습니다.');
+        }
+    }
+</script>
+</body>
+</html>

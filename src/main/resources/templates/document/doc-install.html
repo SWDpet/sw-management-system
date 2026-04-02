@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>설치보고서 작성</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
+        .btn-save { background: #1cc88a; color: white; }
+        .btn-cancel { background: #858796; color: white; }
+
+        .form-section { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+
+        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table textarea { height: 80px; resize: vertical; }
+        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .required { color: #e74a3b; }
+
+        /* 동적 행 */
+        .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
+        .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
+        .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
+        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 15px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.88em; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-server"></i> 설치보고서 작성</h2>
+            <div class="header-actions">
+                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3><i class="fas fa-file-alt"></i> 설치보고서</h3>
+            <table class="form-table">
+                <tr><th>지자체 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <select id="infraId">
+                            <option value="">선택</option>
+                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
+                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
+                                    th:selected="${infra.infraId == infraId}"></option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><th>설치일 <span class="required">*</span></th>
+                    <td><input type="date" id="install_date"></td>
+                    <th>담당자 <span class="required">*</span></th>
+                    <td><select id="install_user">
+                        <option value="">선택</option>
+                        <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.username}"></option>
+                    </select></td>
+                </tr>
+                <tr><th>서버정보</th>
+                    <td colspan="3"><textarea id="install_server_info" placeholder="IP / OS / 스펙 등"></textarea></td>
+                </tr>
+                <tr><th>네트워크구성</th>
+                    <td colspan="3"><textarea id="install_network_config" placeholder="네트워크 구성도 또는 설명"></textarea></td>
+                </tr>
+            </table>
+
+            <p style="margin-top:20px; font-weight:600; font-size:0.88em;">설치SW목록</p>
+            <table class="dynamic-table" id="swTable">
+                <thead><tr><th>SW명</th><th>버전</th><th>포트</th><th>설치경로</th><th></th></tr></thead>
+                <tbody id="swBody">
+                    <tr>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><input type="text"></td>
+                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-add-row" onclick="addSwRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> SW 추가</button>
+
+            <table class="form-table" style="margin-top:20px;">
+                <tr><th>연계설정</th>
+                    <td colspan="3"><textarea id="install_integration_config" placeholder="연계 설정 내용"></textarea></td>
+                </tr>
+                <tr><th>단위테스트결과</th>
+                    <td colspan="3"><textarea id="install_unit_test_result" placeholder="단위테스트 결과"></textarea></td>
+                </tr>
+                <tr><th>통합테스트결과</th>
+                    <td colspan="3"><textarea id="install_integration_test_result" placeholder="통합테스트 결과"></textarea></td>
+                </tr>
+                <tr><th>정상작동확인</th>
+                    <td colspan="3">
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="install_confirmed"> 정상 작동 확인됨</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function addSwRow() {
+            var html = '<tr><td><input type="text"></td><td><input type="text"></td>' +
+                '<td><input type="text"></td><td><input type="text"></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('swBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function saveDocument() {
+            var infraId = document.getElementById('infraId').value;
+            var title = '설치보고서';
+
+            var swRows = [];
+            document.querySelectorAll('#swBody tr').forEach(function(row) {
+                var cells = row.cells;
+                swRows.push({
+                    swName: cells[0].querySelector('input').value,
+                    version: cells[1].querySelector('input').value,
+                    port: cells[2].querySelector('input').value,
+                    installPath: cells[3].querySelector('input').value
+                });
+            });
+
+            var sections = [
+                { sectionKey: 'install', sectionData: {
+                    infraId: infraId,
+                    userId: document.getElementById('install_user').value,
+                    installDate: document.getElementById('install_date').value,
+                    serverInfo: document.getElementById('install_server_info').value,
+                    networkConfig: document.getElementById('install_network_config').value,
+                    softwareList: swRows,
+                    integrationConfig: document.getElementById('install_integration_config').value,
+                    unitTestResult: document.getElementById('install_unit_test_result').value,
+                    integrationTestResult: document.getElementById('install_integration_test_result').value,
+                    confirmed: document.getElementById('install_confirmed').checked
+                }}
+            ];
+
+            fetch('/document/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docType: 'INSTALL',
+                    infraId: infraId || null,
+                    title: title,
+                    sections: sections
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('저장되었습니다. 문서번호: ' + data.docNo);
+                    location.href = '/document/detail/' + data.docId;
+                } else {
+                    alert(data.error || '저장 실패');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

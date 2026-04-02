@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>견적서 상세 - SW Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f5f5;
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            color: #222;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            background: #fff;
+            border-bottom: 1px solid #e8e8e8;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        nav > div {
+            max-width: 1700px;
+            margin: auto;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 58px;
+        }
+
+        .logo {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #6B3EF0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 900;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 1.08rem;
+            color: #222;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #444;
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 6px 11px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background: #f0ebff;
+            color: #6B3EF0;
+        }
+
+        .nav-link.active {
+            color: #6B3EF0;
+            font-weight: 700;
+            background: #f0ebff;
+        }
+
+        .nav-divider {
+            width: 1px;
+            height: 18px;
+            background: #e0e0e0;
+            margin: 0 4px;
+            display: inline-block;
+        }
+
+        .nav-divider.lg {
+            margin: 0 6px;
+        }
+
+        .nav-plus {
+            color: #00a87a;
+            margin-left: 2px;
+            font-size: 0.95em;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .nav-plus:hover {
+            color: #00b88a;
+        }
+
+        .nav-logout {
+            text-decoration: none;
+            color: #999;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+
+        .nav-logout:hover {
+            background: #f5f5f5;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1700px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .header-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #222;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-발행완료 {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .badge-작성중 {
+            background: #FFF9C4;
+            color: #F57F17;
+        }
+
+        .badge-취소 {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .badge-용역 {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .badge-제품 {
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+
+        .badge-유지보수 {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+
+        /* Info Section */
+        .info-section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #999;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #222;
+            word-break: break-word;
+        }
+
+        .total-amount-container {
+            padding-top: 24px;
+            border-top: 2px solid #f0f0f0;
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+
+        .total-amount-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .total-amount-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #6B3EF0;
+        }
+
+        .total-amount-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #666;
+            margin-left: auto;
+        }
+
+        /* Items Table */
+        .items-section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #f0f0f0;
+            overflow-x: auto;
+        }
+
+        .items-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f5f5f5;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #666;
+            border-bottom: 2px solid #e8e8e8;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .total-row {
+            background: #f9f9f9;
+            font-weight: 700;
+            border-top: 2px solid #e8e8e8;
+            border-bottom: 2px solid #e8e8e8;
+        }
+
+        .total-row td {
+            padding: 14px 12px;
+            color: #222;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #6B3EF0;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #5a2fbf;
+            box-shadow: 0 4px 12px rgba(107, 62, 240, 0.3);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-secondary {
+            background: #e8e8e8;
+            color: #222;
+        }
+
+        .btn-secondary:hover {
+            background: #d8d8d8;
+        }
+
+        /* Print Styles */
+        @media print {
+            nav {
+                display: none;
+            }
+
+            .action-buttons {
+                display: none;
+            }
+
+            .container {
+                padding: 0;
+            }
+
+            body {
+                background: #fff;
+            }
+
+            .info-section,
+            .items-section {
+                border: none;
+                padding: 0;
+                margin-bottom: 16px;
+                page-break-inside: avoid;
+            }
+
+            .header {
+                margin-bottom: 24px;
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .total-amount-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            th,
+            td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- GNB (메인 대시보드와 동일) -->
+    <nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+        <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+            <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
+                <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem; font-family:'Inter',sans-serif;">S</span>
+                <span style="font-weight:800; font-size:1.08rem; color:#222; letter-spacing:-0.01em; font-family:'Noto Sans KR',sans-serif;">SW Manager</span>
+            </a>
+            <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+                <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👤 마이페이지</a>
+
+                <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                    <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                    <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">🖥️ 서버관리</a>
+                </div>
+
+                <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                    <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                    <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 사업현황</a>
+                </div>
+
+                <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                    <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                    <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👥 담당자관리</a>
+                </div>
+
+                <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                    <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                    <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 라이선스 대장</a>
+                </div>
+
+                <!-- ✨ 견적서 메뉴 (현재 활성) -->
+                <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                    <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                    <a th:href="@{/quotation/list}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">📝 견적서</a>
+                    <a th:href="@{/quotation/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 견적대장</a>
+                    <a th:href="@{/quotation/patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">패턴관리</a>
+                    <a th:href="@{/quotation/remarks-patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">비고패턴</a>
+                    <a th:href="@{/quotation/wage-rates}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">노임단가</a>
+                </div>
+
+                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" th:href="@{/admin/users}" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; margin-left:4px;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''">⚙️ 사용자승인</a>
+
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+                <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="header-title">견적서 상세</h1>
+            <span class="badge" th:classappend="'badge-' + ${quotation.category}" th:text="${quotation.category}"></span>
+            <span class="badge" th:classappend="'badge-' + ${quotation.status}" th:text="${quotation.status}"></span>
+        </div>
+
+        <!-- Info Section -->
+        <div class="info-section">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">견적번호</div>
+                    <div class="info-value" th:text="${quotation.quoteNumber}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">분류</div>
+                    <div class="info-value" th:text="${quotation.category}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">건명</div>
+                    <div class="info-value" th:text="${quotation.projectName}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">수신</div>
+                    <div class="info-value" th:text="${quotation.recipient}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">참조</div>
+                    <div class="info-value" th:text="${quotation.referenceTo != null ? quotation.referenceTo : '-'}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">견적일자</div>
+                    <div class="info-value" th:text="${#temporals.format(quotation.quoteDate, 'yyyy-MM-dd')}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">VAT포함여부</div>
+                    <div class="info-value" th:text="${quotation.vatIncluded ? '포함' : '미포함'}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">작성자</div>
+                    <div class="info-value" th:text="${quotation.createdBy}"></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">작성일</div>
+                    <div class="info-value" th:text="${#temporals.format(quotation.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+                </div>
+            </div>
+
+            <div class="total-amount-container">
+                <div class="total-amount-label">총 금액</div>
+                <div class="total-amount-value" th:text="'₩ ' + ${#numbers.formatInteger(quotation.grandTotal != null ? quotation.grandTotal : quotation.totalAmount, 1, 'COMMA')}"></div>
+                <div class="total-amount-text" th:if="${quotation.bidRate != null and quotation.bidRate > 0}" th:text="'낙찰율 적용'"></div>
+                <div class="total-amount-text" th:if="${quotation.bidRate == null or quotation.bidRate == 0}" th:text="${quotation.totalAmountText}"></div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="items-section">
+            <div class="items-title">품목 목록</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>품명</th>
+                        <th>규격</th>
+                        <th class="text-center">수량</th>
+                        <th class="text-center">단위</th>
+                        <th class="text-right">단가</th>
+                        <th class="text-right">금액</th>
+                        <th>비고</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item : ${quotation.items}">
+                        <td class="text-center" th:text="${item.itemNo}"></td>
+                        <td th:text="${item.productName}"></td>
+                        <td th:text="${item.specification}"></td>
+                        <td class="text-center" th:text="${#numbers.formatInteger(item.quantity, 1, 'COMMA')}"></td>
+                        <td class="text-center" th:text="${item.unit}"></td>
+                        <td class="text-right" th:text="'₩ ' + ${#numbers.formatInteger(item.unitPrice, 1, 'COMMA')}"></td>
+                        <td class="text-right" th:text="'₩ ' + ${#numbers.formatInteger(item.amount, 1, 'COMMA')}"></td>
+                        <td th:text="${item.remarks != null ? item.remarks : '-'}"></td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="6" style="text-align: right;">소계</td>
+                        <td class="text-right" th:text="'₩ ' + ${#numbers.formatInteger(quotation.totalAmount, 1, 'COMMA')}"></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <!-- 출력 (도장 선택) -->
+            <div style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:4px 8px;">
+                <select id="sealOption" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:0.82rem;">
+                    <option value="true">도장 표시</option>
+                    <option value="false">도장 미표시</option>
+                </select>
+                <a href="#" id="previewLink" class="btn btn-primary" target="_blank" onclick="updatePreviewLink(this)" style="margin:0;">
+                    <i class="fas fa-eye"></i> 미리보기
+                </a>
+            </div>
+            <!-- 편집 권한이 있을 때만 수정/삭제 표시 -->
+            <th:block th:if="${canEdit}">
+                <a th:href="@{/quotation/{id}/edit(id=${quotation.quoteId})}" class="btn btn-primary" style="background:#444;">
+                    <i class="fas fa-pencil"></i> 수정
+                </a>
+                <button class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i> 삭제
+                </button>
+            </th:block>
+            <button class="btn btn-secondary" onclick="window.print()">
+                <i class="fas fa-print"></i> 간편인쇄
+            </button>
+            <a href="/quotation/list" class="btn btn-secondary">
+                <i class="fas fa-list"></i> 목록
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // CSRF 토큰 설정
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+        function fetchWithCsrf(url, options = {}) {
+            if (!options.headers) options.headers = {};
+            if (csrfHeader && csrfToken) {
+                options.headers[csrfHeader] = csrfToken;
+            }
+            if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(options.body);
+            }
+            return fetch(url, options);
+        }
+
+        var quoteIdForPreview = [[${quotation.quoteId}]];
+        function updatePreviewLink(el) {
+            var seal = document.getElementById('sealOption').value;
+            el.href = '/quotation/' + quoteIdForPreview + '/preview?seal=' + seal;
+        }
+        // 초기 링크 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            var link = document.getElementById('previewLink');
+            if (link) updatePreviewLink(link);
+        });
+
+        function confirmDelete() {
+            if (confirm('정말로 이 견적서를 삭제하시겠습니까?')) {
+                const quoteId = [[${quotation.quoteId}]];
+                fetchWithCsrf(`/api/quotation/${quoteId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('견적서가 삭제되었습니다.');
+                        window.location.href = '/quotation/list';
+                    } else {
+                        alert('삭제 중 오류가 발생했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('삭제 중 오류가 발생했습니다.');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

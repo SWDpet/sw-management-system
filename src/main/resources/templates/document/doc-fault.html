@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>장애처리 내역서 작성</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
+        .btn-save { background: #1cc88a; color: white; }
+        .btn-cancel { background: #858796; color: white; }
+
+        .form-section { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+
+        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table textarea { height: 100px; resize: vertical; }
+        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .required { color: #e74a3b; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 15px; }
+        .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.88em; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-exclamation-triangle"></i> 장애처리 내역서 작성</h2>
+            <div class="header-actions">
+                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3><i class="fas fa-file-alt"></i> 장애처리 내역서</h3>
+            <table class="form-table">
+                <tr><th>지자체 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <select id="infraId">
+                            <option value="">선택</option>
+                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
+                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
+                                    th:selected="${infra.infraId == infraId}"></option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><th>접수일시 <span class="required">*</span></th>
+                    <td><input type="datetime-local" id="fault_received_datetime"></td>
+                    <th>담당자 <span class="required">*</span></th>
+                    <td><select id="fault_user">
+                        <option value="">선택</option>
+                        <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.username}"></option>
+                    </select></td>
+                </tr>
+                <tr><th>장애유형 <span class="required">*</span></th>
+                    <td><select id="fault_type">
+                        <option value="">선택</option>
+                        <option value="FUNCTION">기능</option>
+                        <option value="CONNECTION">연계</option>
+                        <option value="DATA">데이터</option>
+                    </select></td>
+                    <th>장애등급 <span class="required">*</span></th>
+                    <td><select id="fault_level">
+                        <option value="">선택</option>
+                        <option value="CRITICAL">긴급</option>
+                        <option value="NORMAL">일반</option>
+                    </select></td>
+                </tr>
+                <tr><th>영향범위</th>
+                    <td colspan="3"><input type="text" id="fault_impact" placeholder="영향범위 (예: 시스템 전체, 특정 기능)"></td>
+                </tr>
+                <tr><th>대상시스템 <span class="required">*</span></th>
+                    <td colspan="3"><select id="fault_target_system">
+                        <option value="">선택</option>
+                        <option value="UPIS">UPIS</option>
+                        <option value="KRAS">KRAS</option>
+                        <option value="IPSS">IPSS</option>
+                        <option value="GIS">GIS SW</option>
+                    </select></td>
+                </tr>
+                <tr><th>현상상세 <span class="required">*</span></th>
+                    <td colspan="3"><textarea id="fault_symptom" placeholder="장애의 구체적인 현상 설명"></textarea></td>
+                </tr>
+                <tr><th>원인분석</th>
+                    <td colspan="3"><textarea id="fault_cause" placeholder="장애 발생 원인 분석"></textarea></td>
+                </tr>
+                <tr><th>조치사항</th>
+                    <td colspan="3"><textarea id="fault_action" placeholder="실시한 조치내용"></textarea></td>
+                </tr>
+                <tr><th>처리일시</th>
+                    <td><input type="datetime-local" id="fault_resolved_datetime"></td>
+                    <th>처리결과</th>
+                    <td><input type="text" id="fault_result" placeholder="처리결과 (정상복구, 부분복구 등)"></td>
+                </tr>
+                <tr><th>정상작동확인</th>
+                    <td colspan="3">
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" id="fault_confirmed"> 확인됨</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function saveDocument() {
+            var infraId = document.getElementById('infraId').value;
+            var title = '장애처리 내역서';
+
+            var sections = [
+                { sectionKey: 'fault', sectionData: {
+                    infraId: infraId,
+                    userId: document.getElementById('fault_user').value,
+                    type: document.getElementById('fault_type').value,
+                    level: document.getElementById('fault_level').value,
+                    impact: document.getElementById('fault_impact').value,
+                    targetSystem: document.getElementById('fault_target_system').value,
+                    symptom: document.getElementById('fault_symptom').value,
+                    cause: document.getElementById('fault_cause').value,
+                    action: document.getElementById('fault_action').value,
+                    receivedDatetime: document.getElementById('fault_received_datetime').value,
+                    resolvedDatetime: document.getElementById('fault_resolved_datetime').value,
+                    result: document.getElementById('fault_result').value,
+                    confirmed: document.getElementById('fault_confirmed').checked
+                }}
+            ];
+
+            fetch('/document/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    docType: 'FAULT',
+                    infraId: infraId || null,
+                    title: title,
+                    sections: sections
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('저장되었습니다. 문서번호: ' + data.docNo);
+                    location.href = '/document/detail/' + data.docId;
+                } else {
+                    alert(data.error || '저장 실패');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

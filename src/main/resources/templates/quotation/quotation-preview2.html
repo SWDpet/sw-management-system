@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>견적서</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #e0e0e0;
+            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            color: #111;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ===== 인쇄 제어 바 ===== */
+        .toolbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .toolbar a, .toolbar button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .toolbar .btn-print {
+            background: #6B3EF0;
+            color: #fff;
+        }
+
+        .toolbar .btn-print:hover { background: #5a2fbf; }
+
+        .toolbar .btn-back {
+            background: #555;
+            color: #fff;
+        }
+
+        .toolbar .btn-back:hover { background: #666; }
+
+        /* ===== A4 용지 ===== */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 76px auto 40px;
+            background: #fff;
+            padding: 12mm 12mm 10mm;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            position: relative;
+        }
+
+        /* ===== 문서 제목 ===== */
+        .doc-title {
+            text-align: center;
+            font-size: 24pt;
+            font-weight: 900;
+            letter-spacing: 14px;
+            color: #111;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 3px double #222;
+        }
+
+        /* ===== 상단 정보 TABLE ===== */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            table-layout: fixed;
+        }
+
+        .header-table td {
+            border: 1px solid #333;
+            padding: 2px 6px;
+            font-size: 8.5pt;
+            font-weight: 500;
+            vertical-align: middle;
+            height: 22px;
+        }
+
+        .header-table .h-label {
+            background: #f2f0ff;
+            font-size: 8.5pt;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+            letter-spacing: 3px;
+            width: 90px;
+        }
+
+        .header-table .h-sep {
+            width: 18px;
+            text-align: center;
+            font-size: 8pt;
+            color: #666;
+            padding: 0;
+        }
+
+        .header-table .h-value {
+            font-size: 9pt;
+            font-weight: 500;
+        }
+
+        .header-table .h-value.bold {
+            font-weight: 700;
+        }
+
+        .header-table .h-seal {
+            width: 90px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* ===== 건명 ===== */
+        .project-row {
+            display: flex;
+            border: 1px solid #333;
+            min-height: 26px;
+            margin-bottom: 8px;
+        }
+
+        .project-label {
+            width: 80px;
+            min-width: 80px;
+            background: #f2f0ff;
+            font-size: 8.5pt;
+            font-weight: 700;
+            color: #333;
+            display: flex;
+            align-items: center;
+            padding: 3px 8px;
+            border-right: 1px solid #ccc;
+        }
+
+        .project-sep {
+            width: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #666;
+        }
+
+        .project-value {
+            flex: 1;
+            font-size: 10pt;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            padding: 3px 8px;
+        }
+
+        /* ===== 견적금액 ===== */
+        .amount-bar {
+            display: flex;
+            border: 2px solid #333;
+            min-height: 28px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+
+        .amount-label {
+            width: 80px;
+            min-width: 80px;
+            background: #6B3EF0;
+            color: #fff;
+            font-size: 9pt;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-right: 2px solid #333;
+        }
+
+        .amount-sep {
+            width: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .amount-text {
+            flex: 1;
+            font-size: 11pt;
+            font-weight: 800;
+            color: #111;
+            display: flex;
+            align-items: center;
+            padding: 3px 8px;
+        }
+
+        .amount-number {
+            font-size: 10pt;
+            font-weight: 700;
+            color: #333;
+            display: flex;
+            align-items: center;
+            padding: 3px 12px;
+            white-space: nowrap;
+        }
+
+        .amount-vat {
+            font-size: 8pt;
+            font-weight: 600;
+            color: #666;
+            display: flex;
+            align-items: center;
+            padding: 3px 10px;
+            white-space: nowrap;
+        }
+
+        /* ===== 품목 테이블 ===== */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+            table-layout: fixed;
+        }
+
+        .items-table th {
+            background: #f2f0ff;
+            border: 1px solid #333;
+            padding: 4px 3px;
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-align: center;
+            color: #222;
+            vertical-align: middle;
+        }
+
+        .items-table td {
+            border: 1px solid #aaa;
+            padding: 3px 4px;
+            font-size: 8pt;
+            vertical-align: top;
+            color: #222;
+        }
+
+        .items-table .col-no { width: 30px; text-align: center; }
+        .items-table .col-name { /* auto width */ }
+        .items-table .col-wage { width: 72px; text-align: right; }
+        .items-table .col-people { width: 42px; text-align: center; }
+        .items-table .col-period { width: 42px; text-align: center; }
+        .items-table .col-total-period { width: 48px; text-align: center; }
+        .items-table .col-amount { width: 96px; text-align: right; }
+        .items-table .col-remarks { width: 72px; }
+        .items-table .sub-row td { font-weight: 400; }
+        .items-table .sub-row .col-name { padding-left: 14px; }
+
+        .items-table .item-main td {
+            font-weight: 600;
+        }
+
+        /* 인건비 테이블 스타일 */
+        .labor-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7.5pt;
+            margin-top: 4px;
+            table-layout: fixed;
+        }
+        .labor-table th {
+            background: #f2f0ff;
+            border: 1px solid #999;
+            padding: 3px 4px;
+            text-align: center;
+            font-weight: 700;
+        }
+        .labor-table td {
+            border: 1px solid #ccc;
+            padding: 3px 4px;
+            white-space: nowrap;
+        }
+        .labor-table .labor-total {
+            background: #f5f5f5;
+            font-weight: 800;
+            border-color: #999;
+        }
+        .labor-table .labor-direct {
+            font-weight: 700;
+            border-top: 2px solid #666;
+        }
+        .labor-section-title {
+            font-weight: 700;
+            font-size: 8pt;
+            margin-bottom: 4px;
+            margin-top: 6px;
+        }
+        .sub-items-section {
+            margin-top: 14px;
+            font-size: 7.5pt;
+            color: #333;
+            line-height: 1.8;
+        }
+        .sub-items-section div {
+            padding-left: 8px;
+        }
+
+        /* 하위항목 스타일 */
+        .sub-items {
+            font-weight: 400;
+            font-size: 7.5pt;
+            color: #444;
+            margin-top: 2px;
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .sub-items div {
+            padding-left: 8px;
+        }
+
+        .sub-items div:empty {
+            height: 6px;
+            padding: 0;
+        }
+
+        /* ===== 합계 영역 ===== */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+
+        .summary-table td {
+            border: 1px solid #333;
+            padding: 4px 8px;
+            font-size: 8.5pt;
+        }
+
+        .summary-table .sum-label {
+            background: #f2f0ff;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .summary-table .sum-value {
+            text-align: right;
+            font-weight: 700;
+            font-size: 10pt;
+            width: 150px;
+        }
+
+        .summary-table .sum-remarks {
+            width: 90px;
+            font-size: 8pt;
+        }
+
+        .summary-table .sum-total .sum-label {
+            background: #6B3EF0;
+            color: #fff;
+            font-size: 10pt;
+        }
+
+        .summary-table .sum-total .sum-value {
+            font-size: 11pt;
+            color: #6B3EF0;
+            font-weight: 800;
+        }
+
+        /* ===== 비고 ===== */
+        .remarks-section {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            margin-bottom: 10px;
+            min-height: 36px;
+            font-size: 7.5pt;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        .remarks-section .remarks-title {
+            font-weight: 700;
+            font-size: 8pt;
+            color: #222;
+            margin-bottom: 2px;
+        }
+
+        /* ===== 직인 (상단 헤더 내 배치) ===== */
+
+        .seal-circle {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #c00;
+            border-radius: 50%;
+            margin: 10px auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #c00;
+            font-weight: 700;
+        }
+
+        /* ===== 인쇄 스타일 ===== */
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                padding: 10mm 10mm 8mm;
+                width: 100%;
+                min-height: auto;
+            }
+            .doc-title { font-size: 22pt; margin-bottom: 8px; padding-bottom: 6px; }
+            .header-table { margin-bottom: 6px; }
+            .header-table td { height: 20px; padding: 1px 5px; font-size: 8pt; }
+            .project-row { min-height: 22px; margin-bottom: 6px; }
+            .amount-bar { min-height: 24px; margin-bottom: 8px; }
+            .items-table th { padding: 3px 2px; font-size: 7pt; }
+            .items-table td { padding: 2px 3px; font-size: 7.5pt; }
+            .sub-items { font-size: 7pt; line-height: 1.4; margin-top: 1px; }
+            .summary-table { margin-bottom: 6px; }
+            .summary-table td { padding: 3px 6px; font-size: 8pt; }
+            .remarks-section { padding: 4px 8px; font-size: 7pt; line-height: 1.5; min-height: auto; }
+            .items-table { page-break-inside: auto; }
+            .items-table tr { page-break-inside: avoid; }
+            .summary-table { page-break-inside: avoid; }
+        }
+
+        /* 화면에서 스크롤 처리 */
+        @media screen {
+            body { padding-bottom: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 상단 도구 바 (인쇄 시 숨김) -->
+    <div class="toolbar">
+        <a th:href="@{/quotation/{id}(id=${quotation.quoteId})}" class="btn-back">← 상세로 돌아가기</a>
+        <button class="btn-print" onclick="window.print()">🖨️ 인쇄하기</button>
+        <a th:href="@{/quotation/list}" class="btn-back">📋 목록</a>
+    </div>
+
+    <!-- A4 용지 -->
+    <div class="page">
+        <!-- 문서 제목 -->
+        <div class="doc-title">견 적 서</div>
+
+        <!-- 상단 정보: 좌측(견적정보) + 우측(회사정보) TABLE -->
+        <table class="header-table">
+            <colgroup>
+                <!-- 좌측: 라벨 / : / 값 -->
+                <col style="width:90px;"/>
+                <col style="width:18px;"/>
+                <col/>
+                <!-- 우측: 라벨 / : / 값 / 직인 -->
+                <col style="width:90px;"/>
+                <col style="width:18px;"/>
+                <col/>
+                <col style="width:90px;"/>
+            </colgroup>
+            <tbody>
+                <!-- Row 1: 견적번호 / 사업자번호 + 직인(rowspan) -->
+                <tr>
+                    <td class="h-label">견 적 번 호</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value bold" th:text="${quotation.quoteNumber}"></td>
+                    <td class="h-label">사 업 자 번 호</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value">515-81-21618</td>
+                    <td class="h-seal" rowspan="5">
+                        <th:block th:if="${showSeal}">
+                            <img th:src="@{/images/company-seal.png}"
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                                 style="width:70px;height:70px;" alt="직인"/>
+                            <div class="seal-circle" style="display:none;">(인)</div>
+                        </th:block>
+                        <th:block th:unless="${showSeal}">&nbsp;</th:block>
+                    </td>
+                </tr>
+                <!-- Row 2: 견적일자 / 상호 -->
+                <tr>
+                    <td class="h-label">견 적 일 자</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value" th:text="${quotation.quoteDate != null} ? ${#temporals.format(quotation.quoteDate, 'yyyy년 M월 d일')} : ''"></td>
+                    <td class="h-label">상　　호</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value bold">㈜정도유아이티</td>
+                </tr>
+                <!-- Row 3: (빈 행 병합) / 대표자 -->
+                <tr>
+                    <td colspan="3">&nbsp;</td>
+                    <td class="h-label">대 표 자</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value">노성기</td>
+                </tr>
+                <!-- Row 4: 수신 / 주소 -->
+                <tr>
+                    <td class="h-label">수　　신</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value bold" th:text="${quotation.recipient ?: ''}"></td>
+                    <td class="h-label">주　　소</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value" style="font-size:7.5pt;">서울특별시 강남구 테헤란로 38길 29 이원빌딩 5F</td>
+                </tr>
+                <!-- Row 5: 참조 / 업태/업종 -->
+                <tr>
+                    <td class="h-label">참　　조</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value" th:text="${quotation.referenceTo ?: ''}"></td>
+                    <td class="h-label" style="letter-spacing:1px;font-size:7.5pt;">업 태 / 업 종</td>
+                    <td class="h-sep">:</td>
+                    <td class="h-value" style="font-size:7.5pt;">소프트웨어개발 및 공급업 외</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 건명 -->
+        <div class="project-row">
+            <div class="project-label">건　명</div>
+            <div class="project-sep">:</div>
+            <div class="project-value" th:text="${quotation.projectName}"></div>
+        </div>
+
+        <!-- 견적금액 -->
+        <div class="amount-bar">
+            <div class="amount-label">견적금액</div>
+            <div class="amount-sep">:</div>
+            <div class="amount-text" th:text="${grandTotalText} + '  ( ￦ ' + ${#numbers.formatInteger(grandTotal, 1, 'COMMA')} + ' )'"></div>
+            <div class="amount-vat">(VAT 포함)</div>
+        </div>
+
+        <!-- 품목 테이블 (양식2: 인건비 통합) -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="col-no">No</th>
+                    <th class="col-name">품　　명<br/><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th>
+                    <th class="col-wage">노임단가</th>
+                    <th class="col-people">투입인력<br/><span style="font-weight:500;font-size:6.5pt;">(인)</span></th>
+                    <th class="col-period">투입기간<br/><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th>
+                    <th class="col-total-period">총투입기간<br/><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th>
+                    <th class="col-amount">금　액<br/><span style="font-weight:500;font-size:7pt;color:#666;">(원)</span></th>
+                    <th class="col-remarks">비고<br/><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>
+                </tr>
+            </thead>
+            <tbody id="itemsBody">
+                <th:block th:each="item, iterStat : ${quotation.items}">
+                    <!-- 메인 품목 행 (JS에서 인건비 항목은 확장) -->
+                    <tr class="item-main" th:attr="data-spec=${item.specification ?: ''}">
+                        <td class="col-no" th:text="${iterStat.count}"></td>
+                        <td class="col-name">
+                            <div th:text="${item.productName}"></div>
+                            <!-- 일반 항목 규격(specification) 줄바꿈 표출 -->
+                            <th:block th:if="${item.specification != null and !item.specification.isEmpty()
+                                and !item.specification.startsWith('[SW_AMT_TABLE]')
+                                and !item.specification.startsWith('● 인건비')}">
+                                <div class="sub-items" style="font-size:7pt;color:#333;line-height:1.6;margin-top:2px;">
+                                    <div th:each="line : ${item.specification.split('\n')}" th:text="${line}"></div>
+                                </div>
+                            </th:block>
+                        </td>
+                        <td class="col-wage"></td>
+                        <td class="col-people"></td>
+                        <td class="col-period"></td>
+                        <td class="col-total-period"></td>
+                        <td class="col-amount" th:text="${item.amount != null and item.amount != 0 ? #numbers.formatInteger(item.amount, 1, 'COMMA') : ''}"></td>
+                        <td class="col-remarks" th:text="${item.remarks ?: ''}"></td>
+                    </tr>
+                </th:block>
+            </tbody>
+        </table>
+
+        <!-- 합계 영역: VAT포함 시 합계만, VAT미포함 시 소계/부가세/합계 -->
+        <table class="summary-table">
+            <tr th:if="${!vatIncluded}">
+                <td class="sum-label">소　계</td>
+                <td class="sum-value" th:text="'￦ ' + ${#numbers.formatInteger(supplyAmount, 1, 'COMMA')}"></td>
+                <td class="sum-remarks"></td>
+            </tr>
+            <tr th:if="${!vatIncluded}">
+                <td class="sum-label">부가세 (10%)</td>
+                <td class="sum-value" th:text="'￦ ' + ${#numbers.formatInteger(vatAmount, 1, 'COMMA')}"></td>
+                <td class="sum-remarks"></td>
+            </tr>
+            <tr class="sum-total">
+                <td class="sum-label">합　계</td>
+                <td class="sum-value" th:text="'￦ ' + ${#numbers.formatInteger(grandTotal, 1, 'COMMA')}"></td>
+                <td class="sum-remarks"
+                    th:text="${bidRate != null and bidRate > 0} ? '낙찰율 적용'
+                           : (${rounddownUnit != null and rounddownUnit == 1000} ? '백단위 절사'
+                           : (${rounddownUnit != null and rounddownUnit == 10000} ? '천단위 절사'
+                           : (${rounddownUnit != null and rounddownUnit == 100000} ? '만단위 절사'
+                           : (${rounddownUnit != null and rounddownUnit == 1000000} ? '십만단위 절사' : ''))))">
+                </td>
+            </tr>
+        </table>
+
+        <!-- 비고 -->
+        <div class="remarks-section">
+            <div class="remarks-title">[ 비  고 ]</div>
+            <th:block th:if="${quotation.remarks != null and !quotation.remarks.isEmpty()}">
+                <div th:each="line : ${quotation.remarks.split('\n')}" th:text="${line}"></div>
+            </th:block>
+            <th:block th:if="${quotation.remarks == null or quotation.remarks.isEmpty()}">
+                <div>1. 상기 견적금액은 제안 내용 기준이며, 세부 사항은 협의에 따라 변경될 수 있습니다.</div>
+                <div>2. 본 견적서의 유효기간은 발행일로부터 30일입니다.</div>
+            </th:block>
+        </div>
+
+    </div>
+
+<script th:inline="none">
+// 양식2: 인건비 항목을 메인 테이블에 서브행으로 직접 삽입
+document.addEventListener('DOMContentLoaded', function() {
+    function formatNum(n) {
+        return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    // 일반 항목: 계층적 들여쓰기 + hanging indent 처리
+    document.querySelectorAll('.sub-items').forEach(function(subEl) {
+        var divs = Array.from(subEl.querySelectorAll('div'));
+        var lines = divs.map(function(d) { return d.textContent; });
+        var html = '';
+        var ctxLevel = 1;
+
+        function flexDiv(indent, pfx, body, extra) {
+            return '<div style="display:flex;padding-left:' + indent + ';' + (extra || '') + '">' +
+                '<span style="flex-shrink:0;white-space:pre;">' + pfx + '</span><span>' + body + '</span></div>';
+        }
+
+        lines.forEach(function(raw) {
+            var t = raw.trim();
+            if (!t) { html += '<div style="height:6px;"></div>'; return; }
+
+            // ● 섹션 제목 (level 0, bold)
+            if (t.startsWith('●')) {
+                var m = t.match(/^(●\s*)/);
+                var pfx = m ? m[1] : '● ';
+                ctxLevel = 1;
+                html += flexDiv('0px', pfx, t.substring(pfx.length), 'font-weight:700;margin-top:6px;');
+                return;
+            }
+            // * 제품명 등 (level 0, bold)
+            var starMatch = t.match(/^(\*\s+)/);
+            if (starMatch) {
+                ctxLevel = 1;
+                html += flexDiv('0px', starMatch[1], t.substring(starMatch[1].length), 'font-weight:700;');
+                return;
+            }
+            // ∙·• 가운뎃점 불릿 (level 1)
+            var dotMatch = t.match(/^([∙·•]\s*)/);
+            if (dotMatch) {
+                ctxLevel = 2;
+                html += flexDiv('8px', dotMatch[1], t.substring(dotMatch[1].length));
+                return;
+            }
+            if (t.startsWith('※') || t.startsWith('☞')) {
+                html += '<div style="margin-top:4px;">' + t + '</div>';
+                return;
+            }
+            var km = t.match(/^([가-힣][\.\)]\s*)/);
+            if (km) {
+                ctxLevel = 2;
+                html += flexDiv('12px', km[1], t.substring(km[1].length));
+                return;
+            }
+            // - 서브항목
+            var dashMatch = t.match(/^(-\s+)/);
+            if (dashMatch) {
+                var dashIndent = (ctxLevel >= 2) ? '18px' : '12px';
+                html += flexDiv(dashIndent, dashMatch[1], t.substring(dashMatch[1].length));
+                return;
+            }
+            // 숫자 접두사
+            var numMatch = t.match(/^(\d+[\.\)]\s*)/);
+            if (numMatch) {
+                var numIndent = (ctxLevel >= 2) ? '18px' : '12px';
+                html += flexDiv(numIndent, numMatch[1], t.substring(numMatch[1].length));
+                return;
+            }
+            // 일반 텍스트
+            var plainIndent = (ctxLevel >= 2) ? '24px' : (ctxLevel >= 1) ? '8px' : '0px';
+            html += '<div style="padding-left:' + plainIndent + ';">' + t + '</div>';
+        });
+
+        subEl.innerHTML = html;
+    });
+
+    // 도입금액 specification을 표 형식으로 변환
+    document.querySelectorAll('#itemsBody .item-main').forEach(function(row) {
+        var spec = row.getAttribute('data-spec');
+        if (!spec || !spec.startsWith('[SW_AMT_TABLE]')) return;
+        try {
+            var nameCell = row.querySelectorAll('td')[1]; // col-name
+            var lines = spec.split('\n');
+            var html = nameCell.textContent;
+            html += '<table style="width:100%;border-collapse:collapse;font-size:7pt;margin-top:4px;">';
+            html += '<thead><tr style="background:#F57C00;color:#fff;">';
+            html += '<th style="padding:2px 4px;border:1px solid #E65100;width:55px;text-align:center;">구 분</th>';
+            html += '<th style="padding:2px 4px;border:1px solid #E65100;text-align:center;">내 용</th>';
+            html += '<th style="padding:2px 4px;border:1px solid #E65100;width:55px;text-align:center;">비 고</th>';
+            html += '</tr></thead><tbody>';
+            for (var i = 1; i < lines.length; i++) {
+                var parts = lines[i].split('|');
+                if (parts.length < 3) continue;
+                var label = parts[0].trim();
+                var value = parts[1].trim();
+                var remark = parts[2].trim();
+                if (label === '도입금액' || label.indexOf('유지보수') >= 0) value = formatNum(parseInt(value) || 0) + '원';
+                else if (label.indexOf('요율') >= 0) value = value + '%';
+                html += '<tr><td style="padding:2px 4px;border:1px solid #ddd;text-align:center;font-weight:600;">' + label + '</td>';
+                html += '<td style="padding:2px 4px;border:1px solid #ddd;text-align:right;">' + value + '</td>';
+                html += '<td style="padding:2px 4px;border:1px solid #ddd;text-align:center;">' + remark + '</td></tr>';
+            }
+            html += '</tbody></table>';
+            nameCell.innerHTML = html;
+        } catch(e) { console.error(e); }
+    });
+
+    // 인건비 specification을 테이블 형식으로 변환
+    var mainRows = document.querySelectorAll('#itemsBody .item-main');
+    mainRows.forEach(function(row) {
+        var spec = row.getAttribute('data-spec');
+        if (!spec || !spec.startsWith('● 인건비')) return;
+
+        try {
+            var lines = spec.split('\n');
+            var entries = [];
+            var subtotal = 0, overhead = 0, techFee = 0, ohPct = 76, tfPct = 10;
+
+            lines.forEach(function(line) {
+                var newMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)개월 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
+                if (newMatch) {
+                    entries.push({
+                        gradeName: newMatch[1], dailyRate: parseInt(newMatch[2].replace(/,/g, '')),
+                        people: parseInt(newMatch[3]), months: parseFloat(newMatch[4]),
+                        totalMonths: parseFloat(newMatch[5]), amount: parseInt(newMatch[6].replace(/,/g, '')),
+                        remarks: newMatch[7] || ''
+                    });
+                }
+                if (!newMatch) {
+                    var oldMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × ([\d.]+)일 = ([\d,]+)원/);
+                    if (oldMatch) {
+                        var days = parseFloat(oldMatch[3]);
+                        entries.push({ gradeName: oldMatch[1], dailyRate: parseInt(oldMatch[2].replace(/,/g, '')),
+                            people: 1, months: Math.round(days/20.3*10)/10, totalMonths: Math.round(days/20.3*10)/10,
+                            amount: parseInt(oldMatch[4].replace(/,/g, '')), remarks: '' });
+                    }
+                }
+                var subMatch = line.match(/소 계: ([\d,]+)원/);
+                if (subMatch) subtotal = parseInt(subMatch[1].replace(/,/g, ''));
+                var directMatch = line.match(/직접인건비 합계: ([\d,]+)원/);
+                if (directMatch) subtotal = parseInt(directMatch[1].replace(/,/g, ''));
+                var ohMatch = line.match(/제경비\(소계의 (\d+)%\): ([\d,]+)원/) || line.match(/재경비\(직접인건비의 (\d+)%\): ([\d,]+)원/);
+                if (ohMatch) { ohPct = parseInt(ohMatch[1]); overhead = parseInt(ohMatch[2].replace(/,/g, '')); }
+                var tfMatch = line.match(/기술료\(.+?(\d+)%\): ([\d,]+)원/);
+                if (tfMatch) { tfPct = parseInt(tfMatch[1]); techFee = parseInt(tfMatch[2].replace(/,/g, '')); }
+            });
+
+            if (entries.length === 0) return;
+
+            // No 셀에 rowspan 적용 (등급 + 소계 + 제경비 + 기술료 = entries.length + 3)
+            var noCell = row.cells[0];
+            var totalSubRows = entries.length + 3;
+
+            // 기술지원내역 확인
+            var subItemsHtml = '';
+            var parts = spec.split(/\n\n+/);
+            if (parts.length > 1) {
+                var subText = parts.slice(1).join('\n\n').trim();
+                if (subText && !subText.startsWith('● 인건비')) {
+                    var subLines = subText.split('\n');
+                    subItemsHtml = '<div style="font-size:7pt;color:#333;line-height:1.6;padding-left:2px;">';
+                    var subCtx = 0;
+                    subLines.forEach(function(l) {
+                        var st = l.trim();
+                        if (!st) { subItemsHtml += '<div style="height:5px;"></div>'; return; }
+                        if (st.startsWith('●')) {
+                            var sm = st.match(/^(●\s*)/); var sp = sm ? sm[1] : '● ';
+                            subCtx = 1;
+                            subItemsHtml += '<div style="display:flex;font-weight:700;margin-top:5px;"><span style="flex-shrink:0;white-space:pre;">' + sp + '</span><span>' + st.substring(sp.length) + '</span></div>';
+                            return;
+                        }
+                        var starM = st.match(/^(\*\s+)/);
+                        if (starM) {
+                            subCtx = 1;
+                            subItemsHtml += '<div style="display:flex;font-weight:700;"><span style="flex-shrink:0;white-space:pre;">' + starM[1] + '</span><span>' + st.substring(starM[1].length) + '</span></div>';
+                            return;
+                        }
+                        var dotM = st.match(/^([∙·•]\s*)/);
+                        if (dotM) {
+                            subCtx = 2;
+                            subItemsHtml += '<div style="display:flex;padding-left:8px;"><span style="flex-shrink:0;white-space:pre;">' + dotM[1] + '</span><span>' + st.substring(dotM[1].length) + '</span></div>';
+                            return;
+                        }
+                        if (st.startsWith('※') || st.startsWith('☞')) { subItemsHtml += '<div style="margin-top:3px;">' + st + '</div>'; return; }
+                        var skm = st.match(/^([가-힣][\.\)]\s*)/);
+                        if (skm) {
+                            subCtx = 2;
+                            subItemsHtml += '<div style="display:flex;padding-left:12px;"><span style="flex-shrink:0;white-space:pre;">' + skm[1] + '</span><span>' + st.substring(skm[1].length) + '</span></div>';
+                            return;
+                        }
+                        var dashM = st.match(/^(-\s+)/);
+                        if (dashM) {
+                            var di = (subCtx >= 2) ? '18px' : '12px';
+                            subItemsHtml += '<div style="display:flex;padding-left:' + di + ';"><span style="flex-shrink:0;white-space:pre;">' + dashM[1] + '</span><span>' + st.substring(dashM[1].length) + '</span></div>';
+                            return;
+                        }
+                        var numM = st.match(/^(\d+[\.\)]\s*)/);
+                        if (numM) {
+                            var ni = (subCtx >= 2) ? '18px' : '12px';
+                            subItemsHtml += '<div style="display:flex;padding-left:' + ni + ';"><span style="flex-shrink:0;white-space:pre;">' + numM[1] + '</span><span>' + st.substring(numM[1].length) + '</span></div>';
+                            return;
+                        }
+                        var pi = (subCtx >= 2) ? '18px' : (subCtx >= 1) ? '8px' : '0px';
+                        subItemsHtml += '<div style="padding-left:' + pi + ';">' + st + '</div>';
+                    });
+                    subItemsHtml += '</div>';
+                    totalSubRows++;
+                }
+            }
+
+            noCell.setAttribute('rowspan', totalSubRows + 1);
+
+            // 각 등급 서브행 삽입
+            var insertAfter = row;
+            entries.forEach(function(e) {
+                var tr = document.createElement('tr');
+                tr.className = 'sub-row';
+                tr.innerHTML =
+                    '<td class="col-name" style="padding-left:14px;">' + e.gradeName + '</td>' +
+                    '<td class="col-wage">' + formatNum(e.dailyRate || 0) + '</td>' +
+                    '<td class="col-people">' + (e.people || 1) + '</td>' +
+                    '<td class="col-period">' + (e.months || 0) + '</td>' +
+                    '<td class="col-total-period">' + (e.totalMonths || 0) + '</td>' +
+                    '<td class="col-amount" style="font-weight:600;">' + formatNum(e.amount || 0) + '</td>' +
+                    '<td class="col-remarks" style="font-size:7pt;">' + (e.remarks || '') + '</td>';
+                insertAfter.parentNode.insertBefore(tr, insertAfter.nextSibling);
+                insertAfter = tr;
+            });
+
+            // 소계 행
+            var trSub = document.createElement('tr');
+            trSub.innerHTML = '<td class="col-name" style="font-weight:700;">소 계</td><td class="col-wage"></td><td class="col-people"></td><td class="col-period"></td><td class="col-total-period"></td><td class="col-amount" style="font-weight:700;">' + formatNum(subtotal) + '</td><td class="col-remarks"></td>';
+            insertAfter.parentNode.insertBefore(trSub, insertAfter.nextSibling);
+            insertAfter = trSub;
+
+            // 제경비 행
+            var trOh = document.createElement('tr');
+            trOh.innerHTML = '<td class="col-name" style="font-weight:600;">제경비</td><td class="col-wage">' + ohPct + '%</td><td class="col-people"></td><td class="col-period"></td><td class="col-total-period"></td><td class="col-amount" style="font-weight:600;">' + formatNum(overhead) + '</td><td class="col-remarks"></td>';
+            insertAfter.parentNode.insertBefore(trOh, insertAfter.nextSibling);
+            insertAfter = trOh;
+
+            // 기술료 행
+            var trTf = document.createElement('tr');
+            trTf.innerHTML = '<td class="col-name" style="font-weight:600;">기술료</td><td class="col-wage">' + tfPct + '%</td><td class="col-people"></td><td class="col-period"></td><td class="col-total-period"></td><td class="col-amount" style="font-weight:600;">' + formatNum(techFee) + '</td><td class="col-remarks"></td>';
+            insertAfter.parentNode.insertBefore(trTf, insertAfter.nextSibling);
+            insertAfter = trTf;
+
+            // 기술지원내역 행
+            if (subItemsHtml) {
+                var trItems = document.createElement('tr');
+                trItems.innerHTML = '<td colspan="7" style="border:1px solid #aaa;padding:4px 6px;">' + subItemsHtml + '</td>';
+                insertAfter.parentNode.insertBefore(trItems, insertAfter.nextSibling);
+            }
+
+        } catch(e) { /* 파싱 실패 시 원본 유지 */ }
+    });
+});
+</script>
+
+</body>
+</html>

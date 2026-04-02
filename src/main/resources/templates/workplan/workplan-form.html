@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>업무계획 등록/수정</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 40px 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); }
+        .page-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; }
+
+        /* 폼 */
+        .form-section { margin-bottom: 30px; }
+        .form-section h3 { font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; margin-bottom: 15px; }
+
+        .form-table { width: 100%; border-collapse: collapse; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.9em; }
+        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 140px; white-space: nowrap; }
+        .form-table td { background: white; }
+        .form-table input[type="text"],
+        .form-table input[type="date"],
+        .form-table select,
+        .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.9em; box-sizing: border-box; }
+        .form-table textarea { height: 100px; resize: vertical; }
+        .form-table input:focus, .form-table select:focus, .form-table textarea:focus { border-color: #1565c0; outline: none; box-shadow: 0 0 0 2px rgba(21,101,192,0.1); }
+        .required { color: #e74a3b; }
+
+        /* 업무유형 선택 (그리드) */
+        .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .type-option { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border: 2px solid #e3e6f0; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .type-option:hover { border-color: #1565c0; background: #f8f9fc; }
+        .type-option.selected { border-color: var(--type-color, #1565c0); background: #f0f7ff; }
+        .type-option input[type="radio"] { display: none; }
+        .type-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .type-label { font-size: 0.85em; font-weight: 600; }
+
+        /* 상태 선택 */
+        .status-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .status-btn { padding: 6px 14px; border: 2px solid #e3e6f0; border-radius: 20px; background: white; font-size: 0.82em; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .status-btn:hover { border-color: #1565c0; }
+        .status-btn.selected { background: #1565c0; color: white; border-color: #1565c0; }
+        .status-btn input[type="radio"] { display: none; }
+
+        /* 프로세스 단계 */
+        .step-bar { display: flex; gap: 4px; }
+        .step-item { flex: 1; text-align: center; padding: 8px 4px; border: 2px solid #e3e6f0; border-radius: 6px; font-size: 0.72em; font-weight: 600; cursor: pointer; transition: 0.2s; background: #f8f9fc; }
+        .step-item:hover { border-color: #1565c0; background: #e3f2fd; }
+        .step-item.selected { background: #1565c0; color: white; border-color: #1565c0; }
+        .step-item input[type="radio"] { display: none; }
+
+        /* 버튼 */
+        .btn-area { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
+        .btn-save { padding: 12px 40px; background: #1cc88a; color: white; border: none; border-radius: 5px; font-weight: 700; font-size: 1em; cursor: pointer; }
+        .btn-save:hover { background: #17a673; }
+        .btn-cancel { padding: 12px 40px; background: #858796; color: white; border: none; border-radius: 5px; font-weight: 700; font-size: 1em; cursor: pointer; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2>
+                <i class="fas fa-calendar-plus"></i>
+                <span th:text="${workPlan.planId != null} ? '업무계획 수정' : '업무계획 등록'"></span>
+            </h2>
+        </div>
+
+        <form th:action="@{/workplan/save}" method="post" id="workPlanForm">
+            <input type="hidden" name="planId" th:value="${workPlan.planId}" />
+
+            <!-- 업무 유형 -->
+            <div class="form-section">
+                <h3><i class="fas fa-tag"></i> 업무 유형 <span class="required">*</span></h3>
+                <div class="type-grid">
+                    <label class="type-option" style="--type-color:#1565c0;" th:classappend="${workPlan.planType == 'CONTRACT'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="CONTRACT" th:checked="${workPlan.planType == 'CONTRACT'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#1565c0;"></div>
+                        <span class="type-label">계약</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#2e7d32;" th:classappend="${workPlan.planType == 'INSTALL'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="INSTALL" th:checked="${workPlan.planType == 'INSTALL'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#2e7d32;"></div>
+                        <span class="type-label">설치</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#00897b;" th:classappend="${workPlan.planType == 'PATCH'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="PATCH" th:checked="${workPlan.planType == 'PATCH'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#00897b;"></div>
+                        <span class="type-label">패치</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#ff9800;" th:classappend="${workPlan.planType == 'INSPECT'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="INSPECT" th:checked="${workPlan.planType == 'INSPECT'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#ff9800;"></div>
+                        <span class="type-label">점검</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#9e9e9e;" th:classappend="${workPlan.planType == 'PRE_CONTACT'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="PRE_CONTACT" th:checked="${workPlan.planType == 'PRE_CONTACT'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#9e9e9e;"></div>
+                        <span class="type-label">사전연락</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#e74a3b;" th:classappend="${workPlan.planType == 'FAULT'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="FAULT" th:checked="${workPlan.planType == 'FAULT'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#e74a3b;"></div>
+                        <span class="type-label">장애처리</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#6a1b9a;" th:classappend="${workPlan.planType == 'SUPPORT'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="SUPPORT" th:checked="${workPlan.planType == 'SUPPORT'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#6a1b9a;"></div>
+                        <span class="type-label">업무지원</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#5c6bc0;" th:classappend="${workPlan.planType == 'SETTLE'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="SETTLE" th:checked="${workPlan.planType == 'SETTLE'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#5c6bc0;"></div>
+                        <span class="type-label">기성/준공</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#37474f;" th:classappend="${workPlan.planType == 'COMPLETE'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="COMPLETE" th:checked="${workPlan.planType == 'COMPLETE'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#37474f;"></div>
+                        <span class="type-label">정산</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 프로세스 단계 -->
+            <div class="form-section">
+                <h3><i class="fas fa-tasks"></i> 프로세스 단계</h3>
+                <div class="step-bar">
+                    <label class="step-item" th:classappend="${workPlan.processStep == 1} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="1" th:checked="${workPlan.processStep == 1}" onchange="selectStep(this)">
+                        STEP1<br>대상선정
+                    </label>
+                    <label class="step-item" th:classappend="${workPlan.processStep == 2} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="2" th:checked="${workPlan.processStep == 2}" onchange="selectStep(this)">
+                        STEP2<br>현장방문
+                    </label>
+                    <label class="step-item" th:classappend="${workPlan.processStep == 3} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="3" th:checked="${workPlan.processStep == 3}" onchange="selectStep(this)">
+                        STEP3<br>계약체결
+                    </label>
+                    <label class="step-item" th:classappend="${workPlan.processStep == 4} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="4" th:checked="${workPlan.processStep == 4}" onchange="selectStep(this)">
+                        STEP4<br>착수계
+                    </label>
+                    <label class="step-item" th:classappend="${workPlan.processStep == 5} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="5" th:checked="${workPlan.processStep == 5}" onchange="selectStep(this)">
+                        STEP5<br>사업수행
+                    </label>
+                    <label class="step-item" th:classappend="${workPlan.processStep == 6} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="6" th:checked="${workPlan.processStep == 6}" onchange="selectStep(this)">
+                        STEP6<br>기성/준공
+                    </label>
+                    <label class="step-item" th:classappend="${workPlan.processStep == 7} ? 'selected' : ''">
+                        <input type="radio" name="processStep" value="7" th:checked="${workPlan.processStep == 7}" onchange="selectStep(this)">
+                        STEP7<br>대금신청
+                    </label>
+                </div>
+            </div>
+
+            <!-- 기본 정보 -->
+            <div class="form-section">
+                <h3><i class="fas fa-info-circle"></i> 기본 정보</h3>
+                <table class="form-table">
+                    <colgroup>
+                        <col style="width:140px;">
+                        <col>
+                        <col style="width:140px;">
+                        <col>
+                    </colgroup>
+                    <tr>
+                        <th>제목 <span class="required">*</span></th>
+                        <td colspan="3">
+                            <input type="text" name="title" th:value="${workPlan.title}" placeholder="업무 제목을 입력하세요" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>대상 인프라</th>
+                        <td>
+                            <select name="infraId">
+                                <option value="">선택 안함</option>
+                                <option th:each="infra : ${infraList}"
+                                        th:value="${infra.infraId}"
+                                        th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
+                                        th:selected="${infra.infraId == workPlan.infraId}"></option>
+                            </select>
+                        </td>
+                        <th>담당자</th>
+                        <td>
+                            <select name="assigneeId">
+                                <option value="">선택 안함</option>
+                                <option th:each="u : ${users}"
+                                        th:value="${u.userSeq}"
+                                        th:text="${u.username + (u.position != null ? ' (' + u.position + ')' : '')}"
+                                        th:selected="${u.userSeq == workPlan.assigneeId}"></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>시작일 <span class="required">*</span></th>
+                        <td>
+                            <input type="date" name="startDate" th:value="${workPlan.startDate}" required>
+                        </td>
+                        <th>종료일</th>
+                        <td>
+                            <input type="date" name="endDate" th:value="${workPlan.endDate}">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>장소</th>
+                        <td>
+                            <input type="text" name="location" th:value="${workPlan.location}" placeholder="ex) 서울시청 전산실">
+                        </td>
+                        <th>반복</th>
+                        <td>
+                            <select name="repeatType">
+                                <option value="NONE" th:selected="${workPlan.repeatType == null or workPlan.repeatType == 'NONE'}">반복 없음</option>
+                                <option value="MONTHLY" th:selected="${workPlan.repeatType == 'MONTHLY'}">매월</option>
+                                <option value="QUARTERLY" th:selected="${workPlan.repeatType == 'QUARTERLY'}">분기별</option>
+                                <option value="HALF_YEARLY" th:selected="${workPlan.repeatType == 'HALF_YEARLY'}">반기별</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>설명</th>
+                        <td colspan="3">
+                            <textarea name="description" th:text="${workPlan.description}" placeholder="업무 내용을 상세히 입력하세요"></textarea>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 상태 -->
+            <div class="form-section">
+                <h3><i class="fas fa-flag"></i> 상태</h3>
+                <div class="status-group">
+                    <label class="status-btn" th:classappend="${workPlan.status == null or workPlan.status == 'PLANNED'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="PLANNED" th:checked="${workPlan.status == null or workPlan.status == 'PLANNED'}" onchange="selectStatus(this)">
+                        예정
+                    </label>
+                    <label class="status-btn" th:classappend="${workPlan.status == 'CONTACTED'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="CONTACTED" th:checked="${workPlan.status == 'CONTACTED'}" onchange="selectStatus(this)">
+                        연락완료
+                    </label>
+                    <label class="status-btn" th:classappend="${workPlan.status == 'CONFIRMED'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="CONFIRMED" th:checked="${workPlan.status == 'CONFIRMED'}" onchange="selectStatus(this)">
+                        확정
+                    </label>
+                    <label class="status-btn" th:classappend="${workPlan.status == 'IN_PROGRESS'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="IN_PROGRESS" th:checked="${workPlan.status == 'IN_PROGRESS'}" onchange="selectStatus(this)">
+                        진행중
+                    </label>
+                    <label class="status-btn" th:classappend="${workPlan.status == 'COMPLETED'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="COMPLETED" th:checked="${workPlan.status == 'COMPLETED'}" onchange="selectStatus(this)">
+                        완료
+                    </label>
+                    <label class="status-btn" th:classappend="${workPlan.status == 'POSTPONED'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="POSTPONED" th:checked="${workPlan.status == 'POSTPONED'}" onchange="selectStatus(this)">
+                        연기
+                    </label>
+                    <label class="status-btn" th:classappend="${workPlan.status == 'CANCELLED'} ? 'selected' : ''">
+                        <input type="radio" name="status" value="CANCELLED" th:checked="${workPlan.status == 'CANCELLED'}" onchange="selectStatus(this)">
+                        취소
+                    </label>
+                </div>
+                <div style="margin-top: 12px;">
+                    <input type="text" name="statusReason" th:value="${workPlan.statusReason}" placeholder="상태 사유 (연기/취소 시 입력)" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.9em;">
+                </div>
+            </div>
+
+            <!-- 부모 계획 (숨김) -->
+            <input type="hidden" name="parentPlanId" th:value="${workPlan.parentPlanId}" />
+
+            <!-- 버튼 -->
+            <div class="btn-area">
+                <a href="/workplan/calendar" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+                <button type="submit" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function selectType(radio) {
+            document.querySelectorAll('.type-option').forEach(function(el) { el.classList.remove('selected'); });
+            radio.closest('.type-option').classList.add('selected');
+        }
+
+        function selectStep(radio) {
+            document.querySelectorAll('.step-item').forEach(function(el) { el.classList.remove('selected'); });
+            radio.closest('.step-item').classList.add('selected');
+        }
+
+        function selectStatus(radio) {
+            document.querySelectorAll('.status-btn').forEach(function(el) { el.classList.remove('selected'); });
+            radio.closest('.status-btn').classList.add('selected');
+        }
+
+        // Enter 키 방지
+        document.getElementById('workPlanForm').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+            }
+        });
+
+        // Ctrl+S 저장
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('workPlanForm').submit();
+            }
+        });
+    </script>
+</body>
+</html>

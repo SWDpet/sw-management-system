@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>부서 성과 대시보드</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .header-actions select { padding: 7px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.85em; }
+        .btn { padding: 8px 16px; border: none; border-radius: 5px; font-size: 0.85em; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-primary { background: #1565c0; color: white; }
+        .btn-secondary { background: #858796; color: white; }
+
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .chart-box { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,0.15); }
+        .chart-box h4 { margin: 0 0 15px; color: #333; font-size: 1em; }
+        .chart-box canvas { max-height: 400px; }
+
+        .data-table-wrap { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,0.15); }
+        .data-table-wrap h4 { margin: 0 0 15px; color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: center; font-size: 0.85em; border-bottom: 1px solid #e3e6f0; }
+        th { background: #f8f9fc; color: #5a5c69; font-weight: 600; }
+        tr:hover { background: #f8f9fc; }
+        .rank-badge { display: inline-block; width: 26px; height: 26px; border-radius: 50%; background: #4e73df; color: white; font-size: 0.78em; font-weight: 700; line-height: 26px; text-align: center; }
+        .rank-badge.gold { background: #f6c23e; color: #333; }
+        .rank-badge.silver { background: #b4b4b4; }
+        .rank-badge.bronze { background: #cd7f32; }
+        .name-link { color: #4e73df; font-weight: 600; text-decoration: none; }
+        .name-link:hover { text-decoration: underline; }
+
+        @media (max-width: 900px) {
+            .chart-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="page-header">
+            <h2><i class="fas fa-users"></i> 부서 성과 대시보드 (S-02)</h2>
+            <div class="header-actions">
+                <form method="get" th:action="@{/performance/dept}" style="display:flex; gap:8px; align-items:center;">
+                    <select name="year">
+                        <option th:each="y : ${#numbers.sequence(2020, 2030)}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == year}">연도</option>
+                    </select>
+                    <select name="month">
+                        <option th:each="m : ${#numbers.sequence(1, 12)}" th:value="${m}" th:text="${m + '월'}" th:selected="${m == month}">월</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 조회</button>
+                </form>
+                <a th:href="@{/performance/personal}" class="btn btn-secondary"><i class="fas fa-user"></i> 개인현황</a>
+                <a href="/" class="btn" style="background:#5a5c69; color:white;"><i class="fas fa-home"></i> 홈</a>
+            </div>
+        </div>
+
+        <!-- 차트 -->
+        <div class="chart-row">
+            <div class="chart-box">
+                <h4><i class="fas fa-chart-bar"></i> 직원별 업무 건수 비교 (<span th:text="${year}">2026</span>년 <span th:text="${month}">1</span>월)</h4>
+                <canvas id="deptBarChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h4><i class="fas fa-chart-pie"></i> 업무 유형별 분포</h4>
+                <canvas id="typePieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 상세 테이블 -->
+        <div class="data-table-wrap">
+            <h4><i class="fas fa-table"></i> 직원별 성과 상세 (<span th:text="${year}">2026</span>년 <span th:text="${month}">1</span>월)</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>순위</th>
+                        <th>직원</th>
+                        <th>설치</th>
+                        <th>패치</th>
+                        <th>장애</th>
+                        <th>업무지원</th>
+                        <th>점검(완료/계획)</th>
+                        <th>일정준수</th>
+                        <th>합계</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="ps, stat : ${deptData}">
+                        <td>
+                            <span th:class="${stat.index == 0 ? 'rank-badge gold' : (stat.index == 1 ? 'rank-badge silver' : (stat.index == 2 ? 'rank-badge bronze' : 'rank-badge'))}"
+                                  th:text="${stat.index + 1}">1</span>
+                        </td>
+                        <td>
+                            <a th:href="@{/performance/personal(userId=${ps.user.userSeq}, year=${year})}" class="name-link"
+                               th:text="${ps.user.username}">이름</a>
+                        </td>
+                        <td th:text="${ps.installCount != null ? ps.installCount : 0}">0</td>
+                        <td th:text="${ps.patchCount != null ? ps.patchCount : 0}">0</td>
+                        <td th:text="${ps.faultCount != null ? ps.faultCount : 0}">0</td>
+                        <td th:text="${ps.supportCount != null ? ps.supportCount : 0}">0</td>
+                        <td>
+                            <span th:text="${(ps.inspectDoneCount != null ? ps.inspectDoneCount : 0) + '/' + (ps.inspectPlanCount != null ? ps.inspectPlanCount : 0)}">0/0</span>
+                        </td>
+                        <td>
+                            <span th:if="${ps.planTotalCount != null and ps.planTotalCount > 0}"
+                                  th:text="${#numbers.formatDecimal(ps.planOntimeCount * 100.0 / ps.planTotalCount, 0, 0) + '%'}">0%</span>
+                            <span th:unless="${ps.planTotalCount != null and ps.planTotalCount > 0}">-</span>
+                        </td>
+                        <td style="font-weight:700;"
+                            th:text="${(ps.installCount != null ? ps.installCount : 0) + (ps.patchCount != null ? ps.patchCount : 0) + (ps.faultCount != null ? ps.faultCount : 0) + (ps.supportCount != null ? ps.supportCount : 0) + (ps.inspectDoneCount != null ? ps.inspectDoneCount : 0)}">0</td>
+                    </tr>
+                    <tr th:if="${deptData == null or deptData.isEmpty()}">
+                        <td colspan="9" style="text-align:center; color:#aaa; padding:30px;">데이터가 없습니다. 성과 집계를 먼저 실행하세요.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        var userNames = /*[[${userNames}]]*/ [];
+        var totalCounts = /*[[${totalCounts}]]*/ [];
+        var deptDataRaw = /*[[${deptData}]]*/ [];
+
+        // 직원별 업무 건수 Bar Chart
+        var colors = userNames.map(function(_, i) {
+            var palette = ['#4e73df','#1cc88a','#e74a3b','#f6c23e','#36b9cc','#858796','#5a5c69','#fd7e14','#6f42c1','#20c997'];
+            return palette[i % palette.length];
+        });
+
+        new Chart(document.getElementById('deptBarChart'), {
+            type: 'bar',
+            data: {
+                labels: userNames,
+                datasets: [{
+                    label: '총 업무 건수',
+                    data: totalCounts,
+                    backgroundColor: colors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        // 업무유형별 분포 Pie
+        var typeSum = { install: 0, patch: 0, fault: 0, support: 0, inspect: 0 };
+        deptDataRaw.forEach(function(ps) {
+            typeSum.install += (ps.installCount || 0);
+            typeSum.patch += (ps.patchCount || 0);
+            typeSum.fault += (ps.faultCount || 0);
+            typeSum.support += (ps.supportCount || 0);
+            typeSum.inspect += (ps.inspectDoneCount || 0);
+        });
+
+        new Chart(document.getElementById('typePieChart'), {
+            type: 'pie',
+            data: {
+                labels: ['설치', '패치', '장애', '업무지원', '점검'],
+                datasets: [{
+                    data: [typeSum.install, typeSum.patch, typeSum.fault, typeSum.support, typeSum.inspect],
+                    backgroundColor: ['#4e73df', '#1cc88a', '#e74a3b', '#f6c23e', '#36b9cc']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'right' } }
+            }
+        });
+    </script>
+</body>
+</html>

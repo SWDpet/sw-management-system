@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>사업현황 목록</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 40px 20px; color: #333; }
+        .container { max-width: 1600px; margin: auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); }
+        .page-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; }
+
+        /* 검색 영역 */
+        .search-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 25px; padding: 15px; background: #f8f9fc; border-radius: 8px; flex-wrap: wrap; }
+        .search-bar select, .search-bar input { padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.9em; }
+        .search-bar select { min-width: 120px; }
+        .search-bar input[type="text"] { min-width: 250px; }
+        .btn-search { padding: 8px 20px; background: #1565c0; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .btn-search:hover { background: #0d47a1; }
+        .btn-reset { padding: 8px 15px; background: #858796; color: white; border: none; border-radius: 5px; cursor: pointer; }
+
+        /* 테이블 */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { background: #e3f2fd; color: #1565c0; padding: 12px 10px; border: 1px solid #bbdefb; text-align: center; font-weight: 700; font-size: 0.9em; white-space: nowrap; }
+        .data-table td { padding: 10px; border: 1px solid #e3e6f0; text-align: center; font-size: 0.9em; }
+        .data-table tbody tr:hover { background: #f0f8ff; cursor: pointer; }
+        .data-table tbody tr:nth-child(even) { background: #fafbfc; }
+        .data-table tbody tr:nth-child(even):hover { background: #f0f8ff; }
+
+        /* 상태 배지 */
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; color: white; }
+        .badge-budget { background: #90a4ae; }
+        .badge-contracting { background: #ff9800; }
+        .badge-commenced { background: #2196f3; }
+        .badge-in-progress { background: #4caf50; }
+        .badge-interim { background: #9c27b0; }
+        .badge-completed { background: #1565c0; }
+        .badge-settled { background: #37474f; }
+
+        /* 계약유형 */
+        .type-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; font-weight: 600; }
+        .type-unit { background: #e3f2fd; color: #1565c0; }
+        .type-procurement { background: #e8f5e9; color: #2e7d32; }
+        .type-private { background: #fff3e0; color: #e65100; }
+        .type-subcontract { background: #fce4ec; color: #c62828; }
+
+        /* 금액 */
+        .amount { font-weight: 600; color: #1565c0; text-align: right !important; }
+
+        /* 페이징 */
+        .pagination { display: flex; justify-content: center; gap: 5px; margin-top: 30px; }
+        .pagination a, .pagination span { padding: 8px 14px; border: 1px solid #d1d3e2; border-radius: 5px; text-decoration: none; color: #555; font-size: 0.9em; }
+        .pagination .active { background: #1565c0; color: white; border-color: #1565c0; }
+        .pagination a:hover { background: #e3f2fd; }
+
+        /* 버튼 */
+        .btn-new { padding: 10px 25px; background: #1565c0; color: white; border: none; border-radius: 5px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-new:hover { background: #0d47a1; transform: translateY(-2px); }
+        .btn-home { padding: 10px 25px; background: #858796; color: white; border: none; border-radius: 5px; font-weight: 700; cursor: pointer; text-decoration: none; }
+        .btn-home:hover { opacity: 0.9; }
+        .btn-cycle { padding: 10px 20px; background: #00897b; color: white; border: none; border-radius: 5px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-cycle:hover { background: #00695c; }
+
+        .top-actions { display: flex; gap: 10px; }
+        .summary-info { font-size: 0.9em; color: #666; margin-bottom: 15px; }
+        .empty-msg { padding: 40px; text-align: center; color: #999; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-chart-line"></i> 사업현황 관리</h2>
+            <div class="top-actions">
+                <a th:if="${userAuth == 'EDIT'}" href="/contract/new" class="btn-new"><i class="fas fa-plus"></i> 신규 등록</a>
+                <a href="/contract/inspect-cycle" class="btn-cycle"><i class="fas fa-sync-alt"></i> 점검주기 관리</a>
+                <a href="/" class="btn-home"><i class="fas fa-home"></i> 홈</a>
+            </div>
+        </div>
+
+        <!-- 검색 바 -->
+        <form class="search-bar" method="get" action="/contract/list">
+            <select name="year">
+                <option value="">전체 연도</option>
+                <option th:each="y : ${years}" th:value="${y}" th:text="${y + '년'}" th:selected="${y == currentYear}"></option>
+            </select>
+            <select name="status">
+                <option value="">전체 상태</option>
+                <option value="BUDGET" th:selected="${currentStatus == 'BUDGET'}">예산제안</option>
+                <option value="CONTRACTING" th:selected="${currentStatus == 'CONTRACTING'}">계약진행</option>
+                <option value="COMMENCED" th:selected="${currentStatus == 'COMMENCED'}">착수</option>
+                <option value="IN_PROGRESS" th:selected="${currentStatus == 'IN_PROGRESS'}">수행중</option>
+                <option value="INTERIM" th:selected="${currentStatus == 'INTERIM'}">기성</option>
+                <option value="COMPLETED" th:selected="${currentStatus == 'COMPLETED'}">준공</option>
+                <option value="SETTLED" th:selected="${currentStatus == 'SETTLED'}">정산완료</option>
+            </select>
+            <input type="text" name="keyword" th:value="${keyword}" placeholder="용역명, 계약번호, 발주처, 지자체 검색...">
+            <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
+            <a href="/contract/list" class="btn-reset"><i class="fas fa-redo"></i> 초기화</a>
+        </form>
+
+        <div class="summary-info">
+            총 <strong th:text="${contracts.totalElements}">0</strong>건
+        </div>
+
+        <!-- 목록 테이블 -->
+        <table class="data-table" th:if="${contracts.totalElements > 0}">
+            <thead>
+                <tr>
+                    <th style="width: 4%;">No</th>
+                    <th style="width: 6%;">연도</th>
+                    <th style="width: 8%;">지자체</th>
+                    <th style="width: 25%;">용역명</th>
+                    <th style="width: 8%;">계약유형</th>
+                    <th style="width: 11%;">계약금액</th>
+                    <th style="width: 9%;">계약일</th>
+                    <th style="width: 9%;">착수일</th>
+                    <th style="width: 9%;">준공예정일</th>
+                    <th style="width: 8%;">진행상태</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="c, stat : ${contracts.content}" th:onclick="|location.href='/contract/detail/' + ${c.contractId}|">
+                    <td th:text="${contracts.totalElements - (contracts.number * contracts.size) - stat.index}">1</td>
+                    <td th:text="${c.contractYear}"></td>
+                    <td th:text="${c.infra != null ? c.infra.distNm : '-'}"></td>
+                    <td style="text-align: left; padding-left: 15px;" th:text="${c.contractName}"></td>
+                    <td>
+                        <span class="type-tag"
+                              th:classappend="${c.contractType == 'UNIT_PRICE'} ? 'type-unit' : (${c.contractType == 'PROCUREMENT'} ? 'type-procurement' : (${c.contractType == 'PRIVATE'} ? 'type-private' : 'type-subcontract'))"
+                              th:text="${c.contractType == 'UNIT_PRICE'} ? '단가' : (${c.contractType == 'PROCUREMENT'} ? '조달' : (${c.contractType == 'PRIVATE'} ? '수의' : '하도급'))">
+                        </span>
+                    </td>
+                    <td class="amount" th:text="${c.contractAmount != null ? #numbers.formatInteger(c.contractAmount, 3, 'COMMA') + '원' : '-'}"></td>
+                    <td th:text="${c.contractDate}"></td>
+                    <td th:text="${c.startDate}"></td>
+                    <td th:text="${c.endDate}"></td>
+                    <td>
+                        <span class="badge"
+                              th:classappend="${c.progressStatus == 'BUDGET'} ? 'badge-budget' : (${c.progressStatus == 'CONTRACTING'} ? 'badge-contracting' : (${c.progressStatus == 'COMMENCED'} ? 'badge-commenced' : (${c.progressStatus == 'IN_PROGRESS'} ? 'badge-in-progress' : (${c.progressStatus == 'INTERIM'} ? 'badge-interim' : (${c.progressStatus == 'COMPLETED'} ? 'badge-completed' : 'badge-settled')))))"
+                              th:text="${c.progressStatus == 'BUDGET'} ? '예산제안' : (${c.progressStatus == 'CONTRACTING'} ? '계약진행' : (${c.progressStatus == 'COMMENCED'} ? '착수' : (${c.progressStatus == 'IN_PROGRESS'} ? '수행중' : (${c.progressStatus == 'INTERIM'} ? '기성' : (${c.progressStatus == 'COMPLETED'} ? '준공' : '정산완료')))))">
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div th:if="${contracts.totalElements == 0}" class="empty-msg">
+            <i class="fas fa-inbox" style="font-size: 2em; margin-bottom: 10px;"></i><br>
+            등록된 사업현황이 없습니다.
+        </div>
+
+        <!-- 페이징 -->
+        <div class="pagination" th:if="${contracts.totalPages > 1}">
+            <a th:if="${contracts.number > 0}" th:href="@{/contract/list(page=${contracts.number - 1}, year=${currentYear}, status=${currentStatus}, keyword=${keyword})}"><i class="fas fa-chevron-left"></i></a>
+            <th:block th:each="i : ${#numbers.sequence(0, contracts.totalPages - 1)}">
+                <span th:if="${i == contracts.number}" class="active" th:text="${i + 1}"></span>
+                <a th:unless="${i == contracts.number}" th:href="@{/contract/list(page=${i}, year=${currentYear}, status=${currentStatus}, keyword=${keyword})}" th:text="${i + 1}"></a>
+            </th:block>
+            <a th:if="${contracts.number < contracts.totalPages - 1}" th:href="@{/contract/list(page=${contracts.number + 1}, year=${currentYear}, status=${currentStatus}, keyword=${keyword})}"><i class="fas fa-chevron-right"></i></a>
+        </div>
+    </div>
+</body>
+</html>
