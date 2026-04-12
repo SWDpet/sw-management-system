@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>착수계 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -26,7 +28,9 @@
         .form-table { width: 100%; border-collapse: collapse; }
         .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
         .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
-        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table input:not([type=checkbox]):not([type=radio]), .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
+        .form-table textarea { height: auto; }
+        .form-table input[type=checkbox] { width:16px; height:16px; margin:0 6px 0 0; vertical-align:middle; padding:0; }
         .form-table textarea { height: 80px; resize: vertical; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
         .required { color: #e74a3b; }
@@ -41,6 +45,34 @@
         .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
         .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
+
+        /* 미리보기 버튼 */
+        .btn-preview { padding: 4px 12px; background: #6f42c1; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-left: 12px; font-weight: 600; vertical-align: middle; }
+        .btn-preview:hover { background: #5a32a3; }
+
+        /* 미리보기 모달 */
+        .preview-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; overflow-y: auto; }
+        .preview-wrapper { max-width: 860px; margin: 30px auto; padding: 0 20px 60px; }
+        .preview-toolbar { background: #333; color: white; padding: 10px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .preview-toolbar h4 { margin: 0; font-size: 0.95em; }
+        .preview-close { padding: 6px 16px; background: #858796; color: white; border: none; border-radius: 4px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .preview-close:hover { background: #6b6d7d; }
+        .document-paper { background: white; padding: 60px 50px; min-height: 700px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); font-family: 'Noto Sans KR', 'Batang', serif; font-size: 13px; line-height: 1.8; color: #000; border-radius: 0 0 8px 8px; }
+        .document-paper h2.doc-title { text-align: center; font-size: 22px; letter-spacing: 8px; margin: 30px 0; }
+        .document-paper .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .document-paper .doc-table th, .document-paper .doc-table td { border: 1px solid #333; padding: 8px 10px; font-size: 13px; }
+        .document-paper .doc-table th { background: #f5f5f5; font-weight: 600; text-align: center; }
+        .document-paper .letterhead { text-align: center; border-bottom: 3px double #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .document-paper .letterhead h1 { font-size: 24px; margin: 0; letter-spacing: 6px; }
+        .document-paper .letter-info { margin: 10px 0; font-size: 13px; }
+        .document-paper .letter-info td { border: none; padding: 3px 8px; }
+        .document-paper .letter-info .label { font-weight: 600; width: 80px; }
+        .document-paper .doc-body { white-space: pre-wrap; margin: 20px 0; line-height: 2; }
+        .document-paper .company-footer { text-align: center; margin-top: 40px; font-size: 16px; font-weight: 700; letter-spacing: 4px; }
+        .document-paper .stamp-area { text-align: right; margin-top: 20px; font-size: 12px; color: #666; }
+        .document-paper .gantt-table th, .document-paper .gantt-table td { font-size: 11px; padding: 5px 3px; text-align: center; }
+        .document-paper .gantt-bar { background: #4e73df; height: 14px; border-radius: 2px; }
+        .document-paper .sign-line { display: inline-block; width: 120px; border-bottom: 1px solid #333; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -53,7 +85,7 @@
             </div>
         </div>
 
-        <!-- 7종 탭 -->
+        <!-- 8종 탭 -->
         <div class="tab-nav">
             <button class="active" onclick="showSection(0, this)">① 공문</button>
             <button onclick="showSection(1, this)">② 착수계</button>
@@ -62,6 +94,8 @@
             <button onclick="showSection(4, this)">⑤ 보안각서</button>
             <button onclick="showSection(5, this)">⑥ 과업참여자</button>
             <button onclick="showSection(6, this)">⑦ 보안서약서</button>
+            <button onclick="showSection(7, this)">⑧ 설계내역서</button>
+            <button onclick="showSection(8, this)">⑨ 사업수행계획서</button>
         </div>
 
         <!-- ① 착수계 공문 -->
@@ -74,11 +108,14 @@
                             <select id="selYear" onchange="onYearChange()" style="width:auto; min-width:100px;">
                                 <option value="">연도</option>
                             </select>
-                            <select id="selCity" onchange="onCityChange()" style="width:auto; min-width:180px;">
+                            <select id="selCity" onchange="onCityChange()" style="width:auto; min-width:130px;">
                                 <option value="">-- 연도 먼저 선택 --</option>
                             </select>
+                            <select id="selDist" onchange="onDistChange()" style="width:auto; min-width:130px;">
+                                <option value="">-- 시도 먼저 선택 --</option>
+                            </select>
                             <select id="selSystem" onchange="onSystemChange()" style="width:auto; min-width:130px;">
-                                <option value="">-- 지자체 먼저 선택 --</option>
+                                <option value="">-- 시군구 먼저 선택 --</option>
                             </select>
                         </div>
                     </td>
@@ -89,13 +126,28 @@
                             <option value="">-- 위 조건을 선택하세요 --</option>
                         </select>
                         <span class="help-text" id="projHint"></span>
+                        <div id="projInfoBadge" style="margin-top:8px; display:none; font-size:0.82em;">
+                            <span style="display:inline-block; padding:3px 10px; background:#eef2ff; color:#3730a3; border-radius:4px; margin-right:6px;">[계약일] <b id="badgeContDt">-</b></span>
+                            <span style="display:inline-block; padding:3px 10px; background:#ecfdf5; color:#065f46; border-radius:4px; margin-right:6px;">[과업기간] <b id="badgePeriod">-</b> (<b id="badgeMonths">-</b>개월)</span>
+                            <span id="badgeWarn" style="display:none; padding:3px 10px; background:#fef3c7; color:#92400e; border-radius:4px;" title="계약일과 과업 시작일이 다릅니다. 공정표는 과업기간 기준으로 작성됩니다.">⚠ 계약일 ≠ 과업시작일</span>
+                        </div>
                     </td>
                 </tr>
                 <tr><th>수신</th><td id="letter_recipient" colspan="3"><input type="text" id="letter_to" placeholder="수신 지자체명 (자동입력)"></td></tr>
-                <tr><th>담당</th><td><input type="text" id="letter_manager" placeholder="담당자명"></td>
+                <tr><th>담당</th><td>
+                        <select id="letter_manager_sel" onchange="fillLetterManager()" style="width:auto; min-width:120px; display:inline-block;">
+                            <option value="">담당자 선택</option>
+                            <option th:each="u : ${users}" th:value="${u.userSeq}"
+                                    th:text="${u.positionTitle != null ? u.positionTitle + ' ' + u.username : u.username}"
+                                    th:data-name="${u.username}"
+                                    th:data-position="${u.positionTitle}"
+                                    th:data-tel="${u.tel}"></option>
+                        </select>
+                        <input type="text" id="letter_manager" placeholder="직위 성명" style="width:50%; display:inline-block; margin-left:4px;">
+                    </td>
                     <th>연락처</th><td><input type="text" id="letter_tel" placeholder="연락처"></td></tr>
-                <tr><th>문서번호</th><td><input type="text" id="letter_docNo" placeholder="자동 채번" readonly style="background:#f0f0f0;"></td>
-                    <th>시행일자</th><td><input type="date" id="letter_date"></td></tr>
+                <tr><th>문서번호</th><td><input type="text" id="letter_docNo" placeholder="(주)정도UIT 2026 – 호 (수동입력)"></td>
+                    <th>시행일자</th><td><input type="text" id="letter_date" placeholder="예) 2026.04.03"></td></tr>
                 <tr><th>제목</th><td colspan="3"><input type="text" id="letter_title" placeholder="「연도 용역명」 착수계 제출 건 (자동생성)"></td></tr>
                 <tr><th>본문</th><td colspan="3"><textarea id="letter_body" placeholder="본문 내용 (계약일자 자동 삽입)"></textarea></td></tr>
             </table>
@@ -123,39 +175,31 @@
             <table class="form-table">
                 <tr><th>용역명</th><td colspan="3"><input type="text" id="sched_name" placeholder="용역명 (자동)"></td></tr>
                 <tr><th>계약기간</th><td><input type="date" id="sched_from"></td><th>~</th><td><input type="date" id="sched_to"></td></tr>
+                <tr><th>공정명 <span class="required">*</span></th><td colspan="3">
+                    <input type="text" id="sched_process" placeholder="예: 도시계획정보체계(UPIS) 운영장비 유지관리">
+                    <div class="help-text">템플릿 공정명 칸에 출력됩니다. 괄호 다음 공백 기준으로 2줄로 자동 분할됩니다.</div>
+                </td></tr>
             </table>
-            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">공정 항목</p>
-            <table class="dynamic-table" id="scheduleTable">
-                <thead><tr><th>공정명</th><th>1월</th><th>2월</th><th>3월</th><th>4월</th><th>5월</th><th>6월</th><th>7월</th><th>8월</th><th>9월</th><th>10월</th><th>11월</th><th>12월</th><th>비고</th><th></th></tr></thead>
-                <tbody id="scheduleBody">
-                    <tr>
-                        <td><input type="text" value="정기점검"></td>
-                        <td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
-                        <td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
-                        <td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
-                        <td><input type="checkbox"></td><td><input type="checkbox"></td><td><input type="checkbox"></td>
-                        <td><input type="text"></td>
-                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
-                    </tr>
-                </tbody>
-            </table>
-            <button class="btn-add-row" onclick="addScheduleRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 공정 추가</button>
         </div>
 
         <!-- ④ 현장대리인계 -->
         <div class="form-section" id="section-3">
             <h3><i class="fas fa-user-tie"></i> ④ 현장대리인계</h3>
+            <div class="help-text" style="margin-bottom:12px;">* 사업담당자 선택 시 users 테이블에서 자동으로 정보를 가져옵니다.</div>
             <table class="form-table">
                 <tr><th>성명</th><td>
-                    <select id="site_rep_user" onchange="fillSiteRep()">
-                        <option value="">선택</option>
-                        <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.username}" th:data-position="${u.position}" th:data-grade="${u.techGrade}"></option>
+                    <select id="site_rep_user" onchange="fillSiteRep()" style="width:auto; min-width:120px; display:inline-block;">
+                        <option value="">담당자 선택</option>
+                        <option th:each="u : ${users}" th:value="${u.userSeq}" th:text="${u.positionTitle != null ? u.positionTitle + ' ' + u.username : u.username}"></option>
                     </select>
+                    <input type="text" id="site_rep_name" placeholder="성명 (자동)" style="width:40%; display:inline-block; margin-left:4px;" readonly>
                 </td>
-                <th>주소</th><td><input type="text" id="site_rep_addr"></td></tr>
-                <tr><th>주민등록번호</th><td><input type="text" id="site_rep_ssn" placeholder="앞6자리-*******"></td>
+                <th>직급</th><td><input type="text" id="site_rep_position" placeholder="직급 (자동)" readonly></td></tr>
+                <tr><th>주소</th><td colspan="3"><input type="text" id="site_rep_addr" placeholder="주소 (자동)"></td></tr>
+                <tr><th>주민등록번호</th><td><input type="text" id="site_rep_ssn" placeholder="앞6자리-******* (자동)"></td>
                     <th>생년월일</th><td><input type="date" id="site_rep_birth"></td></tr>
-                <tr><th>자격</th><td colspan="3"><input type="text" id="site_rep_cert" placeholder="기술자격"></td></tr>
+                <tr><th>자격/기술등급</th><td><input type="text" id="site_rep_cert" placeholder="기술자격 (자동)"></td>
+                    <th>연락처</th><td><input type="text" id="site_rep_tel" placeholder="연락처 (자동)"></td></tr>
             </table>
         </div>
 
@@ -177,8 +221,9 @@
         <!-- ⑥ 과업참여자 명단 -->
         <div class="form-section" id="section-5">
             <h3><i class="fas fa-users"></i> ⑥ 과업참여자 명단</h3>
+            <div class="help-text" style="margin-bottom:8px;">* 성명을 선택하면 직위, 주민등록번호, 자격증이 자동으로 입력됩니다.</div>
             <table class="dynamic-table" id="participantTable">
-                <thead><tr><th>분야</th><th>성명</th><th>직위</th><th>주민등록번호</th><th>자격증번호</th><th>비고</th><th></th></tr></thead>
+                <thead><tr><th style="width:120px;">분야</th><th style="width:150px;">성명</th><th style="width:80px;">직위</th><th style="width:130px;">주민등록번호</th><th>자격증번호</th><th>비고</th><th style="width:35px;"></th></tr></thead>
                 <tbody id="participantBody"></tbody>
             </table>
             <button class="btn-add-row" onclick="addParticipantRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 인원 추가</button>
@@ -196,9 +241,166 @@
                 보안서약서는 저장 후 PDF 출력 시 인원별로 자동 생성됩니다.
             </div>
         </div>
+
+        <!-- ⑧ 설계내역서 -->
+        <div class="form-section" id="section-7">
+            <h3><i class="fas fa-file-excel"></i> ⑧ 설계내역서 (엑셀 출력)</h3>
+
+            <table class="form-table">
+                <tr>
+                    <th>유형 선택</th>
+                    <td colspan="3">
+                        <select id="estimateType" onchange="toggleEstimateType()" style="width:auto; min-width:200px;">
+                            <option value="TYPE_A">단순형 (밀양시 등)</option>
+                            <option value="TYPE_B">중간형 (단양군 등)</option>
+                            <option value="TYPE_C">복합형 (김포시 등)</option>
+                            <option value="TYPE_D">SW전용 (김해시 등)</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr><th>설계년월</th><td><input type="text" id="est_designDate" placeholder="예: 2026.  2."></td>
+                    <th>위치</th><td><input type="text" id="est_location" placeholder="예: 경상남도 밀양시 전역"></td></tr>
+                <tr><th>낙찰율(%)</th><td><input type="number" id="est_bidRate" step="0.01" value="97" style="width:80px;"> %
+                    <span class="help-text" id="est_bidRateCalc" style="margin-left:8px;"></span></td>
+                    <th>부가세 별도</th><td><label style="font-weight:normal;"><input type="checkbox" id="est_vatSeparate"> 총괄표에 부가세 행 분리</label></td></tr>
+            </table>
+
+            <!-- 안내 -->
+            <div style="margin:15px 0 0; padding:10px 14px; background:#fff8e1; border-left:4px solid #f9a825; border-radius:4px; font-size:0.88em; color:#5d4037;">
+                ※ 도입가는 기존 설계내역서에 부가세포함이면 포함한 금액으로, 부가세 별도면 별도 금액으로 작성 요망
+            </div>
+
+            <!-- HW 항목 -->
+            <div id="estHwSection">
+                <div style="margin:20px 0 8px; font-weight:700; color:#1cc88a;">◎ 1. 하드웨어 유지보수
+                    <button type="button" onclick="addEstEquipRow('estHwTable','HW')" style="margin-left:15px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                </div>
+                <table class="dynamic-table" id="estHwTable">
+                    <thead><tr><th style="width:35px;">No</th><th>품명</th><th style="width:90px;">적용율(%)</th><th>도입가</th><th>비고</th><th style="width:40px;"></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- SW 항목 -->
+            <div style="margin:20px 0 8px; font-weight:700; color:#e74a3b;">◎ 2. 소프트웨어 유지보수
+                <button type="button" onclick="addEstEquipRow('estSwTable','SW')" style="margin-left:15px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            </div>
+            <table class="dynamic-table" id="estSwTable">
+                <thead><tr><th style="width:35px;">No</th><th>품명</th><th style="width:90px;">적용율(%)</th><th>도입가</th><th>비고</th><th style="width:40px;"></th></tr></thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- 산출 미리보기 -->
+            <div style="margin-top:20px; padding:12px 15px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px;">
+                <div style="font-weight:700; color:#2e7d32; margin-bottom:8px;">자동 산출 미리보기</div>
+                <div id="estPreview" style="font-size:0.88em; color:#333;">사업 선택 후 장비를 로드하면 자동 계산됩니다.</div>
+            </div>
+        </div>
+
+        <!-- ⑨ 사업수행계획서 -->
+        <div class="form-section" id="section-8">
+            <h3><i class="fas fa-clipboard-list"></i> ⑨ 사업수행계획서 (P10~P13)
+                <button class="btn-preview" type="button" onclick="loadPlanData()" style="margin-left:auto; padding:4px 12px; background:#17a2b8; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-sync"></i> DB 불러오기</button>
+                <button class="btn-preview" type="button" onclick="savePlanData()" style="padding:4px 12px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-save"></i> 계획서 저장</button>
+            </h3>
+            <div class="help-text" style="margin-bottom:10px;">* 사업당 1회 입력하면 다른 문서(준공계/기성계)에서도 재사용됩니다. <strong>저장 버튼을 별도로 눌러야 sw_pjt 및 계획 테이블에 반영됩니다.</strong></div>
+
+            <h4 style="margin-top:14px; color:#1565c0;">P12 - 용역의 개요</h4>
+            <table class="form-table">
+                <tr><th style="width:160px;">용역의 목적</th>
+                    <td colspan="3"><textarea id="plan_purpose" style="width:100%; height:55px;" placeholder="예: 도시계획정보체계용 GIS SW 유지관리의 최신 버전 유지와 원활한 서비스를 제공"></textarea></td></tr>
+                <tr><th>지원형태</th>
+                    <td><select id="plan_supportType" style="width:auto;">
+                        <option value="비상주 지원">비상주 지원</option>
+                        <option value="상주 지원">상주 지원</option>
+                        <option value="혼합 지원">혼합 지원</option>
+                    </select></td>
+                    <th>점검방법</th>
+                    <td><input type="text" id="plan_inspectMethod" placeholder="예: 년 2회 유지보수 방문"></td></tr>
+                <tr><th>용역 범위<br><span style="font-weight:normal; color:#888; font-size:0.85em;">(줄바꿈 구분, 최대 3줄 출력)</span></th>
+                    <td colspan="3"><textarea id="plan_scopeText" style="width:100%; height:75px;" placeholder="GIS SW 최신 버전 유지&#10;GIS SW 원활한 서비스 제공&#10;긴급/장애처리"></textarea></td></tr>
+            </table>
+
+            <h4 style="margin-top:18px; color:#1565c0;">P12 - 유지관리 대상 제품
+                <button type="button" onclick="addPlanTargetRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            </h4>
+            <table class="dynamic-table" id="planTargetTable">
+                <thead><tr><th>제품명</th><th style="width:90px;">수량</th><th style="width:40px;"></th></tr></thead>
+                <tbody id="planTargetBody"></tbody>
+            </table>
+            <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다 (다중 행 cloning은 후속 작업 예정).</div>
+
+            <h4 style="margin-top:18px; color:#1565c0;">P2 - 예정공정표
+                <button type="button" onclick="addPlanScheduleRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            </h4>
+            <table class="dynamic-table" id="planScheduleTable">
+                <thead><tr><th style="min-width:150px;">공정명</th>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+                    <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+                    <th>비고</th><th style="width:35px;"></th></tr></thead>
+                <tbody id="planScheduleBody"></tbody>
+            </table>
+            <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다.</div>
+
+            <h4 style="margin-top:18px; color:#1565c0;">P13 - 공정별 투입인력계획
+                <button type="button" onclick="addPlanManpowerRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 작업단계 추가</button>
+            </h4>
+            <table class="dynamic-table" id="planManpowerTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2">작업단계명</th>
+                        <th rowspan="2">기간</th>
+                        <th colspan="4">기술자 (특/고/중/초)</th>
+                        <th colspan="3">기능사 (고/중/초)</th>
+                        <th rowspan="2">계</th>
+                        <th rowspan="2">비고</th>
+                        <th rowspan="2"></th>
+                    </tr>
+                    <tr>
+                        <th>특</th><th>고</th><th>중</th><th>초</th>
+                        <th>고</th><th>중</th><th>초</th>
+                    </tr>
+                </thead>
+                <tbody id="planManpowerBody"></tbody>
+            </table>
+
+            <h4 style="margin-top:18px; color:#1565c0;">다. 투입인력 정보
+                <button type="button" onclick="addPlanPersonnelRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 인원 추가</button>
+            </h4>
+            <table class="dynamic-table" id="planPersonnelTable">
+                <thead><tr>
+                    <th style="width:130px;">성 명</th>
+                    <th style="width:70px;">직급</th>
+                    <th style="width:90px;">기술자등급</th>
+                    <th style="width:70px;">경력</th>
+                    <th style="width:100px;">부서</th>
+                    <th>업무</th>
+                    <th style="width:130px;">연락처</th>
+                    <th style="width:35px;"></th>
+                </tr></thead>
+                <tbody id="planPersonnelBody"></tbody>
+            </table>
+            <div class="help-text">* 성명을 선택하면 직급/기술자등급/경력/부서/업무/연락처(휴대폰)가 자동 입력됩니다.</div>
+        </div>
     </div>
 
-    <script>
+    <!-- 미리보기 모달 -->
+    <div class="preview-overlay" id="previewModal">
+        <div class="preview-wrapper">
+            <div class="preview-toolbar">
+                <h4><i class="fas fa-eye"></i> <span id="previewTitle">미리보기</span></h4>
+                <button class="preview-close" onclick="closePreview()"><i class="fas fa-times"></i> 닫기</button>
+            </div>
+            <div class="document-paper" id="previewContent"></div>
+        </div>
+    </div>
+
+    <!-- 수정 모드: 기존 문서 데이터 주입 -->
+    <script th:if="${existingDoc != null}" th:inline="javascript">
+        window.__existingDoc = /*[[${existingDoc}]]*/ null;
+    </script>
+
+    <script th:inline="none">
         function showSection(idx, btn) {
             document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
             document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
@@ -213,17 +415,119 @@
             document.getElementById('scheduleBody').insertAdjacentHTML('beforeend', html);
         }
 
-        function addParticipantRow() {
-            var html = '<tr><td><select><option>유지보수책임기술자</option><option>참여기술자</option></select></td>' +
-                '<td><input type="text"></td><td><input type="text"></td><td><input type="text" placeholder="앞6자리-*******"></td>' +
-                '<td><input type="text"></td><td><input type="text"></td>' +
-                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
-            document.getElementById('participantBody').insertAdjacentHTML('beforeend', html);
+        // 사용자 목록 옵션 HTML (재사용) - site_rep_user 드롭다운에서 복제
+        function getUserOptionsHtml() {
+            var sel = document.getElementById('site_rep_user');
+            var html = '<option value="">선택</option>';
+            for (var i = 1; i < sel.options.length; i++) {
+                html += '<option value="' + sel.options[i].value + '">' + sel.options[i].textContent + '</option>';
+            }
+            return html;
+        }
+
+        function addParticipantRow(data) {
+            var optionsHtml = getUserOptionsHtml();
+            var selectedVal = data ? data.userSeq || '' : '';
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><select class="pt-role"><option>유지보수책임기술자</option><option>참여기술자</option></select></td>' +
+                '<td><select class="pt-user" onchange="fillParticipant(this)" style="width:100%;">' + optionsHtml + '</select></td>' +
+                '<td><input type="text" class="pt-position" value="' + (data ? data.position || '' : '') + '"></td>' +
+                '<td><input type="text" class="pt-ssn" value="' + (data ? data.ssn || '' : '') + '" placeholder="앞6자리-*******"></td>' +
+                '<td><input type="text" class="pt-cert" value="' + (data ? data.cert || '' : '') + '"></td>' +
+                '<td><input type="text" class="pt-remark" value="' + (data ? data.remark || '' : '') + '"></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove(); syncSecurityFromParticipants();">×</button></td>' +
+                '<input type="hidden" class="pt-techGrade" value="' + (data ? data.techGrade || '' : '') + '">' +
+                '<input type="hidden" class="pt-tasks" value="' + (data ? data.tasks || '' : '') + '">';
+            document.getElementById('participantBody').appendChild(tr);
+            if (data && data.role) tr.querySelector('.pt-role').value = data.role;
+            if (selectedVal) {
+                tr.querySelector('.pt-user').value = selectedVal;
+            }
+        }
+
+        function fillParticipant(sel) {
+            var userSeq = sel.value;
+            var tr = sel.closest('tr');
+            if (!userSeq) {
+                tr.querySelector('.pt-position').value = '';
+                tr.querySelector('.pt-ssn').value = '';
+                tr.querySelector('.pt-cert').value = '';
+                tr.querySelector('.pt-techGrade').value = '';
+                tr.querySelector('.pt-tasks').value = '';
+                var rmDiv = tr.querySelector('.pt-tasks-pick');
+                if (rmDiv) rmDiv.remove();
+                return;
+            }
+            fetch('/document/api/user/' + userSeq)
+            .then(function(r) { return r.json(); })
+            .then(function(u) {
+                tr.querySelector('.pt-position').value = u.positionTitle || u.position || '';
+                tr.querySelector('.pt-ssn').value = u.ssn || '';
+                tr.querySelector('.pt-cert').value = u.certificate || '';
+                tr.querySelector('.pt-techGrade').value = u.techGrade || '';
+                // 다중 업무: users.tasks 콤마 분리 → 체크박스로 표시
+                var taskList = (u.tasks || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
+                var hidden = tr.querySelector('.pt-tasks');
+                hidden.value = taskList.join(','); // default 전체 선택
+                // 기존 picker 제거 후 새로 그림
+                var oldPicker = tr.querySelector('.pt-tasks-pick');
+                if (oldPicker) oldPicker.remove();
+                if (taskList.length > 0) {
+                    var picker = document.createElement('div');
+                    picker.className = 'pt-tasks-pick';
+                    picker.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; padding:4px 0; font-size:0.8em;';
+                    taskList.forEach(function(t, i) {
+                        var lbl = document.createElement('label');
+                        lbl.style.cssText = 'display:inline-flex; align-items:center; gap:3px; background:#e3f2fd; color:#1565c0; padding:2px 6px; border-radius:10px; cursor:pointer;';
+                        lbl.innerHTML = '<input type="checkbox" checked data-task="'+ t.replace(/"/g,'&quot;') +'" onchange="updateParticipantTasks(this)"> ' + t;
+                        picker.appendChild(lbl);
+                    });
+                    // 비고 td 아래쪽에 picker 삽입
+                    var remarkTd = tr.querySelector('.pt-remark');
+                    if (remarkTd && remarkTd.parentNode) {
+                        remarkTd.parentNode.appendChild(picker);
+                    }
+                }
+                syncSecurityFromParticipants();
+            });
+        }
+
+        function updateParticipantTasks(cb) {
+            var tr = cb.closest('tr');
+            var arr = [];
+            tr.querySelectorAll('.pt-tasks-pick input[type=checkbox]').forEach(function(c) {
+                if (c.checked) arr.push(c.dataset.task);
+            });
+            tr.querySelector('.pt-tasks').value = arr.join(', ');
+            syncSecurityFromParticipants();
+        }
+
+        function syncSecurityFromParticipants() {
+            var tbody = document.getElementById('securityBody');
+            tbody.innerHTML = '';
+            var rows = document.getElementById('participantBody').rows;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var userSel = r.querySelector('.pt-user');
+                var fullName = userSel.options[userSel.selectedIndex] ? userSel.options[userSel.selectedIndex].textContent.trim() : '';
+                if (fullName === '선택' || !fullName) fullName = '';
+                // "이사 박욱진" → "박욱진" (직급 제거, 이름만 추출)
+                var nameParts = fullName.split(' ');
+                var name = nameParts.length > 1 ? nameParts[nameParts.length - 1] : fullName;
+                var techGrade = r.querySelector('.pt-techGrade') ? r.querySelector('.pt-techGrade').value || '' : '';
+                var ssn = r.querySelector('.pt-ssn').value || '';
+                var tasks = r.querySelector('.pt-tasks') ? r.querySelector('.pt-tasks').value || '' : '';
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + name + '</td><td>' + techGrade + '</td><td>' + ssn + '</td><td>' + tasks + '</td><td style="color:#aaa;">저장 후 서명</td>';
+                tbody.appendChild(tr);
+            }
         }
 
         function updateKoreanAmount() {
             var num = parseInt(document.getElementById('comm_amount').value) || 0;
-            document.getElementById('comm_amount_kr').textContent = '금 ' + convertToKorean(num) + '원정';
+            var formatted = Number(num).toLocaleString();
+            document.getElementById('comm_amount_kr').textContent = '금' + formatted + '원(금' + convertToKorean(num) + '원)';
         }
 
         function convertToKorean(num) {
@@ -250,8 +554,23 @@
 
         // === 3단계 사업 선택 ===
 
-        // 페이지 로드 시 연도 목록 가져오기
+        // 페이지 로드 시 초기값 세팅
         (function() {
+            // 문서번호 자동 세팅: (주)정도UIT 올해연도 – 호
+            var now = new Date();
+            var yyyy = now.getFullYear();
+            var mm = String(now.getMonth() + 1).padStart(2, '0');
+            var docNoField = document.getElementById('letter_docNo');
+            if (!docNoField.value) {
+                docNoField.value = '(주)정도UIT ' + yyyy + ' – 호';
+            }
+            // 시행일자 자동 세팅: 올해.월.
+            var dateField = document.getElementById('letter_date');
+            if (!dateField.value) {
+                dateField.value = yyyy + '.' + mm + '.';
+            }
+
+            // 연도 목록 가져오기
             fetch('/document/api/project-years')
                 .then(function(r) { return r.json(); })
                 .then(function(years) {
@@ -261,16 +580,194 @@
                         opt.value = y; opt.textContent = y + '년';
                         sel.appendChild(opt);
                     });
+                    // 수정 모드라면 기존 문서 데이터 채우기
+                    if (window.__existingDoc) {
+                        hydrateExistingDoc(window.__existingDoc);
+                    }
                 });
         })();
+
+        // === 수정 모드: 기존 문서 데이터 채우기 ===
+        function hydrateExistingDoc(doc) {
+            // 1) 사업 드롭다운 cascade: 연도 → 시도 → 시군구 → 시스템 → 사업
+            if (doc.projYear) {
+                document.getElementById('selYear').value = doc.projYear;
+                fetch('/document/api/project-cities?year=' + doc.projYear)
+                    .then(function(r) { return r.json(); })
+                    .then(function(list) {
+                        var citySel = document.getElementById('selCity');
+                        citySel.innerHTML = '<option value="">시도 선택</option>';
+                        list.forEach(function(c) {
+                            var opt = document.createElement('option');
+                            opt.value = c; opt.textContent = c;
+                            citySel.appendChild(opt);
+                        });
+                        if (doc.projCityNm) {
+                            citySel.value = doc.projCityNm;
+                            return fetch('/document/api/project-districts?year=' + doc.projYear + '&cityNm=' + encodeURIComponent(doc.projCityNm));
+                        }
+                    })
+                    .then(function(r) { return r ? r.json() : null; })
+                    .then(function(list) {
+                        if (!list) return;
+                        var distSel = document.getElementById('selDist');
+                        distSel.innerHTML = '<option value="">시군구 선택</option>';
+                        list.forEach(function(d) {
+                            var opt = document.createElement('option');
+                            opt.value = d; opt.textContent = d;
+                            distSel.appendChild(opt);
+                        });
+                        if (doc.projDistNm) {
+                            distSel.value = doc.projDistNm;
+                            return fetch('/document/api/project-systems?year=' + doc.projYear + '&cityNm=' + encodeURIComponent(doc.projCityNm) + '&distNm=' + encodeURIComponent(doc.projDistNm));
+                        }
+                    })
+                    .then(function(r) { return r ? r.json() : null; })
+                    .then(function(list) {
+                        if (!list) return;
+                        var sysSel = document.getElementById('selSystem');
+                        sysSel.innerHTML = '<option value="">시스템 선택</option>';
+                        list.forEach(function(s) {
+                            var o = document.createElement('option');
+                            o.value = s; o.textContent = s;
+                            sysSel.appendChild(o);
+                        });
+                        if (doc.projSysNmEn) {
+                            sysSel.value = doc.projSysNmEn;
+                            return fetch('/document/api/projects?year=' + doc.projYear + '&cityNm=' + encodeURIComponent(doc.projCityNm) + '&distNm=' + encodeURIComponent(doc.projDistNm) + '&sysNmEn=' + encodeURIComponent(doc.projSysNmEn));
+                        }
+                    })
+                    .then(function(r) { return r ? r.json() : null; })
+                    .then(function(list) {
+                        if (!list) return;
+                        var projSel = document.getElementById('projId');
+                        projSel.innerHTML = '<option value="">사업 선택</option>';
+                        list.forEach(function(p) {
+                            var o = document.createElement('option');
+                            o.value = p.projId;
+                            o.textContent = (p.projNm || p.sysNm || '') + (p.contAmt ? ' (' + Number(p.contAmt).toLocaleString() + '원)' : '');
+                            projSel.appendChild(o);
+                        });
+                        if (doc.projId) {
+                            projSel.value = doc.projId;
+                            // 사업 정보 자동 로드 후 섹션 데이터로 덮어쓰기
+                            if (typeof loadProjectInfo === 'function') {
+                                Promise.resolve(loadProjectInfo()).then(function() {
+                                    setTimeout(function() { fillSections(doc.sections || {}); }, 600);
+                                });
+                            } else {
+                                fillSections(doc.sections || {});
+                            }
+                            return;
+                        }
+                        fillSections(doc.sections || {});
+                    });
+            } else {
+                fillSections(doc.sections || {});
+            }
+        }
+
+        function setVal(id, value) {
+            var el = document.getElementById(id);
+            if (el && value != null) {
+                if (el.type === 'checkbox') el.checked = !!value;
+                else el.value = value;
+            }
+        }
+
+        function fillSections(sections) {
+            // ① 공문 (letter)
+            var letter = sections.letter || {};
+            setVal('letter_docNo', letter.docNo);
+            setVal('letter_to', letter.to);
+            setVal('letter_manager', letter.manager);
+            setVal('letter_tel', letter.tel);
+            setVal('letter_date', letter.date);
+            setVal('letter_title', letter.title);
+            setVal('letter_body', letter.body);
+
+            // ② 착수계 본문 (commence)
+            var c = sections.commence || {};
+            setVal('comm_name', c.name);
+            setVal('comm_amount', c.amount);
+            setVal('comm_contract_date', c.contractDate);
+            setVal('comm_start_date', c.startDate);
+            setVal('comm_end_date', c.endDate);
+            setVal('comm_recipient', c.recipient);
+            setVal('comm_supervisor_org', c.supervisorOrg);
+            setVal('comm_supervisor_name', c.supervisorName);
+            if (typeof updateKoreanAmount === 'function') updateKoreanAmount();
+
+            // ③ 예정공정표 (schedule) — 별도 키
+            var sched = sections.schedule || {};
+            setVal('sched_name', sched.name);
+            setVal('sched_from', sched.from);
+            setVal('sched_to', sched.to);
+            setVal('sched_process', sched.processName);
+
+            // ④ 현장대리인계 (site_rep)
+            var sr = sections.site_rep || {};
+            setVal('site_rep_user', sr.userId);
+            setVal('site_rep_name', sr.name);
+            setVal('site_rep_position', sr.position);
+            setVal('site_rep_addr', sr.addr);
+            setVal('site_rep_ssn', sr.ssn);
+            setVal('site_rep_birth', sr.birth);
+            setVal('site_rep_cert', sr.cert);
+            setVal('site_rep_tel', sr.tel);
+
+            // ⑤ 보안각서 (security)
+            var sec = sections.security || {};
+            setVal('sec_name', sec.name);
+            setVal('sec_from', sec.from);
+            setVal('sec_to', sec.to);
+
+            // ⑥ 과업참여자 (participants)
+            var pt = sections.participants || {};
+            if (Array.isArray(pt.list) && pt.list.length > 0) {
+                var body = document.getElementById('participantBody');
+                if (body) body.innerHTML = '';
+                pt.list.forEach(function(p) {
+                    if (typeof addParticipantRow === 'function') addParticipantRow(p);
+                });
+                if (typeof syncSecurityFromParticipants === 'function') syncSecurityFromParticipants();
+            }
+
+            // ⑧ 설계내역서 (design_estimate)
+            var est = sections.design_estimate || {};
+            setVal('estimateType', est.estimateType);
+            setVal('est_designDate', est.designDate);
+            setVal('est_location', est.location);
+            setVal('est_bidRate', est.bidRate);
+            setVal('est_vatSeparate', est.vatSeparate);
+            // 설계내역서 항목 채우기
+            if (Array.isArray(est.items) && typeof fillEstimateItems === 'function') {
+                fillEstimateItems(est.items);
+            }
+
+            // 투입인력 정보 (sections.plan_personnel)
+            var pp = sections.plan_personnel || {};
+            if (Array.isArray(pp.list)) {
+                document.getElementById('planPersonnelBody').innerHTML = '';
+                pp.list.forEach(addPlanPersonnelRow);
+            }
+
+            // ⑨ 사업수행계획서 (projId 기반 DB 로드)
+            if (typeof loadPlanData === 'function') {
+                var pid = document.getElementById('projId').value;
+                if (pid) { try { loadPlanData(); } catch(e) { console.error(e); } }
+            }
+        }
 
         function onYearChange() {
             var year = document.getElementById('selYear').value;
             var citySel = document.getElementById('selCity');
+            var distSel = document.getElementById('selDist');
             var sysSel = document.getElementById('selSystem');
             var projSel = document.getElementById('projId');
             citySel.innerHTML = '<option value="">불러오는 중...</option>';
-            sysSel.innerHTML = '<option value="">-- 지자체 먼저 선택 --</option>';
+            distSel.innerHTML = '<option value="">-- 시도 먼저 선택 --</option>';
+            sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>';
             projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
             document.getElementById('projHint').textContent = '';
             if (!year) { citySel.innerHTML = '<option value="">-- 연도 먼저 선택 --</option>'; return; }
@@ -278,36 +775,54 @@
             fetch('/document/api/project-cities?year=' + year)
                 .then(function(r) { return r.json(); })
                 .then(function(list) {
-                    citySel.innerHTML = '<option value="">지자체 선택</option>';
+                    citySel.innerHTML = '<option value="">시도 선택</option>';
                     list.forEach(function(c) {
                         var opt = document.createElement('option');
-                        opt.value = c.cityNm + '|' + c.distNm;
-                        opt.textContent = c.label;
-                        sel_cityNm = c.cityNm; sel_distNm = c.distNm;
-                        opt.dataset.city = c.cityNm;
-                        opt.dataset.dist = c.distNm;
+                        opt.value = c; opt.textContent = c;
                         citySel.appendChild(opt);
                     });
                 });
         }
 
         function onCityChange() {
-            var citySel = document.getElementById('selCity');
-            var opt = citySel.options[citySel.selectedIndex];
+            var year = document.getElementById('selYear').value;
+            var city = document.getElementById('selCity').value;
+            var distSel = document.getElementById('selDist');
+            var sysSel = document.getElementById('selSystem');
+            var projSel = document.getElementById('projId');
+            distSel.innerHTML = '<option value="">불러오는 중...</option>';
+            sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>';
+            projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
+            document.getElementById('projHint').textContent = '';
+
+            if (!city) { distSel.innerHTML = '<option value="">-- 시도 먼저 선택 --</option>'; return; }
+
+            fetch('/document/api/project-districts?year=' + year + '&cityNm=' + encodeURIComponent(city))
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    distSel.innerHTML = '<option value="">시군구 선택</option>';
+                    list.forEach(function(d) {
+                        var opt = document.createElement('option');
+                        opt.value = d; opt.textContent = d;
+                        distSel.appendChild(opt);
+                    });
+                });
+        }
+
+        function onDistChange() {
+            var year = document.getElementById('selYear').value;
+            var city = document.getElementById('selCity').value;
+            var dist = document.getElementById('selDist').value;
             var sysSel = document.getElementById('selSystem');
             var projSel = document.getElementById('projId');
             sysSel.innerHTML = '<option value="">불러오는 중...</option>';
             projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
             document.getElementById('projHint').textContent = '';
 
-            if (!citySel.value) { sysSel.innerHTML = '<option value="">-- 지자체 먼저 선택 --</option>'; return; }
+            if (!dist) { sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>'; return; }
 
-            var city = opt.dataset.city;
-            var dist = opt.dataset.dist;
-            var year = document.getElementById('selYear').value;
-
-            // 수신자 자동 세팅
-            document.getElementById('letter_to').value = buildRecipient(city, dist);
+            // 수신자 자동 세팅 (orgNm은 프로젝트 로드 시 반영)
+            document.getElementById('letter_to').value = buildRecipient(city, dist, null);
 
             fetch('/document/api/project-systems?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist))
                 .then(function(r) { return r.json(); })
@@ -323,18 +838,15 @@
 
         function onSystemChange() {
             var year = document.getElementById('selYear').value;
-            var citySel = document.getElementById('selCity');
-            var cityOpt = citySel.options[citySel.selectedIndex];
+            var city = document.getElementById('selCity').value;
+            var dist = document.getElementById('selDist').value;
             var sysNmEn = document.getElementById('selSystem').value;
             var projSel = document.getElementById('projId');
 
-            if (!sysNmEn || !cityOpt || !cityOpt.dataset.city) {
+            if (!sysNmEn || !city || !dist) {
                 projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
                 return;
             }
-
-            var city = cityOpt.dataset.city;
-            var dist = cityOpt.dataset.dist;
 
             projSel.innerHTML = '<option value="">불러오는 중...</option>';
             fetch('/document/api/projects?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist) + '&sysNmEn=' + encodeURIComponent(sysNmEn))
@@ -361,21 +873,66 @@
                 });
         }
 
-        function buildRecipient(city, dist) {
+        function buildRecipient(city, dist, orgNm) {
             if (!city) return '';
-            var isMetro = city.indexOf('광역시') >= 0 || city.indexOf('특별시') >= 0;
+            if (orgNm) return orgNm;
             var isSejong = city.indexOf('세종') >= 0;
-            if (isSejong) return city + '청';
+            var isMetro = city.indexOf('광역시') >= 0 || city.indexOf('특별시') >= 0;
+            var isSpecialDo = city.indexOf('특별자치도') >= 0 || city.indexOf('특별자치시') >= 0;
+            if (isSejong) return '세종특별자치시청';
+            if (isSpecialDo && city.indexOf('시') >= 0) return city + '청';
             if (isMetro) return dist ? (city + ' ' + dist + '청') : (city + '청');
             return dist ? (dist + '청') : (city + '청');
         }
 
+        function buildRecipientHead(city, dist, orgNm) {
+            if (!city && !dist) return '';
+            // 군 → 군수, 시 → 시장, 구 → 구청장, 그 외 → ~장
+            if (dist) {
+                if (dist.endsWith('군')) return dist + '수 귀하';
+                if (dist.endsWith('구')) return dist + '청장 귀하';
+                if (dist.endsWith('시')) return dist + '장 귀하';
+            }
+            // 광역시/특별시 (dist 없는 경우)
+            if (city.endsWith('시')) return city.replace(/시$/, '시장') + ' 귀하';
+            return (dist || city) + '장 귀하';
+        }
+
         function formatContDt(dtStr) {
-            // "2025-12-30" → "2025. 12. 30."
             if (!dtStr) return '';
             var parts = dtStr.split('-');
             return parts[0] + '. ' + parseInt(parts[1]) + '. ' + parseInt(parts[2]) + '.';
         }
+
+        function buildLetterBody(docType, projName, contDtFmt) {
+            var body2 = {
+                COMMENCE: '2. 귀 기관과 당사 간에 계약(' + contDtFmt + ')한 『' + projName + '』에 관하여 붙임과 같이 착수계를 제출합니다.',
+                INTERIM:  '2. 귀 기관과 당사 간에 계약(' + contDtFmt + ')한 『' + projName + '』과 관련하여 붙임과 같이 기성을 신청하오니 검토 후 조치하여 주시기 바랍니다.',
+                COMPLETION: '2. 귀 기관과 당사 간에 계약(' + contDtFmt + ')한 『' + projName + '』에 관하여 과업을 완료함에 따라 제출합니다.'
+            }[docType] || '';
+
+            var attachList = {
+                COMMENCE: '1. 착수계 2부.    끝.',
+                INTERIM:  '1. 기성검사원 1부.\n                          2. 기성내역서 1부.\n                          3. 점검내역서 1부.    끝.',
+                COMPLETION: '1. 준공계 2부.    끝.'
+            }[docType] || '1. 착수계 2부.    끝.';
+
+            return '1. 귀 기관의 무궁한 발전을 기원합니다.\n\n' +
+                   body2 + '\n\n\n' +
+                   '※ 붙 임 : ' + attachList;
+        }
+
+        function fillLetterManager() {
+            var sel = document.getElementById('letter_manager_sel');
+            var opt = sel.options[sel.selectedIndex];
+            if (!opt || !opt.value) return;
+            var pos = opt.dataset.position || '';
+            var name = opt.dataset.name || '';
+            document.getElementById('letter_manager').value = (pos ? pos + ' ' : '') + name;
+            document.getElementById('letter_tel').value = opt.dataset.tel || '';
+        }
+
+        var currentProject = {};
 
         function loadProjectInfo() {
             var projId = document.getElementById('projId').value;
@@ -383,20 +940,17 @@
             fetch('/document/api/project/' + projId)
                 .then(function(r) { return r.json(); })
                 .then(function(p) {
+                    currentProject = p;
                     var projName = p.projNm || p.sysNm || '';
-                    var recip = buildRecipient(p.cityNm, p.distNm);
+                    var recip = buildRecipient(p.cityNm, p.distNm, p.orgNm);
+                    var recipHead = buildRecipientHead(p.cityNm, p.distNm, p.orgNm);
 
-                    // ① 공문 - 수신자
+                    // ① 공문
                     document.getElementById('letter_to').value = recip;
-                    // ① 공문 - 제목
-                    document.getElementById('letter_title').value = '\u300E' + projName + '\u300F \ucc29\uc218\uacc4 \uc81c\ucd9c \uac74';
-                    // ① 공문 - 본문 자동생성
+                    document.getElementById('letter_title').value = '「' + projName + '」 착수계 제출 건';
+                    // 담당자는 users 드롭다운에서 선택 (ps_info가 아닌 사내 담당자)
                     var contDtFmt = formatContDt(p.contDt);
-                    var body = '1. \uadc0 \uae30\uad00\uc758 \ubb34\uad81\ud55c \ubc1c\uc804\uc744 \uae30\uc6d0\ud569\ub2c8\ub2e4.\n\n' +
-                               '2. \uadc0 \uae30\uad00\uacfc \ub2f9\uc0ac \uac04\uc5d0 \uacc4\uc57d(' + contDtFmt + ')\ud55c \u300E' + projName + '\u300F\uc5d0 \uad00\ud558\uc5ec ' +
-                               '\ubd99\uc784\uacfc \uac19\uc774 \ucc29\uc218\uacc4\ub97c \uc81c\ucd9c\ud569\ub2c8\ub2e4.\n\n\n' +
-                               '\u203b \ubd99 \uc784 : 1. \ucc29\uc218\uacc4 2\ubd80. \ub05d.';
-                    document.getElementById('letter_body').value = body;
+                    document.getElementById('letter_body').value = buildLetterBody('COMMENCE', projName, contDtFmt);
 
                     // ② 착수계 본문
                     document.getElementById('comm_name').value = projName;
@@ -404,11 +958,446 @@
                     if (p.contDt) document.getElementById('comm_contract_date').value = p.contDt;
                     if (p.startDt) document.getElementById('comm_start_date').value = p.startDt;
                     if (p.endDt) document.getElementById('comm_end_date').value = p.endDt;
-                    document.getElementById('comm_recipient').value = recip.replace('\uccad', '\uccad\uc7a5') + ' \uadc0\ud558';
-                    if (p.contDept) document.getElementById('comm_supervisor_org').value = p.contDept;
+                    document.getElementById('comm_recipient').value = recipHead;
+                    // 감독 소속은 빈칸으로 유지 (수동 입력)
+
+                    // ③ 예정공정표 (과업기간 = 과업시작일 ~ 종료일)
+                    document.getElementById('sched_name').value = projName;
+                    if (p.startDt) document.getElementById('sched_from').value = p.startDt;
+                    if (p.endDt) document.getElementById('sched_to').value = p.endDt;
+
+                    // 상단 요약 배지 업데이트
+                    if (typeof updateProjInfoBadge === 'function') updateProjInfoBadge(p);
+
+                    // ⑤ 보안각서
+                    document.getElementById('sec_name').value = projName;
+                    if (p.startDt) document.getElementById('sec_from').value = p.startDt;
+                    if (p.endDt) document.getElementById('sec_to').value = p.endDt;
+
+                    // ⑦ 보안서약서
+                    document.getElementById('pledge_name').value = projName;
+                    if (p.startDt) document.getElementById('pledge_from').value = p.startDt;
+                    if (p.endDt) document.getElementById('pledge_to').value = p.endDt;
+
+                    // ⑧ 설계내역서 - 장비 자동 로드
+                    loadEstEquipFromProject(currentProject.projId);
+                    if (p.cityNm) {
+                        var loc = p.cityNm;
+                        if (p.distNm) loc += ' ' + p.distNm + ' 전역';
+                        document.getElementById('est_location').value = loc;
+                    }
+
+                    // ⑨ 사업수행계획서 자동 로드
+                    if (typeof loadPlanData === 'function') { try { loadPlanData(); } catch(e) {} }
                 });
         }
-        function fillSiteRep() {}
+        function fillSiteRep() {
+            var sel = document.getElementById('site_rep_user');
+            var userSeq = sel.value;
+            if (!userSeq) {
+                document.getElementById('site_rep_name').value = '';
+                document.getElementById('site_rep_position').value = '';
+                document.getElementById('site_rep_addr').value = '';
+                document.getElementById('site_rep_ssn').value = '';
+                document.getElementById('site_rep_cert').value = '';
+                document.getElementById('site_rep_tel').value = '';
+                return;
+            }
+            fetch('/document/api/user/' + userSeq)
+            .then(function(r) { return r.json(); })
+            .then(function(u) {
+                document.getElementById('site_rep_name').value = u.username || '';
+                document.getElementById('site_rep_position').value = u.positionTitle || u.position || '';
+                document.getElementById('site_rep_addr').value = u.address || '';
+                document.getElementById('site_rep_ssn').value = u.ssn || '';
+                document.getElementById('site_rep_cert').value = u.certificate || '';
+                document.getElementById('site_rep_tel').value = u.mobile || u.tel || '';
+                // 생년월일: SSN 앞6자리에서 추출
+                if (u.ssn && u.ssn.length >= 6) {
+                    var y = u.ssn.substring(0, 2);
+                    var m = u.ssn.substring(2, 4);
+                    var d = u.ssn.substring(4, 6);
+                    var century = (parseInt(u.ssn.charAt(7)) >= 3) ? '20' : '19';
+                    document.getElementById('site_rep_birth').value = century + y + '-' + m + '-' + d;
+                }
+            });
+        }
+
+        // ── ⑧ 설계내역서 함수 ──
+        function toggleEstimateType() {
+            var type = document.getElementById('estimateType').value;
+// TYPE_D: SW전용 → HW 테이블 숨김 (낙찰율은 수정 가능)
+            document.getElementById('estHwSection').style.display = (type === 'TYPE_D') ? 'none' : 'block';
+            document.getElementById('est_bidRate').disabled = false;
+            calcEstPreview();
+        }
+
+        function addEstEquipRow(tableId, type, data) {
+            var tbody = document.getElementById(tableId).querySelector('tbody');
+            var n = tbody.rows.length + 1;
+            var tr = document.createElement('tr');
+            var defaultRate = (type === 'HW') ? 8 : 16;
+            tr.innerHTML =
+                '<td>' + n + '</td>' +
+                '<td><input type="text" class="est-name" value="' + (data ? data.equipName : '') + '"></td>' +
+                '<td><input type="number" class="est-rate" step="0.01" value="' + (data ? data.rate || defaultRate : defaultRate) + '" onchange="calcEstPreview()"></td>' +
+                '<td><input type="number" class="est-price" value="' + (data ? data.unitPrice : '') + '" onchange="calcEstPreview()"></td>' +
+                '<td><input type="text" class="est-remark" value="' + (data ? data.remark : '') + '"></td>' +
+                '<td><button type="button" class="btn-del-row" onclick="this.closest(\'tr\').remove();renumberEst(\'' + tableId + '\');calcEstPreview();">X</button></td>';
+            tbody.appendChild(tr);
+            calcEstPreview();
+        }
+
+        function fillEstimateItems(items) {
+            document.getElementById('estHwTable').querySelector('tbody').innerHTML = '';
+            document.getElementById('estSwTable').querySelector('tbody').innerHTML = '';
+            if (!Array.isArray(items)) return;
+            items.forEach(function(it) {
+                var tableId = it.type === 'HW' ? 'estHwTable' : 'estSwTable';
+                addEstEquipRow(tableId, it.type, {
+                    equipName: it.name,
+                    unitPrice: it.unitPrice,
+                    rate: it.rate,
+                    remark: it.remark
+                });
+            });
+            calcEstPreview();
+        }
+
+        function renumberEst(tableId) {
+            var rows = document.getElementById(tableId).querySelector('tbody').rows;
+            for (var i = 0; i < rows.length; i++) rows[i].cells[0].textContent = i + 1;
+        }
+
+        function loadEstEquipFromProject(projId) {
+            if (!projId) return;
+            // 기존 행 초기화
+            document.getElementById('estHwTable').querySelector('tbody').innerHTML = '';
+            document.getElementById('estSwTable').querySelector('tbody').innerHTML = '';
+
+            fetch('/projects/api/equip/' + projId)
+            .then(function(r) { return r.json(); })
+            .then(function(list) {
+                list.forEach(function(item) {
+                    var tableId = item.equipType === 'HW' ? 'estHwTable' : 'estSwTable';
+                    addEstEquipRow(tableId, item.equipType, {
+                        equipName: item.equipName,
+                        unitPrice: item.unitPrice,
+                        remark: item.remark
+                    });
+                });
+                calcEstPreview();
+            });
+        }
+
+        function calcEstPreview() {
+            var bidRateInput = parseFloat(document.getElementById('est_bidRate').value) || 0;
+            var vatSep = document.getElementById('est_vatSeparate').checked;
+            var bidRate = bidRateInput / 100.0;
+
+            // 도입가는 부가세 포함 금액
+            var hwTotal = 0, swTotal = 0;
+            var hwRows = document.getElementById('estHwTable').querySelector('tbody').rows;
+            for (var i = 0; i < hwRows.length; i++) {
+                var price = parseInt(hwRows[i].querySelector('.est-price').value) || 0;
+                var rate = parseFloat(hwRows[i].querySelector('.est-rate').value) / 100 || 0;
+                hwTotal += price * rate;
+            }
+            var swRows = document.getElementById('estSwTable').querySelector('tbody').rows;
+            for (var i = 0; i < swRows.length; i++) {
+                var price = parseInt(swRows[i].querySelector('.est-price').value) || 0;
+                var rate = parseFloat(swRows[i].querySelector('.est-rate').value) / 100 || 0;
+                swTotal += price * rate;
+            }
+            var subTotal = hwTotal + swTotal; // 부가세 포함 소계
+
+            var previewHtml =
+                'HW 유지보수대가: <b>' + Math.floor(hwTotal).toLocaleString() + '</b>원 | ' +
+                'SW 유지보수대가: <b>' + Math.floor(swTotal).toLocaleString() + '</b>원<br>' +
+                '소계(부가세포함): <b>' + Math.floor(subTotal).toLocaleString() + '</b>원<br>';
+
+            var grandTotal;
+            if (vatSep) {
+                // 부가세 별도: 공급가액 분리 → 낙찰율 적용 → 부가세 별도 표시
+                var supply = Math.floor(subTotal / 1.1);       // 공급가액
+                var vat = Math.floor(supply * 0.1);             // 부가세
+                var supplyAfterBid = Math.floor(supply * bidRate);
+                var vatAfterBid = Math.floor(supplyAfterBid * 0.1);
+                grandTotal = Math.floor((supplyAfterBid + vatAfterBid) / 1000) * 1000;
+                previewHtml +=
+                    '공급가액: <b>' + supply.toLocaleString() + '</b>원 | 부가세: <b>' + vat.toLocaleString() + '</b>원<br>' +
+                    '총계(낙찰율 ' + bidRateInput + '%, 부가세별도): 공급 <b>' + supplyAfterBid.toLocaleString() + '</b> + 부가세 <b>' + vatAfterBid.toLocaleString() + '</b> = <b>' + grandTotal.toLocaleString() + '</b>원';
+            } else {
+                // 부가세 포함: 도입가가 이미 부가세 포함이므로 그대로 낙찰율만 적용
+                grandTotal = Math.floor(subTotal * bidRate / 1000) * 1000;
+                previewHtml += '총계(낙찰율 ' + bidRateInput + '% 적용): <b>' + grandTotal.toLocaleString() + '</b>원';
+            }
+
+            document.getElementById('est_bidRateCalc').textContent = '';
+            document.getElementById('estPreview').innerHTML = previewHtml;
+        }
+
+        function collectEstimateData() {
+            var items = [];
+            ['estHwTable', 'estSwTable'].forEach(function(tableId) {
+                var type = tableId === 'estHwTable' ? 'HW' : 'SW';
+                var rows = document.getElementById(tableId).querySelector('tbody').rows;
+                for (var i = 0; i < rows.length; i++) {
+                    var r = rows[i];
+                    var name = r.querySelector('.est-name').value.trim();
+                    if (!name) continue;
+                    items.push({
+                        type: type,
+                        name: name,
+                        rate: parseFloat(r.querySelector('.est-rate').value) || 0,
+                        unitPrice: parseInt(r.querySelector('.est-price').value) || 0,
+                        remark: r.querySelector('.est-remark').value.trim()
+                    });
+                }
+            });
+            return items;
+        }
+
+        function collectParticipants() {
+            var list = [];
+            var rows = document.getElementById('participantBody').rows;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var userSel = r.querySelector('.pt-user');
+                var userSeq = userSel ? userSel.value : '';
+                var userName = userSel && userSel.selectedIndex > 0 ? userSel.options[userSel.selectedIndex].textContent : '';
+                list.push({
+                    role: r.querySelector('.pt-role') ? r.querySelector('.pt-role').value : '',
+                    userSeq: userSeq,
+                    name: userName,
+                    position: r.querySelector('.pt-position') ? r.querySelector('.pt-position').value : '',
+                    ssn: r.querySelector('.pt-ssn') ? r.querySelector('.pt-ssn').value : '',
+                    cert: r.querySelector('.pt-cert') ? r.querySelector('.pt-cert').value : '',
+                    remark: r.querySelector('.pt-remark') ? r.querySelector('.pt-remark').value : '',
+                    techGrade: r.querySelector('.pt-techGrade') ? r.querySelector('.pt-techGrade').value : '',
+                    tasks: r.querySelector('.pt-tasks') ? r.querySelector('.pt-tasks').value : ''
+                });
+            }
+            return list;
+        }
+
+        // ============================================================
+        // 사업수행계획서 (P10~P13) JS
+        // ============================================================
+        function addPlanTargetRow(data) {
+            var d = data || {};
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><input type="text" class="ptg-name" value="' + (d.productName || '') + '"></td>' +
+                '<td><input type="number" class="ptg-qty" value="' + (d.qty != null ? d.qty : 1) + '" min="1"></td>' +
+                '<td><button type="button" class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td>';
+            document.getElementById('planTargetBody').appendChild(tr);
+        }
+
+        function addPlanScheduleRow(data) {
+            var d = data || {};
+            var tr = document.createElement('tr');
+            var html = '<td><input type="text" class="psc-name" value="' + (d.processName || '') + '"></td>';
+            for (var i = 1; i <= 12; i++) {
+                var key = 'm' + (i < 10 ? '0' + i : i);
+                var checked = d[key] ? 'checked' : '';
+                html += '<td style="text-align:center;"><input type="checkbox" class="psc-' + key + '" ' + checked + '></td>';
+            }
+            html += '<td><input type="text" class="psc-remark" value="' + (d.remark || '') + '"></td>';
+            html += '<td><button type="button" class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td>';
+            tr.innerHTML = html;
+            document.getElementById('planScheduleBody').appendChild(tr);
+        }
+
+        function updateProjInfoBadge(p) {
+            var badge = document.getElementById('projInfoBadge');
+            if (!p || (!p.contDt && !p.startDt && !p.endDt)) { badge.style.display = 'none'; return; }
+            badge.style.display = 'block';
+            document.getElementById('badgeContDt').textContent = p.contDt || '-';
+            document.getElementById('badgePeriod').textContent = (p.startDt || '-') + ' ~ ' + (p.endDt || '-');
+            var months = '-';
+            if (p.startDt && p.endDt) {
+                var s = new Date(p.startDt), e = new Date(p.endDt);
+                months = (e.getFullYear()-s.getFullYear())*12 + (e.getMonth()-s.getMonth()) + 1;
+            }
+            document.getElementById('badgeMonths').textContent = months;
+            var warn = document.getElementById('badgeWarn');
+            warn.style.display = (p.contDt && p.startDt && p.contDt !== p.startDt) ? 'inline-block' : 'none';
+        }
+
+        function addPlanManpowerRow(data) {
+            var d = data || {};
+            // 기간 기본값: 프로젝트 과업기간(startDt~endDt)
+            if (!d.startDt && currentProject && currentProject.startDt) d.startDt = currentProject.startDt;
+            if (!d.endDt   && currentProject && currentProject.endDt)   d.endDt   = currentProject.endDt;
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><input type="text" class="pmp-step" value="' + (d.stepName || '') + '"></td>' +
+                '<td><input type="date" class="pmp-start" value="' + (d.startDt || '') + '" style="width:120px;">' +
+                '~<input type="date" class="pmp-end" value="' + (d.endDt || '') + '" style="width:120px;"></td>' +
+                '<td><input type="number" class="pmp-gs" value="' + (d.gradeSpecial || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td><input type="number" class="pmp-gh" value="' + (d.gradeHigh   || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td><input type="number" class="pmp-gm" value="' + (d.gradeMid    || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td><input type="number" class="pmp-gl" value="' + (d.gradeLow    || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td><input type="number" class="pmp-fh" value="' + (d.funcHigh    || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td><input type="number" class="pmp-fm" value="' + (d.funcMid     || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td><input type="number" class="pmp-fl" value="' + (d.funcLow     || 0) + '" min="0" style="width:50px;" oninput="updatePmpTotal(this)"></td>' +
+                '<td style="text-align:center;" class="pmp-total">0</td>' +
+                '<td><input type="text"   class="pmp-remark" value="' + (d.remark || '') + '"></td>' +
+                '<td><button type="button" class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td>';
+            document.getElementById('planManpowerBody').appendChild(tr);
+            updatePmpTotal(tr.querySelector('.pmp-gs'));
+        }
+        function updatePmpTotal(el) {
+            var tr = el.closest('tr');
+            var sum = 0;
+            ['.pmp-gs','.pmp-gh','.pmp-gm','.pmp-gl','.pmp-fh','.pmp-fm','.pmp-fl'].forEach(function(s){
+                sum += parseInt(tr.querySelector(s).value) || 0;
+            });
+            tr.querySelector('.pmp-total').textContent = sum;
+        }
+
+        function addPlanPersonnelRow(data) {
+            var d = data || {};
+            var optionsHtml = (typeof getUserOptionsHtml === 'function') ? getUserOptionsHtml() : '<option value="">선택</option>';
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><select class="ppe-user" onchange="fillPlanPersonnel(this)" style="width:100%;">' + optionsHtml.replace(/<option([^>]*)>([^<]+)<\/option>/g, function(_,a,t){ var p=t.trim().split(/\s+/); return '<option'+a+'>'+(p.length>1?p[p.length-1]:t)+'</option>'; }) + '</select></td>' +
+                '<td><input type="text" class="ppe-position" value="' + (d.position || '') + '"></td>' +
+                '<td><input type="text" class="ppe-techGrade" value="' + (d.techGrade || '') + '"></td>' +
+                '<td><input type="text" class="ppe-career" value="' + (d.career || '') + '"></td>' +
+                '<td><input type="text" class="ppe-dept" value="' + (d.dept || '') + '"></td>' +
+                '<td><input type="text" class="ppe-tasks" value="' + (d.tasks || '') + '"></td>' +
+                '<td><input type="text" class="ppe-mobile" value="' + (d.mobile || '') + '"></td>' +
+                '<td><button type="button" class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td>';
+            document.getElementById('planPersonnelBody').appendChild(tr);
+            if (d.userSeq) tr.querySelector('.ppe-user').value = d.userSeq;
+        }
+        function fillPlanPersonnel(sel) {
+            var userSeq = sel.value;
+            var tr = sel.closest('tr');
+            if (!userSeq) return;
+            fetch('/document/api/user/' + userSeq)
+                .then(function(r) { return r.json(); })
+                .then(function(u) {
+                    tr.querySelector('.ppe-position').value  = u.positionTitle || u.position || '';
+                    tr.querySelector('.ppe-techGrade').value = u.techGrade || '';
+                    tr.querySelector('.ppe-career').value    = u.careerYears || '';
+                    tr.querySelector('.ppe-dept').value      = u.deptNm || u.teamNm || '';
+                    tr.querySelector('.ppe-tasks').value     = u.tasks || '';
+                    tr.querySelector('.ppe-mobile').value    = u.mobile || u.tel || '';
+                });
+        }
+        function collectPlanPersonnel() {
+            var arr = [];
+            document.querySelectorAll('#planPersonnelBody tr').forEach(function(r) {
+                var sel = r.querySelector('.ppe-user');
+                arr.push({
+                    userSeq:   sel.value || null,
+                    name:      sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent.trim() : '',
+                    position:  r.querySelector('.ppe-position').value,
+                    techGrade: r.querySelector('.ppe-techGrade').value,
+                    career:    r.querySelector('.ppe-career').value,
+                    dept:      r.querySelector('.ppe-dept').value,
+                    tasks:     r.querySelector('.ppe-tasks').value,
+                    mobile:    r.querySelector('.ppe-mobile').value
+                });
+            });
+            return arr;
+        }
+
+        function loadPlanData(silent) {
+            var projId = document.getElementById('projId').value;
+            if (!projId) { if (!silent) alert('먼저 사업을 선택하세요.'); return; }
+            console.log('[loadPlanData] fetching plan for projId=' + projId);
+            fetch('/document/api/plan/' + projId)
+                .then(function(r) {
+                    console.log('[loadPlanData] status=' + r.status);
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(d) {
+                    console.log('[loadPlanData] data=', d);
+                    document.getElementById('plan_purpose').value       = d.projPurpose   || '';
+                    document.getElementById('plan_supportType').value   = d.supportType   || '비상주 지원';
+                    document.getElementById('plan_inspectMethod').value = d.inspectMethod || '';
+                    document.getElementById('plan_scopeText').value     = d.scopeText     || '';
+                    document.getElementById('planTargetBody').innerHTML = '';
+                    (d.targets || []).forEach(addPlanTargetRow);
+                    document.getElementById('planScheduleBody').innerHTML = '';
+                    (d.schedules || []).forEach(addPlanScheduleRow);
+                    document.getElementById('planManpowerBody').innerHTML = '';
+                    (d.manpowerPlans || []).forEach(addPlanManpowerRow);
+                })
+                .catch(function(e) { console.error('[loadPlanData] failed', e); });
+        }
+
+        function collectPlanData() {
+            var targets = [];
+            document.querySelectorAll('#planTargetBody tr').forEach(function(r) {
+                var n = r.querySelector('.ptg-name').value;
+                if (!n) return;
+                targets.push({ productName: n, qty: parseInt(r.querySelector('.ptg-qty').value) || 1 });
+            });
+            var schedules = [];
+            document.querySelectorAll('#planScheduleBody tr').forEach(function(r) {
+                var n = r.querySelector('.psc-name').value;
+                if (!n) return;
+                var s = { processName: n, remark: r.querySelector('.psc-remark').value };
+                for (var i = 1; i <= 12; i++) {
+                    var k = 'm' + (i < 10 ? '0' + i : i);
+                    s[k] = r.querySelector('.psc-' + k).checked;
+                }
+                schedules.push(s);
+            });
+            var mps = [];
+            document.querySelectorAll('#planManpowerBody tr').forEach(function(r) {
+                var step = r.querySelector('.pmp-step').value;
+                if (!step) return;
+                mps.push({
+                    stepName: step,
+                    startDt: r.querySelector('.pmp-start').value || null,
+                    endDt:   r.querySelector('.pmp-end').value   || null,
+                    gradeSpecial: parseInt(r.querySelector('.pmp-gs').value) || 0,
+                    gradeHigh:    parseInt(r.querySelector('.pmp-gh').value) || 0,
+                    gradeMid:     parseInt(r.querySelector('.pmp-gm').value) || 0,
+                    gradeLow:     parseInt(r.querySelector('.pmp-gl').value) || 0,
+                    funcHigh:     parseInt(r.querySelector('.pmp-fh').value) || 0,
+                    funcMid:      parseInt(r.querySelector('.pmp-fm').value) || 0,
+                    funcLow:      parseInt(r.querySelector('.pmp-fl').value) || 0,
+                    remark:       r.querySelector('.pmp-remark').value || ''
+                });
+            });
+            return {
+                projPurpose:   document.getElementById('plan_purpose').value,
+                supportType:   document.getElementById('plan_supportType').value,
+                inspectMethod: document.getElementById('plan_inspectMethod').value,
+                scopeText:     document.getElementById('plan_scopeText').value,
+                targets:       targets,
+                schedules:     schedules,
+                manpowerPlans: mps
+            };
+        }
+
+        function savePlanData() {
+            var projId = document.getElementById('projId').value;
+            if (!projId) { alert('먼저 사업을 선택하세요.'); return; }
+            var body = collectPlanData();
+            fetch('/document/api/plan/' + projId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    alert('사업수행계획서가 저장되었습니다.');
+                } else {
+                    alert('저장 실패: ' + (res.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(function(e) { alert('통신 오류: ' + e); });
+        }
 
         function saveDocument() {
             var projId = document.getElementById('projId').value;
@@ -416,6 +1405,7 @@
 
             var sections = [
                 { sectionKey: 'letter', sectionData: {
+                    docNo: document.getElementById('letter_docNo').value,
                     to: document.getElementById('letter_to').value,
                     manager: document.getElementById('letter_manager').value,
                     tel: document.getElementById('letter_tel').value,
@@ -433,22 +1423,57 @@
                     supervisorOrg: document.getElementById('comm_supervisor_org').value,
                     supervisorName: document.getElementById('comm_supervisor_name').value
                 }},
+                { sectionKey: 'plan_personnel', sectionData: { list: collectPlanPersonnel() }},
+                { sectionKey: 'schedule', sectionData: {
+                    name: document.getElementById('sched_name').value,
+                    from: document.getElementById('sched_from').value,
+                    to: document.getElementById('sched_to').value,
+                    processName: document.getElementById('sched_process').value
+                }},
                 { sectionKey: 'site_rep', sectionData: {
                     userId: document.getElementById('site_rep_user').value,
+                    name: document.getElementById('site_rep_name').value,
+                    position: document.getElementById('site_rep_position').value,
                     addr: document.getElementById('site_rep_addr').value,
                     ssn: document.getElementById('site_rep_ssn').value,
                     birth: document.getElementById('site_rep_birth').value,
-                    cert: document.getElementById('site_rep_cert').value
+                    cert: document.getElementById('site_rep_cert').value,
+                    tel: document.getElementById('site_rep_tel').value
+                }},
+                { sectionKey: 'participants', sectionData: {
+                    list: collectParticipants()
+                }},
+                { sectionKey: 'security', sectionData: {
+                    name: document.getElementById('sec_name').value,
+                    from: document.getElementById('sec_from').value,
+                    to: document.getElementById('sec_to').value,
+                    list: collectParticipants()
+                }},
+                { sectionKey: 'design_estimate', sectionData: {
+                    estimateType: document.getElementById('estimateType').value,
+                    designDate: document.getElementById('est_designDate').value,
+                    location: document.getElementById('est_location').value,
+                    bidRate: parseFloat(document.getElementById('est_bidRate').value) || 0,
+                    vatSeparate: document.getElementById('est_vatSeparate').checked,
+                    items: collectEstimateData()
                 }}
             ];
 
+            var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+            var saveHeaders = { 'Content-Type': 'application/json' };
+            saveHeaders[csrfHeader] = csrfToken;
+
             fetch('/document/api/save', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: saveHeaders,
                 body: JSON.stringify({
+                    docId: (window.__existingDoc && window.__existingDoc.docId) || null,
                     docType: 'COMMENCE',
+                    sysType: currentProject.sysNmEn || null,
                     infraId: null,
                     projId: projId || null,
+                    docNo: document.getElementById('letter_docNo').value || null,
                     title: title,
                     sections: sections
                 })
@@ -456,12 +1481,449 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    alert('저장되었습니다. 문서번호: ' + data.docNo);
-                    location.href = '/document/detail/' + data.docId;
+                    // 사업수행계획서 데이터도 함께 자동 저장 (projId 있을 때만)
+                    if (projId) {
+                        var planBody = collectPlanData();
+                        var planHeaders = { 'Content-Type': 'application/json' };
+                        planHeaders[csrfHeader] = csrfToken;
+                        fetch('/document/api/plan/' + projId, {
+                            method: 'POST',
+                            headers: planHeaders,
+                            body: JSON.stringify(planBody)
+                        })
+                        .then(function(r) { return r.json(); })
+                        .then(function() {
+                            alert('저장되었습니다.');
+                            location.href = '/document/detail/' + data.docId;
+                        })
+                        .catch(function() {
+                            alert('저장되었습니다. (계획서 저장 실패)');
+                            location.href = '/document/detail/' + data.docId;
+                        });
+                    } else {
+                        alert('저장되었습니다.');
+                        location.href = '/document/detail/' + data.docId;
+                    }
                 } else {
                     alert(data.error || '저장 실패');
                 }
             });
+        }
+
+        // ══════════════════════════════════════════
+        // 미리보기 기능
+        // ══════════════════════════════════════════
+        function openPreview(title, html) {
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewContent').innerHTML = html;
+            document.getElementById('previewModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        // ESC 키로 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePreview();
+        });
+        // 오버레이 클릭으로 닫기
+        document.getElementById('previewModal').addEventListener('click', function(e) {
+            if (e.target === this) closePreview();
+        });
+
+        function previewSection(idx) {
+            var fns = [previewLetter, previewCommence, previewSchedule, previewSiteRep, previewSecurity, previewParticipants, previewPledge, previewEstimate];
+            fns[idx]();
+        }
+
+        // 날짜 포맷 유틸
+        function fmtDate(val) {
+            if (!val) return '';
+            if (val.indexOf('-') >= 0) {
+                var p = val.split('-');
+                return p[0] + '. ' + parseInt(p[1]) + '. ' + parseInt(p[2]) + '.';
+            }
+            return val;
+        }
+        function fmtDateDot(val) {
+            if (!val) return '';
+            if (val.indexOf('-') >= 0) {
+                var p = val.split('-');
+                return p[0] + '.' + p[1] + '.' + p[2];
+            }
+            return val;
+        }
+
+        // ① 공문 미리보기
+        function previewLetter() {
+            var docNo = document.getElementById('letter_docNo').value || '';
+            var dateFld = document.getElementById('letter_date').value || '';
+            var toFld = document.getElementById('letter_to').value || '';
+            var manager = document.getElementById('letter_manager').value || '';
+            var tel = document.getElementById('letter_tel').value || '';
+            var title = document.getElementById('letter_title').value || '';
+            var body = document.getElementById('letter_body').value || '';
+
+            var html = '<div class="letterhead">' +
+                '<h1>(주) 정도UIT</h1>' +
+                '<div style="font-size:11px; color:#666; margin-top:5px;">서울특별시 금천구 디지털로9길 32, B동 1201호 (가산동, 갑을그레이트밸리)</div>' +
+                '<div style="font-size:11px; color:#666;">TEL: 02-6675-2550 | FAX: 02-6675-2555</div>' +
+                '</div>' +
+                '<table class="letter-info" style="width:100%;">' +
+                '<tr><td class="label">문서번호</td><td>' + docNo + '</td><td class="label" style="text-align:right;">시행일자</td><td style="text-align:right;">' + dateFld + '</td></tr>' +
+                '<tr><td class="label">수 신</td><td colspan="3">' + toFld + '</td></tr>' +
+                '<tr><td class="label">참 조</td><td colspan="3"></td></tr>' +
+                '</table>' +
+                '<h2 class="doc-title" style="font-size:18px; letter-spacing:5px; margin:25px 0;">제 목 : ' + title + '</h2>' +
+                '<div class="doc-body">' + body.replace(/\n/g, '<br>') + '</div>' +
+                '<div class="company-footer" style="margin-top:50px;">(주) 정도UIT 대표이사</div>' +
+                '<div class="stamp-area" style="text-align:center; margin-top:5px; font-size:11px; color:#999;">(직인생략)</div>' +
+                '<div style="margin-top:30px; font-size:11px; border-top:1px solid #ccc; padding-top:8px;">' +
+                '<table style="width:100%; font-size:11px;"><tr>' +
+                '<td>담당: ' + manager + '</td><td style="text-align:right;">연락처: ' + tel + '</td>' +
+                '</tr></table></div>';
+
+            openPreview('① 착수계 공문', html);
+        }
+
+        // ② 착수계 본문 미리보기
+        function previewCommence() {
+            var name = document.getElementById('comm_name').value || '';
+            var amt = parseInt(document.getElementById('comm_amount').value) || 0;
+            var amtKr = document.getElementById('comm_amount_kr').textContent || '';
+            var contDate = fmtDate(document.getElementById('comm_contract_date').value);
+            var startDate = fmtDate(document.getElementById('comm_start_date').value);
+            var endDate = fmtDate(document.getElementById('comm_end_date').value);
+            var recipient = document.getElementById('comm_recipient').value || '';
+            var supOrg = document.getElementById('comm_supervisor_org').value || '';
+            var supName = document.getElementById('comm_supervisor_name').value || '';
+
+            var html = '<h2 class="doc-title">착 수 계</h2>' +
+                '<table class="doc-table">' +
+                '<tr><th style="width:130px;">용 역 명</th><td colspan="3">' + name + '</td></tr>' +
+                '<tr><th>계 약 금 액</th><td colspan="3">' + amtKr + '</td></tr>' +
+                '<tr><th>계 약 년 월 일</th><td>' + contDate + '</td><th style="width:130px;">착 수 년 월 일</th><td>' + startDate + '</td></tr>' +
+                '<tr><th>준 공 예 정 일</th><td colspan="3">' + endDate + '</td></tr>' +
+                '</table>' +
+                '<div style="margin-top:30px; line-height:2.2; font-size:14px;">' +
+                '위 용역에 대한 착수를 계(届)합니다.' +
+                '</div>' +
+                '<div style="text-align:center; margin-top:40px; font-size:14px;">' +
+                '<div style="margin-bottom:20px;">' + fmtDateDot(document.getElementById('comm_start_date').value) + '</div>' +
+                '<div style="font-size:16px; font-weight:700;">(주) 정도UIT 대표이사</div>' +
+                '<div style="font-size:11px; color:#999; margin-top:3px;">(직인)</div>' +
+                '</div>' +
+                '<div style="margin-top:40px; border-top:1px solid #333; padding-top:15px;">' +
+                '<div style="font-size:14px; font-weight:600;">' + recipient + '</div>' +
+                '</div>' +
+                '<div style="margin-top:20px; font-size:12px;">' +
+                '<div>감독(관리) 소속: ' + supOrg + '</div>' +
+                '<div>감독(관리) 성명: ' + supName + '</div>' +
+                '</div>';
+
+            openPreview('② 착수계 본문', html);
+        }
+
+        // ③ 예정공정표 미리보기
+        function previewSchedule() {
+            var name = document.getElementById('sched_name').value || '';
+            var fromDt = fmtDate(document.getElementById('sched_from').value);
+            var toDt = fmtDate(document.getElementById('sched_to').value);
+            var months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+            var html = '<h2 class="doc-title">예 정 공 정 표</h2>' +
+                '<div style="margin-bottom:15px; font-size:13px;">' +
+                '<strong>용역명:</strong> ' + name + '<br>' +
+                '<strong>계약기간:</strong> ' + fromDt + ' ~ ' + toDt +
+                '</div>' +
+                '<table class="doc-table gantt-table"><thead><tr><th style="min-width:100px;">공정명</th>';
+            for (var m = 0; m < 12; m++) html += '<th style="width:40px;">' + months[m] + '</th>';
+            html += '<th>비고</th></tr></thead><tbody>';
+
+            var rows = document.getElementById('scheduleBody').rows;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var taskName = r.cells[0].querySelector('input').value || '';
+                var remark = r.cells[13].querySelector('input').value || '';
+                html += '<tr><td style="text-align:left;">' + taskName + '</td>';
+                for (var m = 0; m < 12; m++) {
+                    var checked = r.cells[m + 1].querySelector('input').checked;
+                    html += '<td>' + (checked ? '<div class="gantt-bar"></div>' : '') + '</td>';
+                }
+                html += '<td>' + remark + '</td></tr>';
+            }
+            if (rows.length === 0) {
+                html += '<tr><td colspan="14" style="color:#aaa; text-align:center;">공정 항목 없음</td></tr>';
+            }
+            html += '</tbody></table>';
+
+            openPreview('③ 예정공정표', html);
+        }
+
+        // ④ 현장대리인계 미리보기
+        function previewSiteRep() {
+            var name = document.getElementById('site_rep_name').value || '';
+            var position = document.getElementById('site_rep_position').value || '';
+            var addr = document.getElementById('site_rep_addr').value || '';
+            var ssn = document.getElementById('site_rep_ssn').value || '';
+            var birth = fmtDate(document.getElementById('site_rep_birth').value);
+            var cert = document.getElementById('site_rep_cert').value || '';
+            var tel = document.getElementById('site_rep_tel').value || '';
+            var projName = document.getElementById('comm_name').value || '';
+
+            var html = '<h2 class="doc-title">현장대리인계</h2>' +
+                '<div style="margin-bottom:15px; font-size:13px;"><strong>용역명:</strong> ' + projName + '</div>' +
+                '<table class="doc-table">' +
+                '<tr><th style="width:130px;">성 명</th><td>' + name + '</td><th style="width:130px;">직 급</th><td>' + position + '</td></tr>' +
+                '<tr><th>주 소</th><td colspan="3">' + addr + '</td></tr>' +
+                '<tr><th>주민등록번호</th><td>' + ssn + '</td><th>생년월일</th><td>' + birth + '</td></tr>' +
+                '<tr><th>자격/기술등급</th><td>' + cert + '</td><th>연 락 처</th><td>' + tel + '</td></tr>' +
+                '</table>' +
+                '<div style="margin-top:30px; line-height:2; font-size:13px;">' +
+                '위 사람을 현장대리인으로 지정합니다.' +
+                '</div>' +
+                '<div style="text-align:center; margin-top:40px;">' +
+                '<div style="font-size:16px; font-weight:700;">(주) 정도UIT 대표이사</div>' +
+                '<div style="font-size:11px; color:#999; margin-top:3px;">(직인)</div>' +
+                '</div>';
+
+            openPreview('④ 현장대리인계', html);
+        }
+
+        // ⑤ 보안각서 미리보기
+        function previewSecurity() {
+            var secName = document.getElementById('sec_name').value || '';
+            var secFrom = fmtDate(document.getElementById('sec_from').value);
+            var secTo = fmtDate(document.getElementById('sec_to').value);
+
+            var html = '<h2 class="doc-title">보 안 각 서</h2>' +
+                '<div style="margin-bottom:15px;">' +
+                '<strong>용역명:</strong> ' + secName + '<br>' +
+                '<strong>계약기간:</strong> ' + secFrom + ' ~ ' + secTo +
+                '</div>' +
+                '<div style="line-height:2; margin-bottom:20px; font-size:13px;">' +
+                '상기 용역의 수행과 관련하여 업무상 지득한 제반 자료 및 정보에 대하여 아래와 같이 보안을 서약합니다.' +
+                '</div>' +
+                '<div style="margin-bottom:20px; font-size:12px; line-height:2;">' +
+                '1. 업무수행 중 알게 된 비밀 및 보안사항을 타인에게 누설하지 않겠습니다.<br>' +
+                '2. 업무와 관련된 각종 자료를 무단으로 반출하지 않겠습니다.<br>' +
+                '3. 상기 사항을 위반할 경우 관련 법규에 의한 처벌을 감수하겠습니다.' +
+                '</div>' +
+                '<table class="doc-table"><thead><tr><th>성명</th><th>기술자등급</th><th>주민등록번호</th><th>과업참여 업무</th><th>서명</th></tr></thead><tbody>';
+
+            var secRows = document.getElementById('securityBody').rows;
+            for (var i = 0; i < secRows.length; i++) {
+                var cells = secRows[i].cells;
+                html += '<tr>';
+                for (var c = 0; c < cells.length; c++) {
+                    html += '<td>' + (cells[c].textContent || '') + '</td>';
+                }
+                html += '</tr>';
+            }
+            if (secRows.length === 0) {
+                html += '<tr><td colspan="5" style="color:#aaa; text-align:center;">과업참여자 등록 후 자동 반영</td></tr>';
+            }
+
+            html += '</tbody></table>' +
+                '<div style="text-align:center; margin-top:40px;">' +
+                '<div style="font-size:16px; font-weight:700;">(주) 정도UIT 대표이사</div>' +
+                '<div style="font-size:11px; color:#999; margin-top:3px;">(직인)</div>' +
+                '</div>';
+
+            openPreview('⑤ 보안각서', html);
+        }
+
+        // ⑥ 과업참여자 명단 미리보기
+        function previewParticipants() {
+            var projName = document.getElementById('comm_name').value || '';
+            var html = '<h2 class="doc-title">과업참여자 명단</h2>' +
+                '<div style="margin-bottom:15px; font-size:13px;"><strong>용역명:</strong> ' + projName + '</div>' +
+                '<table class="doc-table"><thead><tr><th>No</th><th>분야</th><th>성명</th><th>직위</th><th>주민등록번호</th><th>자격증번호</th><th>비고</th></tr></thead><tbody>';
+
+            var rows = document.getElementById('participantBody').rows;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var role = r.querySelector('.pt-role') ? r.querySelector('.pt-role').value : '';
+                var userSel = r.querySelector('.pt-user');
+                var fullName = userSel && userSel.selectedIndex > 0 ? userSel.options[userSel.selectedIndex].textContent.trim() : '';
+                var nameParts = fullName.split(' ');
+                var name = nameParts.length > 1 ? nameParts[nameParts.length - 1] : fullName;
+                var position = r.querySelector('.pt-position') ? r.querySelector('.pt-position').value : '';
+                var ssn = r.querySelector('.pt-ssn') ? r.querySelector('.pt-ssn').value : '';
+                var cert = r.querySelector('.pt-cert') ? r.querySelector('.pt-cert').value : '';
+                var remark = r.querySelector('.pt-remark') ? r.querySelector('.pt-remark').value : '';
+
+                html += '<tr><td style="text-align:center;">' + (i + 1) + '</td>' +
+                    '<td>' + role + '</td>' +
+                    '<td>' + name + '</td>' +
+                    '<td>' + position + '</td>' +
+                    '<td>' + ssn + '</td>' +
+                    '<td>' + cert + '</td>' +
+                    '<td>' + remark + '</td></tr>';
+            }
+            if (rows.length === 0) {
+                html += '<tr><td colspan="7" style="color:#aaa; text-align:center;">등록된 참여자 없음</td></tr>';
+            }
+            html += '</tbody></table>';
+
+            openPreview('⑥ 과업참여자 명단', html);
+        }
+
+        // ⑦ 보안서약서 미리보기
+        function previewPledge() {
+            var pledgeName = document.getElementById('pledge_name').value || '';
+            var pledgeFrom = fmtDate(document.getElementById('pledge_from').value);
+            var pledgeTo = fmtDate(document.getElementById('pledge_to').value);
+
+            // 참여자 목록에서 인원 가져오기
+            var rows = document.getElementById('participantBody').rows;
+            var persons = [];
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var userSel = r.querySelector('.pt-user');
+                var fullName = userSel && userSel.selectedIndex > 0 ? userSel.options[userSel.selectedIndex].textContent.trim() : '';
+                var nameParts = fullName.split(' ');
+                var name = nameParts.length > 1 ? nameParts[nameParts.length - 1] : fullName;
+                var role = r.querySelector('.pt-role') ? r.querySelector('.pt-role').value : '';
+                persons.push({ name: name, role: role });
+            }
+
+            var html = '';
+            if (persons.length === 0) {
+                html = '<h2 class="doc-title">보 안 서 약 서</h2>' +
+                    '<div style="text-align:center; color:#aaa; padding:40px;">과업참여자를 먼저 등록해주세요.</div>';
+            } else {
+                for (var p = 0; p < persons.length; p++) {
+                    if (p > 0) html += '<div style="border-top:3px dashed #ccc; margin:40px 0;"></div>';
+                    var typeLabel = p === 0 ? '대표자용' : persons[p].role;
+                    html += '<h2 class="doc-title">보 안 서 약 서</h2>' +
+                        '<div style="text-align:right; font-size:11px; color:#888; margin-bottom:10px;">(' + typeLabel + ')</div>' +
+                        '<div style="margin-bottom:15px;">' +
+                        '<strong>용역명:</strong> ' + pledgeName + '<br>' +
+                        '<strong>계약기간:</strong> ' + pledgeFrom + ' ~ ' + pledgeTo +
+                        '</div>' +
+                        '<div style="line-height:2.2; font-size:13px;">' +
+                        '본인은 상기 용역의 수행과 관련하여 다음 각 항을 준수할 것을 서약합니다.<br><br>' +
+                        '1. 업무수행 중 취득한 비밀을 재직 중은 물론 퇴직 후에도 누설하지 않겠습니다.<br>' +
+                        '2. 보안관계 법령 및 규정을 준수하겠습니다.<br>' +
+                        '3. 용역 관련 자료를 무단으로 복사, 반출하지 않겠습니다.<br>' +
+                        '4. 보안사고 발생 시 관련 법규에 의한 처벌을 감수하겠습니다.' +
+                        '</div>' +
+                        '<div style="text-align:center; margin-top:40px;">' +
+                        '<div style="font-size:14px;">서약자: ' + persons[p].name + ' <span class="sign-line"></span></div>' +
+                        '</div>';
+                }
+            }
+
+            openPreview('⑦ 보안서약서', html);
+        }
+
+        // ⑧ 설계내역서 미리보기
+        function previewEstimate() {
+            var designDate = document.getElementById('est_designDate').value || '';
+            var location = document.getElementById('est_location').value || '';
+            var bidRateInput = parseFloat(document.getElementById('est_bidRate').value) || 0;
+            var vatSep = document.getElementById('est_vatSeparate').checked;
+            var bidRate = bidRateInput / 100.0;
+            var projName = document.getElementById('comm_name').value || '';
+            var estType = document.getElementById('estimateType').value;
+            var typeName = document.getElementById('estimateType').options[document.getElementById('estimateType').selectedIndex].textContent;
+
+            // HW 항목
+            var hwItems = [], hwTotal = 0;
+            var hwRows = document.getElementById('estHwTable').querySelector('tbody').rows;
+            for (var i = 0; i < hwRows.length; i++) {
+                var nm = hwRows[i].querySelector('.est-name').value || '';
+                var rate = parseFloat(hwRows[i].querySelector('.est-rate').value) || 0;
+                var price = parseInt(hwRows[i].querySelector('.est-price').value) || 0;
+                var rmk = hwRows[i].querySelector('.est-remark').value || '';
+                var calc = price * (rate / 100);
+                hwTotal += calc;
+                hwItems.push({ name: nm, rate: rate, price: price, calc: Math.floor(calc), remark: rmk });
+            }
+
+            // SW 항목
+            var swItems = [], swTotal = 0;
+            var swRows = document.getElementById('estSwTable').querySelector('tbody').rows;
+            for (var i = 0; i < swRows.length; i++) {
+                var nm = swRows[i].querySelector('.est-name').value || '';
+                var rate = parseFloat(swRows[i].querySelector('.est-rate').value) || 0;
+                var price = parseInt(swRows[i].querySelector('.est-price').value) || 0;
+                var rmk = swRows[i].querySelector('.est-remark').value || '';
+                var calc = price * (rate / 100);
+                swTotal += calc;
+                swItems.push({ name: nm, rate: rate, price: price, calc: Math.floor(calc), remark: rmk });
+            }
+
+            var subTotal = hwTotal + swTotal;
+
+            var html = '<h2 class="doc-title">설 계 내 역 서</h2>' +
+                '<table class="letter-info" style="width:100%; margin-bottom:15px;">' +
+                '<tr><td class="label">용역명</td><td>' + projName + '</td></tr>' +
+                '<tr><td class="label">설계년월</td><td>' + designDate + '</td></tr>' +
+                '<tr><td class="label">위치</td><td>' + location + '</td></tr>' +
+                '<tr><td class="label">유형</td><td>' + typeName + '</td></tr>' +
+                '</table>';
+
+            // 총괄표
+            html += '<div style="font-weight:700; margin:20px 0 8px; font-size:14px;">【 총 괄 표 】</div>' +
+                '<table class="doc-table">' +
+                '<thead><tr><th>No</th><th>항목</th><th>금액(원)</th><th>비고</th></tr></thead><tbody>';
+
+            var no = 1;
+            if (estType !== 'TYPE_D') {
+                html += '<tr><td style="text-align:center;">' + (no++) + '</td><td>하드웨어 유지보수</td><td style="text-align:right;">' + Math.floor(hwTotal).toLocaleString() + '</td><td></td></tr>';
+            }
+            html += '<tr><td style="text-align:center;">' + (no++) + '</td><td>소프트웨어 유지보수</td><td style="text-align:right;">' + Math.floor(swTotal).toLocaleString() + '</td><td></td></tr>';
+            html += '<tr style="font-weight:700; background:#f5f5f5;"><td colspan="2" style="text-align:center;">소 계</td><td style="text-align:right;">' + Math.floor(subTotal).toLocaleString() + '</td><td></td></tr>';
+
+            var grandTotal;
+            if (vatSep) {
+                var supply = Math.floor(subTotal / 1.1);
+                var supplyAfterBid = Math.floor(supply * bidRate);
+                var vatAfterBid = Math.floor(supplyAfterBid * 0.1);
+                grandTotal = Math.floor((supplyAfterBid + vatAfterBid) / 1000) * 1000;
+                html += '<tr><td colspan="2" style="text-align:center;">공급가액 (낙찰율 ' + bidRateInput + '%)</td><td style="text-align:right;">' + supplyAfterBid.toLocaleString() + '</td><td></td></tr>';
+                html += '<tr><td colspan="2" style="text-align:center;">부가가치세 (10%)</td><td style="text-align:right;">' + vatAfterBid.toLocaleString() + '</td><td></td></tr>';
+            } else {
+                grandTotal = Math.floor(subTotal * bidRate / 1000) * 1000;
+            }
+            html += '<tr style="font-weight:700; background:#e8f5e9;"><td colspan="2" style="text-align:center;">합 계 (낙찰율 ' + bidRateInput + '%)</td><td style="text-align:right;">' + grandTotal.toLocaleString() + '</td><td></td></tr>';
+            html += '</tbody></table>';
+
+            // HW 상세
+            if (estType !== 'TYPE_D' && hwItems.length > 0) {
+                html += '<div style="font-weight:700; margin:25px 0 8px; font-size:14px;">【 1. 하드웨어 유지보수 내역 】</div>' +
+                    '<table class="doc-table"><thead><tr><th>No</th><th>품명</th><th>적용율(%)</th><th>도입가(원)</th><th>유지보수대가(원)</th><th>비고</th></tr></thead><tbody>';
+                for (var i = 0; i < hwItems.length; i++) {
+                    html += '<tr><td style="text-align:center;">' + (i + 1) + '</td><td>' + hwItems[i].name + '</td>' +
+                        '<td style="text-align:center;">' + hwItems[i].rate + '%</td>' +
+                        '<td style="text-align:right;">' + hwItems[i].price.toLocaleString() + '</td>' +
+                        '<td style="text-align:right;">' + hwItems[i].calc.toLocaleString() + '</td>' +
+                        '<td>' + hwItems[i].remark + '</td></tr>';
+                }
+                html += '<tr style="font-weight:700;"><td colspan="4" style="text-align:center;">합 계</td><td style="text-align:right;">' + Math.floor(hwTotal).toLocaleString() + '</td><td></td></tr>';
+                html += '</tbody></table>';
+            }
+
+            // SW 상세
+            if (swItems.length > 0) {
+                var swNo = estType === 'TYPE_D' ? '1' : '2';
+                html += '<div style="font-weight:700; margin:25px 0 8px; font-size:14px;">【 ' + swNo + '. 소프트웨어 유지보수 내역 】</div>' +
+                    '<table class="doc-table"><thead><tr><th>No</th><th>품명</th><th>적용율(%)</th><th>도입가(원)</th><th>유지보수대가(원)</th><th>비고</th></tr></thead><tbody>';
+                for (var i = 0; i < swItems.length; i++) {
+                    html += '<tr><td style="text-align:center;">' + (i + 1) + '</td><td>' + swItems[i].name + '</td>' +
+                        '<td style="text-align:center;">' + swItems[i].rate + '%</td>' +
+                        '<td style="text-align:right;">' + swItems[i].price.toLocaleString() + '</td>' +
+                        '<td style="text-align:right;">' + swItems[i].calc.toLocaleString() + '</td>' +
+                        '<td>' + swItems[i].remark + '</td></tr>';
+                }
+                html += '<tr style="font-weight:700;"><td colspan="4" style="text-align:center;">합 계</td><td style="text-align:right;">' + Math.floor(swTotal).toLocaleString() + '</td><td></td></tr>';
+                html += '</tbody></table>';
+            }
+
+            openPreview('⑧ 설계내역서', html);
         }
     </script>
 </body>

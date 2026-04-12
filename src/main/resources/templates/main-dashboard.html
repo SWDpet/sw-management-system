@@ -199,18 +199,14 @@
                 <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authQuotation == 'EDIT'}" th:href="@{/quotation/new}" class="btn-add-icon" title="견적서 바로 작성"><i class="fas fa-plus-circle"></i></a>
             </div>
 
-            <!-- 사업현황(계약관리) 메뉴 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authContract != null and #authentication.principal.user.authContract != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/contract/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e1f5fe';this.style.color='#0277bd'" onmouseout="this.style.background='';this.style.color='#444'">📊 사업현황</a>
-                <a th:href="@{/contract/dashboard}" style="text-decoration:none; color:#444; font-size:0.75rem; padding:4px 8px; border-radius:4px;" onmouseover="this.style.background='#e1f5fe';this.style.color='#0277bd'" onmouseout="this.style.background='';this.style.color='#444'" title="진행현황 대시보드"><i class="fas fa-columns"></i></a>
-                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authContract == 'EDIT'}" th:href="@{/contract/new}" class="btn-add-icon" title="사업 등록"><i class="fas fa-plus-circle"></i></a>
-            </div>
+            <!-- 사업현황(계약관리) 메뉴 - 삭제됨: SW사업 추진현황과 중복 -->
 
             <!-- 업무계획 메뉴 -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
                 <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
                 <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e8f5e9';this.style.color='#2e7d32'" onmouseout="this.style.background='';this.style.color='#444'">📅 업무계획</a>
+                <a th:href="@{/workplan/inspect-cycle}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e0f2f1';this.style.color='#00897b'" onmouseout="this.style.background='';this.style.color='#444'">🔍 점검주기</a>
+                <a th:href="@{/workplan/inspect-visits}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e0f2f1';this.style.color='#00897b'" onmouseout="this.style.background='';this.style.color='#444'">📋 점검현황</a>
             </div>
 
             <!-- 문서관리 메뉴 -->

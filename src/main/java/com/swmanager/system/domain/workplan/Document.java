@@ -21,8 +21,8 @@ public class Document {
     @Column(name = "doc_id")
     private Integer docId;
 
-    @Column(name = "doc_no", unique = true, length = 50)
-    private String docNo; // 자동채번: (주)정도UIT {연도}-{일련번호}호
+    @Column(name = "doc_no", length = 50)
+    private String docNo; // 수동입력: 타부서에서 문서번호 부여
 
     @Column(name = "doc_type", nullable = false, length = 30)
     private String docType; // COMMENCE, INTERIM, COMPLETION, INSPECT, FAULT, SUPPORT, INSTALL, PATCH
@@ -39,10 +39,6 @@ public class Document {
     private WorkPlan workPlan;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contract_id")
-    private Contract contract;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "proj_id")
     private SwProject project;
 
@@ -50,7 +46,7 @@ public class Document {
     private String title;
 
     @Column(name = "status", nullable = false, length = 20)
-    private String status = "DRAFT"; // DRAFT, SUBMITTED, APPROVED, REJECTED
+    private String status = "DRAFT"; // DRAFT(작성중), COMPLETED(작성완료)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)

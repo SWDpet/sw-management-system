@@ -24,9 +24,6 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
     // 인프라별 문서 목록
     List<Document> findByInfra_InfraIdOrderByCreatedAtDesc(Long infraId);
 
-    // 계약별 문서 목록
-    List<Document> findByContract_ContractIdOrderByCreatedAtDesc(Integer contractId);
-
     // 작성자별 문서 목록
     List<Document> findByAuthor_UserSeqOrderByCreatedAtDesc(Long userSeq);
 

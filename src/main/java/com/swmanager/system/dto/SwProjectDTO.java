@@ -72,6 +72,10 @@ public class SwProjectDTO {
     private Long payProg;
     private Long payComp;
     
+    // 문서 대상 여부
+    private String interimYn;      // 기성계 대상
+    private String completionYn;   // 준공계 대상
+
     // 유지보수
     private String maintType;
     private String maintTypeNm; // 유지보수 유형명 (추가)
@@ -130,6 +134,8 @@ public class SwProjectDTO {
                 .payProg(entity.getPayProg())
                 .payComp(entity.getPayComp())
                 .maintType(entity.getMaintType())
+                .interimYn(entity.getInterimYn())
+                .completionYn(entity.getCompletionYn())
                 .regDt(entity.getRegDt())
                 .personId(entity.getPersonId())
                 .orgLghNm(entity.getOrgLghNm())
@@ -181,6 +187,8 @@ public class SwProjectDTO {
         entity.setPayProg(this.payProg);
         entity.setPayComp(this.payComp);
         entity.setMaintType(this.maintType);
+        entity.setInterimYn(this.interimYn);
+        entity.setCompletionYn(this.completionYn);
         entity.setPersonId(this.personId);
         entity.setOrgLghNm(this.orgLghNm);
         

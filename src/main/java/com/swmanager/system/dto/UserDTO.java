@@ -26,7 +26,14 @@ public class UserDTO {
     private String deptNm;
     private String teamNm;
     private String tel;
+    private String mobile;
     private String email;
+    private String positionTitle;
+    private String address;
+    private String ssnMasked;
+    private String certificate;
+    private String techGrade;
+    private String tasks;
     private String userRole;
     private Boolean enabled;
     
@@ -62,7 +69,14 @@ public class UserDTO {
                 .deptNm(entity.getDeptNm())
                 .teamNm(entity.getTeamNm())
                 .tel(entity.getTel())
+                .mobile(entity.getMobile())
                 .email(entity.getEmail())
+                .positionTitle(entity.getPositionTitle())
+                .address(entity.getAddress())
+                .ssnMasked(entity.getSsnMasked())
+                .certificate(entity.getCertificate())
+                .techGrade(entity.getTechGrade())
+                .tasks(entity.getTasks())
                 .userRole(entity.getUserRole())
                 .enabled(entity.getEnabled())
                 .authDashboard(entity.getAuthDashboard())

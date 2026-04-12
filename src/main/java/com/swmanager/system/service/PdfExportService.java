@@ -1,29 +1,33 @@
 package com.swmanager.system.service;
 
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.dto.DocumentDTO;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.*;
 
 /**
  * PDF 출력 서비스
- * - 문서 세트를 하나의 HTML로 렌더링 후 PDF 변환
- * - 레터헤드/직인 이미지 자동 삽입
- * - 문서 세트 병합 출력 지원
+ * - Thymeleaf HTML 렌더링 → OpenHTMLToPDF로 PDF 변환
+ * - 한글 폰트 지원 (NotoSansKR)
  */
+@Slf4j
 @Service
 public class PdfExportService {
 
     @Autowired private TemplateEngine templateEngine;
     @Autowired private DocumentService documentService;
 
-    // 정도UIT 회사 정보 (레터헤드)
     private static final String COMPANY_NAME = "(주)정도UIT";
     private static final String COMPANY_TEL = "T 02)561-7117";
     private static final String COMPANY_FAX = "F 02)561-9792";
@@ -44,19 +48,15 @@ public class PdfExportService {
         context.setVariable("companyFax", COMPANY_FAX);
         context.setVariable("companyAddr", COMPANY_ADDR);
 
-        // 섹션 데이터를 맵으로 변환
-        Map<String, Map<String, Object>> sectionMap = new HashMap<>();
+        Map<String, Map<String, Object>> sectionMap = new LinkedHashMap<>();
         if (doc.getDetails() != null) {
-            for (DocumentDetail detail : doc.getDetails()) {
-                sectionMap.put(detail.getSectionKey(), detail.getSectionData());
-            }
+            doc.getDetails().stream()
+                .sorted(Comparator.comparingInt(d -> d.getSortOrder() != null ? d.getSortOrder() : 0))
+                .forEach(detail -> sectionMap.put(detail.getSectionKey(), detail.getSectionData()));
         }
         context.setVariable("sections", sectionMap);
-
-        // 서명 정보
         context.setVariable("signatures", doc.getSignatures());
 
-        // 문서 유형별 PDF 템플릿 선택
         String templateName = switch (doc.getDocType()) {
             case "COMMENCE" -> "pdf/pdf-commence";
             case "INTERIM" -> "pdf/pdf-interim";
@@ -73,31 +73,42 @@ public class PdfExportService {
     }
 
     /**
-     * 레터헤드 HTML 헤더 생성
+     * HTML을 PDF 바이트 배열로 변환 (OpenHTMLToPDF)
      */
-    public String getLetterheadHtml() {
-        return "<div style='text-align:center; padding:20px; border-bottom:3px solid #1565c0;'>" +
-               "<div style='font-size:24px; font-weight:bold; color:#1565c0;'>" + COMPANY_NAME + "</div>" +
-               "<div style='font-size:11px; color:#666; margin-top:5px;'>" +
-               COMPANY_ADDR + " | " + COMPANY_TEL + " | " + COMPANY_FAX + "</div>" +
-               "</div>";
+    public byte[] convertHtmlToPdf(String html) {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFastMode();
+
+            // 한글 폰트 등록 (classpath에 있는 경우)
+            try {
+                ClassPathResource fontResource = new ClassPathResource("fonts/NotoSansKR-Regular.ttf");
+                if (fontResource.exists()) {
+                    try (InputStream fontStream = fontResource.getInputStream()) {
+                        builder.useFont(() -> fontStream, "Noto Sans KR");
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("한글 폰트 로드 실패, 기본 폰트 사용: {}", e.getMessage());
+            }
+
+            builder.withHtmlContent(html, "/");
+            builder.toStream(os);
+            builder.run();
+
+            return os.toByteArray();
+        } catch (Exception e) {
+            log.error("PDF 변환 실패", e);
+            throw new RuntimeException("PDF 변환 중 오류 발생: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * 직인 이미지 HTML
+     * 문서 ID로 바로 PDF 바이트 생성
      */
-    public String getSealHtml() {
-        return "<div style='text-align:right; margin-top:30px;'>" +
-               "<div style='display:inline-block; border:2px solid #c00; border-radius:50%; width:60px; height:60px; " +
-               "line-height:60px; text-align:center; color:#c00; font-weight:bold; font-size:11px;'>대표이사<br>직인</div>" +
-               "</div>";
-    }
-
-    /**
-     * 문서번호 자동 채번 텍스트
-     */
-    public String formatDocNo(String docNo) {
-        return docNo != null ? docNo : "";
+    public byte[] generatePdf(Integer docId) {
+        String html = renderDocumentToHtml(docId);
+        return convertHtmlToPdf(html);
     }
 
     /**

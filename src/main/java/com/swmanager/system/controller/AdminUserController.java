@@ -240,7 +240,14 @@ public class AdminUserController {
             @RequestParam("deptNm") String deptNm,
             @RequestParam("teamNm") String teamNm,
             @RequestParam("tel") String tel,
+            @RequestParam(value = "mobile", required = false) String mobile,
             @RequestParam("email") String email,
+            @RequestParam(value = "positionTitle", required = false) String positionTitle,
+            @RequestParam(value = "address", required = false) String address,
+            @RequestParam(value = "ssn", required = false) String ssn,
+            @RequestParam(value = "certificate", required = false) String certificate,
+            @RequestParam(value = "techGrade", required = false) String techGrade,
+            @RequestParam(value = "tasks", required = false) String tasks,
             @RequestParam("authDashboard") String authDashboard,
             @RequestParam("authProject") String authProject,
             @RequestParam("authPerson") String authPerson,
@@ -263,7 +270,14 @@ public class AdminUserController {
         user.setDeptNm(deptNm);
         user.setTeamNm(teamNm);
         user.setTel(tel);
+        user.setMobile(mobile);
         user.setEmail(email);
+        user.setPositionTitle(positionTitle);
+        user.setAddress(address);
+        user.setSsn(ssn);
+        user.setCertificate(certificate);
+        user.setTechGrade(techGrade);
+        user.setTasks(tasks);
         user.setAuthDashboard(authDashboard);
         user.setAuthProject(authProject);
         user.setAuthPerson(authPerson);

@@ -21,6 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * userid로 사용자 찾기
      */
     Optional<User> findByUserid(String userid);
+
+    Optional<User> findFirstByUsername(String username);
     
     /**
      * 승인 대기 중인 사용자 목록 (enabled = false)

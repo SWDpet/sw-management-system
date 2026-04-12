@@ -1,0 +1,157 @@
+준공계
+1.
+용역명
+:
+{{용역명}}
+2.
+계약금액
+:
+금{{계약금액}}원({{계약금액_Kor}})
+3.
+계약년월일
+:
+{{계약일자}}
+감 독 경 유
+4.
+준공예정일
+:
+{{준공일자}}
+일자
+5.
+실제준공일
+:
+{{준공일자_실제}}
+확인
+위 용역에 대한 준공계를 아래와 같이 제출합니다. 
+{{준공일자_실제}}
+서울특별시 강남구 테헤란로
+38길 29 이원빌딩 5층
+주식회사
+정도유아이티
+대표이사
+노성기
+{{지자체장}} 귀하
+준공검사원
+1.
+용역명
+:
+{{용역명}}
+2.
+계약금액
+:
+금{{계약금액}}원({{계약금액_Kor}})
+3.
+계약년월일
+:
+{{계약일자}}
+4.
+준공예정일
+:
+{{준공일자}}
+5.
+실제준공일
+:
+{{준공일자_실제}}
+상기 용역에 대하여 과업지시서 및 기타 약정대로 어김없이 준공하였음을 확약하오며 만약 본 용역의 과업지시서상 하자가 발생할 경우 수정 및 보완할 것을 서약하고 준공검사원을 제출합니다.
+{{준공일자_실제}}
+서울특별시 강남구 테헤란로
+38길 29 이원빌딩 5층
+주식회사
+정도유아이티
+대표이사
+노성기
+{{지자체장}} 귀하
+유지보수 대상
+1.
+용역명
+:
+{{용역명}}
+2.
+계약일자
+:
+{{계약일자}}
+3.
+착수기간
+:
+{{착수일자}} ~ {{준공일자}}
+■ 유지보수 대상
+대  상
+세 부 사 양
+수 량
+S/W
+GIS 엔진
+- GeoNURIS Spatial Server
+- GeoNURIS Geoweb Server
+1식
+GIS 편집용 엔진
+- GeoNURIS Desktop Pro
+1식
+H/W
+■ 『{{용역명}}』점검내역
+◎ 정기 점검 확인일시 및 결과
+확인 일시
+점검 대상
+점검 결과
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+확인 일시
+점검 대상
+점검 결과
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)
+ - GeoNURIS Desktop 1식
+ - GeoNURIS Spatial Server 1식
+ - GeoNURIS GeoWeb Server 1식
+ - UPIS 표준시스템
+정상 (이상 없음)

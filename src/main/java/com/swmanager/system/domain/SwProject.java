@@ -71,6 +71,23 @@ public class SwProject {
 
     @Column(name = "pay_prog_yn") private String payProgYn;
     @Column(name = "pay_prog_fr") private String payProgFr;
+    @Column(name = "comp_yn") private String compYn;
+
+    @Column(name = "interim_yn") private String interimYn;       // 기성계 대상 여부
+    @Column(name = "completion_yn") private String completionYn; // 준공계 대상 여부
+
+    // === 사업수행계획서 (P12) 필드 ===
+    @Column(name = "proj_purpose", columnDefinition = "text")
+    private String projPurpose;          // 용역의 목적
+
+    @Column(name = "support_type", length = 50)
+    private String supportType;          // 지원형태(상주/비상주)
+
+    @Column(name = "scope_text", columnDefinition = "text")
+    private String scopeText;            // 용역 범위(줄바꿈 구분)
+
+    @Column(name = "inspect_method", length = 200)
+    private String inspectMethod;        // 점검방법
 
     private String stat;
 

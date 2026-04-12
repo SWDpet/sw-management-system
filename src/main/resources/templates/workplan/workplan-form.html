@@ -115,7 +115,12 @@
                     <label class="type-option" style="--type-color:#37474f;" th:classappend="${workPlan.planType == 'COMPLETE'} ? 'selected' : ''">
                         <input type="radio" name="planType" value="COMPLETE" th:checked="${workPlan.planType == 'COMPLETE'}" onchange="selectType(this)">
                         <div class="type-dot" style="background:#37474f;"></div>
-                        <span class="type-label">정산</span>
+                        <span class="type-label">준공</span>
+                    </label>
+                    <label class="type-option" style="--type-color:#795548;" th:classappend="${workPlan.planType == 'ETC'} ? 'selected' : ''">
+                        <input type="radio" name="planType" value="ETC" th:checked="${workPlan.planType == 'ETC'}" onchange="selectType(this)">
+                        <div class="type-dot" style="background:#795548;"></div>
+                        <span class="type-label">기타</span>
                     </label>
                 </div>
             </div>

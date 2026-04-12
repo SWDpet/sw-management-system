@@ -971,19 +971,24 @@
         </div>
         <div style="padding:20px 24px;">
             <input type="hidden" id="laborPatternIdx"/>
-            <!-- 연도 선택 + 비율 설정 -->
-            <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-end;">
-                <div style="flex:1;">
+            <!-- 연도 선택 + 비율 설정 (편집 가능) -->
+            <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap;">
+                <div style="flex:1;min-width:120px;">
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">노임단가 연도 <span style="color:#ef4444;">*</span></label>
-                    <select id="laborYear" style="width:100%;padding:10px 12px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.875rem;" onchange="loadLaborGrades()">
+                    <select id="laborYear" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="loadLaborGrades()">
                     </select>
                 </div>
-                <div style="flex:1;display:flex;align-items:center;gap:4px;padding-bottom:2px;">
-                    <span style="font-size:0.8rem;color:#666;">제경비율: <strong id="laborOhLabel">76</strong>%</span>
-                    <span style="margin:0 4px;color:#ddd;">|</span>
-                    <span style="font-size:0.8rem;color:#666;">기술료율: <strong id="laborTfLabel">10</strong>%</span>
-                    <span style="margin:0 4px;color:#ddd;">|</span>
-                    <span style="font-size:0.8rem;color:#666;">월근무일: <strong>20.3</strong>일</span>
+                <div style="min-width:90px;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">제경비율(%)</label>
+                    <input type="number" id="laborOhInput" step="0.1" min="0" value="110" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="updateLaborSummary()">
+                </div>
+                <div style="min-width:90px;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">기술료율(%)</label>
+                    <input type="number" id="laborTfInput" step="0.1" min="0" value="20" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="updateLaborSummary()">
+                </div>
+                <div style="min-width:80px;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">월근무일</label>
+                    <input type="number" id="laborWorkDays" step="0.1" min="1" max="31" value="20.3" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="recalcAllLaborEntries()">
                 </div>
             </div>
 
@@ -995,32 +1000,23 @@
                         <select id="laborGrade" onchange="onLaborGradeChange()" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                         </select>
                     </div>
-                    <!-- "직접입력" 선택 시 나타나는 등급명 + 단가 필드 -->
-                    <div id="laborManualWrap" style="display:none;flex:2;min-width:320px;">
-                        <div style="display:flex;gap:6px;">
-                            <div style="flex:1;">
-                                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">등급명</label>
-                                <input type="text" id="laborManualGrade" placeholder="예: 전문작업자(나)" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
-                            </div>
-                            <div style="flex:0.65;">
-                                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">노임단가(원/일)</label>
-                                <input type="number" id="laborManualRate" min="0" step="1" placeholder="254672" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
-                            </div>
-                            <div style="flex:0.45;">
-                                <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">월근무일수</label>
-                                <input type="number" id="laborManualDays" min="1" max="31" step="0.1" value="20.3" placeholder="20.3" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
-                            </div>
-                        </div>
+                    <div id="laborManualGradeWrap" style="display:none;flex:1;min-width:120px;">
+                        <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">등급명</label>
+                        <input type="text" id="laborManualGrade" placeholder="예: 전문작업자(나)" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
-                    <div style="flex:0.5;min-width:75px;">
+                    <div style="flex:0.6;min-width:100px;">
+                        <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">노임단가(원/일)</label>
+                        <input type="number" id="laborDailyRate" min="0" step="1" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                    </div>
+                    <div style="flex:0.4;min-width:70px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입인력(인)</label>
                         <input type="number" id="laborPeople" min="1" step="1" value="1" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
-                    <div style="flex:0.5;min-width:80px;">
+                    <div style="flex:0.4;min-width:70px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입기간(개월)</label>
                         <input type="number" id="laborMonths" min="0.5" step="0.5" value="1" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
-                    <div style="flex:0.8;min-width:80px;">
+                    <div style="flex:0.5;min-width:70px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">비고</label>
                         <input type="text" id="laborRemarks" placeholder="" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
@@ -2121,13 +2117,12 @@
         modal.classList.add('show');
         laborEntries = [];
 
-        // Set rates from pattern
-        const ohRate = pattern.overheadRate || 110;
-        const tfRate = pattern.techFeeRate || 20;
-        document.getElementById('laborOhLabel').textContent = ohRate;
-        document.getElementById('laborTfLabel').textContent = tfRate;
-        document.getElementById('laborOhLabel2').textContent = ohRate;
-        document.getElementById('laborTfLabel2').textContent = tfRate;
+        // Set rates from pattern into editable inputs (0 = 사용안함)
+        const ohRate = pattern.overheadRate != null ? pattern.overheadRate : 110;
+        const tfRate = pattern.techFeeRate != null ? pattern.techFeeRate : 20;
+        document.getElementById('laborOhInput').value = ohRate;
+        document.getElementById('laborTfInput').value = tfRate;
+        document.getElementById('laborWorkDays').value = 20.3;
 
         // Load wage rate years
         try {
@@ -2194,42 +2189,56 @@
 
     const MONTHLY_WORKING_DAYS = 20.3; // 월 근무일수 (표준)
 
+    function recalcAllLaborEntries() {
+        const workDays = parseFloat(document.getElementById('laborWorkDays').value) || MONTHLY_WORKING_DAYS;
+        laborEntries.forEach(e => {
+            e.workingDays = workDays;
+            e.amount = Math.round(e.dailyRate * workDays * e.totalMonths);
+        });
+        renderLaborEntries();
+        updateLaborSummary();
+    }
+
     function onLaborGradeChange() {
-        const isManual = document.getElementById('laborGrade').value === '__MANUAL__';
-        document.getElementById('laborManualWrap').style.display = isManual ? '' : 'none';
-        if (!isManual) {
+        const gradeVal = document.getElementById('laborGrade').value;
+        const isManual = gradeVal === '__MANUAL__';
+        document.getElementById('laborManualGradeWrap').style.display = isManual ? '' : 'none';
+        if (isManual) {
+            document.getElementById('laborDailyRate').value = '';
             document.getElementById('laborManualGrade').value = '';
-            document.getElementById('laborManualRate').value = '';
-            document.getElementById('laborManualDays').value = '20.3';
+        } else {
+            // 선택한 등급의 노임단가를 자동으로 채움
+            const rate = wageRatesCache[gradeVal];
+            if (rate) {
+                document.getElementById('laborDailyRate').value = rate.dailyRate;
+            }
+            document.getElementById('laborManualGrade').value = '';
         }
     }
 
     function addLaborEntry() {
         const gradeVal = document.getElementById('laborGrade').value;
         const isManual = (gradeVal === '__MANUAL__');
-        let gradeName, dailyRate;
+        let gradeName;
 
         if (isManual) {
-            // 직접입력 모드
             gradeName = document.getElementById('laborManualGrade').value.trim();
-            dailyRate = parseInt(document.getElementById('laborManualRate').value) || 0;
             if (!gradeName) {
                 showAlert('등급명을 입력해주세요', 'error');
                 return;
             }
-            if (dailyRate <= 0) {
-                showAlert('노임단가를 입력해주세요', 'error');
-                return;
-            }
         } else {
-            // DB 선택 모드
-            const rate = wageRatesCache[gradeVal];
-            if (!rate || !gradeVal) {
+            if (!gradeVal) {
                 showAlert('기술등급을 선택해주세요', 'error');
                 return;
             }
             gradeName = gradeVal;
-            dailyRate = rate.dailyRate;
+        }
+
+        const dailyRate = parseInt(document.getElementById('laborDailyRate').value) || 0;
+        if (dailyRate <= 0) {
+            showAlert('노임단가를 입력해주세요', 'error');
+            return;
         }
 
         const people = parseInt(document.getElementById('laborPeople').value) || 0;
@@ -2245,9 +2254,8 @@
             return;
         }
 
+        const workingDays = parseFloat(document.getElementById('laborWorkDays').value) || MONTHLY_WORKING_DAYS;
         const totalMonths = people * months;
-        // 직접입력 시 사용자 지정 월근무일수, 아니면 표준 20.3일
-        const workingDays = isManual ? (parseFloat(document.getElementById('laborManualDays').value) || MONTHLY_WORKING_DAYS) : MONTHLY_WORKING_DAYS;
         const amount = Math.round(dailyRate * workingDays * totalMonths);
 
         laborEntries.push({
@@ -2257,7 +2265,8 @@
             months: months,
             totalMonths: totalMonths,
             amount: amount,
-            remarks: remarks
+            remarks: remarks,
+            workingDays: workingDays
         });
 
         // 입력 초기화
@@ -2266,9 +2275,8 @@
         document.getElementById('laborRemarks').value = '';
         if (isManual) {
             document.getElementById('laborManualGrade').value = '';
-            document.getElementById('laborManualRate').value = '';
-            document.getElementById('laborManualDays').value = '20.3';
         }
+        document.getElementById('laborDailyRate').value = '';
 
         renderLaborEntries();
         updateLaborSummary();
@@ -2289,30 +2297,51 @@
         let html = '';
         laborEntries.forEach((e, i) => {
             html += '<tr style="border-bottom:1px solid #f0f0f0;">' +
-                '<td style="padding:7px 10px;font-weight:600;">' + escapeHtml(e.gradeName) + '</td>' +
-                '<td style="padding:7px 10px;text-align:right;">' + formatCurrency(e.dailyRate) + '</td>' +
-                '<td style="padding:7px 6px;text-align:center;">' + e.people + '</td>' +
-                '<td style="padding:7px 6px;text-align:center;">' + e.months + '</td>' +
-                '<td style="padding:7px 6px;text-align:center;">' + e.totalMonths + '</td>' +
-                '<td style="padding:7px 10px;text-align:right;font-weight:600;">' + formatCurrency(e.amount) + '</td>' +
-                '<td style="padding:7px 8px;text-align:center;font-size:0.78rem;color:#666;">' + escapeHtml(e.remarks || '') + '</td>' +
-                '<td style="padding:7px 4px;text-align:center;"><button type="button" onclick="removeLaborEntry(' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:2px 4px;" title="삭제">&times;</button></td>' +
+                '<td style="padding:5px 6px;"><input type="text" value="' + escapeHtml(e.gradeName) + '" onchange="editLaborEntry(' + i + ',\'gradeName\',this.value)" style="width:100%;border:1px solid #e8e8e8;border-radius:4px;padding:4px 6px;font-size:0.85rem;font-weight:600;"></td>' +
+                '<td style="padding:5px 6px;"><input type="number" value="' + e.dailyRate + '" onchange="editLaborEntry(' + i + ',\'dailyRate\',this.value)" style="width:80px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 6px;font-size:0.85rem;text-align:right;"></td>' +
+                '<td style="padding:5px 4px;"><input type="number" value="' + e.people + '" min="1" onchange="editLaborEntry(' + i + ',\'people\',this.value)" style="width:50px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;"></td>' +
+                '<td style="padding:5px 4px;"><input type="number" value="' + e.months + '" min="1" onchange="editLaborEntry(' + i + ',\'months\',this.value)" style="width:50px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;"></td>' +
+                '<td style="padding:5px 6px;text-align:center;font-size:0.85rem;">' + e.totalMonths + '</td>' +
+                '<td style="padding:5px 6px;text-align:right;font-weight:600;font-size:0.85rem;">' + formatCurrency(e.amount) + '</td>' +
+                '<td style="padding:5px 4px;"><input type="text" value="' + escapeHtml(e.remarks || '') + '" onchange="editLaborEntry(' + i + ',\'remarks\',this.value)" style="width:60px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.78rem;text-align:center;"></td>' +
+                '<td style="padding:5px 4px;text-align:center;"><button type="button" onclick="removeLaborEntry(' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:2px 4px;" title="삭제">&times;</button></td>' +
                 '</tr>';
         });
         tbody.innerHTML = html;
     }
 
+    function editLaborEntry(idx, field, value) {
+        var e = laborEntries[idx];
+        if (!e) return;
+        if (field === 'gradeName') { e.gradeName = value; }
+        else if (field === 'dailyRate') { e.dailyRate = parseInt(value) || 0; }
+        else if (field === 'people') { e.people = parseInt(value) || 1; }
+        else if (field === 'months') { e.months = parseInt(value) || 1; }
+        else if (field === 'remarks') { e.remarks = value; }
+        // recalc
+        e.totalMonths = e.people * e.months;
+        var workDays = parseFloat(document.getElementById('laborWorkDays').value) || 20.3;
+        e.workingDays = workDays;
+        e.amount = Math.round(e.dailyRate * workDays * e.totalMonths);
+        renderLaborEntries();
+        updateLaborSummary();
+    }
+
     function updateLaborSummary() {
-        const ohPct = currentLaborPattern?.overheadRate || 76;
-        const tfPct = currentLaborPattern?.techFeeRate || 10;
+        const ohPct = parseFloat(document.getElementById('laborOhInput').value) || 0;
+        const tfPct = parseFloat(document.getElementById('laborTfInput').value) || 0;
         const ohRate = ohPct / 100;
         const tfRate = tfPct / 100;
+
+        // 요약표 라벨 업데이트
+        document.getElementById('laborOhLabel2').textContent = ohPct > 0 ? ohPct : '사용안함';
+        document.getElementById('laborTfLabel2').textContent = tfPct > 0 ? tfPct : '사용안함';
 
         let subtotal = 0;
         laborEntries.forEach(e => { subtotal += e.amount; });
 
-        const overhead = Math.round(subtotal * ohRate);
-        const techFee = Math.round((subtotal + overhead) * tfRate);
+        const overhead = ohPct > 0 ? Math.round(subtotal * ohRate) : 0;
+        const techFee = tfPct > 0 ? Math.round((subtotal + overhead) * tfRate) : 0;
         const total = subtotal + overhead + techFee;
 
         document.getElementById('laborDirectTotal').textContent = formatCurrency(subtotal);
@@ -2356,15 +2385,15 @@
             '<td style="border:1px solid #ccc;padding:5px 8px;"></td></tr>';
         html += '<tr>' +
             '<td style="border:1px solid #ccc;padding:5px 8px;font-weight:600;">제경비</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;">' + ohPct + '%</td>' +
+            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;">' + (ohPct > 0 ? ohPct + '%' : '<span style="color:#aaa;">사용안함</span>') + '</td>' +
             '<td colspan="3" style="border:1px solid #ccc;padding:5px 8px;"></td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:600;">' + formatCurrency(overhead) + '</td>' +
+            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:600;">' + (ohPct > 0 ? formatCurrency(overhead) : '-') + '</td>' +
             '<td style="border:1px solid #ccc;padding:5px 8px;"></td></tr>';
         html += '<tr>' +
             '<td style="border:1px solid #ccc;padding:5px 8px;font-weight:600;">기술료</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;">' + tfPct + '%</td>' +
+            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;">' + (tfPct > 0 ? tfPct + '%' : '<span style="color:#aaa;">사용안함</span>') + '</td>' +
             '<td colspan="3" style="border:1px solid #ccc;padding:5px 8px;"></td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:600;">' + formatCurrency(techFee) + '</td>' +
+            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:600;">' + (tfPct > 0 ? formatCurrency(techFee) : '-') + '</td>' +
             '<td style="border:1px solid #ccc;padding:5px 8px;"></td></tr>';
         html += '</tbody></table>';
 
@@ -2391,16 +2420,16 @@
             return;
         }
 
-        const ohRate = (currentLaborPattern?.overheadRate || 76) / 100;
-        const tfRate = (currentLaborPattern?.techFeeRate || 10) / 100;
-        const ohPct = currentLaborPattern?.overheadRate || 76;
-        const tfPct = currentLaborPattern?.techFeeRate || 10;
+        const ohPct = parseFloat(document.getElementById('laborOhInput').value) || 0;
+        const tfPct = parseFloat(document.getElementById('laborTfInput').value) || 0;
+        const ohRate = ohPct / 100;
+        const tfRate = tfPct / 100;
 
         let subtotal = 0;
         laborEntries.forEach(e => { subtotal += e.amount; });
 
-        const overhead = Math.round(subtotal * ohRate);
-        const techFee = Math.round((subtotal + overhead) * tfRate);
+        const overhead = ohPct > 0 ? Math.round(subtotal * ohRate) : 0;
+        const techFee = tfPct > 0 ? Math.round((subtotal + overhead) * tfRate) : 0;
         const total = subtotal + overhead + techFee;
 
         // Build specification text (인건비 내역)
@@ -2410,8 +2439,8 @@
             spec += '  - ' + e.gradeName + ' : ' + formatCurrency(e.dailyRate) + '원/일 × ' + e.people + '인 × ' + e.months + '개월 (총 ' + e.totalMonths + 'M/M) = ' + formatCurrency(e.amount) + '원' + (e.remarks ? ' [' + e.remarks + ']' : '') + '\n';
         });
         spec += '  소 계: ' + formatCurrency(subtotal) + '원\n';
-        spec += '  제경비(소계의 ' + ohPct + '%): ' + formatCurrency(overhead) + '원\n';
-        spec += '  기술료((소계+제경비)의 ' + tfPct + '%): ' + formatCurrency(techFee) + '원\n';
+        if (ohPct > 0) spec += '  제경비(소계의 ' + ohPct + '%): ' + formatCurrency(overhead) + '원\n';
+        if (tfPct > 0) spec += '  기술료((소계+제경비)의 ' + tfPct + '%): ' + formatCurrency(techFee) + '원\n';
         spec += '  합계: ' + formatCurrency(total) + '원';
 
         // 기술지원내역 (subItems)

@@ -12,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,18 +26,10 @@ public class DocumentService {
     @Autowired private DocumentSignatureRepository documentSignatureRepository;
     @Autowired private InspectChecklistRepository inspectChecklistRepository;
     @Autowired private InspectIssueRepository inspectIssueRepository;
-    @Autowired private ContractRepository contractRepository;
     @Autowired private InfraRepository infraRepository;
 
-    // === 문서번호 자동 채번 ===
-
-    public String generateDocNo() {
-        int year = LocalDate.now().getYear();
-        String prefix = "(주)정도UIT " + year + "-";
-        Integer maxSeq = documentRepository.findMaxDocNoSeq(prefix + "%");
-        int nextSeq = (maxSeq != null ? maxSeq : 0) + 1;
-        return prefix + String.format("%03d", nextSeq) + "호";
-    }
+    // === 문서번호: 수동입력 (타부서에서 부여) ===
+    // generateDocNo() 삭제됨 - 문서번호는 비워두고 사용자가 직접 입력
 
     // === CRUD ===
 
@@ -72,12 +63,6 @@ public class DocumentService {
                 .stream().map(DocumentDTO::fromEntity).collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<DocumentDTO> getDocumentsByContract(Integer contractId) {
-        return documentRepository.findByContract_ContractIdOrderByCreatedAtDesc(contractId)
-                .stream().map(DocumentDTO::fromEntity).collect(Collectors.toList());
-    }
-
     /**
      * 문서 생성
      */
@@ -85,7 +70,7 @@ public class DocumentService {
                                     Integer contractId, Integer planId,
                                     String title, User author) {
         Document doc = new Document();
-        doc.setDocNo(generateDocNo());
+        // 문서번호는 비워둠 (수동입력)
         doc.setDocType(docType);
         doc.setSysType(sysType);
         doc.setTitle(title);
@@ -94,9 +79,6 @@ public class DocumentService {
 
         if (infraId != null) {
             doc.setInfra(infraRepository.findById(infraId).orElse(null));
-        }
-        if (contractId != null) {
-            doc.setContract(contractRepository.findById(contractId).orElse(null));
         }
 
         Document saved = documentRepository.save(doc);
@@ -131,21 +113,12 @@ public class DocumentService {
     }
 
     /**
-     * 문서 상태 변경
+     * 문서 상태 변경 (DRAFT ↔ COMPLETED 만 지원)
      */
     public Document changeStatus(Integer docId, String newStatus, User actor, String comment) {
         Document doc = getDocumentById(docId);
         String oldStatus = doc.getStatus();
         doc.setStatus(newStatus);
-
-        if ("APPROVED".equals(newStatus)) {
-            doc.setApprover(actor);
-            doc.setApprovedAt(LocalDateTime.now());
-        }
-        if ("REJECTED".equals(newStatus)) {
-            // 반려 시 DRAFT로 복귀 가능하도록
-            doc.setApprover(actor);
-        }
 
         recordHistory(doc, "STATUS_CHANGE", "status", oldStatus, newStatus, actor, comment);
         return documentRepository.save(doc);

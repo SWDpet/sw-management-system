@@ -464,10 +464,12 @@
                     <div class="fg">
                         <label>재경비율 (%)</label>
                         <input type="number" id="mOverheadRate" step="0.01" value="110" placeholder="110">
+                        <label style="font-size:0.82em;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;color:#666;white-space:nowrap;"><input type="checkbox" id="mOverheadDisabled"> 사용안함</label>
                     </div>
                     <div class="fg">
                         <label>기술료율 (%)</label>
                         <input type="number" id="mTechFeeRate" step="0.01" value="20" placeholder="20">
+                        <label style="font-size:0.82em;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;color:#666;white-space:nowrap;"><input type="checkbox" id="mTechFeeDisabled"> 사용안함</label>
                     </div>
                 </div>
                 <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:0.8rem;color:#1e40af;line-height:1.6;">
@@ -598,7 +600,6 @@
         const calcType = document.getElementById('mCalcType').value;
         const isLabor = (calcType === 'LABOR');
         document.getElementById('laborFields').style.display = isLabor ? 'block' : 'none';
-        // 인건비 자동계산 시 하위항목은 자동생성되므로 안내 표시
         const subItems = document.getElementById('mSubItems');
         if (isLabor) {
             subItems.placeholder = '인건비 자동계산 패턴에서는 견적서 작성 시\n기술등급·투입일수 기반으로 내용이 자동 생성됩니다.\n\n필요 시 여기에 추가 항목을 입력할 수 있습니다.';
@@ -606,6 +607,20 @@
             subItems.placeholder = '줄바꿈으로 구분하여 입력\n예:\n- 제품명 : GeoNURIS for KRAS v1.0\n- GeoNURIS Desktop 1식\n- 유지보수 기간 : 2026년 1월 1일~ 12월 31일';
         }
     }
+
+    // 사용안함 체크박스 토글
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('mOverheadDisabled').addEventListener('change', function() {
+            var inp = document.getElementById('mOverheadRate');
+            if (this.checked) { inp.dataset.backup = inp.value; inp.value = ''; inp.disabled = true; inp.style.background = '#f0f0f0'; }
+            else { inp.value = inp.dataset.backup || 110; inp.disabled = false; inp.style.background = ''; }
+        });
+        document.getElementById('mTechFeeDisabled').addEventListener('change', function() {
+            var inp = document.getElementById('mTechFeeRate');
+            if (this.checked) { inp.dataset.backup = inp.value; inp.value = ''; inp.disabled = true; inp.style.background = '#f0f0f0'; }
+            else { inp.value = inp.dataset.backup || 20; inp.disabled = false; inp.style.background = ''; }
+        });
+    });
 
     // Modal
     function openModal(pattern) {
@@ -620,8 +635,16 @@
             document.getElementById('mUnit').value = pattern.defaultUnit || '식';
             document.getElementById('mPrice').value = pattern.defaultUnitPrice || 0;
             document.getElementById('mCalcType').value = pattern.calcType || 'NORMAL';
-            document.getElementById('mOverheadRate').value = pattern.overheadRate || 110;
-            document.getElementById('mTechFeeRate').value = pattern.techFeeRate || 20;
+            var ohOff = (pattern.overheadRate === 0);
+            document.getElementById('mOverheadDisabled').checked = ohOff;
+            document.getElementById('mOverheadRate').value = ohOff ? '' : (pattern.overheadRate != null ? pattern.overheadRate : 110);
+            document.getElementById('mOverheadRate').disabled = ohOff;
+            document.getElementById('mOverheadRate').style.background = ohOff ? '#f0f0f0' : '';
+            var tfOff = (pattern.techFeeRate === 0);
+            document.getElementById('mTechFeeDisabled').checked = tfOff;
+            document.getElementById('mTechFeeRate').value = tfOff ? '' : (pattern.techFeeRate != null ? pattern.techFeeRate : 20);
+            document.getElementById('mTechFeeRate').disabled = tfOff;
+            document.getElementById('mTechFeeRate').style.background = tfOff ? '#f0f0f0' : '';
             document.getElementById('mSubItems').value = pattern.subItems || '';
             document.getElementById('mDesc').value = pattern.description || '';
         } else {
@@ -635,7 +658,11 @@
             document.getElementById('mPrice').value = 0;
             document.getElementById('mCalcType').value = 'NORMAL';
             document.getElementById('mOverheadRate').value = 110;
+            document.getElementById('mOverheadRate').disabled = false;
+            document.getElementById('mOverheadDisabled').checked = false;
             document.getElementById('mTechFeeRate').value = 20;
+            document.getElementById('mTechFeeRate').disabled = false;
+            document.getElementById('mTechFeeDisabled').checked = false;
             document.getElementById('mSubItems').value = '';
             document.getElementById('mDesc').value = '';
         }
@@ -670,8 +697,8 @@
             defaultUnit: unit,
             defaultUnitPrice: parseInt(document.getElementById('mPrice').value) || 0,
             calcType: calcType,
-            overheadRate: calcType === 'LABOR' ? parseFloat(document.getElementById('mOverheadRate').value) || 110 : 110,
-            techFeeRate: calcType === 'LABOR' ? parseFloat(document.getElementById('mTechFeeRate').value) || 20 : 20,
+            overheadRate: calcType === 'LABOR' ? (document.getElementById('mOverheadDisabled').checked ? 0 : (parseFloat(document.getElementById('mOverheadRate').value) || 110)) : 110,
+            techFeeRate: calcType === 'LABOR' ? (document.getElementById('mTechFeeDisabled').checked ? 0 : (parseFloat(document.getElementById('mTechFeeRate').value) || 20)) : 20,
             subItems: document.getElementById('mSubItems').value,
             description: document.getElementById('mDesc').value.trim(),
             usageCount: 0

@@ -84,10 +84,6 @@ public class DocumentDTO {
         if (doc.getWorkPlan() != null) {
             builder.planId(doc.getWorkPlan().getPlanId());
         }
-        if (doc.getContract() != null) {
-            builder.contractId(doc.getContract().getContractId())
-                   .contractName(doc.getContract().getContractName());
-        }
         if (doc.getProject() != null) {
             builder.projId(doc.getProject().getProjId())
                    .projNm(doc.getProject().getProjNm())
@@ -138,9 +134,7 @@ public class DocumentDTO {
         if (status == null) return "";
         return switch (status) {
             case "DRAFT" -> "작성중";
-            case "SUBMITTED" -> "제출";
-            case "APPROVED" -> "승인";
-            case "REJECTED" -> "반려";
+            case "COMPLETED" -> "작성완료";
             default -> status;
         };
     }
@@ -149,9 +143,7 @@ public class DocumentDTO {
         if (status == null) return "#858796";
         return switch (status) {
             case "DRAFT" -> "#858796";
-            case "SUBMITTED" -> "#4e73df";
-            case "APPROVED" -> "#1cc88a";
-            case "REJECTED" -> "#e74a3b";
+            case "COMPLETED" -> "#1cc88a";
             default -> "#858796";
         };
     }

@@ -1,6 +1,7 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.SwProject;
+import com.swmanager.system.domain.PjtEquip;
 import com.swmanager.system.service.SwService;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.repository.*;
@@ -26,11 +27,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.transaction.Transactional;
+
 import java.beans.PropertyEditorSupport;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SW 프로젝트 관리 Controller
@@ -50,6 +54,7 @@ public class SwController {
     @Autowired private PrjTypesRepository prjTypesRepository;
     @Autowired private MaintTpMstRepository maintTpRepository;
     @Autowired private ContStatMstRepository contStatRepository;
+    @Autowired private PjtEquipRepository pjtEquipRepository;
 
     // ===== 날짜 형식 바인더 (다양한 형식 수용) =====
 
@@ -327,5 +332,55 @@ public class SwController {
         swService.delete(id);
         log.warn("프로젝트 API 삭제 완료 - ID: {}, 사용자: {}", id, cu.getUsername());
         return ResponseEntity.ok(ApiResponse.success("삭제 성공"));
+    }
+
+    // ===== 장비(HW/SW) 관리 API =====
+
+    @GetMapping("/api/equip/{projId}")
+    @ResponseBody
+    public ResponseEntity<?> getEquipList(@PathVariable Long projId) {
+        List<PjtEquip> list = pjtEquipRepository.findByProject_ProjIdOrderBySortOrder(projId);
+        return ResponseEntity.ok(list.stream().map(e -> Map.of(
+                "equipId", e.getEquipId(),
+                "equipType", e.getEquipType(),
+                "equipName", e.getEquipName(),
+                "spec", e.getSpec() != null ? e.getSpec() : "",
+                "unitPrice", e.getUnitPrice() != null ? e.getUnitPrice() : 0,
+                "quantity", e.getQuantity() != null ? e.getQuantity() : 1,
+                "remark", e.getRemark() != null ? e.getRemark() : "",
+                "sortOrder", e.getSortOrder() != null ? e.getSortOrder() : 0
+        )).toList());
+    }
+
+    @PostMapping("/api/equip/{projId}")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<?> saveEquipList(@PathVariable Long projId, @RequestBody List<Map<String, Object>> items) {
+        CustomUserDetails cu = getCurrentUser();
+        if (cu == null) return ResponseEntity.status(401).body(Map.of("error", "로그인 필요"));
+
+        SwProject project = swService.getProject(projId);
+        if (project == null) return ResponseEntity.status(404).body(Map.of("error", "사업 없음"));
+
+        // 기존 삭제 후 재입력
+        pjtEquipRepository.deleteByProject_ProjId(projId);
+        pjtEquipRepository.flush();
+
+        int order = 0;
+        for (Map<String, Object> item : items) {
+            PjtEquip eq = new PjtEquip();
+            eq.setProject(project);
+            eq.setEquipType((String) item.get("equipType"));
+            eq.setEquipName((String) item.get("equipName"));
+            eq.setSpec(item.get("spec") != null ? item.get("spec").toString() : null);
+            eq.setUnitPrice(item.get("unitPrice") != null ? Long.valueOf(item.get("unitPrice").toString()) : 0L);
+            eq.setQuantity(item.get("quantity") != null ? Integer.valueOf(item.get("quantity").toString()) : 1);
+            eq.setRemark(item.get("remark") != null ? item.get("remark").toString() : null);
+            eq.setSortOrder(order++);
+            pjtEquipRepository.save(eq);
+        }
+
+        log.info("장비 목록 저장 - projId: {}, 건수: {}", projId, items.size());
+        return ResponseEntity.ok(Map.of("success", true, "count", items.size()));
     }
 }

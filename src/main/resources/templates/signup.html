@@ -35,11 +35,74 @@
             <label>팀명</label>
             <input type="text" name="teamNm" placeholder="예: 운영팀">
 
-            <label>연락처</label>
-            <input type="text" name="tel" placeholder="010-0000-0000">
+            <label>연락처 (일반전화)</label>
+            <input type="text" name="tel" placeholder="02-0000-0000">
+
+            <label>휴대전화</label>
+            <input type="text" name="mobile" placeholder="010-0000-0000">
 
             <label>이메일</label>
             <input type="email" name="email" placeholder="email@example.com">
+
+            <label>직급</label>
+            <input type="text" name="positionTitle" placeholder="예: 과장, 대리">
+
+            <label>주소</label>
+            <input type="text" name="address" placeholder="예: 서울시 강남구 ...">
+
+            <label>주민번호</label>
+            <input type="text" name="ssn" placeholder="예: 770914-1234567" maxlength="14">
+
+            <label>자격증</label>
+            <input type="text" name="certificate" placeholder="예: 정보처리기사, 측량기능사 (콤마 구분)">
+
+            <label>기술등급</label>
+            <input type="text" name="techGrade" placeholder="예: 초급, 중급, 고급, 특급">
+
+            <label>업무 (다중 입력 - 엔터로 추가)</label>
+            <div id="signupTasksBox" style="border:1px solid #ced4da; border-radius:5px; padding:6px; min-height:38px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text;"
+                 onclick="document.getElementById('signupTasksInput').focus();">
+                <input type="text" id="signupTasksInput" placeholder="예: GIS SW 유지보수" style="border:none; outline:none; flex:1; min-width:160px; padding:4px;">
+            </div>
+            <input type="hidden" name="tasks" id="signupTasksHidden">
+            <script th:inline="none">
+            (function(){
+                var box=document.getElementById('signupTasksBox'),inp=document.getElementById('signupTasksInput'),hid=document.getElementById('signupTasksHidden');
+                function render(arr){
+                    Array.from(box.querySelectorAll('.chip')).forEach(function(c){c.remove();});
+                    arr.forEach(function(t){
+                        var c=document.createElement('span');
+                        c.className='chip';
+                        c.style.cssText='background:#e3f2fd;color:#1565c0;padding:3px 8px;border-radius:12px;font-size:0.85em;display:inline-flex;align-items:center;gap:4px;';
+                        c.innerHTML=t+' <span style="cursor:pointer;font-weight:bold;" onclick="event.stopPropagation();this.parentNode.remove();window.__sgRefresh();">×</span>';
+                        c.dataset.val=t;
+                        box.insertBefore(c,inp);
+                    });
+                }
+                window.__sgRefresh=function(){
+                    var arr=[];
+                    Array.from(box.querySelectorAll('.chip')).forEach(function(c){arr.push(c.dataset.val);});
+                    hid.value=arr.join(',');
+                };
+                inp.addEventListener('keydown',function(e){
+                    if(e.key==='Enter'||e.key===','){
+                        e.preventDefault();
+                        var v=inp.value.trim().replace(/,$/,'');
+                        if(!v) return;
+                        var arr=hid.value?hid.value.split(','):[];
+                        if(arr.indexOf(v)===-1) arr.push(v);
+                        hid.value=arr.join(',');
+                        render(arr);
+                        inp.value='';
+                    }else if(e.key==='Backspace'&&!inp.value){
+                        var arr=hid.value?hid.value.split(','):[];
+                        arr.pop();
+                        hid.value=arr.join(',');
+                        render(arr);
+                    }
+                });
+            })();
+            </script>
 
             <button type="submit">가입 승인 요청</button>
         </form>

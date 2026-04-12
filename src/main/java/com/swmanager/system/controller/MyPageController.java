@@ -94,7 +94,14 @@ public class MyPageController {
             @RequestParam("deptNm") String deptNm,
             @RequestParam("teamNm") String teamNm,
             @RequestParam("tel") String tel,
+            @RequestParam(value = "mobile", required = false) String mobile,
             @RequestParam("email") String email,
+            @RequestParam(value = "positionTitle", required = false) String positionTitle,
+            @RequestParam(value = "address", required = false) String address,
+            @RequestParam(value = "ssn", required = false) String ssn,
+            @RequestParam(value = "certificate", required = false) String certificate,
+            @RequestParam(value = "techGrade", required = false) String techGrade,
+            @RequestParam(value = "tasks", required = false) String tasks,
             RedirectAttributes rttr) {
 
         log.info("개인정보 수정 요청");
@@ -112,7 +119,14 @@ public class MyPageController {
         user.setDeptNm(deptNm);
         user.setTeamNm(teamNm);
         user.setTel(tel);
+        user.setMobile(mobile);
         user.setEmail(email);
+        user.setPositionTitle(positionTitle);
+        user.setAddress(address);
+        user.setSsn(ssn);
+        user.setCertificate(certificate);
+        user.setTechGrade(techGrade);
+        user.setTasks(tasks);
         // 권한(authDashboard, authProject, authPerson)은 관리자만 변경 가능 — 사용자 입력 무시
 
         // 관리자는 즉시 수정, 일반 사용자는 재승인 요청(비활성화)

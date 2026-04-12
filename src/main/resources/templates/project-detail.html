@@ -237,7 +237,7 @@
             <div class="form-row">
                 <div class="form-group"><label>예산금액</label><input type="number" th:field="*{budgAmt}" readonly></div>
                 <div class="form-group"><label>계약금액</label><input type="number" th:field="*{contAmt}" readonly></div>
-                <div class="form-group"><label>계약요율(%)</label><input type="number" step="0.01" th:field="*{contRt}" readonly></div>
+                <div class="form-group"><label>낙찰율(%)</label><input type="number" step="0.01" th:field="*{contRt}" readonly></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>SW요율(%)</label><input type="number" step="0.01" th:field="*{swRt}" readonly></div>
@@ -254,20 +254,36 @@
             <div class="form-row">
                 <div class="form-group"><label>외주금액</label><input type="number" th:field="*{outscrAmt}" readonly></div>
                 <div class="form-group">
-                    <label>기성신청</label>
+                    <label>청구여부</label>
                     <select id="payProgYn" th:field="*{payProgYn}" disabled onchange="togglePayProgFr()">
                         <option value="Y">Y</option>
                         <option value="N">N</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>기성형태</label>
+                    <label>청구형태</label>
                     <select id="payProgFr" th:field="*{payProgFr}" disabled>
                         <option value="">-- 선택 --</option>
                         <option value="월">월</option>
                         <option value="격월">격월</option>
                         <option value="분기">분기</option>
                         <option value="반기">반기</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>기성계 대상</label>
+                    <select th:field="*{interimYn}" disabled>
+                        <option value="Y">Y</option>
+                        <option value="N">N</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>준공계 대상</label>
+                    <select th:field="*{completionYn}" disabled>
+                        <option value="Y">Y</option>
+                        <option value="N">N</option>
                     </select>
                 </div>
             </div>
@@ -427,7 +443,7 @@ function mapSysMst() {
     document.getElementById('sysNmEn').value = (opt && opt.dataset.cd) ? opt.dataset.cd : '';
 }
 
-// ── 기성신청 Y/N ──────────────────────────────────────────────
+// ── 청구여부 Y/N ──────────────────────────────────────────────
 function togglePayProgFr() {
     const yn = document.getElementById('payProgYn');
     const fr = document.getElementById('payProgFr');

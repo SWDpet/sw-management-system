@@ -85,6 +85,7 @@ public class WorkPlanDTO {
             case "SUPPORT": return "#6a1b9a";       // 보라
             case "SETTLE": return "#5c6bc0";        // 인디고
             case "COMPLETE": return "#37474f";       // 다크
+            case "ETC": return "#795548";            // 브라운
             default: return "#858796";
         }
     }
@@ -103,7 +104,8 @@ public class WorkPlanDTO {
             case "FAULT": return "장애처리";
             case "SUPPORT": return "업무지원";
             case "SETTLE": return "기성/준공";
-            case "COMPLETE": return "정산";
+            case "COMPLETE": return "준공";
+            case "ETC": return "기타";
             default: return planType;
         }
     }

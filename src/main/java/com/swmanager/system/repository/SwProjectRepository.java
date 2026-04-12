@@ -122,4 +122,40 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
     @Query("SELECT DISTINCT p.cityNm, p.distNm FROM SwProject p " +
            "WHERE p.year = :year ORDER BY p.cityNm, p.distNm")
     List<Object[]> findDistinctCityDistByYear(@Param("year") Integer year);
+
+    /**
+     * 연도별 시도(cityNm) 목록
+     */
+    @Query("SELECT DISTINCT p.cityNm FROM SwProject p " +
+           "WHERE p.year = :year AND p.cityNm IS NOT NULL ORDER BY p.cityNm")
+    List<String> findDistinctCityNmByYear(@Param("year") Integer year);
+
+    /**
+     * 연도+시도별 시군구(distNm) 목록
+     */
+    @Query("SELECT DISTINCT p.distNm FROM SwProject p " +
+           "WHERE p.year = :year AND p.cityNm = :cityNm AND p.distNm IS NOT NULL " +
+           "ORDER BY p.distNm")
+    List<String> findDistinctDistNmByYearAndCityNm(
+            @Param("year") Integer year, @Param("cityNm") String cityNm);
+
+    /**
+     * 기성계 대상 사업: pay_prog_yn = 'Y' (레거시)
+     */
+    List<SwProject> findByYearAndPayProgYnOrderByCityNmAscDistNmAsc(Integer year, String payProgYn);
+
+    /**
+     * 준공계 대상 사업: comp_yn = 'Y' (레거시)
+     */
+    List<SwProject> findByYearAndCompYnOrderByCityNmAscDistNmAsc(Integer year, String compYn);
+
+    /**
+     * 기성계 대상 사업: interim_yn = 'Y'
+     */
+    List<SwProject> findByYearAndInterimYnOrderByCityNmAscDistNmAsc(Integer year, String interimYn);
+
+    /**
+     * 준공계 대상 사업: completion_yn = 'Y'
+     */
+    List<SwProject> findByYearAndCompletionYnOrderByCityNmAscDistNmAsc(Integer year, String completionYn);
 }

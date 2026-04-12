@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>기성계 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -26,7 +28,8 @@
         .form-table { width: 100%; border-collapse: collapse; }
         .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
         .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
-        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
+        .form-table textarea { height: auto; }
         .form-table textarea { height: 80px; resize: vertical; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
         .required { color: #e74a3b; }
@@ -70,11 +73,14 @@
             <select id="selYear" onchange="onYearChange()" style="width:auto; min-width:100px;">
                 <option value="">연도</option>
             </select>
-            <select id="selCity" onchange="onCityChange()" style="width:auto; min-width:180px;">
+            <select id="selCity" onchange="onCityChange()" style="width:auto; min-width:130px;">
                 <option value="">-- 연도 먼저 선택 --</option>
             </select>
+            <select id="selDist" onchange="onDistChange()" style="width:auto; min-width:130px;">
+                <option value="">-- 시도 먼저 선택 --</option>
+            </select>
             <select id="selSystem" onchange="onSystemChange()" style="width:auto; min-width:130px;">
-                <option value="">-- 지자체 먼저 선택 --</option>
+                <option value="">-- 시군구 먼저 선택 --</option>
             </select>
         </div>
     </td>
@@ -88,11 +94,21 @@
     </td>
 </tr>
                 <tr><th>수신</th><td id="letter_recipient" colspan="3"><input type="text" id="letter_to" placeholder="수신 지자체명 (자동입력)"></td></tr>
-                <tr><th>담당</th><td><input type="text" id="letter_manager" placeholder="담당자명"></td>
+                <tr><th>담당</th><td>
+                        <select id="letter_manager_sel" onchange="fillLetterManager()" style="width:auto; min-width:120px; display:inline-block;">
+                            <option value="">담당자 선택</option>
+                            <option th:each="u : ${users}" th:value="${u.userSeq}"
+                                    th:text="${u.positionTitle != null ? u.positionTitle + ' ' + u.username : u.username}"
+                                    th:data-name="${u.username}"
+                                    th:data-position="${u.positionTitle}"
+                                    th:data-tel="${u.tel}"></option>
+                        </select>
+                        <input type="text" id="letter_manager" placeholder="직위 성명" style="width:50%; display:inline-block; margin-left:4px;">
+                    </td>
                     <th>연락처</th><td><input type="text" id="letter_tel" placeholder="연락처"></td></tr>
-                <tr><th>문서번호</th><td><input type="text" id="letter_docNo" placeholder="자동 채번" readonly style="background:#f0f0f0;"></td>
-                    <th>시행일자</th><td><input type="date" id="letter_date"></td></tr>
-                <tr><th>제목</th><td colspan="3"><input type="text" id="letter_title" placeholder="「연도 용역명」 제 X회 기성계 제출 건 (자동생성)"></td></tr>
+                <tr><th>문서번호</th><td><input type="text" id="letter_docNo" placeholder="(주)정도UIT 2026 – 호 (수동입력)"></td>
+                    <th>시행일자</th><td><input type="text" id="letter_date" placeholder="예) 2026.04.03"></td></tr>
+                <tr><th>제목</th><td colspan="3"><input type="text" id="letter_title" placeholder="「용역명」기성금 신청 건 (자동생성)"></td></tr>
                 <tr><th>본문</th><td colspan="3"><textarea id="letter_body" placeholder="본문 내용"></textarea></td></tr>
             </table>
         </div>
@@ -105,11 +121,17 @@
                 <tr><th>계약금액</th><td><input type="number" id="insp_amount" placeholder="숫자 입력" oninput="updateInspectorAmount()"></td>
                     <th>한글금액</th><td><span class="amount-text" id="insp_amount_kr">금 원정</span></td></tr>
                 <tr><th>계약년월일</th><td><input type="date" id="insp_contract_date"></td>
-                    <th>기성년월일</th><td><input type="date" id="insp_interim_date"></td></tr>
+                    <th>기성년월일</th><td>
+                    <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <input type="number" id="insp_interim_year" min="2000" max="2099" style="width:80px;"> 년
+                        <input type="number" id="insp_interim_month" min="1" max="12" style="width:60px;"> 월
+                        <input type="number" id="insp_interim_day" min="1" max="31" style="width:60px;"> 일
+                    </span>
+                </td></tr>
                 <tr><th>기성기간</th><td><input type="date" id="insp_period_from"></td>
                     <th>~</th><td><input type="date" id="insp_period_to"></td></tr>
                 <tr><th>기성회차</th><td><input type="number" id="insp_payment_round" placeholder="기성회차"></td>
-                    <th>기성금액</th><td><input type="number" id="insp_payment_amount" placeholder="금액"></td></tr>
+                    <th>금회기성금액</th><td><input type="number" id="insp_payment_amount" placeholder="금액"></td></tr>
                 <tr><th>기성율</th><td><input type="number" id="insp_payment_rate" placeholder="%" min="0" max="100" step="0.1"> %</td>
                     <th>수신</th><td><input type="text" id="insp_recipient" placeholder="지자체장 직함 귀하"></td></tr>
             </table>
@@ -117,39 +139,49 @@
 
         <!-- ③ 기성내역서 -->
         <div class="form-section" id="section-2">
-            <h3><i class="fas fa-chart-bar"></i> ③ 기성내역서</h3>
+            <h3><i class="fas fa-file-excel"></i> ③ 기성내역서 (엑셀 출력)</h3>
+
+            <!-- 기본 정보 -->
             <table class="form-table">
-                <tr><th>용역명</th><td colspan="3"><input type="text" id="detail_name" placeholder="용역명 (자동)"></td></tr>
-                <tr><th>기성기간</th><td><input type="date" id="detail_from"></td>
-                    <th>~</th><td><input type="date" id="detail_to"></td></tr>
+                <tr><th>가. 용역명</th><td colspan="3"><input type="text" id="detail_name" placeholder="용역명 (자동)"></td></tr>
+                <tr><th>나. 계약금액</th><td><input type="number" id="detail_contAmt" placeholder="계약금액" onchange="calcInterimPreview()">
+                    <div class="amount-text" id="detail_contAmt_kr"></div></td>
+                    <th>낙찰율(%)</th><td><input type="number" id="detail_bidRate" step="0.01" value="100" style="width:80px;" onchange="calcInterimPreview()"> %</td></tr>
+                <tr><th>다. 선금금액</th><td><input type="number" id="detail_prePay" value="0" placeholder="0" onchange="calcInterimPreview()"></td>
+                    <th>라. 전회기성금액</th><td><input type="number" id="detail_prevAmt" value="0" placeholder="0" onchange="calcInterimPreview()"></td></tr>
+                <tr><th>마. 선급금 정산</th><td><input type="number" id="detail_prePaySettle" value="0" placeholder="0"></td>
+                    <th>사. 수행기간</th><td>
+                        <input type="text" id="detail_periodText" placeholder="예: 2025.01~2025.06(6개월)" style="width:70%;">
+                    </td></tr>
+                <tr><th>기성기간(개월)</th><td><input type="number" id="detail_interimMonths" value="6" min="1" max="12" style="width:60px;" onchange="calcInterimPreview()"> 개월</td>
+                    <th>준공기간(개월)</th><td><input type="number" id="detail_completionMonths" value="6" min="0" max="12" style="width:60px;" onchange="calcInterimPreview()"> 개월</td></tr>
+                <tr><th>전회 기성 비율(%)</th><td colspan="3"><input type="number" id="detail_prevRate" value="0" step="0.1" min="0" max="100" style="width:80px;" onchange="calcInterimPreview()"> %
+                    <span class="help-text">금회 기성 비율은 기성검사원의 기성율을 사용합니다.</span></td></tr>
             </table>
-            <p style="margin-top:12px; font-weight:600; font-size:0.88em;">기성내역 상세</p>
-            <table class="dynamic-table" id="detailTable">
-                <thead><tr><th>항목명</th><th>계약금액</th><th>기성율(%)</th><th>기성금액</th><th></th></tr></thead>
-                <tbody id="detailBody">
-                    <tr>
-                        <td><input type="text"></td>
-                        <td><input type="number"></td>
-                        <td><input type="number" min="0" max="100" step="0.1"></td>
-                        <td><input type="number" readonly style="background:#f0f0f0;"></td>
-                        <td><button class="btn-del-row" onclick="this.closest('tr').remove()">×</button></td>
-                    </tr>
-                </tbody>
+
+            <!-- SW 항목 (프로젝트 장비에서 자동 로드) -->
+            <div style="margin:20px 0 8px; font-weight:700; color:#e74a3b;">◎ 유지보수 항목
+                <button type="button" onclick="addInterimItemRow()" style="margin-left:15px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                <span class="help-text" style="margin-left:10px;">사업 선택 시 장비 자동 로드</span>
+            </div>
+            <table class="dynamic-table" id="interimItemTable">
+                <thead><tr>
+                    <th style="width:30px;">No</th>
+                    <th>구분</th>
+                    <th style="width:140px;">도입가(VAT포함)</th>
+                    <th style="width:40px;"></th>
+                </tr></thead>
+                <tbody id="interimItemBody"></tbody>
             </table>
-            <button class="btn-add-row" onclick="addDetailRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
-            <table class="dynamic-table" style="margin-top:12px;">
-                <tr style="font-weight:600; background:#f0f0f0;">
-                    <td style="text-align:right;">합계</td>
-                    <td><input type="number" id="detail_total_amount" readonly style="background:#f0f0f0;"></td>
-                    <td id="detail_total_rate" style="text-align:center;">-</td>
-                    <td><input type="number" id="detail_total_payment" readonly style="background:#f0f0f0;"></td>
-                    <td></td>
-                </tr>
-            </table>
+
         </div>
     </div>
 
-    <script>
+    <script th:if="${existingDoc != null}" th:inline="javascript">
+        window.__existingDoc = /*[[${existingDoc}]]*/ null;
+    </script>
+
+    <script th:inline="none">
         function showSection(idx, btn) {
             document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
             document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
@@ -157,33 +189,69 @@
             btn.classList.add('active');
         }
 
-        function addDetailRow() {
-            var html = '<tr><td><input type="text"></td><td><input type="number"></td>' +
-                '<td><input type="number" min="0" max="100" step="0.1"></td>' +
-                '<td><input type="number" readonly style="background:#f0f0f0;"></td>' +
-                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove(); updateDetailTotals()">×</button></td></tr>';
-            document.getElementById('detailBody').insertAdjacentHTML('beforeend', html);
+        function addInterimItemRow(data) {
+            var tbody = document.getElementById('interimItemBody');
+            var n = tbody.rows.length + 1;
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td>' + n + '</td>' +
+                '<td><input type="text" class="ii-name" value="' + (data ? data.equipName || '' : '') + '"></td>' +
+                '<td><input type="number" class="ii-price" value="' + (data ? data.unitPrice || '' : '') + '" onchange="calcInterimPreview()"></td>' +
+                '<td><button type="button" class="btn-del-row" onclick="this.closest(\'tr\').remove();renumberInterimItems();calcInterimPreview();">×</button></td>';
+            tbody.appendChild(tr);
+            calcInterimPreview();
+        }
+
+        function renumberInterimItems() {
+            var rows = document.getElementById('interimItemBody').rows;
+            for (var i = 0; i < rows.length; i++) rows[i].cells[0].textContent = i + 1;
+        }
+
+        function loadInterimEquipFromProject(projId) {
+            if (!projId) return;
+            document.getElementById('interimItemBody').innerHTML = '';
+            fetch('/projects/api/equip/' + projId)
+            .then(function(r) { return r.json(); })
+            .then(function(list) {
+                list.forEach(function(item) {
+                    if (item.equipType === 'SW') {
+                        addInterimItemRow({
+                            equipName: item.equipName,
+                            unitPrice: item.unitPrice,
+                            rate: 12
+                        });
+                    }
+                });
+                calcInterimPreview();
+            });
+        }
+
+        function calcInterimPreview() {
+            // 계약금액 한글 표기만 갱신
+            var contAmt = parseInt(document.getElementById('detail_contAmt').value) || 0;
+            document.getElementById('detail_contAmt_kr').textContent = contAmt > 0 ?
+                '금' + Number(contAmt).toLocaleString() + '원(금' + convertToKorean(contAmt) + '원)' : '';
+        }
+
+        function collectInterimItems() {
+            var items = [];
+            var rows = document.getElementById('interimItemBody').rows;
+            for (var i = 0; i < rows.length; i++) {
+                var r = rows[i];
+                var name = r.querySelector('.ii-name').value.trim();
+                if (!name) continue;
+                items.push({
+                    name: name,
+                    unitPrice: parseInt(r.querySelector('.ii-price').value) || 0
+                });
+            }
+            return items;
         }
 
         function updateInspectorAmount() {
             var num = parseInt(document.getElementById('insp_amount').value) || 0;
-            document.getElementById('insp_amount_kr').textContent = '금 ' + convertToKorean(num) + '원정';
-        }
-
-        function updateDetailTotals() {
-            var rows = document.querySelectorAll('#detailBody tr');
-            var totalAmount = 0, totalPayment = 0;
-            rows.forEach(function(row) {
-                var cells = row.cells;
-                var amount = parseFloat(cells[1].querySelector('input').value) || 0;
-                var rate = parseFloat(cells[2].querySelector('input').value) || 0;
-                var payment = amount * rate / 100;
-                totalAmount += amount;
-                totalPayment += payment;
-                cells[3].querySelector('input').value = payment.toFixed(0);
-            });
-            document.getElementById('detail_total_amount').value = totalAmount.toFixed(0);
-            document.getElementById('detail_total_payment').value = totalPayment.toFixed(0);
+            var formatted = Number(num).toLocaleString();
+            document.getElementById('insp_amount_kr').textContent = '금' + formatted + '원(금' + convertToKorean(num) + '원)';
         }
 
         function convertToKorean(num) {
@@ -210,6 +278,19 @@
 
         // === 3단계 사업 선택 ===
         (function() {
+            // 문서번호·시행일자 자동 세팅
+            var now = new Date();
+            var yyyy = now.getFullYear();
+            var mm = String(now.getMonth() + 1).padStart(2, '0');
+            var docNoField = document.getElementById('letter_docNo');
+            if (docNoField && !docNoField.value) {
+                docNoField.value = '(주)정도UIT ' + yyyy + ' – 호';
+            }
+            var dateField = document.getElementById('letter_date');
+            if (dateField && !dateField.value) {
+                dateField.value = yyyy + '.' + mm + '.';
+            }
+
             fetch('/document/api/project-years')
                 .then(function(r) { return r.json(); })
                 .then(function(years) {
@@ -219,48 +300,168 @@
                         opt.value = y; opt.textContent = y + '년';
                         sel.appendChild(opt);
                     });
+                    // 기성년월일 당해년도 자동
+                    var yEl = document.getElementById('insp_interim_year');
+                    if (yEl && !yEl.value) yEl.value = new Date().getFullYear();
+                    if (window.__existingDoc) hydrateExistingDoc(window.__existingDoc);
                 });
         })();
+
+        function setVal(id, value) {
+            var el = document.getElementById(id);
+            if (el && value != null) {
+                if (el.type === 'checkbox') el.checked = !!value;
+                else el.value = value;
+            }
+        }
+
+        function hydrateExistingDoc(doc) {
+            if (!doc.projYear) { fillSections(doc.sections || {}); return; }
+            document.getElementById('selYear').value = doc.projYear;
+            fetch('/document/api/project-cities?year=' + doc.projYear)
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    var sel = document.getElementById('selCity');
+                    sel.innerHTML = '<option value="">시도 선택</option>';
+                    list.forEach(function(c) { var o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+                    if (doc.projCityNm) { sel.value = doc.projCityNm;
+                        return fetch('/document/api/project-districts?year=' + doc.projYear + '&cityNm=' + encodeURIComponent(doc.projCityNm)); }
+                })
+                .then(function(r) { return r ? r.json() : null; })
+                .then(function(list) {
+                    if (!list) return;
+                    var sel = document.getElementById('selDist');
+                    sel.innerHTML = '<option value="">시군구 선택</option>';
+                    list.forEach(function(d) { var o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
+                    if (doc.projDistNm) { sel.value = doc.projDistNm;
+                        return fetch('/document/api/project-systems?year=' + doc.projYear + '&cityNm=' + encodeURIComponent(doc.projCityNm) + '&distNm=' + encodeURIComponent(doc.projDistNm)); }
+                })
+                .then(function(r) { return r ? r.json() : null; })
+                .then(function(list) {
+                    if (!list) return;
+                    var sel = document.getElementById('selSystem');
+                    sel.innerHTML = '<option value="">시스템 선택</option>';
+                    list.forEach(function(s) { var o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+                    if (doc.projSysNmEn) { sel.value = doc.projSysNmEn;
+                        return fetch('/document/api/projects?year=' + doc.projYear + '&cityNm=' + encodeURIComponent(doc.projCityNm) + '&distNm=' + encodeURIComponent(doc.projDistNm) + '&sysNmEn=' + encodeURIComponent(doc.projSysNmEn)); }
+                })
+                .then(function(r) { return r ? r.json() : null; })
+                .then(function(list) {
+                    if (!list) return;
+                    var sel = document.getElementById('projId');
+                    sel.innerHTML = '<option value="">사업 선택</option>';
+                    list.forEach(function(p) { var o = document.createElement('option'); o.value = p.projId; o.textContent = (p.projNm || p.sysNm || '') + (p.contAmt ? ' (' + Number(p.contAmt).toLocaleString() + '원)' : ''); sel.appendChild(o); });
+                    if (doc.projId) {
+                        sel.value = doc.projId;
+                        if (typeof loadProjectInfo === 'function') {
+                            Promise.resolve(loadProjectInfo()).then(function() { setTimeout(function() { fillSections(doc.sections || {}); }, 600); });
+                            return;
+                        }
+                    }
+                    fillSections(doc.sections || {});
+                });
+        }
+
+        function fillSections(sections) {
+            var l = sections.letter || {};
+            setVal('letter_docNo', l.docNo); setVal('letter_to', l.to); setVal('letter_manager', l.manager);
+            setVal('letter_tel', l.tel); setVal('letter_date', l.date); setVal('letter_title', l.title); setVal('letter_body', l.body);
+
+            var i = sections.inspector || {};
+            setVal('insp_name', i.name); setVal('insp_amount', i.amount);
+            setVal('insp_contract_date', i.contractDate);
+            // 기성년월일 (분리 저장)
+            if (i.interimYear || i.interimMonth || i.interimDay) {
+                setVal('insp_interim_year', i.interimYear);
+                setVal('insp_interim_month', i.interimMonth);
+                setVal('insp_interim_day', i.interimDay);
+            } else if (i.interimDate) {
+                var mm = String(i.interimDate).match(/(\d{4})\D+(\d{1,2})\D+(\d{0,2})/);
+                if (mm) {
+                    setVal('insp_interim_year', mm[1]);
+                    setVal('insp_interim_month', mm[2]);
+                    var dv = parseInt(mm[3], 10); setVal('insp_interim_day', (mm[3] && !isNaN(dv) && dv > 0) ? dv : '');
+                }
+            }
+            setVal('insp_period_from', i.periodFrom); setVal('insp_period_to', i.periodTo);
+            setVal('insp_payment_round', i.paymentRound); setVal('insp_payment_amount', i.paymentAmount);
+            setVal('insp_payment_rate', i.paymentRate); setVal('insp_recipient', i.recipient);
+
+            var d = sections.detail_sheet || {};
+            setVal('detail_name', d.name); setVal('detail_contAmt', d.contAmt);
+            setVal('detail_bidRate', d.bidRate); setVal('detail_prePay', d.prePay);
+            setVal('detail_prevAmt', d.prevAmt); setVal('detail_prePaySettle', d.prePaySettle);
+            setVal('detail_periodText', d.periodText);
+            setVal('detail_interimMonths', d.interimMonths); setVal('detail_prevRate', d.prevRate);
+            setVal('detail_completionMonths', d.completionMonths);
+            if (Array.isArray(d.items)) {
+                document.getElementById('interimItemBody').innerHTML = '';
+                d.items.forEach(function(it) {
+                    addInterimItemRow({ equipName: it.name || it.equipName || '', unitPrice: it.unitPrice });
+                });
+                calcInterimPreview();
+            }
+        }
 
         function onYearChange() {
             var year = document.getElementById('selYear').value;
             var citySel = document.getElementById('selCity');
+            var distSel = document.getElementById('selDist');
             var sysSel = document.getElementById('selSystem');
             var projSel = document.getElementById('projId');
             citySel.innerHTML = '<option value="">불러오는 중...</option>';
-            sysSel.innerHTML = '<option value="">-- 지자체 먼저 선택 --</option>';
+            distSel.innerHTML = '<option value="">-- 시도 먼저 선택 --</option>';
+            sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>';
             projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
             document.getElementById('projHint').textContent = '';
             if (!year) { citySel.innerHTML = '<option value="">-- 연도 먼저 선택 --</option>'; return; }
             fetch('/document/api/project-cities?year=' + year)
                 .then(function(r) { return r.json(); })
                 .then(function(list) {
-                    citySel.innerHTML = '<option value="">지자체 선택</option>';
+                    citySel.innerHTML = '<option value="">시도 선택</option>';
                     list.forEach(function(c) {
                         var opt = document.createElement('option');
-                        opt.value = c.cityNm + '|' + c.distNm;
-                        opt.textContent = c.label;
-                        opt.dataset.city = c.cityNm;
-                        opt.dataset.dist = c.distNm;
+                        opt.value = c; opt.textContent = c;
                         citySel.appendChild(opt);
                     });
                 });
         }
 
         function onCityChange() {
-            var citySel = document.getElementById('selCity');
-            var opt = citySel.options[citySel.selectedIndex];
+            var year = document.getElementById('selYear').value;
+            var city = document.getElementById('selCity').value;
+            var distSel = document.getElementById('selDist');
+            var sysSel = document.getElementById('selSystem');
+            var projSel = document.getElementById('projId');
+            distSel.innerHTML = '<option value="">불러오는 중...</option>';
+            sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>';
+            projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
+            document.getElementById('projHint').textContent = '';
+            if (!city) { distSel.innerHTML = '<option value="">-- 시도 먼저 선택 --</option>'; return; }
+            fetch('/document/api/project-districts?year=' + year + '&cityNm=' + encodeURIComponent(city))
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    distSel.innerHTML = '<option value="">시군구 선택</option>';
+                    list.forEach(function(d) {
+                        var opt = document.createElement('option');
+                        opt.value = d; opt.textContent = d;
+                        distSel.appendChild(opt);
+                    });
+                });
+        }
+
+        function onDistChange() {
+            var year = document.getElementById('selYear').value;
+            var city = document.getElementById('selCity').value;
+            var dist = document.getElementById('selDist').value;
             var sysSel = document.getElementById('selSystem');
             var projSel = document.getElementById('projId');
             sysSel.innerHTML = '<option value="">불러오는 중...</option>';
             projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
             document.getElementById('projHint').textContent = '';
-            if (!citySel.value) { sysSel.innerHTML = '<option value="">-- 지자체 먼저 선택 --</option>'; return; }
-            var city = opt.dataset.city;
-            var dist = opt.dataset.dist;
-            var year = document.getElementById('selYear').value;
+            if (!dist) { sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>'; return; }
             if (document.getElementById('letter_to')) {
-                document.getElementById('letter_to').value = buildRecipient(city, dist);
+                document.getElementById('letter_to').value = buildRecipient(city, dist, null);
             }
             fetch('/document/api/project-systems?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist))
                 .then(function(r) { return r.json(); })
@@ -276,16 +477,14 @@
 
         function onSystemChange() {
             var year = document.getElementById('selYear').value;
-            var citySel = document.getElementById('selCity');
-            var cityOpt = citySel.options[citySel.selectedIndex];
+            var city = document.getElementById('selCity').value;
+            var dist = document.getElementById('selDist').value;
             var sysNmEn = document.getElementById('selSystem').value;
             var projSel = document.getElementById('projId');
-            if (!sysNmEn || !cityOpt || !cityOpt.dataset.city) {
+            if (!sysNmEn || !city || !dist) {
                 projSel.innerHTML = '<option value="">-- 위 조건을 선택하세요 --</option>';
                 return;
             }
-            var city = cityOpt.dataset.city;
-            var dist = cityOpt.dataset.dist;
             projSel.innerHTML = '<option value="">불러오는 중...</option>';
             fetch('/document/api/projects?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist) + '&sysNmEn=' + encodeURIComponent(sysNmEn))
                 .then(function(r) { return r.json(); })
@@ -307,21 +506,64 @@
                 });
         }
 
-        function buildRecipient(city, dist) {
+        function buildRecipient(city, dist, orgNm) {
             if (!city) return '';
-            var isMetro = city.indexOf('광역시') >= 0 || city.indexOf('특별시') >= 0;
+            if (orgNm) return orgNm;
             var isSejong = city.indexOf('세종') >= 0;
-            if (isSejong) return city + '청';
+            var isMetro = city.indexOf('광역시') >= 0 || city.indexOf('특별시') >= 0;
+            var isSpecialDo = city.indexOf('특별자치도') >= 0 || city.indexOf('특별자치시') >= 0;
+            if (isSejong) return '세종특별자치시청';
+            if (isSpecialDo && city.indexOf('시') >= 0) return city + '청';
             if (isMetro) return dist ? (city + ' ' + dist + '청') : (city + '청');
             return dist ? (dist + '청') : (city + '청');
         }
 
+        function buildRecipientHead(city, dist, orgNm) {
+            if (!city && !dist) return '';
+            if (dist) {
+                if (dist.endsWith('군')) return dist + '수 귀하';
+                if (dist.endsWith('구')) return dist + '청장 귀하';
+                if (dist.endsWith('시')) return dist + '장 귀하';
+            }
+            if (city.endsWith('시')) return city.replace(/시$/, '시장') + ' 귀하';
+            return (dist || city) + '장 귀하';
+        }
+
         function formatContDt(dtStr) {
-            // "2025-12-30" → "2025. 12. 30."
             if (!dtStr) return '';
             var parts = dtStr.split('-');
             return parts[0] + '. ' + parseInt(parts[1]) + '. ' + parseInt(parts[2]) + '.';
         }
+
+        function buildLetterBody(docType, projName, contDtFmt) {
+            var body2 = {
+                COMMENCE: '2. 귀 기관과 당사 간에 계약(' + contDtFmt + ')한 『' + projName + '』에 관하여 붙임과 같이 착수계를 제출합니다.',
+                INTERIM:  '2. 귀 기관과 당사 간에 계약(' + contDtFmt + ')한 『' + projName + '』과 관련하여 붙임과 같이 기성을 신청하오니 검토 후 조치하여 주시기 바랍니다.',
+                COMPLETION: '2. 귀 기관과 당사 간에 계약(' + contDtFmt + ')한 『' + projName + '』에 관하여 과업을 완료함에 따라 제출합니다.'
+            }[docType] || '';
+
+            var attachList = {
+                COMMENCE: '1. 착수계 2부.    끝.',
+                INTERIM:  '1. 기성검사원 1부.\n                          2. 기성내역서 1부.\n                          3. 점검내역서 1부.    끝.',
+                COMPLETION: '1. 준공계 2부.    끝.'
+            }[docType] || '1. 착수계 2부.    끝.';
+
+            return '1. 귀 기관의 무궁한 발전을 기원합니다.\n\n' +
+                   body2 + '\n\n\n' +
+                   '※ 붙 임 : ' + attachList;
+        }
+
+        function fillLetterManager() {
+            var sel = document.getElementById('letter_manager_sel');
+            var opt = sel.options[sel.selectedIndex];
+            if (!opt || !opt.value) return;
+            var pos = opt.dataset.position || '';
+            var name = opt.dataset.name || '';
+            document.getElementById('letter_manager').value = (pos ? pos + ' ' : '') + name;
+            document.getElementById('letter_tel').value = opt.dataset.tel || '';
+        }
+
+        var currentProject = {};
 
         function loadProjectInfo() {
             var projId = document.getElementById('projId').value;
@@ -329,20 +571,20 @@
             fetch('/document/api/project/' + projId)
                 .then(function(r) { return r.json(); })
                 .then(function(p) {
+                    currentProject = p;
                     var projName = p.projNm || p.sysNm || '';
-                    var recipient = buildRecipient(p.cityNm, p.distNm);
+                    var recipient = buildRecipient(p.cityNm, p.distNm, p.orgNm);
+                    var recipientHead = buildRecipientHead(p.cityNm, p.distNm, p.orgNm);
 
                     // 공문 자동 채우기
                     document.getElementById('letter_to').value = recipient;
-                    document.getElementById('letter_title').value = '\u300E' + projName + '\u300F \uc81c X\ud68c \uae30\uc131\uacc4 \uc81c\ucd9c \uac74';
+                    document.getElementById('letter_title').value = '「' + projName + '」기성금 신청 건';
 
-                    // 공문 본문 자동생성
+                    // 담당자는 users 드롭다운에서 선택 (ps_info가 아닌 사내 담당자)
+
+                    // 공문 본문 자동생성 (DB 기반)
                     var contDtFmt = formatContDt(p.contDt);
-                    var body = '1. \uadc0 \uae30\uad00\uc758 \ubb34\uad81\ud55c \ubc1c\uc804\uc744 \uae30\uc6d0\ud569\ub2c8\ub2e4.\n\n' +
-                               '2. \uadc0 \uae30\uad00\uacfc \ub2f9\uc0ac \uac04\uc5d0 \uacc4\uc57d(' + contDtFmt + ')\ud55c \u300E' + projName + '\u300F\uc5d0 \uad00\ud558\uc5ec ' +
-                               '\ubd99\uc784\uacfc \uac19\uc774 \uae30\uc131\uacc4\ub97c \uc81c\ucd9c\ud569\ub2c8\ub2e4.\n\n\n' +
-                               '\u203b \ubd99 \uc784 : 1. \uae30\uc131\uacc4 2\ubd80. \ub05d.';
-                    document.getElementById('letter_body').value = body;
+                    document.getElementById('letter_body').value = buildLetterBody('INTERIM', projName, contDtFmt);
 
                     // 기성검사원 자동 채우기
                     document.getElementById('insp_name').value = projName;
@@ -351,11 +593,24 @@
                         updateInspectorAmount();
                     }
                     if (p.contDt) document.getElementById('insp_contract_date').value = p.contDt;
-                    if (p.startDt) document.getElementById('insp_interim_date').value = p.startDt;
+                    if (p.startDt) document.getElementById('insp_period_from').value = p.startDt;
                     if (p.endDt) document.getElementById('insp_period_to').value = p.endDt;
-                    document.getElementById('insp_recipient').value = recipient.replace('\uccad', '\uccad\uc7a5') + ' \uadc0\ud558';
+                    document.getElementById('insp_recipient').value = recipientHead;
+
                     // 기성내역서 자동 채우기
                     document.getElementById('detail_name').value = projName;
+                    if (p.contAmt) { document.getElementById('detail_contAmt').value = p.contAmt; }
+                    if (p.contRt != null) { document.getElementById('detail_bidRate').value = p.contRt; }
+                    if (p.prePay) document.getElementById('detail_prePay').value = p.prePay;
+                    // 수행기간 텍스트 자동생성
+                    if (p.startDt && p.endDt) {
+                        var sf = p.startDt.replace(/-/g, '.').substring(0, 7);
+                        var ef = p.endDt.replace(/-/g, '.').substring(0, 7);
+                        document.getElementById('detail_periodText').value = sf + '~' + ef;
+                    }
+                    // 장비 로드
+                    loadInterimEquipFromProject(projId);
+                    calcInterimPreview();
                 });
         }
 
@@ -363,19 +618,9 @@
             var projId = document.getElementById('projId').value;
             var title = document.getElementById('letter_title').value || document.getElementById('insp_name').value || '기성계';
 
-            var detailRows = [];
-            document.querySelectorAll('#detailBody tr').forEach(function(row) {
-                var cells = row.cells;
-                detailRows.push({
-                    itemName: cells[0].querySelector('input').value,
-                    contractAmount: cells[1].querySelector('input').value,
-                    rate: cells[2].querySelector('input').value,
-                    paymentAmount: cells[3].querySelector('input').value
-                });
-            });
-
             var sections = [
                 { sectionKey: 'letter', sectionData: {
+                    docNo: document.getElementById('letter_docNo').value,
                     to: document.getElementById('letter_to').value,
                     manager: document.getElementById('letter_manager').value,
                     tel: document.getElementById('letter_tel').value,
@@ -387,7 +632,9 @@
                     name: document.getElementById('insp_name').value,
                     amount: document.getElementById('insp_amount').value,
                     contractDate: document.getElementById('insp_contract_date').value,
-                    interimDate: document.getElementById('insp_interim_date').value,
+                    interimYear: document.getElementById('insp_interim_year').value || '',
+                    interimMonth: document.getElementById('insp_interim_month').value || '',
+                    interimDay: document.getElementById('insp_interim_day').value || '',
                     periodFrom: document.getElementById('insp_period_from').value,
                     periodTo: document.getElementById('insp_period_to').value,
                     paymentRound: document.getElementById('insp_payment_round').value,
@@ -397,19 +644,34 @@
                 }},
                 { sectionKey: 'detail_sheet', sectionData: {
                     name: document.getElementById('detail_name').value,
-                    from: document.getElementById('detail_from').value,
-                    to: document.getElementById('detail_to').value,
-                    details: detailRows
+                    contAmt: parseInt(document.getElementById('detail_contAmt').value) || 0,
+                    bidRate: parseFloat(document.getElementById('detail_bidRate').value) || 100,
+                    prePay: parseInt(document.getElementById('detail_prePay').value) || 0,
+                    prevAmt: parseInt(document.getElementById('detail_prevAmt').value) || 0,
+                    prePaySettle: parseInt(document.getElementById('detail_prePaySettle').value) || 0,
+                    periodText: document.getElementById('detail_periodText').value,
+                    interimMonths: parseInt(document.getElementById('detail_interimMonths').value) || 6,
+                    completionMonths: parseInt(document.getElementById('detail_completionMonths').value) || 6,
+                    prevRate: parseFloat(document.getElementById('detail_prevRate').value) || 0,
+                    items: collectInterimItems()
                 }}
             ];
 
+            var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+            var saveHeaders = { 'Content-Type': 'application/json' };
+            saveHeaders[csrfHeader] = csrfToken;
+
             fetch('/document/api/save', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: saveHeaders,
                 body: JSON.stringify({
+                    docId: (window.__existingDoc && window.__existingDoc.docId) || null,
                     docType: 'INTERIM',
+                    sysType: currentProject.sysNmEn || null,
                     infraId: null,
                     projId: projId || null,
+                    docNo: document.getElementById('letter_docNo').value || null,
                     title: title,
                     sections: sections
                 })
@@ -417,7 +679,7 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    alert('저장되었습니다. 문서번호: ' + data.docNo);
+                    alert('저장되었습니다.');
                     location.href = '/document/detail/' + data.docId;
                 } else {
                     alert(data.error || '저장 실패');

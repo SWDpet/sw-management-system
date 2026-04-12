@@ -61,13 +61,94 @@
                 <input type="text" name="teamNm" th:value="${user.teamNm}" required>
             </div>
             <div class="form-group">
-                <label>연락처</label>
+                <label>연락처 (일반전화)</label>
                 <input type="text" name="tel" th:value="${user.tel}" required>
+            </div>
+            <div class="form-group">
+                <label>휴대전화</label>
+                <input type="text" name="mobile" th:value="${user.mobile}">
             </div>
             <div class="form-group">
                 <label>이메일</label>
                 <input type="email" name="email" th:value="${user.email}" required>
             </div>
+            <div class="form-group">
+                <label>직급</label>
+                <input type="text" name="positionTitle" th:value="${user.positionTitle}">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>주소</label>
+                <input type="text" name="address" th:value="${user.address}">
+            </div>
+            <div class="form-group">
+                <label>주민번호</label>
+                <input type="text" name="ssn" th:value="${user.ssn}" maxlength="14" placeholder="예: 770914-1234567">
+            </div>
+            <div class="form-group">
+                <label>기술등급</label>
+                <input type="text" name="techGrade" th:value="${user.techGrade}" placeholder="예: 초급, 중급, 고급, 특급">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>자격증 (복수 시 콤마 구분)</label>
+                <input type="text" name="certificate" th:value="${user.certificate}" placeholder="예: 정보처리기사, 측량기능사">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>업무 (다중 입력)</label>
+                <div id="tasksChipBox" style="border:1px solid #ced4da; border-radius:5px; padding:6px; min-height:38px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text;"
+                     onclick="document.getElementById('tasksChipInput').focus();">
+                    <input type="text" id="tasksChipInput" placeholder="업무 입력 후 Enter" style="border:none; outline:none; flex:1; min-width:160px; padding:4px;">
+                </div>
+                <input type="hidden" name="tasks" id="tasksHidden" th:value="${user.tasks}">
+                <small style="color:#888;">엔터로 추가, X로 삭제</small>
+            </div>
+            <script th:inline="none">
+            (function(){
+                var box   = document.getElementById('tasksChipBox');
+                var input = document.getElementById('tasksChipInput');
+                var hidden= document.getElementById('tasksHidden');
+                function render(arr){
+                    // 기존 chip 제거 (input 빼고)
+                    Array.from(box.querySelectorAll('.chip')).forEach(function(c){c.remove();});
+                    arr.forEach(function(t){
+                        var chip = document.createElement('span');
+                        chip.className = 'chip';
+                        chip.style.cssText = 'background:#e3f2fd; color:#1565c0; padding:3px 8px; border-radius:12px; font-size:0.85em; display:inline-flex; align-items:center; gap:4px;';
+                        chip.innerHTML = t + ' <span style="cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); this.parentNode.dataset.del=\'1\'; window.__taskRefresh();">×</span>';
+                        chip.dataset.val = t;
+                        box.insertBefore(chip, input);
+                    });
+                }
+                window.__taskRefresh = function(){
+                    var arr = [];
+                    Array.from(box.querySelectorAll('.chip')).forEach(function(c){
+                        if (c.dataset.del === '1') { c.remove(); return; }
+                        arr.push(c.dataset.val);
+                    });
+                    hidden.value = arr.join(',');
+                };
+                input.addEventListener('keydown', function(e){
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        var v = input.value.trim().replace(/,$/,'');
+                        if (!v) return;
+                        var arr = hidden.value ? hidden.value.split(',') : [];
+                        if (arr.indexOf(v) === -1) arr.push(v);
+                        hidden.value = arr.join(',');
+                        render(arr);
+                        input.value = '';
+                    } else if (e.key === 'Backspace' && !input.value) {
+                        var arr = hidden.value ? hidden.value.split(',') : [];
+                        arr.pop();
+                        hidden.value = arr.join(',');
+                        render(arr);
+                    }
+                });
+                // initial
+                var init = hidden.value ? hidden.value.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+                hidden.value = init.join(',');
+                render(init);
+            })();
+            </script>
         </div>
 
         <h3>3. 권한 재요청</h3>

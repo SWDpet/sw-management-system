@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 40px 20px; color: #333; }
-        .container { max-width: 1800px; margin: auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
+        .container { max-width: 2200px; margin: auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
         .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 30px; }
         .page-header h2 { margin: 0; color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
         .header-btns { display: flex; gap: 10px; }
@@ -190,9 +190,11 @@
         </div>
         <table>
             <colgroup>
-                <col style="width: 5%;"> <col style="width: 5%;"> <col style="width: 7%;"> 
-                <col style="width: 6%;"> <col style="width: 6%;"> <col style="width: 7%;"> <col style="width: 10%;"> 
-                <col style="width: 44%;"> <col style="width: 10%;">
+                <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 5%;">
+                <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 5%;"> <col style="width: 5%;">
+                <col style="width: 7%;"> <col style="width: 4%;"> <col style="width: 6%;"> <col style="width: 5%;">
+                <col style="width: 5%;"> <col style="width: 4%;"> <col style="width: 6%;">
+                <col style="width: 26%;"> <col style="width: 6%;">
             </colgroup>
             <thead>
                 <tr>
@@ -202,8 +204,15 @@
                     <th>부서</th>
                     <th>팀</th>
                     <th>연락처</th>
+                    <th>휴대전화</th>
                     <th>이메일</th>
-                    <th>권한 (대시보드 / 사업 / 담당자 / 서버 / 라이선스 / 견적서 / 사업현황 / 업무계획 / 문서관리 / 성과통계)</th>
+                    <th>직급</th>
+                    <th>주소</th>
+                    <th>주민번호</th>
+                    <th>자격증</th>
+                    <th>기술등급</th>
+                    <th>업무</th>
+                    <th>권한</th>
                     <th>관리</th>
                 </tr>
             </thead>
@@ -212,12 +221,19 @@
                     <td><input type="text" th:value="${u.userid}" readonly></td>
                     <td><input type="text" th:value="${u.username}" readonly></td>
                     <td><input type="text" th:value="${u.orgNm}" readonly></td>
-                    
+
                     <td><input type="text" name="deptNm" th:value="${u.deptNm}" th:attr="form='updateForm' + ${u.userSeq}"></td>
                     <td><input type="text" name="teamNm" th:value="${u.teamNm}" th:attr="form='updateForm' + ${u.userSeq}"></td>
                     <td><input type="text" name="tel" th:value="${u.tel}" th:attr="form='updateForm' + ${u.userSeq}"></td>
+                    <td><input type="text" name="mobile" th:value="${u.mobile}" th:attr="form='updateForm' + ${u.userSeq}"></td>
                     <td><input type="email" name="email" th:value="${u.email}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    
+                    <td><input type="text" name="positionTitle" th:value="${u.positionTitle}" th:attr="form='updateForm' + ${u.userSeq}"></td>
+                    <td><input type="text" name="address" th:value="${u.address}" th:attr="form='updateForm' + ${u.userSeq}"></td>
+                    <td><input type="text" name="ssn" th:value="${u.ssn}" th:attr="form='updateForm' + ${u.userSeq}" maxlength="14"></td>
+                    <td><input type="text" name="certificate" th:value="${u.certificate}" th:attr="form='updateForm' + ${u.userSeq}"></td>
+                    <td><input type="text" name="techGrade" th:value="${u.techGrade}" th:attr="form='updateForm' + ${u.userSeq}"></td>
+                    <td><input type="text" name="tasks" th:value="${u.tasks}" placeholder="콤마로 다중 입력" th:attr="form='updateForm' + ${u.userSeq}" title="여러 업무는 콤마(,)로 구분"></td>
+
                     <!-- 권한 칸 (오른쪽 border 없음) -->
                     <td style="border-right: none; padding: 5px;">
                         <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -292,7 +308,7 @@
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(activeUsers)}">
-                    <td colspan="9" class="empty-row">등록된 사용자가 없습니다.</td>
+                    <td colspan="16" class="empty-row">등록된 사용자가 없습니다.</td>
                 </tr>
             </tbody>
         </table>

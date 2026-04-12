@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>기성계/준공계 일괄 작성</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
+        .btn-generate { background: #1cc88a; color: white; }
+        .btn-generate:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-cancel { background: #858796; color: white; }
+
+        .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 18px; }
+        .card h3 { margin: 0 0 16px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+
+        .filter-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .filter-row label { font-weight: 600; font-size: 0.88em; }
+        .filter-row select, .filter-row input { padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; margin-left: 6px; }
+
+        .form-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+        .form-row label { font-weight: 600; font-size: 0.88em; }
+        .form-row input, .form-row select { padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; margin-left: 6px; }
+
+        .target-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        .target-table th, .target-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.85em; }
+        .target-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: center; }
+        .target-table td { text-align: center; }
+        .target-table td:nth-child(3), .target-table td:nth-child(4) { text-align: left; }
+        .target-table tr:hover { background: #f0f4ff; }
+
+        .check-all-row { display: flex; gap: 16px; align-items: center; margin-top: 12px; }
+        .check-all-row button { padding: 6px 14px; border: 1px solid #d1d3e2; border-radius: 4px; background: white; font-size: 0.82em; cursor: pointer; }
+        .check-all-row button:hover { background: #f0f4ff; }
+
+        .count-badge { display: inline-block; background: #4e73df; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.82em; font-weight: 600; margin-left: 8px; }
+        .count-badge.selected { background: #1cc88a; }
+
+        .result-card { margin-top: 18px; }
+        .result-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 0.88em; }
+        .result-item .success { color: #1cc88a; }
+        .result-item .fail { color: #e74a3b; }
+
+        .empty-msg { text-align: center; padding: 40px; color: #aaa; font-size: 0.92em; }
+        .loading { text-align: center; padding: 30px; color: #4e73df; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2><i class="fas fa-layer-group"></i> 기성계 / 준공계 일괄 자동 작성</h2>
+            <div class="header-actions">
+                <button id="btnGenerate" class="btn-generate" onclick="executeBatch()" disabled>
+                    <i class="fas fa-magic"></i> 일괄 생성
+                </button>
+                <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 목록</a>
+            </div>
+        </div>
+
+        <!-- 조건 설정 -->
+        <div class="card">
+            <h3><i class="fas fa-filter"></i> 조건 설정</h3>
+            <div class="filter-row">
+                <label>문서 유형</label>
+                <select id="selDocType" onchange="onConditionChange()">
+                    <option value="">선택</option>
+                    <option value="INTERIM">기성계</option>
+                    <option value="COMPLETION">준공계</option>
+                </select>
+                <label>연도</label>
+                <select id="selYear" onchange="onConditionChange()">
+                    <option value="">선택</option>
+                </select>
+                <label>시스템</label>
+                <select id="selSystem" onchange="onConditionChange()" style="min-width:200px;">
+                    <option value="">전체</option>
+                </select>
+                <button onclick="loadTargets()" style="padding:8px 16px; background:#4e73df; color:white; border:none; border-radius:5px; font-size:0.85em; cursor:pointer;">
+                    <i class="fas fa-search"></i> 대상 조회
+                </button>
+            </div>
+        </div>
+
+        <!-- 공통 입력 -->
+        <div class="card" id="commonCard" style="display:none;">
+            <h3><i class="fas fa-pen"></i> <span id="commonTitle">공통 정보</span> (전체 문서에 적용)</h3>
+            <div class="form-row">
+                <label>담당자</label>
+                <select id="batchManagerSel" onchange="fillBatchManager()" style="min-width:150px;">
+                    <option value="">담당자 선택</option>
+                    <option th:each="u : ${users}" th:value="${u.userSeq}"
+                            th:text="${u.positionTitle != null ? u.positionTitle + ' ' + u.username : u.username}"
+                            th:data-name="${u.username}"
+                            th:data-position="${u.positionTitle}"
+                            th:data-tel="${u.tel}"></option>
+                </select>
+                <input type="text" id="batchManager" placeholder="직위 성명" style="width:150px;">
+                <label>연락처</label>
+                <input type="text" id="batchTel" placeholder="연락처" style="width:150px;">
+                <label>시행일자</label>
+                <input type="text" id="batchDate" placeholder="예) 2026.04.03" style="width:130px;">
+            </div>
+
+            <!-- 기성 전용 추가 입력 -->
+            <div id="interimExtra" style="display:none; margin-top:14px; padding-top:12px; border-top:1px dashed #d1d3e2;">
+                <div class="form-row" style="margin-bottom:10px;">
+                    <label>기성년월일</label>
+                    <input type="number" id="batchInterimYear" placeholder="년" min="2000" max="2099" style="width:80px;"> 년
+                    <input type="number" id="batchInterimMonth" placeholder="월" min="1" max="12" style="width:60px;"> 월
+                    <input type="number" id="batchInterimDay" placeholder="일(선택)" min="1" max="31" style="width:80px;"> 일
+                    <label style="margin-left:20px;">기성율(%)</label>
+                    <input type="number" id="batchPaymentRate" step="0.1" min="0" max="100" style="width:80px;"> %
+                </div>
+                <div class="form-row">
+                    <label>수행기간</label>
+                    <input type="text" id="batchPeriodText" placeholder="예) 2026.01~2026.06" style="width:240px;">
+                    <label style="margin-left:20px;">전회기성비율(%)</label>
+                    <input type="number" id="batchPrevRate" step="0.1" min="0" max="100" value="0" style="width:80px;"> %
+                </div>
+            </div>
+        </div>
+
+        <!-- 대상 목록 -->
+        <div class="card">
+            <h3><i class="fas fa-list-check"></i> 대상 사업 목록
+                <span class="count-badge" id="badgeTotal">0건</span>
+                <span class="count-badge selected" id="badgeSelected">선택 0건</span>
+            </h3>
+            <div id="targetArea">
+                <div class="empty-msg">위에서 문서 유형과 연도를 선택한 후 [대상 조회] 버튼을 눌러주세요.</div>
+            </div>
+            <div class="check-all-row" id="checkActions" style="display:none;">
+                <button onclick="checkAll(true)"><i class="fas fa-check-double"></i> 전체선택</button>
+                <button onclick="checkAll(false)"><i class="fas fa-square"></i> 선택해제</button>
+            </div>
+        </div>
+
+        <!-- 결과 -->
+        <div class="card result-card" id="resultCard" style="display:none;">
+            <h3><i class="fas fa-clipboard-check"></i> 생성 결과</h3>
+            <div id="resultArea"></div>
+        </div>
+    </div>
+
+    <script th:inline="none">
+        // 연도 목록 로드
+        (function() {
+            fetch('/document/api/project-years')
+                .then(function(r) { return r.json(); })
+                .then(function(years) {
+                    var sel = document.getElementById('selYear');
+                    years.forEach(function(y) {
+                        var opt = document.createElement('option');
+                        opt.value = y; opt.textContent = y + '년';
+                        sel.appendChild(opt);
+                    });
+                });
+        })();
+
+        function fillBatchManager() {
+            var sel = document.getElementById('batchManagerSel');
+            var opt = sel.options[sel.selectedIndex];
+            if (!opt || !opt.value) return;
+            var pos = opt.dataset.position || '';
+            var name = opt.dataset.name || '';
+            document.getElementById('batchManager').value = (pos ? pos + ' ' : '') + name;
+            document.getElementById('batchTel').value = opt.dataset.tel || '';
+        }
+
+        function reloadSystems() {
+            var year = document.getElementById('selYear').value;
+            var sysSel = document.getElementById('selSystem');
+            sysSel.innerHTML = '<option value="">전체</option>';
+            if (!year) return;
+            fetch('/document/api/project-systems-all?year=' + year)
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    list.forEach(function(s) {
+                        var o = document.createElement('option');
+                        o.value = s.sysNmEn; o.textContent = s.sysNm || s.sysNmEn;
+                        sysSel.appendChild(o);
+                    });
+                }).catch(function(){});
+        }
+
+        function onConditionChange() {
+            if (event && event.target && event.target.id === 'selYear') reloadSystems();
+            document.getElementById('targetArea').innerHTML =
+                '<div class="empty-msg">조건을 설정한 후 [대상 조회] 버튼을 눌러주세요.</div>';
+            document.getElementById('checkActions').style.display = 'none';
+            document.getElementById('badgeTotal').textContent = '0건';
+            document.getElementById('badgeSelected').textContent = '선택 0건';
+            document.getElementById('btnGenerate').disabled = true;
+
+            var docType = document.getElementById('selDocType').value;
+            var card = document.getElementById('commonCard');
+            var extra = document.getElementById('interimExtra');
+            var title = document.getElementById('commonTitle');
+            if (docType === 'INTERIM') {
+                card.style.display = ''; extra.style.display = ''; title.textContent = '기성 일괄작성 - 공통 정보';
+                var y = document.getElementById('batchInterimYear');
+                if (y && !y.value) y.value = new Date().getFullYear();
+            } else if (docType === 'COMPLETION') {
+                card.style.display = ''; extra.style.display = 'none'; title.textContent = '준공 일괄작성 - 공통 정보';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        function loadTargets() {
+            var docType = document.getElementById('selDocType').value;
+            var year = document.getElementById('selYear').value;
+            if (!docType || !year) {
+                alert('문서 유형과 연도를 모두 선택해주세요.');
+                return;
+            }
+
+            document.getElementById('targetArea').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> 조회 중...</div>';
+
+            var sysNmEn = document.getElementById('selSystem').value;
+            fetch('/document/api/batch/targets?year=' + year + '&docType=' + docType + (sysNmEn ? '&sysNmEn=' + encodeURIComponent(sysNmEn) : ''))
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    if (list.length === 0) {
+                        var label = docType === 'INTERIM' ? '기성계 대상' : '준공계 대상';
+                        document.getElementById('targetArea').innerHTML =
+                            '<div class="empty-msg">해당 조건의 대상 사업이 없습니다. (' + label + '=Y인 사업이 없음)</div>';
+                        document.getElementById('checkActions').style.display = 'none';
+                        document.getElementById('badgeTotal').textContent = '0건';
+                        document.getElementById('badgeSelected').textContent = '선택 0건';
+                        return;
+                    }
+
+                    var html = '<table class="target-table"><thead><tr>' +
+                        '<th style="width:40px;"><input type="checkbox" id="chkAll" onchange="checkAll(this.checked)"></th>' +
+                        '<th>No</th><th>지자체</th><th>사업명</th><th>시스템</th><th>계약금액</th><th>계약일</th></tr></thead><tbody>';
+
+                    list.forEach(function(p, i) {
+                        html += '<tr>' +
+                            '<td><input type="checkbox" class="chk-proj" value="' + p.projId + '" onchange="updateCount()" data-projnm="' + (p.projNm || '') + '"></td>' +
+                            '<td>' + (i + 1) + '</td>' +
+                            '<td>' + (p.cityNm || '') + ' ' + (p.distNm || '') + '</td>' +
+                            '<td>' + (p.projNm || '') + '</td>' +
+                            '<td>' + (p.sysNmEn || '') + '</td>' +
+                            '<td>' + (p.contAmt ? Number(p.contAmt).toLocaleString() + '원' : '-') + '</td>' +
+                            '<td>' + (p.contDt || '-') + '</td>' +
+                            '</tr>';
+                    });
+                    html += '</tbody></table>';
+
+                    document.getElementById('targetArea').innerHTML = html;
+                    document.getElementById('checkActions').style.display = 'flex';
+                    document.getElementById('badgeTotal').textContent = list.length + '건';
+                    updateCount();
+                });
+        }
+
+        function checkAll(checked) {
+            var chkAll = document.getElementById('chkAll');
+            if (chkAll) chkAll.checked = checked;
+            document.querySelectorAll('.chk-proj').forEach(function(c) { c.checked = checked; });
+            updateCount();
+        }
+
+        function updateCount() {
+            var checked = document.querySelectorAll('.chk-proj:checked').length;
+            document.getElementById('badgeSelected').textContent = '선택 ' + checked + '건';
+            document.getElementById('btnGenerate').disabled = (checked === 0);
+        }
+
+        function executeBatch() {
+            var docType = document.getElementById('selDocType').value;
+            var checked = document.querySelectorAll('.chk-proj:checked');
+            if (checked.length === 0) { alert('생성할 사업을 선택해주세요.'); return; }
+
+            var docLabel = docType === 'INTERIM' ? '기성계' : '준공계';
+            if (!confirm('선택한 ' + checked.length + '건의 ' + docLabel + '를 일괄 생성하시겠습니까?')) return;
+
+            var projIds = [];
+            checked.forEach(function(c) { projIds.push(parseInt(c.value)); });
+
+            var commonData = {
+                manager: document.getElementById('batchManager').value,
+                tel: document.getElementById('batchTel').value,
+                date: document.getElementById('batchDate').value
+            };
+            if (docType === 'INTERIM') {
+                commonData.interimYear = document.getElementById('batchInterimYear').value || '';
+                commonData.interimMonth = document.getElementById('batchInterimMonth').value || '';
+                commonData.interimDay = document.getElementById('batchInterimDay').value || '';
+                commonData.paymentRate = document.getElementById('batchPaymentRate').value || '';
+                commonData.periodText = document.getElementById('batchPeriodText').value || '';
+                commonData.prevRate = document.getElementById('batchPrevRate').value || '0';
+            }
+
+            document.getElementById('btnGenerate').disabled = true;
+            document.getElementById('btnGenerate').innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...';
+
+            var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+            var headers = { 'Content-Type': 'application/json' };
+            headers[csrfHeader] = csrfToken;
+
+            fetch('/document/api/batch/generate', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ docType: docType, projIds: projIds, commonData: commonData })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                document.getElementById('btnGenerate').innerHTML = '<i class="fas fa-magic"></i> 일괄 생성';
+                document.getElementById('btnGenerate').disabled = false;
+
+                if (data.error) { alert('오류: ' + data.error); return; }
+
+                // 결과 표시
+                var resultHtml = '<div style="padding:12px; background:#f0faf4; border-radius:8px; margin-bottom:12px;">' +
+                    '<strong>총 ' + data.totalCount + '건</strong> | ' +
+                    '<span style="color:#1cc88a;">성공 ' + data.successCount + '건</span> | ' +
+                    '<span style="color:#e74a3b;">실패 ' + data.failCount + '건</span></div>';
+
+                data.results.forEach(function(r) {
+                    if (r.success) {
+                        resultHtml += '<div class="result-item"><i class="fas fa-check-circle success"></i> ' +
+                            '<span>' + (r.cityNm || '') + ' ' + (r.distNm || '') + ' - ' + (r.projNm || '') + '</span>' +
+                            '<a href="/document/detail/' + r.docId + '" style="margin-left:auto; color:#4e73df; font-size:0.82em;">상세보기</a></div>';
+                    } else {
+                        resultHtml += '<div class="result-item"><i class="fas fa-times-circle fail"></i> ' +
+                            '<span>proj_id=' + r.projId + ' - ' + (r.error || '알 수 없는 오류') + '</span></div>';
+                    }
+                });
+
+                document.getElementById('resultArea').innerHTML = resultHtml;
+                document.getElementById('resultCard').style.display = 'block';
+            })
+            .catch(function(e) {
+                document.getElementById('btnGenerate').innerHTML = '<i class="fas fa-magic"></i> 일괄 생성';
+                document.getElementById('btnGenerate').disabled = false;
+                alert('생성 중 오류 발생: ' + e.message);
+            });
+        }
+    </script>
+</body>
+</html>

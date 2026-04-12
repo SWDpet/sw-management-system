@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>문서 상세</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,9 +15,8 @@
         .btn-list { background: #858796; color: white; }
         .btn-edit { background: #4e73df; color: white; }
         .btn-delete { background: #e74a3b; color: white; }
-        .btn-submit { background: #f6c23e; color: #333; }
-        .btn-approve { background: #1cc88a; color: white; }
-        .btn-reject { background: #e74a3b; color: white; }
+        .btn-complete { background: #1cc88a; color: white; }
+        .btn-draft { background: #f6c23e; color: #333; }
 
         .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; }
         .alert-success { background: #d4edda; color: #155724; }
@@ -30,9 +31,7 @@
 
         .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.8em; font-weight: 600; color: white; }
         .badge-draft { background: #858796; }
-        .badge-submitted { background: #4e73df; }
-        .badge-approved { background: #1cc88a; }
-        .badge-rejected { background: #e74a3b; }
+        .badge-completed { background: #1cc88a; }
 
         /* 탭 */
         .tab-bar { display: flex; gap: 0; border-bottom: 2px solid #e3e6f0; margin-bottom: 0; }
@@ -67,18 +66,37 @@
             <h2><i class="fas fa-file-alt"></i> 문서 상세 (D-10)</h2>
             <div class="header-actions">
                 <th:block th:if="${userAuth == 'EDIT'}">
-                    <a th:href="@{'/document/create?docType=' + ${doc.docType} + '&infraId=' + (${doc.infraId} != null ? ${doc.infraId} : '')}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
+                    <a th:href="@{/document/create(docType=${doc.docType}, infraId=${doc.infraId}, docId=${doc.docId})}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
                     <th:block th:if="${doc.status == 'DRAFT'}">
-                        <button onclick="changeStatus('SUBMITTED')" class="btn-submit"><i class="fas fa-paper-plane"></i> 제출</button>
+                        <button onclick="changeStatus('COMPLETED')" class="btn-complete"><i class="fas fa-check"></i> 작성완료</button>
                     </th:block>
-                    <th:block th:if="${doc.status == 'SUBMITTED'}">
-                        <button onclick="changeStatus('APPROVED')" class="btn-approve"><i class="fas fa-check"></i> 승인</button>
-                        <button onclick="changeStatus('REJECTED')" class="btn-reject"><i class="fas fa-times"></i> 반려</button>
+                    <th:block th:if="${doc.status == 'COMPLETED'}">
+                        <button onclick="changeStatus('DRAFT')" class="btn-draft"><i class="fas fa-undo"></i> 작성중으로</button>
                     </th:block>
                     <form th:action="@{'/document/delete/' + ${doc.docId}}" method="post" style="display:inline;" onsubmit="return confirm('삭제하시겠습니까?');">
                         <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> 삭제</button>
                     </form>
                 </th:block>
+
+                <!-- HWPX 한글 다운로드 (문서유형별) -->
+                <th:block th:if="${doc.docType == 'COMMENCE' || doc.docType == 'INTERIM' || doc.docType == 'COMPLETION'}">
+                    <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=letter'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#2e86de; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 공문(HWP)</a>
+                </th:block>
+                <th:block th:if="${doc.docType == 'COMMENCE'}">
+                    <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=commence_body'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#0abde3; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 착수계(HWP)</a>
+                    <a th:href="@{'/document/api/excel/' + ${doc.docId}}" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#1cc88a; color:white; margin-left:8px;"><i class="fas fa-file-excel"></i> 설계내역서(Excel)</a>
+                </th:block>
+                <th:block th:if="${doc.docType == 'INTERIM'}">
+                    <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=inspector'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#0abde3; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 검사원(HWP)</a>
+                    <a th:href="@{'/document/api/excel/' + ${doc.docId}}" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#1cc88a; color:white; margin-left:8px;"><i class="fas fa-file-excel"></i> 기성내역서(Excel)</a>
+                </th:block>
+                <th:block th:if="${doc.docType == 'COMPLETION'}">
+                    <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=completion_full'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#0abde3; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 준공계(HWP)</a>
+                </th:block>
+                <th:block th:if="${doc.docType == 'COMMENCE' || doc.docType == 'INTERIM' || doc.docType == 'COMPLETION'}">
+                    <a th:href="@{'/document/api/zip/' + ${doc.docId}}" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#6c5ce7; color:white; margin-left:8px;"><i class="fas fa-file-archive"></i> 일괄 다운로드(ZIP)</a>
+                </th:block>
+
                 <a href="/document/list" class="btn-list"><i class="fas fa-list"></i> 목록</a>
             </div>
         </div>
@@ -106,7 +124,7 @@
                 </tr>
                 <tr>
                     <th>작성일</th><td th:text="${doc.createdAt != null ? #strings.substring(doc.createdAt, 0, 16) : '-'}">-</td>
-                    <th>승인자</th><td th:text="${doc.approverName != null ? doc.approverName + ' (' + #strings.substring(doc.approvedAt, 0, 16) + ')' : '-'}">-</td>
+                    <th>수정일</th><td th:text="${doc.updatedAt != null ? #strings.substring(doc.updatedAt, 0, 16) : '-'}">-</td>
                 </tr>
             </table>
         </div>
@@ -163,16 +181,19 @@
         }
 
         function changeStatus(newStatus) {
-            var comment = '';
-            if (newStatus === 'REJECTED') {
-                comment = prompt('반려 사유를 입력하세요:');
-                if (comment === null) return;
-            }
+            var msg = newStatus === 'COMPLETED' ? '작성완료 처리하시겠습니까?' : '작성중으로 변경하시겠습니까?';
+            if (!confirm(msg)) return;
+
+            var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+            var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+
             var formData = new FormData();
             formData.append('status', newStatus);
-            if (comment) formData.append('comment', comment);
 
-            fetch('/document/api/status/[[${doc.docId}]]', { method: 'POST', body: formData })
+            var headers = {};
+            headers[csrfHeader] = csrfToken;
+
+            fetch('/document/api/status/[[${doc.docId}]]', { method: 'POST', headers: headers, body: formData })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     if (data.success) location.reload();

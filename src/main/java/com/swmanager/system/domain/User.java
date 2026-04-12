@@ -2,8 +2,10 @@ package com.swmanager.system.domain;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.io.Serializable; // [1] 필수: 직렬화 인터페이스 임포트
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -29,7 +31,27 @@ public class User implements Serializable { // [2] 필수: Serializable 구현 �
     private String deptNm;
     private String teamNm;
     private String tel;
+
+    @Column(name = "mobile", length = 20)
+    private String mobile;
+
     private String email;
+
+    @Column(name = "position_title", length = 50)
+    private String positionTitle;
+
+    @Column(name = "address", length = 300)
+    private String address;
+
+    @Column(name = "ssn", length = 14)
+    private String ssn;
+
+    @Column(name = "certificate", length = 500)
+    private String certificate;
+
+    @Column(name = "tasks", length = 1000)
+    private String tasks;
+
     private String userRole;
     private Boolean enabled;
 
@@ -68,6 +90,12 @@ public class User implements Serializable { // [2] 필수: Serializable 구현 �
     @Column(name = "tech_grade", length = 20)
     private String techGrade;
 
+    @Column(name = "field_role", length = 50)
+    private String fieldRole;
+
+    @Column(name = "career_years", length = 20)
+    private String careerYears;
+
     // 로그인 시도 제한 필드
     @Column(name = "failed_attempts")
     private Integer failedAttempts = 0;
@@ -79,6 +107,37 @@ public class User implements Serializable { // [2] 필수: Serializable 구현 �
     private LocalDateTime regDt = LocalDateTime.now();
 
     public boolean isEnabled() { return Boolean.TRUE.equals(this.enabled); }
+
+    /**
+     * 주민번호 마스킹 표시 (예: 770914-1******)
+     */
+    public String getSsnMasked() {
+        if (ssn == null || ssn.length() < 8) return ssn;
+        return ssn.substring(0, 8) + "******";
+    }
+
+    /**
+     * 업무 목록 (콤마 구분 -> List)
+     */
+    public List<String> getTaskList() {
+        if (tasks == null || tasks.isBlank()) return new ArrayList<>();
+        List<String> list = new ArrayList<>();
+        for (String t : tasks.split(",")) {
+            if (!t.trim().isEmpty()) list.add(t.trim());
+        }
+        return list;
+    }
+
+    /**
+     * 업무 목록 설정 (List -> 콤마 구분 문자열)
+     */
+    public void setTaskList(List<String> taskList) {
+        if (taskList == null || taskList.isEmpty()) {
+            this.tasks = null;
+        } else {
+            this.tasks = String.join(",", taskList);
+        }
+    }
 
     @PrePersist
     public void prePersist() {
