@@ -112,6 +112,7 @@
             <button onclick="saveReport('DRAFT')" class="btn-save" style="background:#f6c23e;color:#333;"><i class="fas fa-edit"></i> 임시저장</button>
             <button onclick="saveReport('COMPLETED')" class="btn-save"><i class="fas fa-save"></i> 저장</button>
             <button onclick="openSignModal()" class="btn-save" style="background:#6f42c1;"><i class="fas fa-signature"></i> 서명 요청</button>
+            <a href="/document/list" class="btn-load" style="background:#36b9cc;"><i class="fas fa-list"></i> 목록</a>
             <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
         </div>
     </div>
@@ -153,7 +154,7 @@
                 <th>시스템유형</th>
                 <td><input type="text" id="cover_sysTypeDisplay" readonly style="background:#f8f9fc;font-weight:600;"></td>
             </tr>
-            <tr><th>점검년월</th><td><input type="month" id="cover_month"></td>
+            <tr><th>점검년월</th><td><input type="month" id="cover_month" onchange="loadPreviousVisits()"></td>
                 <th>문서제목</th><td><input type="text" id="cover_title" readonly style="background:#f8f9fc;"></td></tr>
             <tr><th>점검자 (회사)</th><td><input type="text" id="cover_inspCompany" value="(주)정도UIT"></td>
                 <th>점검자 (담당자)</th><td><input type="text" id="cover_inspName"></td></tr>
@@ -182,8 +183,12 @@
         <div class="sub-title">1. 월별 점검 및 장애조치 이력 요약</div>
         <table class="check-table" id="visitTable">
             <thead><tr><th style="width:60px;">년도</th><th style="width:40px;">월</th><th style="width:40px;">일</th><th>업무</th><th>증상</th><th>조치내용</th><th style="width:36px;"></th></tr></thead>
+            <tbody id="visitPrevBody" style="background:#f5f5f5;color:#555;"></tbody>
             <tbody id="visitBody"></tbody>
         </table>
+        <div id="visitPrevInfo" style="display:none;font-size:0.78em;color:#888;margin:6px 0;padding:6px 10px;background:#fffbe6;border-left:3px solid #f6c23e;border-radius:3px;">
+            <i class="fas fa-info-circle"></i> 회색 행은 이전 월 점검내역서의 이력이며 편집할 수 없습니다. 해당 보고서에서 수정하세요.
+        </div>
         <button class="btn-add-row" onclick="addVisitRow()"><i class="fas fa-plus"></i> 방문이력 추가</button>
     </div>
 
@@ -652,6 +657,9 @@ function loadProjectInfo() {
 
             // 시스템 구성도 로딩
             loadSystemDiagram(sysType);
+
+            // 이전 월 이력 로딩
+            loadPreviousVisits();
         });
 
     // 서버정보 + 소프트웨어 자동 로드
@@ -1081,6 +1089,51 @@ function addVisitRow(data) {
     document.getElementById('visitBody').insertAdjacentHTML('beforeend', html);
 }
 
+// === 이전 월 이력(읽기전용) 렌더링 ===
+function renderPreviousVisits(visits) {
+    var body = document.getElementById('visitPrevBody');
+    var info = document.getElementById('visitPrevInfo');
+    if (!body) return;
+    body.innerHTML = '';
+    if (!visits || visits.length === 0) {
+        if (info) info.style.display = 'none';
+        return;
+    }
+    var html = '';
+    visits.forEach(function(v) {
+        html += '<tr>' +
+            '<td style="text-align:center;padding:6px;">' + (v.visitYear || '') + '</td>' +
+            '<td style="text-align:center;padding:6px;">' + (v.visitMonth || '') + '</td>' +
+            '<td style="text-align:center;padding:6px;">' + (v.visitDay || '') + '</td>' +
+            '<td style="padding:6px 8px;">' + (v.task || '') + '</td>' +
+            '<td style="padding:6px 8px;">' + (v.symptom || '') + '</td>' +
+            '<td style="padding:6px 8px;">' + (v.action || '') + '</td>' +
+            '<td style="text-align:center;padding:6px;color:#bbb;"><i class="fas fa-lock" title="읽기전용"></i></td></tr>';
+    });
+    body.innerHTML = html;
+    if (info) info.style.display = '';
+}
+
+// === 이전 월 이력 조회 (신규 작성 시) ===
+function loadPreviousVisits() {
+    var projId = document.getElementById('projId').value;
+    var month = document.getElementById('cover_month').value;
+    if (!projId || !month) {
+        renderPreviousVisits([]);
+        return;
+    }
+    fetch('/document/api/inspect-report/previous-visits?pjtId=' + projId + '&inspectMonth=' + encodeURIComponent(month))
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+                renderPreviousVisits(resp.data || []);
+            } else {
+                renderPreviousVisits([]);
+            }
+        })
+        .catch(function() { renderPreviousVisits([]); });
+}
+
 // === 데이터 수집 ===
 function collectFormData(status) {
     var projId = document.getElementById('projId').value;
@@ -1295,6 +1348,9 @@ function loadReport(id) {
             } else {
                 addVisitRow();
             }
+
+            // 이전 월 이력 표시 (읽기전용)
+            renderPreviousVisits(data.previousVisits || []);
 
             // 2) 프로젝트 정보 가져와서 4단계 드롭다운 + 인프라 + 시스템유형 설정
             if (data.pjtId) {

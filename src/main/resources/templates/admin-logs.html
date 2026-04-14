@@ -30,7 +30,11 @@
 <div class="container">
     <div class="page-header">
         <h2><i class="fas fa-list-alt"></i> 시스템 접속 및 행위 로그</h2>
-        <a th:href="@{/admin/users}" class="btn-back"><i class="fas fa-arrow-left"></i> 사용자 관리로 돌아가기</a>
+        <div>
+            <a th:href="@{/admin/users}" class="btn-back"><i class="fas fa-arrow-left"></i> 사용자 관리로 돌아가기</a>
+            <a th:href="@{/}" style="padding:8px 14px; background:#4e73df; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-home"></i> 메인</a>
+            <a href="/logout" style="padding:8px 14px; background:#e74a3b; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
+        </div>
     </div>
 
     <div class="search-section">

@@ -2,7 +2,6 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
-import com.swmanager.system.domain.workplan.InspectCycle;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.dto.WorkPlanDTO;
@@ -290,97 +289,6 @@ public class WorkPlanController {
         result.put("status", updated.getStatus());
         result.put("statusLabel", WorkPlanDTO.getStatusLabel(updated.getStatus()));
         return ResponseEntity.ok(result);
-    }
-
-    // === P-04: 정기점검 주기 관리 ===
-
-    @GetMapping("/inspect-cycle")
-    public String inspectCycleList(Model model, RedirectAttributes rttr) {
-        String auth = getAuth();
-        if ("NONE".equals(auth)) {
-            rttr.addFlashAttribute("errorMessage", "접근 권한이 없습니다.");
-            return "redirect:/";
-        }
-
-        List<InspectCycle> cycles = workPlanService.getActiveInspectCycles();
-        model.addAttribute("cycles", cycles);
-        addFormAttributes(model);
-        model.addAttribute("userAuth", auth);
-
-        logService.log("업무계획", "조회", "정기점검 주기 관리 조회");
-        return "workplan/inspect-cycle-manage";
-    }
-
-    @PostMapping("/inspect-cycle/save")
-    public String saveInspectCycle(@RequestParam Long infraId,
-                                   @RequestParam String cycleType,
-                                   @RequestParam Long assigneeId,
-                                   @RequestParam(required = false) String contactName,
-                                   @RequestParam(required = false) String contactPhone,
-                                   @RequestParam(required = false) String contactEmail,
-                                   @RequestParam(required = false, defaultValue = "7") Integer preContactDays,
-                                   RedirectAttributes rttr) {
-        if (!"EDIT".equals(getAuth())) {
-            rttr.addFlashAttribute("errorMessage", "등록 권한이 없습니다.");
-            return "redirect:/workplan/inspect-cycle";
-        }
-
-        workPlanService.saveInspectCycle(infraId, cycleType, assigneeId, contactName, contactPhone, contactEmail, preContactDays);
-        logService.log("업무계획", "등록", "정기점검 주기 등록 (인프라ID: " + infraId + ", " + cycleType + ")");
-        rttr.addFlashAttribute("successMessage", "점검 주기가 등록되었습니다.");
-        return "redirect:/workplan/inspect-cycle";
-    }
-
-    @PostMapping("/inspect-cycle/delete/{id}")
-    public String deleteInspectCycle(@PathVariable Integer id, RedirectAttributes rttr) {
-        if (!"EDIT".equals(getAuth())) {
-            rttr.addFlashAttribute("errorMessage", "삭제 권한이 없습니다.");
-            return "redirect:/workplan/inspect-cycle";
-        }
-
-        workPlanService.deleteInspectCycle(id);
-        logService.log("업무계획", "삭제", "정기점검 주기 삭제 (ID: " + id + ")");
-        rttr.addFlashAttribute("successMessage", "삭제되었습니다.");
-        return "redirect:/workplan/inspect-cycle";
-    }
-
-    @PostMapping("/inspect-cycle/generate")
-    public String generateSchedules(@RequestParam int year,
-                                    @RequestParam(required = false) String targetCycleType,
-                                    RedirectAttributes rttr) {
-        if (!"EDIT".equals(getAuth())) {
-            rttr.addFlashAttribute("errorMessage", "권한이 없습니다.");
-            return "redirect:/workplan/inspect-cycle";
-        }
-
-        CustomUserDetails currentUser = getCurrentUser();
-        User user = (currentUser != null) ? currentUser.getUser() : null;
-
-        int count = workPlanService.generateInspectSchedules(year, targetCycleType, user);
-        logService.log("업무계획", "자동생성", year + "년 점검일정 자동생성 (" + count + "건)");
-        rttr.addFlashAttribute("successMessage", year + "년 점검 일정이 " + count + "건 자동 생성되었습니다 (사전연락 포함).");
-        return "redirect:/workplan/inspect-cycle";
-    }
-
-    // === P-05: 점검 방문 현황 ===
-
-    @GetMapping("/inspect-visits")
-    public String inspectVisits(Model model, RedirectAttributes rttr) {
-        String auth = getAuth();
-        if ("NONE".equals(auth)) {
-            rttr.addFlashAttribute("errorMessage", "접근 권한이 없습니다.");
-            return "redirect:/";
-        }
-
-        List<WorkPlanDTO> inspectPlans = workPlanService.getInspectAndPreContactPlans();
-        List<User> users = userRepository.findByEnabledTrue();
-
-        model.addAttribute("plans", inspectPlans);
-        model.addAttribute("users", users);
-        model.addAttribute("userAuth", auth);
-
-        logService.log("업무계획", "조회", "점검 방문 현황 조회");
-        return "workplan/inspect-visits";
     }
 
     // === 공통 ===

@@ -65,6 +65,11 @@
     <div class="container">
         <div class="page-header">
             <h2 th:text="${infra.infraId != null} ? '인프라 자산 정보 수정' : '인프라 자산 정보 등록'"><i class="fas fa-server"></i> 서버 및 인프라 자산 관리</h2>
+            <div>
+                <a th:href="@{/}" style="padding:8px 14px; background:#4e73df; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600;"><i class="fas fa-home"></i> 메인</a>
+                <a href="/infra/list" style="padding:8px 14px; background:#858796; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-list"></i> 목록</a>
+                <a href="/logout" style="padding:8px 14px; background:#e74a3b; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
+            </div>
         </div>
 
         <form id="infraForm" th:action="@{/infra/save}" method="post" th:object="${infra}">

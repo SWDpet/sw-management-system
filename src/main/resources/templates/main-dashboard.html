@@ -205,8 +205,6 @@
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
                 <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
                 <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e8f5e9';this.style.color='#2e7d32'" onmouseout="this.style.background='';this.style.color='#444'">📅 업무계획</a>
-                <a th:href="@{/workplan/inspect-cycle}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e0f2f1';this.style.color='#00897b'" onmouseout="this.style.background='';this.style.color='#444'">🔍 점검주기</a>
-                <a th:href="@{/workplan/inspect-visits}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e0f2f1';this.style.color='#00897b'" onmouseout="this.style.background='';this.style.color='#444'">📋 점검현황</a>
             </div>
 
             <!-- 문서관리 메뉴 -->

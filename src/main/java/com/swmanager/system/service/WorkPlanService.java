@@ -6,8 +6,6 @@ import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.UserRepository;
-import com.swmanager.system.domain.workplan.InspectCycle;
-import com.swmanager.system.repository.workplan.InspectCycleRepository;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -186,110 +184,6 @@ public class WorkPlanService {
     public List<WorkPlanDTO> getChildPlans(Integer parentPlanId) {
         List<WorkPlan> children = workPlanRepository.findByParentPlan_PlanId(parentPlanId);
         return children.stream()
-                .map(WorkPlanDTO::fromEntity)
-                .collect(Collectors.toList());
-    }
-
-    // === 정기점검 주기 관리 (P-04) ===
-
-    @Autowired private InspectCycleRepository inspectCycleRepository;
-
-    @Transactional(readOnly = true)
-    public List<InspectCycle> getActiveInspectCycles() {
-        return inspectCycleRepository.findByIsActiveTrueOrderByInfra_CityNmAscInfra_DistNmAsc();
-    }
-
-    public InspectCycle saveInspectCycle(Long infraId, String cycleType, Long assigneeId,
-                                          String contactName, String contactPhone, String contactEmail, Integer preContactDays) {
-        InspectCycle cycle = new InspectCycle();
-        cycle.setInfra(infraRepository.findById(infraId).orElseThrow());
-        cycle.setCycleType(cycleType);
-        cycle.setAssignee(userRepository.findById(assigneeId).orElseThrow());
-        cycle.setContactName(contactName);
-        cycle.setContactPhone(contactPhone);
-        cycle.setContactEmail(contactEmail);
-        cycle.setPreContactDays(preContactDays != null ? preContactDays : 7);
-        cycle.setIsActive(true);
-        return inspectCycleRepository.save(cycle);
-    }
-
-    public void deleteInspectCycle(Integer id) {
-        inspectCycleRepository.deleteById(id);
-    }
-
-    /**
-     * 정기점검 일정 + 사전연락 일정 자동 생성
-     * 주기별로 해당 연도의 방문 일정과 사전연락(N일 전) 일정을 자동 등록
-     */
-    public int generateInspectSchedules(int year, String targetCycleType, User createdBy) {
-        List<InspectCycle> cycles;
-        if (targetCycleType != null && !targetCycleType.isEmpty()) {
-            cycles = inspectCycleRepository.findByCycleTypeAndIsActiveTrue(targetCycleType);
-        } else {
-            cycles = inspectCycleRepository.findByIsActiveTrueOrderByInfra_CityNmAscInfra_DistNmAsc();
-        }
-
-        int count = 0;
-        for (InspectCycle cycle : cycles) {
-            List<Integer> months = getScheduleMonths(cycle.getCycleType());
-            for (int month : months) {
-                LocalDate visitDate = LocalDate.of(year, month, 15); // 매월 15일 기본
-                LocalDate preContactDate = visitDate.minusDays(cycle.getPreContactDays());
-
-                // 방문 점검 일정
-                WorkPlan visit = new WorkPlan();
-                visit.setInfra(cycle.getInfra());
-                visit.setPlanType("INSPECT");
-                visit.setProcessStep(5);
-                visit.setTitle(cycle.getInfra().getCityNm() + " " + cycle.getInfra().getDistNm() + " 정기점검 (" + month + "월)");
-                visit.setAssignee(cycle.getAssignee());
-                visit.setStartDate(visitDate);
-                visit.setEndDate(visitDate);
-                visit.setRepeatType(cycle.getCycleType());
-                visit.setStatus("PLANNED");
-                visit.setCreatedBy(createdBy);
-                WorkPlan savedVisit = workPlanRepository.save(visit);
-
-                // 사전연락 일정
-                WorkPlan preContact = new WorkPlan();
-                preContact.setInfra(cycle.getInfra());
-                preContact.setPlanType("PRE_CONTACT");
-                preContact.setProcessStep(5);
-                preContact.setTitle(cycle.getInfra().getCityNm() + " " + cycle.getInfra().getDistNm() + " 사전연락 (" + month + "월 점검)");
-                preContact.setDescription("기관 담당자: " + (cycle.getContactName() != null ? cycle.getContactName() : "") +
-                                         " / " + (cycle.getContactPhone() != null ? cycle.getContactPhone() : ""));
-                preContact.setAssignee(cycle.getAssignee());
-                preContact.setStartDate(preContactDate);
-                preContact.setEndDate(preContactDate);
-                preContact.setRepeatType("NONE");
-                preContact.setStatus("PLANNED");
-                preContact.setParentPlan(savedVisit); // 방문 일정에 연결
-                preContact.setCreatedBy(createdBy);
-                workPlanRepository.save(preContact);
-
-                count += 2; // 방문 + 사전연락
-            }
-        }
-        return count;
-    }
-
-    private List<Integer> getScheduleMonths(String cycleType) {
-        return switch (cycleType) {
-            case "MONTHLY" -> List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-            case "QUARTERLY" -> List.of(1, 4, 7, 10);
-            case "HALF_YEARLY" -> List.of(1, 7);
-            default -> List.of();
-        };
-    }
-
-    /**
-     * 점검(INSPECT) + 사전연락(PRE_CONTACT) 업무 조회 (P-05용)
-     */
-    @Transactional(readOnly = true)
-    public List<WorkPlanDTO> getInspectAndPreContactPlans() {
-        List<WorkPlan> plans = workPlanRepository.findByPlanTypeInOrderByStartDateDesc(
-                List.of("INSPECT", "PRE_CONTACT"));
-        return plans.stream()
                 .map(WorkPlanDTO::fromEntity)
                 .collect(Collectors.toList());
     }

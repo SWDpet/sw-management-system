@@ -113,6 +113,48 @@
     <build>
         <finalName>sw-manager</finalName>
         <plugins>
+            <!-- ✅ 빌드 전 GeoNURIS_License.jar 파일 존재 체크 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>check-geonuris-license-jar</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireFilesExist>
+                                    <files>
+                                        <file>${project.basedir}/src/main/resources/geonuris/GeoNURIS_License.jar</file>
+                                    </files>
+                                    <message>
+==========================================================================================
+ ❌ GeoNURIS_License.jar 파일이 없습니다!
+
+ 파일 경로: src/main/resources/geonuris/GeoNURIS_License.jar
+
+ 이 파일은 GeoNURIS 라이선스 발급 기능에 필수적이며,
+ 보안상 Git 저장소에 포함되지 않습니다.
+
+ [해결 방법]
+ 1. 기존 운영 PC 또는 사무실 PC의 동일 경로에서 파일 복사
+ 2. src/main/resources/geonuris/ 디렉토리에 배치
+ 3. 빌드 재시도
+
+ 자세한 내용: docs/SETUP_GUIDE.md 참조
+==========================================================================================
+                                    </message>
+                                </requireFilesExist>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

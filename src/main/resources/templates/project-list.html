@@ -126,9 +126,10 @@
             <h2><i class="fas fa-list-ul"></i> SW 사업 추진 현황 리스트</h2>
             <div class="header-btns">
                 <a th:href="@{/}" class="btn-top"><i class="fas fa-home"></i> 메인으로</a>
-                
-                <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') 
-                                or (#authentication.principal instanceof T(com.swmanager.system.config.CustomUserDetails) 
+                <a href="/logout" class="btn-top" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
+
+                <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')
+                                or (#authentication.principal instanceof T(com.swmanager.system.config.CustomUserDetails)
                                     and #authentication.principal.user?.authProject == 'EDIT')}">
                     <a th:href="@{/projects/new}" class="btn-top" style="background: #1cc88a;">
                         <i class="fas fa-plus"></i> 신규 사업 등록

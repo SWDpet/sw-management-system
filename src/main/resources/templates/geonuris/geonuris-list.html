@@ -104,6 +104,7 @@
             </div>
             <div class="header-right">
                 <a th:href="@{/}" class="btn btn-home">🏠 메인으로</a>
+                <a href="/logout" class="btn" style="background:#e74a3b; color:white;">🚪 로그아웃</a>
                 <a th:href="@{/license/registry/list}" class="btn btn-registry">📋 라이선스 대장</a>
                 <a th:if="${hasEditPermission}" th:href="@{/geonuris/license/new}" class="btn btn-success">➕ 라이선스 발급</a>
                 <a th:href="@{/geonuris/license/download/csv}" class="btn btn-csv">⬇ 전체 CSV</a>

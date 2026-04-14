@@ -146,6 +146,16 @@ public class InspectReportService {
                 .toList();
         dto.setVisits(visits);
 
+        // 이전 월 이력 조회 (같은 프로젝트의 이전 월 COMPLETED 보고서의 방문이력)
+        if (report.getPjtId() != null && report.getInspectMonth() != null) {
+            List<InspectVisitLogDTO> previousVisits = visitLogRepository
+                    .findPreviousVisitsByProject(report.getPjtId(), report.getInspectMonth())
+                    .stream()
+                    .map(InspectVisitLogDTO::fromEntity)
+                    .toList();
+            dto.setPreviousVisits(previousVisits);
+        }
+
         List<InspectCheckResultDTO> checkResults = checkResultRepository
                 .findByReportIdOrderBySectionAscSortOrderAsc(id)
                 .stream()
@@ -154,6 +164,21 @@ public class InspectReportService {
         dto.setCheckResults(checkResults);
 
         return dto;
+    }
+
+    /**
+     * 신규 보고서 작성 시 사용: pjtId + inspectMonth로 이전 월 이력을 조회
+     * (아직 저장되지 않은 새 보고서에서도 이전 이력을 표시하기 위함)
+     */
+    @Transactional(readOnly = true)
+    public List<InspectVisitLogDTO> getPreviousVisits(Long pjtId, String inspectMonth) {
+        if (pjtId == null || inspectMonth == null || inspectMonth.isEmpty()) {
+            return List.of();
+        }
+        return visitLogRepository.findPreviousVisitsByProject(pjtId, inspectMonth)
+                .stream()
+                .map(InspectVisitLogDTO::fromEntity)
+                .toList();
     }
 
     // ===== 프로젝트별 목록 =====

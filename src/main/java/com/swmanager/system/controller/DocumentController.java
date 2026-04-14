@@ -1288,6 +1288,22 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
+    /** GET /document/api/inspect-report/previous-visits?pjtId={pjtId}&inspectMonth={YYYY-MM} - 이전 월 이력 조회 (신규 작성용) */
+    @GetMapping("/api/inspect-report/previous-visits")
+    @ResponseBody
+    public ResponseEntity<?> getPreviousVisits(@RequestParam Long pjtId, @RequestParam String inspectMonth) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            result.put("success", true);
+            result.put("data", inspectReportService.getPreviousVisits(pjtId, inspectMonth));
+        } catch (Exception e) {
+            log.error("이전 월 이력 조회 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
     /** DELETE /document/api/inspect-report/{id} - 삭제 */
     @DeleteMapping("/api/inspect-report/{id}")
     @ResponseBody

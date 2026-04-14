@@ -35,6 +35,13 @@ public class InspectReportDTO {
     private List<InspectVisitLogDTO> visits = new ArrayList<>();
     private List<InspectCheckResultDTO> checkResults = new ArrayList<>();
 
+    /**
+     * 이전 월 이력 (읽기전용, DB에 저장되지 않음)
+     * - 같은 프로젝트의 이전 월 COMPLETED 보고서의 방문이력을 동적으로 조회
+     * - 작성/미리보기/상세/PDF 화면에서만 표시
+     */
+    private List<InspectVisitLogDTO> previousVisits = new ArrayList<>();
+
     public static InspectReportDTO fromEntity(InspectReport e) {
         InspectReportDTO dto = new InspectReportDTO();
         dto.setId(e.getId());

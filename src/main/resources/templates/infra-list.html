@@ -83,6 +83,7 @@
 
                 <a href="/" class="btn-top btn-home"><i class="fas fa-home"></i> 메인으로</a>
                 <a th:if="${userAuth == 'EDIT'}" th:href="@{/infra/new}" class="btn-top btn-add"><i class="fas fa-plus"></i> 자산 등록</a>
+                <a href="/logout" class="btn-top" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 

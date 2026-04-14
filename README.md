@@ -20,6 +20,13 @@ Spring Boot 기반 SW 사업 통합 관리 시스템
 6. **사용자 관리**: 회원가입, 승인, 권한 관리
 7. **로그 관리**: 모든 작업 로그 기록 및 조회
 
+## ⚠️ 신규 PC 설치 시 필수 확인사항
+
+> **`docs/SETUP_GUIDE.md` 를 반드시 먼저 읽어주세요!**
+>
+> 특히 `GeoNURIS_License.jar` 파일은 Git에 포함되지 않아 수동 배치가 필요합니다.
+> 파일 누락 시 `mvn package` 실행 중 빌드가 중단되며 안내 메시지가 출력됩니다.
+
 ## 🛠️ 개발 환경 설정
 
 ### 필수 프로그램
@@ -28,6 +35,11 @@ Spring Boot 기반 SW 사업 통합 관리 시스템
 2. **PostgreSQL 15 이상**
 3. **Eclipse IDE** (또는 IntelliJ IDEA)
 4. **Git**
+
+### 필수 파일 (Git 제외)
+
+1. **`src/main/resources/application-local.properties`** - DB 접속 정보
+2. **`src/main/resources/geonuris/GeoNURIS_License.jar`** - GeoNURIS 라이선스 발급 모듈
 
 ### 데이터베이스 설정
 
