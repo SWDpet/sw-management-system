@@ -28,10 +28,14 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
     List<Document> findByAuthor_UserSeqOrderByCreatedAtDesc(Long userSeq);
 
     // 복합 검색 (PostgreSQL 호환 - CAST로 파라미터 타입 명시)
-    @Query(value = "SELECT * FROM tb_document d " +
+    // cityNm/distNm은 tb_infra_master 또는 sw_pjt 둘 중 한 곳에서 조회 (LEFT JOIN + COALESCE)
+    @Query(value = "SELECT d.* FROM tb_document d " +
+           "LEFT JOIN tb_infra_master im ON d.infra_id = im.infra_id " +
+           "LEFT JOIN sw_pjt p ON d.proj_id = p.proj_id " +
            "WHERE (CAST(:docType AS VARCHAR) IS NULL OR d.doc_type = :docType) " +
            "AND (CAST(:status AS VARCHAR) IS NULL OR d.status = :status) " +
-           "AND (CAST(:infraId AS BIGINT) IS NULL OR d.infra_id = :infraId) " +
+           "AND (CAST(:cityNm AS VARCHAR) IS NULL OR COALESCE(im.city_nm, p.city_nm) = :cityNm) " +
+           "AND (CAST(:distNm AS VARCHAR) IS NULL OR COALESCE(im.dist_nm, p.dist_nm) = :distNm) " +
            "AND (CAST(:authorId AS BIGINT) IS NULL OR d.author_id = :authorId) " +
            "AND (CAST(:fromDt AS TIMESTAMP) IS NULL OR d.created_at >= :fromDt) " +
            "AND (CAST(:toDt AS TIMESTAMP) IS NULL OR d.created_at <= :toDt) " +
@@ -41,9 +45,12 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
            ")) " +
            "ORDER BY d.created_at DESC",
            countQuery = "SELECT COUNT(*) FROM tb_document d " +
+           "LEFT JOIN tb_infra_master im ON d.infra_id = im.infra_id " +
+           "LEFT JOIN sw_pjt p ON d.proj_id = p.proj_id " +
            "WHERE (CAST(:docType AS VARCHAR) IS NULL OR d.doc_type = :docType) " +
            "AND (CAST(:status AS VARCHAR) IS NULL OR d.status = :status) " +
-           "AND (CAST(:infraId AS BIGINT) IS NULL OR d.infra_id = :infraId) " +
+           "AND (CAST(:cityNm AS VARCHAR) IS NULL OR COALESCE(im.city_nm, p.city_nm) = :cityNm) " +
+           "AND (CAST(:distNm AS VARCHAR) IS NULL OR COALESCE(im.dist_nm, p.dist_nm) = :distNm) " +
            "AND (CAST(:authorId AS BIGINT) IS NULL OR d.author_id = :authorId) " +
            "AND (CAST(:fromDt AS TIMESTAMP) IS NULL OR d.created_at >= :fromDt) " +
            "AND (CAST(:toDt AS TIMESTAMP) IS NULL OR d.created_at <= :toDt) " +
@@ -55,12 +62,31 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
     Page<Document> searchDocuments(
             @Param("docType") String docType,
             @Param("status") String status,
-            @Param("infraId") Long infraId,
+            @Param("cityNm") String cityNm,
+            @Param("distNm") String distNm,
             @Param("authorId") Long authorId,
             @Param("fromDt") LocalDateTime from,
             @Param("toDt") LocalDateTime to,
             @Param("kw") String keyword,
             Pageable pageable);
+
+    // 시도(광역시) 목록: infra + project 통합, 중복 제거
+    @Query(value = "SELECT DISTINCT city_nm FROM (" +
+           "  SELECT city_nm FROM tb_infra_master WHERE city_nm IS NOT NULL AND city_nm != '' " +
+           "  UNION " +
+           "  SELECT city_nm FROM sw_pjt WHERE city_nm IS NOT NULL AND city_nm != ''" +
+           ") t ORDER BY city_nm",
+           nativeQuery = true)
+    List<String> findDistinctCityNames();
+
+    // 시군구 목록: 특정 시도 기준, infra + project 통합
+    @Query(value = "SELECT DISTINCT dist_nm FROM (" +
+           "  SELECT dist_nm FROM tb_infra_master WHERE city_nm = :cityNm AND dist_nm IS NOT NULL AND dist_nm != '' " +
+           "  UNION " +
+           "  SELECT dist_nm FROM sw_pjt WHERE city_nm = :cityNm AND dist_nm IS NOT NULL AND dist_nm != ''" +
+           ") t ORDER BY dist_nm",
+           nativeQuery = true)
+    List<String> findDistinctDistNamesByCity(@Param("cityNm") String cityNm);
 
     // 문서번호 채번용: 해당 연도 최대 일련번호 조회
     @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(doc_no FROM '-(\\d+)호$') AS INTEGER)), 0) " +

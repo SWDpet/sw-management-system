@@ -91,6 +91,13 @@ public class DocumentDTO {
                    .projContAmt(doc.getProject().getContAmt())
                    .projStartDt(doc.getProject().getStartDt() != null ? doc.getProject().getStartDt().toString() : null)
                    .projEndDt(doc.getProject().getEndDt() != null ? doc.getProject().getEndDt().toString() : null);
+
+            // infra가 없는 경우 project에서 cityNm/distNm/sysNm fallback
+            if (doc.getInfra() == null) {
+                builder.cityNm(doc.getProject().getCityNm())
+                       .distNm(doc.getProject().getDistNm())
+                       .sysNm(doc.getProject().getSysNm());
+            }
         }
         if (doc.getAuthor() != null) {
             builder.authorId(doc.getAuthor().getUserSeq())

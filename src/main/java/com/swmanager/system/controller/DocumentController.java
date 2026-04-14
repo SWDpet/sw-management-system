@@ -99,7 +99,8 @@ public class DocumentController {
     @GetMapping("/list")
     public String documentList(@RequestParam(name = "docType", required = false) String docType,
                                 @RequestParam(name = "status", required = false) String status,
-                                @RequestParam(name = "infraId", required = false) Long infraId,
+                                @RequestParam(name = "cityNm", required = false) String cityNm,
+                                @RequestParam(name = "distNm", required = false) String distNm,
                                 @RequestParam(name = "keyword", required = false) String keyword,
                                 @PageableDefault(size = 15) Pageable pageable,
                                 Model model, RedirectAttributes rttr) {
@@ -112,20 +113,33 @@ public class DocumentController {
         Long authorId = null; // 관리자는 전체 조회
 
         Page<DocumentDTO> documents = documentService.searchDocuments(
-                docType, status, infraId, authorId, null, null, keyword, pageable);
+                docType, status, cityNm, distNm, authorId, null, null, keyword, pageable);
 
-        List<Infra> infraList = infraRepository.findAll(Sort.by(Sort.Direction.ASC, "cityNm", "distNm"));
+        // 시도 목록 (드롭다운용), 시군구 목록 (선택된 시도 기준)
+        List<String> cityList = documentService.getCityNames();
+        List<String> distList = (cityNm != null && !cityNm.isBlank())
+                ? documentService.getDistNamesByCity(cityNm)
+                : List.of();
 
         model.addAttribute("documents", documents);
-        model.addAttribute("infraList", infraList);
+        model.addAttribute("cityList", cityList);
+        model.addAttribute("distList", distList);
         model.addAttribute("docType", docType);
         model.addAttribute("status", status);
-        model.addAttribute("infraId", infraId);
+        model.addAttribute("cityNm", cityNm);
+        model.addAttribute("distNm", distNm);
         model.addAttribute("keyword", keyword);
         model.addAttribute("userAuth", auth);
 
         logService.log("문서관리", "조회", "문서 목록 조회");
         return "document/document-list";
+    }
+
+    /** GET /document/api/dist-list?cityNm={시도} - 시군구 카스케이드 로딩용 */
+    @GetMapping("/api/dist-list")
+    @ResponseBody
+    public List<String> getDistList(@RequestParam String cityNm) {
+        return documentService.getDistNamesByCity(cityNm);
     }
 
     // === D-10: 문서 상세/이력 ===

@@ -45,16 +45,30 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DocumentDTO> searchDocuments(String docType, String status, Long infraId,
+    public Page<DocumentDTO> searchDocuments(String docType, String status,
+                                              String cityNm, String distNm,
                                               Long authorId, LocalDateTime from, LocalDateTime to,
                                               String keyword, Pageable pageable) {
         if (docType != null && docType.trim().isEmpty()) docType = null;
         if (status != null && status.trim().isEmpty()) status = null;
+        if (cityNm != null && cityNm.trim().isEmpty()) cityNm = null;
+        if (distNm != null && distNm.trim().isEmpty()) distNm = null;
         if (keyword != null && keyword.trim().isEmpty()) keyword = null;
 
         Page<Document> page = documentRepository.searchDocuments(
-                docType, status, infraId, authorId, from, to, keyword, pageable);
+                docType, status, cityNm, distNm, authorId, from, to, keyword, pageable);
         return page.map(DocumentDTO::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getCityNames() {
+        return documentRepository.findDistinctCityNames();
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getDistNamesByCity(String cityNm) {
+        if (cityNm == null || cityNm.isBlank()) return List.of();
+        return documentRepository.findDistinctDistNamesByCity(cityNm);
     }
 
     @Transactional(readOnly = true)
