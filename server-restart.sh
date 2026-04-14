@@ -2,7 +2,8 @@
 # === SW Manager Server Restart (bash native) ===
 # Avoids cmd.exe/PowerShell variable escaping issues entirely
 
-PROJECT_DIR="C:/Users/PUJ/eclipse-workspace/swmanager"
+# 스크립트가 위치한 디렉토리를 프로젝트 루트로 자동 인식 (어떤 PC에서도 동작)
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$PROJECT_DIR/server.log"
 PORT=9090
 
