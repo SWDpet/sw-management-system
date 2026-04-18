@@ -459,7 +459,7 @@
                 if (rmDiv) rmDiv.remove();
                 return;
             }
-            fetch('/document/api/user/' + userSeq)
+            fetch('/document/api/user/' + userSeq + '/secure')
             .then(function(r) { return r.json(); })
             .then(function(u) {
                 tr.querySelector('.pt-position').value = u.positionTitle || u.position || '';
@@ -1003,7 +1003,7 @@
                 document.getElementById('site_rep_tel').value = '';
                 return;
             }
-            fetch('/document/api/user/' + userSeq)
+            fetch('/document/api/user/' + userSeq + '/secure')
             .then(function(r) { return r.json(); })
             .then(function(u) {
                 document.getElementById('site_rep_name').value = u.username || '';
@@ -1277,7 +1277,7 @@
             var userSeq = sel.value;
             var tr = sel.closest('tr');
             if (!userSeq) return;
-            fetch('/document/api/user/' + userSeq)
+            fetch('/document/api/user/' + userSeq + '/secure')
                 .then(function(r) { return r.json(); })
                 .then(function(u) {
                     tr.querySelector('.ppe-position').value  = u.positionTitle || u.position || '';

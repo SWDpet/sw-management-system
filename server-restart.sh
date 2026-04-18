@@ -7,6 +7,21 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$PROJECT_DIR/server.log"
 PORT=9090
 
+# [환경변수 자동 보정] DB_PASSWORD 가 현재 셸에 없으면 Windows 사용자 환경변수에서 읽어옴.
+# (PowerShell 로 [Environment]::GetEnvironmentVariable) — Claude/IDE 가 오래 떠 있을 때 유용.
+if [ -z "$DB_PASSWORD" ] && command -v powershell.exe >/dev/null 2>&1; then
+    WIN_DB_PWD=$(powershell.exe -NoProfile -Command "[Environment]::GetEnvironmentVariable('DB_PASSWORD', 'User')" 2>/dev/null | tr -d '\r\n')
+    if [ -n "$WIN_DB_PWD" ] && [ "$WIN_DB_PWD" != "null" ]; then
+        export DB_PASSWORD="$WIN_DB_PWD"
+        echo "[RESTART] DB_PASSWORD loaded from Windows User env var"
+    fi
+fi
+
+if [ -z "$DB_PASSWORD" ]; then
+    echo "[RESTART] ⚠ WARNING: DB_PASSWORD 환경변수가 설정되지 않았습니다."
+    echo "[RESTART]   application.properties 의 기본값이 제거된 상태면 서버 부팅이 실패합니다."
+fi
+
 echo "[RESTART] Stopping existing server on port $PORT..."
 
 # Find and kill process on port using pure bash + Windows netstat

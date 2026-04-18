@@ -590,6 +590,11 @@ public class DocumentController {
 
     // === 사용자 정보 API (현장대리인/과업참여자용) ===
 
+    /**
+     * 사용자 기본 정보 (비민감) — 감사 P1-3 조치 (2026-04-18):
+     * 민감 필드(ssn/certificate/email) 는 이 엔드포인트에서 제거. 민감 정보가 필요하면
+     * EDIT 권한 + {@code /api/user/{userSeq}/secure} 사용.
+     */
     @ResponseBody
     @GetMapping("/api/user/{userSeq}")
     public ResponseEntity<Map<String, Object>> getUserInfo(@PathVariable Long userSeq) {
@@ -602,15 +607,48 @@ public class DocumentController {
             data.put("techGrade", u.getTechGrade());
             data.put("mobile", u.getMobile());
             data.put("tel", u.getTel());
-            data.put("email", u.getEmail());
             data.put("address", u.getAddress());
-            data.put("ssn", u.getSsn());
-            data.put("certificate", u.getCertificate());
             data.put("tasks", u.getTasks());
             data.put("deptNm", u.getDeptNm());
             data.put("teamNm", u.getTeamNm());
             data.put("careerYears", u.getCareerYears());
             data.put("fieldRole", u.getFieldRole());
+            return ResponseEntity.ok(data);
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * 사용자 전체 정보 (민감 필드 포함) — 감사 P1-3 조치 (2026-04-18):
+     * ssn / certificate / email 이 필요한 화면(예: 과업 착수 문서 작성) 전용.
+     * EDIT 권한 필수 — 비-EDIT 사용자는 403.
+     */
+    @ResponseBody
+    @GetMapping("/api/user/{userSeq}/secure")
+    public ResponseEntity<Map<String, Object>> getUserInfoSecure(@PathVariable Long userSeq) {
+        if (!"EDIT".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "민감 정보 조회 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
+        return userRepository.findById(userSeq).map(u -> {
+            Map<String, Object> data = new HashMap<>();
+            data.put("userSeq", u.getUserSeq());
+            data.put("username", u.getUsername());
+            data.put("positionTitle", u.getPositionTitle());
+            data.put("position", u.getPosition());
+            data.put("techGrade", u.getTechGrade());
+            data.put("mobile", u.getMobile());
+            data.put("tel", u.getTel());
+            data.put("address", u.getAddress());
+            data.put("tasks", u.getTasks());
+            data.put("deptNm", u.getDeptNm());
+            data.put("teamNm", u.getTeamNm());
+            data.put("careerYears", u.getCareerYears());
+            data.put("fieldRole", u.getFieldRole());
+            // 민감 필드 — EDIT 권한자만 접근
+            data.put("ssn", u.getSsn());
+            data.put("certificate", u.getCertificate());
+            data.put("email", u.getEmail());
             return ResponseEntity.ok(data);
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -1003,7 +1041,10 @@ public class DocumentController {
         return result;
     }
 
-    /** 사업별 과업참여자 조회 */
+    /**
+     * 사업별 과업참여자 조회 (비민감) — 감사 P1-3 조치 (2026-04-18):
+     * ssn/certificate 제거. 민감 정보가 필요하면 `/secure` 엔드포인트 사용.
+     */
     @GetMapping("/api/contract-participants/{projId}")
     @ResponseBody
     public List<Map<String, Object>> getContractParticipants(@PathVariable Long projId) {
@@ -1019,27 +1060,64 @@ public class DocumentController {
             m.put("techGrade", cp.getTechGrade());
             m.put("taskDesc", cp.getTaskDesc());
             m.put("isSiteRep", cp.getIsSiteRep());
-            m.put("ssn", cp.getUser() != null ? cp.getUser().getSsn() : "");
-            m.put("certificate", cp.getUser() != null ? cp.getUser().getCertificate() : "");
             m.put("tasks", cp.getUser() != null ? cp.getUser().getTasks() : "");
             result.add(m);
         }
         return result;
     }
 
-    /** 사업별 과업참여자 저장 */
+    /**
+     * 사업별 과업참여자 조회 (민감 필드 포함) — 감사 P1-3 조치 (2026-04-18):
+     * EDIT 권한 필수.
+     */
+    @GetMapping("/api/contract-participants/{projId}/secure")
+    @ResponseBody
+    public ResponseEntity<?> getContractParticipantsSecure(@PathVariable Long projId) {
+        if (!"EDIT".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "민감 정보 조회 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
+        List<ContractParticipant> list = contractParticipantRepository.findByProject_ProjIdOrderBySortOrder(projId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ContractParticipant cp : list) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("participantId", cp.getParticipantId());
+            m.put("userId", cp.getUser() != null ? cp.getUser().getUserSeq() : null);
+            m.put("userName", cp.getUser() != null ? cp.getUser().getUsername() : "");
+            m.put("position", cp.getUser() != null ? cp.getUser().getPositionTitle() : "");
+            m.put("roleType", cp.getRoleType());
+            m.put("techGrade", cp.getTechGrade());
+            m.put("taskDesc", cp.getTaskDesc());
+            m.put("isSiteRep", cp.getIsSiteRep());
+            m.put("tasks", cp.getUser() != null ? cp.getUser().getTasks() : "");
+            // 민감 필드
+            m.put("ssn", cp.getUser() != null ? cp.getUser().getSsn() : "");
+            m.put("certificate", cp.getUser() != null ? cp.getUser().getCertificate() : "");
+            result.add(m);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** 사업별 과업참여자 저장 — 감사 P1-2 조치: EDIT 권한 체크 + HTTP 403 반환 (2026-04-19) */
     @PostMapping("/api/contract-participants/{projId}")
     @ResponseBody
-    public Map<String, Object> saveContractParticipants(
+    public ResponseEntity<Map<String, Object>> saveContractParticipants(
             @PathVariable Long projId,
             @RequestBody List<Map<String, Object>> participantList) {
+        if (!"EDIT".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("success", false);
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
         Map<String, Object> result = new HashMap<>();
         try {
             var project = swProjectRepository.findById(projId).orElse(null);
             if (project == null) {
                 result.put("success", false);
                 result.put("error", "사업을 찾을 수 없습니다.");
-                return result;
+                return ResponseEntity.status(404).body(result);
             }
 
             // 기존 참여자 삭제 후 재등록
@@ -1073,7 +1151,7 @@ public class DocumentController {
             result.put("success", false);
             result.put("error", e.getMessage());
         }
-        return result;
+        return ResponseEntity.ok(result);
     }
 
     // ========================================================
@@ -1142,13 +1220,19 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
-    /** 사업수행계획서 데이터 저장 (overwrite) */
+    /** 사업수행계획서 데이터 저장 (overwrite) — 감사 P1-2 조치: EDIT 권한 체크 (2026-04-18) */
     @ResponseBody
     @PostMapping("/api/plan/{projId}")
     @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Map<String, Object>> savePlanData(
             @PathVariable Long projId,
             @RequestBody Map<String, Object> body) {
+        if (!"EDIT".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("success", false);
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
         Map<String, Object> result = new HashMap<>();
         try {
             var pOpt = swProjectRepository.findById(projId);
@@ -1252,10 +1336,16 @@ public class DocumentController {
     // 점검내역서 API
     // ============================================================
 
-    /** POST /document/api/inspect-report - 저장 (신규/수정) */
+    /** POST /document/api/inspect-report - 저장 (신규/수정) — 감사 P1-2 조치: EDIT 권한 체크 (2026-04-18) */
     @PostMapping("/api/inspect-report")
     @ResponseBody
     public ResponseEntity<?> saveInspectReport(@RequestBody InspectReportDTO dto) {
+        if (!"EDIT".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("success", false);
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
         Map<String, Object> result = new LinkedHashMap<>();
         try {
             InspectReportDTO saved = inspectReportService.save(dto);
@@ -1318,10 +1408,16 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
-    /** DELETE /document/api/inspect-report/{id} - 삭제 */
+    /** DELETE /document/api/inspect-report/{id} - 삭제 — 감사 P1-2 조치: EDIT 권한 체크 (2026-04-18) */
     @DeleteMapping("/api/inspect-report/{id}")
     @ResponseBody
     public ResponseEntity<?> deleteInspectReport(@PathVariable Long id) {
+        if (!"EDIT".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("success", false);
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
         Map<String, Object> result = new LinkedHashMap<>();
         try {
             inspectReportService.delete(id);

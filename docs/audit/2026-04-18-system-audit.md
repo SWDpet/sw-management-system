@@ -29,19 +29,19 @@
 - **위치**: `src/main/resources/application-local.properties:7`, `src/main/resources/application.properties:22`
 - **내용**: `spring.datasource.password` 기본값이 코드에 고정(`***` 마스킹). 저장소 유출/내부 접근 시 즉시 DB 침해.
 - **권장 조치**: 저장소에서 기본값 제거 → 환경변수/Secret Manager 만 사용 + 기존 비밀번호 **즉시 회전**.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19 커밋에서 application.properties/application-local.properties 에서 평문 기본값 제거, DB_PASSWORD 환경변수 필수화. **비밀번호 회전은 별도 운영 작업으로 분리 예정**)
 
 #### 1-2. 문서 API 권한검사 누락
 - **위치**: `DocumentController.java:1031, 1147, 1256, 1322`
 - **내용**: `getAuth()` / `@PreAuthorize` 없이 문서 저장·삭제 엔드포인트 실행 가능. 로그인만 된 사용자(`authDocument=NONE` 포함)가 수정/삭제 우회 가능.
 - **권장 조치**: 메서드 시작부 `getAuth()` 기반 EDIT 권한 검증 추가 or `@PreAuthorize` 일괄 적용.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19 커밋에서 4 엔드포인트 모두 `getAuth()` EDIT 체크 추가, 비-EDIT 사용자는 FORBIDDEN 응답)
 
 #### 1-3. 응답 본문에 주민번호/이메일 등 민감정보 평문 노출
 - **위치**: `DocumentController.java:594, 607, 1007, 1022`
 - **내용**: `@ResponseBody` API 가 `ssn`, `email`, `certificate` 를 그대로 반환. 특히 `/api/user/{userSeq}`, `/api/contract-participants/{projId}` 가 개인정보 대량 노출 경로.
 - **권장 조치**: 응답 DTO 에서 민감 필드 제거/마스킹 + 최소권한 사용자만 조회 가능하도록 접근제어 추가.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19 커밋, Option C 적용: 기본 API 에서 ssn/certificate/email 제거 + 신규 `/secure` 엔드포인트 2개 추가 — EDIT 권한 필수. 프론트 doc-commence.html 3곳은 `/secure` 로 전환)
 
 ### P2 (우선 조치 권장)
 
@@ -66,7 +66,7 @@
 - **위치**: `src/main/java/com/swmanager/system/domain/InspectReport.java:55-58` (엔티티) vs `src/main/resources/db_init_phase2.sql` `inspect_report` CREATE 문
 - **내용**: 엔티티에는 `insp_sign`, `conf_sign` 매핑이 있으나 init SQL 테이블 정의에 두 컬럼 없음. JPA 조회·저장 시 **런타임 SQL 오류** 발생 위험.
 - **권장 조치**: `CREATE TABLE inspect_report` 에 `insp_sign TEXT`, `conf_sign TEXT` 추가 or 엔티티 매핑 제거.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19 커밋, CREATE 에 2컬럼 추가 + `ALTER TABLE ADD COLUMN IF NOT EXISTS` 멱등 보정으로 기존 DB 도 자동 반영)
 
 ### P2 (우선 조치 권장)
 

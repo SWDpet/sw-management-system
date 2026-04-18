@@ -78,11 +78,17 @@ CREATE TABLE IF NOT EXISTS inspect_report (
     insp_gis        VARCHAR(200),
     dbms_ip         VARCHAR(50),
     status          VARCHAR(20) DEFAULT 'DRAFT',
+    insp_sign       TEXT,                          -- 점검자 서명 Base64 PNG (감사 P1 2-1)
+    conf_sign       TEXT,                          -- 확인자 서명 Base64 PNG (감사 P1 2-1)
     created_by      VARCHAR(50),
     updated_by      VARCHAR(50),
     created_at      TIMESTAMP DEFAULT NOW(),
     updated_at      TIMESTAMP DEFAULT NOW()
 );
+
+-- [감사 P1 2-1] inspect_report 엔티티-스키마 정합성 보정 — 기존 DB 인스턴스 대응 (멱등)
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS insp_sign TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS conf_sign TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_inspect_report_pjt ON inspect_report(pjt_id);
 CREATE INDEX IF NOT EXISTS idx_inspect_report_month ON inspect_report(inspect_month);
