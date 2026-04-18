@@ -1,0 +1,314 @@
+# ERD 인터랙티브 상세 패널에 표시할 한글 설명.
+#
+# 사용법:
+#   - 스키마 변경(테이블/컬럼 추가·이름 변경) 시 이 파일도 갱신하세요.
+#   - 빠진 항목은 설명 없이 표시됩니다 (오류 아님).
+#   - desc 에 <, >, &, ", ' 같은 특수문자도 허용됩니다 (Frontend 에서 escape 처리).
+#   - 서버 재기동 시 반영됩니다.
+#
+# 관련 문서: docs/plans/system-graph-erd-descriptions.md, docs/dev-plans/system-graph-erd-descriptions.md
+
+tables:
+
+  # ─────────── Core (시스템 기초 · 라이선스 · 성과) ───────────
+
+  users:
+    desc: 시스템 사용자 (가입자 및 관리자)
+    columns:
+      user_id: 사용자 식별자 (PK)
+      userid: 로그인 ID
+      username: 사용자 이름
+      password: 비밀번호 해시
+      orgNm: 소속 기관
+      deptNm: 부서
+      userRole: 권한 구분 (ADMIN / USER 등)
+      position: 직위
+
+  access_logs:
+    desc: 시스템 접속 및 주요 행위 로그
+    columns:
+      log_id: 로그 식별자
+      userid: 접속자 로그인 ID
+      ip_addr: 접속 IP 주소
+      access_time: 접속 시각
+      action_type: 행위 유형 (LOGIN / LOGOUT / 기타)
+
+  sw_pjt:
+    desc: SW 프로젝트 마스터 (점검 대상 프로젝트 단위)
+    columns:
+      proj_id: 프로젝트 식별자
+      proj_nm: 프로젝트 이름
+      sys_nm: 대상 시스템명
+      cont_amt: 계약 금액
+      stat: 진행 상태
+
+  ps_info:
+    desc: 프로젝트 담당자/수행인력 정보
+    columns:
+      id: 담당자 식별자
+      sys_nm: 대상 시스템명
+      org_nm: 소속 기관
+      user_nm: 담당자 이름
+
+  tb_performance_summary:
+    desc: 사용자별 월간 성과 요약
+    columns:
+      summary_id: 요약 식별자
+      user_id: 대상 사용자
+      period_year: 집계 연도
+      period_month: 집계 월
+
+  tb_inspect_cycle:
+    desc: 인프라별 정기 점검 주기 및 담당자 배정
+    columns:
+      cycle_id: 주기 식별자
+      infra_id: 대상 인프라
+      assignee_id: 담당 사용자
+      cycle_type: 주기 구분 (월간/분기/연간 등)
+
+  license_registry:
+    desc: 제품 라이선스 등록 대장
+    columns:
+      id: 라이선스 식별자
+      license_id: 라이선스 키
+      product_id: 대상 제품
+      license_type: 라이선스 종류
+
+  geonuris_license:
+    desc: GeoNURIS 제품 라이선스 (MAC 바인딩 / 만료일 관리)
+    columns:
+      id: 라이선스 식별자
+      license_type: 라이선스 종류
+      mac_address: 바인딩된 MAC 주소
+      expiry_date: 만료일
+
+  qr_license:
+    desc: QR 코드 기반 라이선스 발급 이력
+    columns:
+      qr_id: QR 라이선스 식별자
+      end_user_name: 최종 사용자명
+      products: 발급 제품 목록
+      serial_number: 시리얼 번호
+
+  # ─────────── Infra (인프라 구성) ───────────
+
+  tb_infra_master:
+    desc: 인프라 마스터 (지자체별 시스템 단위)
+    columns:
+      infra_id: 인프라 식별자
+      infra_type: 인프라 구분 (UPIS / KRAS 등)
+      city_nm: 시·도
+      dist_nm: 시·군·구
+      sys_nm: 시스템명 (한글)
+      sys_nm_en: 시스템명 (영문)
+
+  tb_infra_server:
+    desc: 인프라 소속 서버 (DB / AP / GIS 등)
+    columns:
+      server_id: 서버 식별자
+      infra_id: 소속 인프라
+      server_type: 서버 구분 (DB / AP / GIS 등)
+      ip_addr: 서버 IP 주소
+      os_nm: 운영체제
+      server_model: 서버 모델
+
+  tb_infra_software:
+    desc: 서버에 설치된 소프트웨어 목록
+    columns:
+      sw_id: SW 식별자
+      server_id: 설치 서버
+      sw_category: SW 분류 (DBMS / WAS / GIS 엔진 등)
+      sw_nm: SW 이름
+      sw_ver: SW 버전
+      port: 사용 포트
+
+  tb_infra_link_upis:
+    desc: UPIS 연계 정보 (KRAS IP / GPKI ID 등)
+    columns:
+      link_id: 연계 식별자
+      infra_id: 대상 인프라
+      kras_ip: KRAS 연계 IP
+      gpki_id: GPKI 인증 ID
+
+  tb_infra_link_api:
+    desc: 외부 API 연동 키 (네이버 뉴스 / 공공데이터 등)
+    columns:
+      api_id: API 식별자
+      infra_id: 대상 인프라
+      naver_news_key: 네이버 뉴스 API 키
+      public_data_key: 공공데이터 API 키
+
+  tb_infra_memo:
+    desc: 인프라 관련 메모/특이사항
+    columns:
+      memo_id: 메모 식별자
+      infra_id: 대상 인프라
+      memo_content: 메모 내용
+      memo_date: 메모 작성일
+
+  # ─────────── Contract (계약 · 업무계획) ───────────
+
+  tb_contract:
+    desc: 계약 마스터
+    columns:
+      contract_id: 계약 식별자
+      infra_id: 대상 인프라
+      contract_name: 계약명
+      contract_type: 계약 구분
+      contract_amount: 계약 금액
+      start_date: 계약 시작일
+      end_date: 계약 종료일
+      progress_status: 진행 상태
+
+  tb_contract_participant:
+    desc: 계약 참여자 (역할별 배정)
+    columns:
+      participant_id: 참여자 식별자
+      contract_id: 참여 계약
+      user_id: 참여 사용자
+      role_type: 역할 구분 (PM / 개발자 / 검토자 등)
+      is_site_rep: 현장 대표 여부
+
+  tb_contract_target:
+    desc: 계약 대상 제품/SW (수량 포함)
+    columns:
+      target_id: 대상 식별자
+      contract_id: 소속 계약
+      sw_id: 연관 소프트웨어
+      product_name: 제품명
+      quantity: 수량
+
+  tb_work_plan:
+    desc: 업무 계획 (일정·담당자 단위)
+    columns:
+      plan_id: 업무계획 식별자
+      infra_id: 대상 인프라
+      plan_type: 업무 구분
+      assignee_id: 담당 사용자
+      title: 업무 제목
+      start_date: 시작일
+      status: 상태
+
+  # ─────────── Document (점검 문서 관리) ───────────
+
+  tb_document:
+    desc: 문서 마스터 (점검내역서·견적서·보고서 등)
+    columns:
+      doc_id: 문서 식별자
+      doc_no: 문서 번호 (고유)
+      doc_type: 문서 구분
+      infra_id: 대상 인프라
+      plan_id: 연관 업무계획
+      contract_id: 연관 계약
+      proj_id: 연관 프로젝트
+      author_id: 작성자
+      status: 문서 상태 (작성중 / 완료 등)
+
+  tb_document_detail:
+    desc: 문서 상세 섹션 데이터 (JSON 구조)
+    columns:
+      detail_id: 상세 식별자
+      doc_id: 소속 문서
+      section_key: 섹션 키 (cover / check_results 등)
+      section_data: 섹션 데이터 (JSONB)
+
+  tb_document_history:
+    desc: 문서 변경 이력 (작성/수정/승인/반려 등)
+    columns:
+      history_id: 이력 식별자
+      doc_id: 대상 문서
+      action: 수행 행위
+      actor_id: 행위자
+
+  tb_document_attachment:
+    desc: 문서 첨부파일
+    columns:
+      attach_id: 첨부 식별자
+      doc_id: 소속 문서
+      file_name: 파일명
+      file_size: 파일 크기 (바이트)
+
+  tb_document_signature:
+    desc: 문서 서명 (점검자·확인자 전자서명)
+    columns:
+      sign_id: 서명 식별자
+      doc_id: 대상 문서
+      signer_type: 서명자 구분 (점검자 / 확인자)
+      signer_name: 서명자 이름
+
+  tb_inspect_checklist:
+    desc: 점검내역서 체크리스트 항목
+    columns:
+      check_id: 체크항목 식별자
+      doc_id: 소속 점검내역서
+      check_item: 점검 항목
+      check_result: 점검 결과 (정상 / 점검 등)
+
+  tb_inspect_issue:
+    desc: 점검 중 발견된 장애/이슈 기록
+    columns:
+      issue_id: 이슈 식별자
+      doc_id: 소속 점검내역서
+      task_type: 작업 유형
+      symptom: 증상 설명
+
+  # ─────────── Quotation (견적 관리) ───────────
+
+  qt_quotation:
+    desc: 견적서 마스터
+    columns:
+      quote_id: 견적서 식별자
+      quote_number: 견적서 번호 (고유)
+      quote_date: 견적일
+      category: 견적 분류
+      project_name: 프로젝트명
+      total_amount: 소계
+      grand_total: 총액 (VAT 포함)
+
+  qt_quotation_item:
+    desc: 견적서 품목 (라인 아이템)
+    columns:
+      item_id: 품목 식별자
+      quote_id: 소속 견적서
+      item_no: 품목 순번
+      product_name: 품목명
+      unit_price: 단가
+      amount: 금액
+
+  qt_quotation_ledger:
+    desc: 견적서 관리 대장 (연도별 집계)
+    columns:
+      ledger_id: 대장 식별자
+      quote_id: 연결 견적서
+      year: 기준 연도
+      project_name: 프로젝트명
+
+  qt_quote_number_seq:
+    desc: 견적서 번호 채번 시퀀스 (연도·분류별)
+    columns:
+      seq_id: 시퀀스 식별자
+      year: 기준 연도
+      category: 견적 분류
+      last_seq: 마지막 발급 번호
+
+  qt_product_pattern:
+    desc: 견적 품목 패턴 (자주 쓰는 품목 템플릿)
+    columns:
+      pattern_id: 패턴 식별자
+      category: 분류
+      product_name: 품목명
+
+  qt_remarks_pattern:
+    desc: 견적 비고 문구 패턴 (재사용 텍스트)
+    columns:
+      pattern_id: 패턴 식별자
+      pattern_name: 패턴 이름
+      content: 비고 내용
+
+  qt_wage_rate:
+    desc: 연도별 등급 일급 단가표
+    columns:
+      wage_id: 단가 식별자
+      year: 기준 연도
+      grade_name: 등급명
+      daily_rate: 일급 단가

@@ -8,8 +8,8 @@ import java.util.List;
  */
 public final class ErdGraphDTO {
 
-    public record Column(String name, String type, boolean pk, boolean fk, String fkRef) {}
-    public record Node(String id, String label, String domain, List<Column> columns) {}
+    public record Column(String name, String type, boolean pk, boolean fk, String fkRef, String desc) {}
+    public record Node(String id, String label, String domain, List<Column> columns, String desc) {}
     public record Edge(String from, String to, String label, String cardinality) {}
 
     private final List<Node> nodes;

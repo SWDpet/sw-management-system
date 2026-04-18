@@ -73,12 +73,18 @@
             display: inline-block; padding: 2px 8px; border-radius: 10px;
             font-size: 0.72em; color: #fff; margin-bottom: 10px;
         }
+        .erd-detail .detail-desc {
+            margin: 0 0 8px; color: #555; font-size: 0.85em; font-style: italic;
+            line-height: 1.4;
+        }
         .erd-detail .col-list { list-style: none; padding: 0; margin: 0; font-size: 0.88em; }
         .erd-detail .col-list li {
             padding: 6px 2px; border-bottom: 1px solid #f0f0f5; display: flex; gap: 6px; align-items: center;
+            flex-wrap: wrap;
         }
         .erd-detail .col-name { font-weight: 600; color: #333; }
-        .erd-detail .col-type { color: #888; font-size: 0.85em; }
+        .erd-detail .col-desc { color: #777; font-size: 0.82em; }
+        .erd-detail .col-type { color: #888; font-size: 0.85em; margin-left: auto; }
         .erd-detail .badge-pk { background: #ffd54f; color: #5d4037; padding: 1px 6px; border-radius: 4px; font-size: 0.72em; font-weight: 700; }
         .erd-detail .badge-fk { background: #bbdefb; color: #0d47a1; padding: 1px 6px; border-radius: 4px; font-size: 0.72em; font-weight: 700; cursor: pointer; }
         .erd-detail .badge-fk.disabled { background: #e5e7eb; color: #9aa; cursor: not-allowed; }
@@ -288,12 +294,16 @@
 
         var visNodes = data.nodes.map(function(n) {
             var c = DOMAIN_COLORS[n.domain] || DOMAIN_COLORS.core;
+            // FR-8: 노드 호버 툴팁 = 테이블명 + 한글 설명 (escape 필수)
+            var title = escapeHtml(n.label);
+            if (n.desc) title += '\n' + escapeHtml(n.desc);
             return {
                 id: n.id,
                 label: n.label,
                 shape: 'box',
                 color: { background: c.background, border: c.border },
                 font: { color: c.font, size: 14 },
+                title: title,
                 domain: n.domain,
                 columns: n.columns
             };
@@ -358,6 +368,10 @@
 
         var c = DOMAIN_COLORS[node.domain] || DOMAIN_COLORS.core;
         var html = '<div class="detail-title">' + escapeHtml(node.label) + '</div>';
+        // FR-7: 테이블 한글 설명 (escape 필수, null/empty 시 생략)
+        if (node.desc) {
+            html += '<div class="detail-desc">' + escapeHtml(node.desc) + '</div>';
+        }
         html += '<div class="detail-domain" style="background:' + c.background + ';">' + node.domain + '</div>';
         html += '<ul class="col-list">';
         node.columns.forEach(function(col) {
@@ -365,17 +379,30 @@
             if (col.pk) badges += '<span class="badge-pk" title="Primary Key">PK</span> ';
             if (col.fk) {
                 if (col.fkRef) {
-                    badges += '<span class="badge-fk" title="클릭 시 ' + escapeHtml(col.fkRef) + ' 로 이동" onclick="focusNode(\'' + escapeAttr(col.fkRef) + '\')">FK→' + escapeHtml(col.fkRef) + '</span> ';
+                    // FR-9: FK 참조 테이블 설명 함께 표시 (있으면), 전부 escape
+                    var refDesc = findDesc(col.fkRef);
+                    var fkTipText = '클릭 시 ' + col.fkRef + (refDesc ? ' · ' + refDesc : '') + ' 로 이동';
+                    var fkTip = escapeAttr(fkTipText);
+                    badges += '<span class="badge-fk" title="' + fkTip + '" onclick="focusNode(\'' + escapeAttr(col.fkRef) + '\')">FK→' + escapeHtml(col.fkRef) + '</span> ';
                 } else {
                     badges += '<span class="badge-fk disabled" title="관계선 미정의로 이동 불가">FK</span> ';
                 }
             }
+            // FR-7: 컬럼 한글 설명 (escape 필수, null/empty 시 생략 — 빈 괄호 방지)
+            var colDescHtml = col.desc ? ' <span class="col-desc">(' + escapeHtml(col.desc) + ')</span>' : '';
             html += '<li>' + badges +
-                '<span class="col-name">' + escapeHtml(col.name) + '</span> ' +
+                '<span class="col-name">' + escapeHtml(col.name) + '</span>' + colDescHtml + ' ' +
                 '<span class="col-type">' + escapeHtml(col.type) + '</span></li>';
         });
         html += '</ul>';
         panel.innerHTML = html;
+    }
+
+    // FR-9 helper: 다른 노드의 desc 를 ID 로 조회
+    function findDesc(tableId) {
+        if (!erdData) return null;
+        var n = erdData.nodes.find(function(x) { return x.id === tableId; });
+        return n ? n.desc : null;
     }
 
     // FR-5: FK 클릭 시 참조 노드로 포커스 이동

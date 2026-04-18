@@ -8,8 +8,10 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -57,19 +59,74 @@ public class ErdGraphService {
     @Value("${app.erd.mmd-dir:docs}")
     private String mmdDir;
 
+    @Value("${app.erd.descriptions-file:docs/erd-descriptions.yml}")
+    private String descriptionsFile;
+
     private volatile ErdGraphDTO cache;
+    private Map<String, TableDescription> descriptions = Map.of();
+
+    /** YAML 파일에서 로드된 테이블별 한글 설명. */
+    private record TableDescription(String desc, Map<String, String> columns) {}
 
     @PostConstruct
     public void init() {
+        loadDescriptions();
         long start = System.currentTimeMillis();
         try {
             this.cache = load();
-            log.info("ERD parsing: {}ms, nodes={}, edges={}",
+            log.info("ERD parsing: {}ms, nodes={}, edges={}, descTables={}",
                     System.currentTimeMillis() - start,
-                    cache.getNodes().size(), cache.getEdges().size());
+                    cache.getNodes().size(), cache.getEdges().size(), descriptions.size());
         } catch (Exception e) {
             log.error("ERD 초기 파싱 실패 — 빈 그래프로 대체", e);
             this.cache = new ErdGraphDTO(List.of(), List.of());
+        }
+    }
+
+    /**
+     * YAML 파일에서 테이블·컬럼 한글 설명 로드.
+     * 파일 미존재/파싱 실패 시 경고 로그만 남기고 설명 없이 진행 (FR-1, NFR-3).
+     */
+    @SuppressWarnings("unchecked")
+    private void loadDescriptions() {
+        FileSystemResource fs = new FileSystemResource(descriptionsFile);
+        if (!fs.exists()) {
+            log.warn("ERD descriptions YAML not found: {} — 설명 없이 진행", descriptionsFile);
+            return;
+        }
+        try (InputStream in = fs.getInputStream()) {
+            Yaml yaml = new Yaml();
+            Object rootObj = yaml.load(in);
+            if (!(rootObj instanceof Map)) return;
+            Object tablesObj = ((Map<String, Object>) rootObj).get("tables");
+            if (!(tablesObj instanceof Map)) return;
+
+            Map<String, TableDescription> parsed = new HashMap<>();
+            ((Map<String, Object>) tablesObj).forEach((name, value) -> {
+                if (!(value instanceof Map)) return;
+                Map<String, Object> t = (Map<String, Object>) value;
+                // desc: null/비-String/빈 문자열이면 null 유지 (FR-7, T13)
+                Object descRaw = t.get("desc");
+                String desc = (descRaw instanceof String s && !s.isEmpty()) ? s : null;
+
+                Map<String, String> cols = Map.of();
+                Object colsObj = t.get("columns");
+                if (colsObj instanceof Map) {
+                    Map<String, String> colMap = new HashMap<>();
+                    ((Map<String, Object>) colsObj).forEach((k, v) -> {
+                        if (v instanceof String cs && !cs.isEmpty()) {
+                            colMap.put(k, cs);
+                        }
+                        // null/비-String/빈 문자열은 건너뜀 → 프론트에서 설명 미표시
+                    });
+                    cols = colMap;
+                }
+                parsed.put(name, new TableDescription(desc, cols));
+            });
+            this.descriptions = Map.copyOf(parsed);
+            log.info("ERD descriptions loaded: {} tables from {}", descriptions.size(), descriptionsFile);
+        } catch (Exception e) {
+            log.warn("ERD descriptions YAML 파싱 실패 — 설명 없이 진행", e);
         }
     }
 
@@ -186,18 +243,40 @@ public class ErdGraphService {
                     tableName, remainingFks.get(0).name(), r.from);
         }
 
-        // 최종 노드 리스트 생성 (fkRef 채워넣음)
+        // 최종 노드 리스트 생성 (fkRef + desc 채워넣음)
         List<ErdGraphDTO.Node> nodes = new ArrayList<>();
+        int yamlMissingTables = 0;
         for (Map.Entry<String, List<ErdGraphDTO.Column>> e : canonicalCols.entrySet()) {
             String tableName = e.getKey();
             String domain = tableDomain.get(tableName);
             Map<String, String> refMap = fkRef.getOrDefault(tableName, Map.of());
+
+            TableDescription td = descriptions.get(tableName);
+            String tableDesc = (td != null) ? td.desc() : null;
+            Map<String, String> colDescs = (td != null) ? td.columns() : Map.of();
+            if (td == null) yamlMissingTables++;
+
             List<ErdGraphDTO.Column> finalCols = e.getValue().stream()
                     .map(c -> new ErdGraphDTO.Column(
                             c.name(), c.type(), c.pk(), c.fk(),
-                            c.fk() ? refMap.get(c.name()) : null))
+                            c.fk() ? refMap.get(c.name()) : null,
+                            colDescs.get(c.name())))
                     .collect(Collectors.toList());
-            nodes.add(new ErdGraphDTO.Node(tableName, tableName, domain, finalCols));
+            nodes.add(new ErdGraphDTO.Node(tableName, tableName, domain, finalCols, tableDesc));
+        }
+
+        // FR-4: YAML 에만 있고 정본에 없는 테이블 집계 (debug)
+        if (!descriptions.isEmpty()) {
+            int yamlOnlyTables = 0;
+            for (String yamlTable : descriptions.keySet()) {
+                if (!canonicalCols.containsKey(yamlTable)) yamlOnlyTables++;
+            }
+            if (yamlOnlyTables > 0) {
+                log.debug("ERD descriptions: {} tables in YAML not found in .mmd (ignored)", yamlOnlyTables);
+            }
+            if (yamlMissingTables > 0) {
+                log.debug("ERD descriptions: {} canonical tables have no YAML entry", yamlMissingTables);
+            }
         }
 
         return new ErdGraphDTO(nodes, edges);
@@ -282,7 +361,7 @@ public class ErdGraphService {
                     String mod = mCol.group(4);
                     boolean pk = mod != null && mod.contains("PK");
                     boolean fk = mod != null && mod.contains("FK");
-                    current.columns.add(new ErdGraphDTO.Column(colName, type, pk, fk, null));
+                    current.columns.add(new ErdGraphDTO.Column(colName, type, pk, fk, null, null));
                 }
             }
         }
