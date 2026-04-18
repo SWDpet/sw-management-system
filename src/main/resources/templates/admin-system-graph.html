@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>시스템 관계도</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- vis-network: 노드·엣지 네트워크 그래프 라이브러리 (Phase 0) -->
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; padding: 40px; background: #f4f7f6; margin: 0; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a237e; padding-bottom: 15px; margin-bottom: 20px; }
+        .page-header h2 { margin: 0; color: #1a237e; }
+        .header-btns a { padding: 8px 14px; color: white; text-decoration: none; border-radius: 5px; font-size: 0.85em; font-weight: 600; margin-left: 4px; }
+        .btn-home { background: #4e73df; }
+        .btn-logout { background: #e74a3b; }
+
+        /* 탭 */
+        .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 0; }
+        .tab-btn {
+            padding: 12px 24px; background: #f1f3f9; color: #555; border: none; cursor: pointer;
+            font-size: 0.95em; font-weight: 600; border-radius: 8px 8px 0 0;
+            border: 1px solid transparent; border-bottom: none;
+            transition: all 0.15s;
+        }
+        .tab-btn:hover { background: #e0e4f0; }
+        .tab-btn.active { background: white; color: #1a237e; border-color: #e5e7eb; margin-bottom: -2px; }
+        .tab-btn i { margin-right: 6px; }
+
+        .tab-panel { display: none; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: white; min-height: 600px; }
+        .tab-panel.active { display: block; }
+
+        .graph-canvas {
+            width: 100%; height: 580px;
+            border: 1px solid #e5e7eb; border-radius: 6px;
+            background: #fafbff;
+        }
+        .panel-title { margin: 0 0 10px; color: #1a237e; font-size: 1.1em; font-weight: 700; }
+        .panel-desc { margin: 0 0 15px; color: #666; font-size: 0.9em; }
+        .phase-notice {
+            display: inline-block; padding: 3px 10px; background: #fff3cd; color: #856404;
+            border-radius: 12px; font-size: 0.75em; font-weight: 600; margin-left: 8px;
+        }
+
+        /* === ERD 탭 전용 === */
+        .erd-toolbar {
+            display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+            background: #f8f9fa; padding: 12px 14px; border-radius: 8px; margin-bottom: 12px;
+        }
+        .erd-toolbar input[type="text"] {
+            padding: 6px 10px; border: 1px solid #ccd; border-radius: 4px; width: 240px; font-size: 0.9em;
+        }
+        .erd-toolbar label {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 0.88em;
+            padding: 4px 10px; border-radius: 12px; background: #fff; border: 1px solid #dde;
+            cursor: pointer;
+        }
+        .erd-toolbar label .dot {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+        }
+        .erd-split { display: flex; gap: 12px; min-height: 580px; }
+        .erd-split > .graph-canvas { flex: 1 1 auto; height: 580px; min-width: 0; }
+        .erd-detail {
+            flex: 0 0 320px; border: 1px solid #e5e7eb; border-radius: 6px;
+            background: #fff; padding: 14px; overflow-y: auto; max-height: 580px;
+        }
+        .erd-detail .detail-title {
+            margin: 0 0 6px; color: #1a237e; font-size: 1em; font-weight: 700;
+            word-break: break-all;
+        }
+        .erd-detail .detail-domain {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 0.72em; color: #fff; margin-bottom: 10px;
+        }
+        .erd-detail .col-list { list-style: none; padding: 0; margin: 0; font-size: 0.88em; }
+        .erd-detail .col-list li {
+            padding: 6px 2px; border-bottom: 1px solid #f0f0f5; display: flex; gap: 6px; align-items: center;
+        }
+        .erd-detail .col-name { font-weight: 600; color: #333; }
+        .erd-detail .col-type { color: #888; font-size: 0.85em; }
+        .erd-detail .badge-pk { background: #ffd54f; color: #5d4037; padding: 1px 6px; border-radius: 4px; font-size: 0.72em; font-weight: 700; }
+        .erd-detail .badge-fk { background: #bbdefb; color: #0d47a1; padding: 1px 6px; border-radius: 4px; font-size: 0.72em; font-weight: 700; cursor: pointer; }
+        .erd-detail .badge-fk.disabled { background: #e5e7eb; color: #9aa; cursor: not-allowed; }
+        .erd-empty-msg {
+            display: none; padding: 20px; text-align: center; color: #856404;
+            background: #fff3cd; border-radius: 6px; margin-top: 10px;
+        }
+        .erd-empty-msg.show { display: block; }
+        @media (max-width: 1024px) {
+            .erd-split { flex-direction: column; }
+            .erd-split > .graph-canvas { height: 420px; }
+            .erd-detail { flex: 0 0 auto; max-height: 260px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="page-header">
+        <h2><i class="fas fa-project-diagram"></i> 시스템 관계도</h2>
+        <div class="header-btns">
+            <a th:href="@{/}" class="btn-home"><i class="fas fa-home"></i> 메인</a>
+            <a th:href="@{/admin/users}" style="background:#858796;"><i class="fas fa-users-cog"></i> 사용자 관리</a>
+            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-a" onclick="switchTab('tab-a')">
+            <i class="fas fa-server"></i> A. 인프라 구성도
+        </button>
+        <button class="tab-btn" data-tab="tab-b" onclick="switchTab('tab-b')">
+            <i class="fas fa-sitemap"></i> B. 프로젝트 관계도
+        </button>
+        <button class="tab-btn" data-tab="tab-c" onclick="switchTab('tab-c')">
+            <i class="fas fa-database"></i> C. ERD 인터랙티브
+        </button>
+        <button class="tab-btn" data-tab="tab-d" onclick="switchTab('tab-d')">
+            <i class="fas fa-clipboard-check"></i> D. 점검 이력 관계
+        </button>
+    </div>
+
+    <!-- A. 인프라 구성도 -->
+    <div id="tab-a" class="tab-panel active">
+        <div class="panel-title">
+            A. 인프라 구성도 <span class="phase-notice">Phase 1 예정</span>
+        </div>
+        <div class="panel-desc">지자체 → 시스템 → 서버(DB/AP/GIS) → 소프트웨어 계층 관계</div>
+        <div id="graph-a" class="graph-canvas"></div>
+    </div>
+
+    <!-- B. 프로젝트 관계도 -->
+    <div id="tab-b" class="tab-panel">
+        <div class="panel-title">
+            B. 프로젝트 관계도 <span class="phase-notice">Phase 1 예정</span>
+        </div>
+        <div class="panel-desc">계약 ↔ SW 프로젝트 ↔ 담당자 ↔ 산출물 관계</div>
+        <div id="graph-b" class="graph-canvas"></div>
+    </div>
+
+    <!-- C. ERD 인터랙티브 -->
+    <div id="tab-c" class="tab-panel">
+        <div class="panel-title">C. ERD 인터랙티브</div>
+        <div class="panel-desc">DB 테이블 간 FK 관계 — 클릭 / 확대 / 검색 / 도메인 필터 지원</div>
+
+        <div class="erd-toolbar">
+            <input type="text" id="erd-search" placeholder="🔍 테이블 검색 (이름 일부 입력)" oninput="onErdSearch()">
+            <label><span class="dot" style="background:#4e73df;"></span><input type="checkbox" class="erd-filter" data-domain="infra" checked onchange="onErdFilter()"> Infra</label>
+            <label><span class="dot" style="background:#f6c23e;"></span><input type="checkbox" class="erd-filter" data-domain="contract" checked onchange="onErdFilter()"> Contract</label>
+            <label><span class="dot" style="background:#1cc88a;"></span><input type="checkbox" class="erd-filter" data-domain="document" checked onchange="onErdFilter()"> Document</label>
+            <label><span class="dot" style="background:#a14ed0;"></span><input type="checkbox" class="erd-filter" data-domain="quotation" checked onchange="onErdFilter()"> Quotation</label>
+            <label><span class="dot" style="background:#858796;"></span><input type="checkbox" class="erd-filter" data-domain="core" checked onchange="onErdFilter()"> Core</label>
+        </div>
+
+        <div class="erd-split">
+            <div id="graph-c" class="graph-canvas"></div>
+            <div id="erd-detail-panel" class="erd-detail">
+                <div style="color:#999; font-size:0.9em;">← 노드를 클릭하면 테이블 컬럼이 여기에 표시됩니다.</div>
+            </div>
+        </div>
+
+        <div id="erd-empty-msg" class="erd-empty-msg"></div>
+    </div>
+
+    <!-- D. 점검 이력 관계 -->
+    <div id="tab-d" class="tab-panel">
+        <div class="panel-title">
+            D. 점검 이력 관계 <span class="phase-notice">Phase 1 예정</span>
+        </div>
+        <div class="panel-desc">지자체 ↔ 점검내역서 ↔ 시스템 ↔ 점검자 연결</div>
+        <div id="graph-d" class="graph-canvas"></div>
+    </div>
+</div>
+
+<script>
+    // 탭 전환
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+        document.querySelectorAll('.tab-panel').forEach(function(panel) {
+            panel.classList.toggle('active', panel.id === tabId);
+        });
+        // 전환된 탭의 그래프를 redraw (비활성 상태에서 생성된 그래프는 0x0 으로 잡히므로)
+        redrawGraph(tabId);
+    }
+
+    // Phase 0 플레이스홀더 — A/B/D 만 "준비 중" 더미 노드 (C 는 실제 데이터)
+    var phaseNoticeNodes = {
+        'tab-a': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' },
+        'tab-b': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' },
+        'tab-d': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' }
+    };
+    var networks = {};
+
+    function drawPlaceholder(tabId) {
+        var containerId = 'graph-' + tabId.split('-')[1];
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        var info = phaseNoticeNodes[tabId];
+        var data = {
+            nodes: new vis.DataSet([
+                { id: 1, label: info.label, title: info.title,
+                  shape: 'box', color: { background: '#fff3cd', border: '#856404' },
+                  font: { size: 16, color: '#856404' } }
+            ]),
+            edges: new vis.DataSet([])
+        };
+        var options = {
+            physics: { enabled: false },
+            interaction: { hover: true, tooltipDelay: 150 }
+        };
+        networks[tabId] = new vis.Network(container, data, options);
+    }
+
+    function redrawGraph(tabId) {
+        if (tabId === 'tab-c') {
+            // C 탭: 실제 ERD 데이터 로더 (최초 1회만)
+            if (!networks['tab-c']) {
+                loadErdGraph();
+            } else {
+                networks['tab-c'].redraw();
+                networks['tab-c'].fit();
+            }
+            return;
+        }
+        if (networks[tabId]) {
+            networks[tabId].redraw();
+            networks[tabId].fit();
+        } else {
+            drawPlaceholder(tabId);
+        }
+    }
+
+    // ─── Phase 1 C: ERD 인터랙티브 ─────────────────────────────────
+
+    var DOMAIN_COLORS = {
+        infra:     { background: '#4e73df', border: '#2e59d9', font: '#fff' },
+        contract:  { background: '#f6c23e', border: '#dda20a', font: '#333' },
+        document:  { background: '#1cc88a', border: '#17a673', font: '#fff' },
+        quotation: { background: '#a14ed0', border: '#7b35a8', font: '#fff' },
+        core:      { background: '#858796', border: '#60616f', font: '#fff' }
+    };
+
+    // 그래프 데이터 저장 (검색/필터/상세패널용 원본)
+    var erdData = null;       // {nodes: [...], edges: [...]} from API
+    var erdNodeDS = null;     // vis.DataSet for nodes
+    var erdEdgeDS = null;     // vis.DataSet for edges
+
+    function loadErdGraph() {
+        var container = document.getElementById('graph-c');
+        var emptyMsg = document.getElementById('erd-empty-msg');
+        emptyMsg.classList.remove('show');
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;">그래프 로드 중...</div>';
+
+        fetch('/admin/system-graph/api/erd', { credentials: 'same-origin' })
+            .then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data || !data.nodes || data.nodes.length === 0) {
+                    // FR-12: 빈 응답 — 통일된 안내 문구
+                    showErdError('ERD 데이터를 불러오지 못했습니다. server.log 확인 필요');
+                    return;
+                }
+                erdData = data;
+                renderErdGraph(data);
+            })
+            .catch(function(err) {
+                // FR-12: 오류 — 동일한 안내 문구 (기술 정보는 콘솔로만)
+                console.error('ERD 로드 실패', err);
+                showErdError('ERD 데이터를 불러오지 못했습니다. server.log 확인 필요');
+            });
+    }
+
+    function showErdError(msg) {
+        var emptyMsg = document.getElementById('erd-empty-msg');
+        var container = document.getElementById('graph-c');
+        container.innerHTML = '';
+        emptyMsg.textContent = msg;
+        emptyMsg.classList.add('show');
+    }
+
+    function renderErdGraph(data) {
+        var container = document.getElementById('graph-c');
+        container.innerHTML = '';
+
+        var visNodes = data.nodes.map(function(n) {
+            var c = DOMAIN_COLORS[n.domain] || DOMAIN_COLORS.core;
+            return {
+                id: n.id,
+                label: n.label,
+                shape: 'box',
+                color: { background: c.background, border: c.border },
+                font: { color: c.font, size: 14 },
+                domain: n.domain,
+                columns: n.columns
+            };
+        });
+
+        var visEdges = data.edges.map(function(e, idx) {
+            return {
+                id: 'e' + idx,
+                from: e.from,
+                to: e.to,
+                label: e.label || '',
+                arrows: 'to',
+                font: { size: 0, color: '#333', background: '#fff', strokeWidth: 0 }, // FR-8: 기본 숨김
+                color: { color: '#aaa', highlight: '#1a237e', hover: '#1a237e' },
+                smooth: { type: 'curvedCW', roundness: 0.15 }
+            };
+        });
+
+        erdNodeDS = new vis.DataSet(visNodes);
+        erdEdgeDS = new vis.DataSet(visEdges);
+
+        var options = {
+            nodes: { shape: 'box', margin: 10, borderWidth: 1 },
+            edges: { width: 1 },
+            physics: {
+                enabled: true,
+                barnesHut: { gravitationalConstant: -8000, springLength: 180, avoidOverlap: 0.5 },
+                stabilization: { enabled: true, iterations: 200, fit: true }
+            },
+            interaction: { hover: true, tooltipDelay: 150, navigationButtons: false }
+        };
+
+        var net = new vis.Network(container, { nodes: erdNodeDS, edges: erdEdgeDS }, options);
+        networks['tab-c'] = net;
+
+        // FR-11: stabilize 완료 후 물리 시뮬 off → 위치 고정
+        net.once('stabilizationIterationsDone', function() {
+            net.setOptions({ physics: { enabled: false } });
+        });
+
+        // 노드 클릭 → 상세 패널
+        net.on('click', function(params) {
+            if (params.nodes && params.nodes.length > 0) {
+                showNodeDetail(params.nodes[0]);
+            }
+        });
+
+        // FR-8: 엣지 호버 시 레이블 표시
+        net.on('hoverEdge', function(params) {
+            erdEdgeDS.update({ id: params.edge, font: { size: 12, background: '#fff' } });
+        });
+        net.on('blurEdge', function(params) {
+            erdEdgeDS.update({ id: params.edge, font: { size: 0 } });
+        });
+    }
+
+    function showNodeDetail(tableId) {
+        var panel = document.getElementById('erd-detail-panel');
+        if (!erdData) return;
+        var node = erdData.nodes.find(function(n) { return n.id === tableId; });
+        if (!node) return;
+
+        var c = DOMAIN_COLORS[node.domain] || DOMAIN_COLORS.core;
+        var html = '<div class="detail-title">' + escapeHtml(node.label) + '</div>';
+        html += '<div class="detail-domain" style="background:' + c.background + ';">' + node.domain + '</div>';
+        html += '<ul class="col-list">';
+        node.columns.forEach(function(col) {
+            var badges = '';
+            if (col.pk) badges += '<span class="badge-pk" title="Primary Key">PK</span> ';
+            if (col.fk) {
+                if (col.fkRef) {
+                    badges += '<span class="badge-fk" title="클릭 시 ' + escapeHtml(col.fkRef) + ' 로 이동" onclick="focusNode(\'' + escapeAttr(col.fkRef) + '\')">FK→' + escapeHtml(col.fkRef) + '</span> ';
+                } else {
+                    badges += '<span class="badge-fk disabled" title="관계선 미정의로 이동 불가">FK</span> ';
+                }
+            }
+            html += '<li>' + badges +
+                '<span class="col-name">' + escapeHtml(col.name) + '</span> ' +
+                '<span class="col-type">' + escapeHtml(col.type) + '</span></li>';
+        });
+        html += '</ul>';
+        panel.innerHTML = html;
+    }
+
+    // FR-5: FK 클릭 시 참조 노드로 포커스 이동
+    window.focusNode = function(tableId) {
+        var net = networks['tab-c'];
+        if (!net) return;
+        try {
+            net.selectNodes([tableId]);
+            net.focus(tableId, { scale: 1.2, animation: { duration: 400, easingFunction: 'easeInOutQuad' } });
+            showNodeDetail(tableId);
+        } catch (e) {
+            console.warn('focus 실패: ' + tableId, e);
+        }
+    };
+
+    // FR-6: 검색 — 매칭 노드 강조, 비매칭 흐리게
+    window.onErdSearch = function() {
+        if (!erdNodeDS || !erdData) return;
+        var kw = (document.getElementById('erd-search').value || '').trim().toLowerCase();
+        erdData.nodes.forEach(function(n) {
+            var match = (kw === '') || n.id.toLowerCase().indexOf(kw) !== -1;
+            erdNodeDS.update({ id: n.id, opacity: match ? 1.0 : 0.25 });
+        });
+    };
+
+    // FR-7: 도메인 필터 — 체크 해제된 도메인 노드/엣지 숨김
+    window.onErdFilter = function() {
+        if (!erdNodeDS || !erdEdgeDS || !erdData) return;
+        var checked = {};
+        document.querySelectorAll('.erd-filter').forEach(function(cb) {
+            checked[cb.dataset.domain] = cb.checked;
+        });
+        var visibleIds = {};
+        erdData.nodes.forEach(function(n) {
+            var show = !!checked[n.domain];
+            erdNodeDS.update({ id: n.id, hidden: !show });
+            if (show) visibleIds[n.id] = true;
+        });
+        erdData.edges.forEach(function(e, idx) {
+            var show = visibleIds[e.from] && visibleIds[e.to];
+            erdEdgeDS.update({ id: 'e' + idx, hidden: !show });
+        });
+        var anyVisible = Object.keys(visibleIds).length > 0;
+        var emptyMsg = document.getElementById('erd-empty-msg');
+        if (!anyVisible) {
+            emptyMsg.textContent = '표시할 테이블이 없습니다. 도메인 필터를 1개 이상 체크하세요.';
+            emptyMsg.classList.add('show');
+        } else {
+            emptyMsg.classList.remove('show');
+        }
+    };
+
+    function escapeHtml(s) {
+        if (s == null) return '';
+        return String(s).replace(/[&<>"']/g, function(m) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+        });
+    }
+    function escapeAttr(s) {
+        return escapeHtml(s).replace(/'/g, '&#39;');
+    }
+
+    // 초기 로드 — 첫 탭(A) 만 그리기. 나머지는 탭 전환 시 lazy 하게 그림
+    document.addEventListener('DOMContentLoaded', function() {
+        drawPlaceholder('tab-a');
+    });
+</script>
+</body>
+</html>
