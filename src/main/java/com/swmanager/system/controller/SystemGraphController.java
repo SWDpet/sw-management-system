@@ -43,4 +43,5 @@ public class SystemGraphController {
     public InfraGraphDTO getInfraGraph() {
         return infraGraphService.getGraph();
     }
+
 }

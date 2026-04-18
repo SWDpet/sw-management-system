@@ -192,14 +192,8 @@
         <button class="tab-btn active" data-tab="tab-a" onclick="switchTab('tab-a')">
             <i class="fas fa-server"></i> A. 인프라 구성도
         </button>
-        <button class="tab-btn" data-tab="tab-b" onclick="switchTab('tab-b')">
-            <i class="fas fa-sitemap"></i> B. 프로젝트 관계도
-        </button>
         <button class="tab-btn" data-tab="tab-c" onclick="switchTab('tab-c')">
             <i class="fas fa-database"></i> C. ERD 인터랙티브
-        </button>
-        <button class="tab-btn" data-tab="tab-d" onclick="switchTab('tab-d')">
-            <i class="fas fa-clipboard-check"></i> D. 점검 이력 관계
         </button>
     </div>
 
@@ -240,15 +234,6 @@
         <div id="infra-empty-msg" class="erd-empty-msg"></div>
     </div>
 
-    <!-- B. 프로젝트 관계도 -->
-    <div id="tab-b" class="tab-panel">
-        <div class="panel-title">
-            B. 프로젝트 관계도 <span class="phase-notice">Phase 1 예정</span>
-        </div>
-        <div class="panel-desc">계약 ↔ SW 프로젝트 ↔ 담당자 ↔ 산출물 관계</div>
-        <div id="graph-b" class="graph-canvas"></div>
-    </div>
-
     <!-- C. ERD 인터랙티브 -->
     <div id="tab-c" class="tab-panel">
         <div class="panel-title">C. ERD 인터랙티브</div>
@@ -273,14 +258,7 @@
         <div id="erd-empty-msg" class="erd-empty-msg"></div>
     </div>
 
-    <!-- D. 점검 이력 관계 -->
-    <div id="tab-d" class="tab-panel">
-        <div class="panel-title">
-            D. 점검 이력 관계 <span class="phase-notice">Phase 1 예정</span>
-        </div>
-        <div class="panel-desc">지자체 ↔ 점검내역서 ↔ 시스템 ↔ 점검자 연결</div>
-        <div id="graph-d" class="graph-canvas"></div>
-    </div>
+
 </div>
 
 <script>
@@ -296,32 +274,8 @@
         redrawGraph(tabId);
     }
 
-    // Phase 0 플레이스홀더 — B/D 만 "준비 중" (A/C 는 실제 데이터)
-    var phaseNoticeNodes = {
-        'tab-b': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' },
-        'tab-d': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' }
-    };
+    // A/C 두 탭만 사용. 플레이스홀더 탭 없음.
     var networks = {};
-
-    function drawPlaceholder(tabId) {
-        var containerId = 'graph-' + tabId.split('-')[1];
-        var container = document.getElementById(containerId);
-        if (!container) return;
-        var info = phaseNoticeNodes[tabId];
-        var data = {
-            nodes: new vis.DataSet([
-                { id: 1, label: info.label, title: info.title,
-                  shape: 'box', color: { background: '#fff3cd', border: '#856404' },
-                  font: { size: 16, color: '#856404' } }
-            ]),
-            edges: new vis.DataSet([])
-        };
-        var options = {
-            physics: { enabled: false },
-            interaction: { hover: true, tooltipDelay: 150 }
-        };
-        networks[tabId] = new vis.Network(container, data, options);
-    }
 
     function redrawGraph(tabId) {
         if (tabId === 'tab-c') {
@@ -346,8 +300,6 @@
         if (networks[tabId]) {
             networks[tabId].redraw();
             networks[tabId].fit();
-        } else {
-            drawPlaceholder(tabId);
         }
     }
 
@@ -366,6 +318,31 @@
     var erdNodeDS = null;     // vis.DataSet for nodes
     var erdEdgeDS = null;     // vis.DataSet for edges
 
+    // FR-13 공용: fetch 응답이 에러(4xx/5xx)면 JSON body 파싱 시도, 성공하면 json() 반환
+    // 파싱된 error.message 가 있으면 code 유무와 관계없이 그 메시지로 throw.
+    function parseApiResponse(res, fallbackLabel) {
+        if (res.ok) return res.json();
+        return res.text().then(function(text) {
+            var parsedErr = null;
+            if (text) {
+                try {
+                    var parsed = JSON.parse(text);
+                    if (parsed && parsed.error && parsed.error.message) {
+                        parsedErr = new Error(parsed.error.message);
+                        parsedErr.code = parsed.error.code;   // code 없어도 OK (undefined)
+                        parsedErr.status = res.status;
+                    }
+                } catch (jsonErr) {
+                    // JSON 파싱 실패 → fallback 으로 빠짐
+                }
+            }
+            if (parsedErr) throw parsedErr;
+            var fErr = new Error((fallbackLabel || 'API 오류') + ' (HTTP ' + res.status + ')');
+            fErr.status = res.status;
+            throw fErr;
+        });
+    }
+
     function loadErdGraph() {
         var container = document.getElementById('graph-c');
         var emptyMsg = document.getElementById('erd-empty-msg');
@@ -373,10 +350,7 @@
         container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;">그래프 로드 중...</div>';
 
         fetch('/admin/system-graph/api/erd', { credentials: 'same-origin' })
-            .then(function(res) {
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                return res.json();
-            })
+            .then(function(res) { return parseApiResponse(res, 'ERD API 오류'); })
             .then(function(data) {
                 if (!data || !data.nodes || data.nodes.length === 0) {
                     // FR-12: 빈 응답 — 통일된 안내 문구
@@ -614,10 +588,7 @@
         infraGraphRendered = false;
 
         fetch('/admin/system-graph/api/infra', { credentials: 'same-origin' })
-            .then(function(r) {
-                if (!r.ok) throw new Error('HTTP ' + r.status);
-                return r.json();
-            })
+            .then(function(r) { return parseApiResponse(r, '인프라 API 오류'); })
             .then(function(data) {
                 if (!data || !data.nodes || data.nodes.length === 0) {
                     container.innerHTML = '';
@@ -1071,6 +1042,7 @@
             + ' · 서버 ' + counts.server
             + ' · SW ' + (showSw ? counts.software : '숨김');
     }
+
 
     // 초기 로드 — A 탭(첫 탭) 은 드롭다운 채우기용 데이터 fetch 만, 그래프 렌더는 시·도 선택 후
     document.addEventListener('DOMContentLoaded', function() {

@@ -106,3 +106,4 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);
 }
+
