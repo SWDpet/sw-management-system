@@ -1,7 +1,9 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.dto.ErdGraphDTO;
+import com.swmanager.system.dto.InfraGraphDTO;
 import com.swmanager.system.service.ErdGraphService;
+import com.swmanager.system.service.InfraGraphService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class SystemGraphController {
 
     private final ErdGraphService erdGraphService;
+    private final InfraGraphService infraGraphService;
 
     @GetMapping
     public String view() {
@@ -32,5 +35,12 @@ public class SystemGraphController {
     @ResponseBody
     public ErdGraphDTO getErdGraph() {
         return erdGraphService.getGraph();
+    }
+
+    /** Phase 1 A — 인프라 구성도 데이터 (Specs: docs/plans/system-graph-infra.md v2 FR-1). */
+    @GetMapping("/api/infra")
+    @ResponseBody
+    public InfraGraphDTO getInfraGraph() {
+        return infraGraphService.getGraph();
     }
 }

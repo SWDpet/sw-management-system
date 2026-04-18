@@ -43,7 +43,84 @@
             border-radius: 12px; font-size: 0.75em; font-weight: 600; margin-left: 8px;
         }
 
-        /* === ERD 탭 전용 === */
+        /* === A 탭 텍스트 트리 뷰 === */
+        .tree-view {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.88em;
+            line-height: 1.55;
+            color: #333;
+            padding: 12px 14px;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            overflow: auto;
+            white-space: pre;
+            background: #fafbff;
+        }
+        .tl-line { display: block; white-space: pre; }
+        .tl-prefix { color: #aaa; user-select: none; }
+        .tl-label {
+            padding: 1px 6px; border-radius: 3px; cursor: pointer;
+            font-weight: 700; transition: background 0.1s;
+        }
+        .tl-label:hover { background: rgba(26, 35, 126, 0.08); }
+        .tl-label.active { background: rgba(26, 35, 126, 0.15); outline: 1px dashed #1a237e; }
+        .tl-city { color: #1a237e; }
+        .tl-infra { color: #4e73df; }
+        .tl-server { color: #1cc88a; }
+        .tl-software { color: #dda20a; }
+        .tl-meta { color: #888; font-weight: 400; font-size: 0.92em; margin-left: 4px; }
+
+        /* === A 탭 조직도 (Org Chart) === */
+        .oc-wrap {
+            width: 100%; height: 100%; overflow: auto;
+            padding: 20px; box-sizing: border-box; background: #fafbff;
+            display: flex; justify-content: center;
+        }
+        .oc-tree, .oc-tree ul {
+            list-style: none; padding: 0; margin: 0; position: relative;
+        }
+        .oc-tree ul {
+            display: flex; flex-direction: row; justify-content: center;
+            padding-top: 22px;
+        }
+        .oc-tree > li { padding: 0 0 10px; text-align: center; position: relative; }
+        .oc-tree ul li {
+            flex: 0 0 auto; padding: 22px 8px 0 8px;
+            position: relative; text-align: center;
+        }
+        /* 수직 연결선 (각 li 위로) */
+        .oc-tree ul li::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            width: 2px; height: 22px; background: #1a237e;
+        }
+        /* 수평 연결선 — ul 아래에 한 줄로 형제 잇기 */
+        .oc-tree ul::before {
+            content: ''; position: absolute; top: 0; left: 10%; right: 10%;
+            height: 2px; background: #1a237e;
+        }
+        .oc-tree ul li:only-child::before { height: 22px; }
+        .oc-tree ul:has(> li:only-child)::before,
+        .oc-tree > ul:only-child::before { display: none; }
+
+        .oc-box {
+            display: inline-block; padding: 8px 14px; border-radius: 6px;
+            cursor: pointer; min-width: 90px; max-width: 200px;
+            color: #fff; font-weight: 600; text-align: center;
+            font-size: 0.88em; line-height: 1.3;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            word-break: keep-all;
+        }
+        .oc-box:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .oc-city { background: #1a237e; }
+        .oc-infra { background: #4e73df; }
+        .oc-server { background: #1cc88a; }
+        .oc-software { background: #f6c23e; color: #333; }
+        .oc-title { display: block; font-weight: 700; }
+        .oc-meta { display: block; font-size: 0.78em; opacity: 0.88; margin-top: 2px; font-weight: 400; }
+
+        /* === A 탭 텍스트 트리 뷰 === */
         .erd-toolbar {
             display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
             background: #f8f9fa; padding: 12px 14px; border-radius: 8px; margin-bottom: 12px;
@@ -128,11 +205,39 @@
 
     <!-- A. 인프라 구성도 -->
     <div id="tab-a" class="tab-panel active">
-        <div class="panel-title">
-            A. 인프라 구성도 <span class="phase-notice">Phase 1 예정</span>
+        <div class="panel-title">A. 인프라 구성도</div>
+        <div class="panel-desc">지자체 → 시스템 → 서버 → 소프트웨어 — 실시간 DB 조회</div>
+
+        <div class="erd-toolbar">
+            <select id="infra-city" onchange="onInfraCityChange()" style="padding:6px 10px;border:1px solid #ccd;border-radius:4px;font-size:0.88em;">
+                <option value="">시·도 전체</option>
+            </select>
+            <select id="infra-dist" onchange="onInfraFilter()" style="padding:6px 10px;border:1px solid #ccd;border-radius:4px;font-size:0.88em;">
+                <option value="">시·군·구 전체</option>
+            </select>
+            <select id="infra-sys" onchange="onInfraFilter()" style="padding:6px 10px;border:1px solid #ccd;border-radius:4px;font-size:0.88em;min-width:150px;">
+                <option value="">시스템: 전체</option>
+            </select>
+            <label style="display:inline-flex;align-items:center;gap:5px;font-size:0.88em;padding:4px 10px;border-radius:12px;background:#fff;border:1px solid #dde;cursor:pointer;">
+                <input type="checkbox" id="infra-show-sw" onchange="onInfraFilter()"> 소프트웨어 표시
+            </label>
+            <button type="button" onclick="toggleInfraViewMode()" style="padding:6px 12px;background:#fff;color:#1a237e;border:1px solid #1a237e;border-radius:4px;cursor:pointer;font-size:0.85em;">
+                <span id="infra-view-mode-label">🗂️ 조직도 보기</span>
+            </button>
+            <span id="infra-count" style="margin-left:auto;color:#555;font-size:0.85em;font-weight:500;">로드 중...</span>
+            <button onclick="loadInfraGraph()" style="padding:6px 14px;background:#1a237e;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.88em;">
+                <i class="fas fa-sync-alt"></i> 새로고침
+            </button>
         </div>
-        <div class="panel-desc">지자체 → 시스템 → 서버(DB/AP/GIS) → 소프트웨어 계층 관계</div>
-        <div id="graph-a" class="graph-canvas"></div>
+
+        <div class="erd-split">
+            <div id="graph-a" class="graph-canvas"></div>
+            <div id="infra-detail-panel" class="erd-detail">
+                <div style="color:#999;font-size:0.9em;">← 노드를 클릭하면 정보가 여기에 표시됩니다.</div>
+            </div>
+        </div>
+
+        <div id="infra-empty-msg" class="erd-empty-msg"></div>
     </div>
 
     <!-- B. 프로젝트 관계도 -->
@@ -191,9 +296,8 @@
         redrawGraph(tabId);
     }
 
-    // Phase 0 플레이스홀더 — A/B/D 만 "준비 중" 더미 노드 (C 는 실제 데이터)
+    // Phase 0 플레이스홀더 — B/D 만 "준비 중" (A/C 는 실제 데이터)
     var phaseNoticeNodes = {
-        'tab-a': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' },
         'tab-b': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' },
         'tab-d': { label: '준비 중', title: 'Phase 1 에서 실제 데이터 연동' }
     };
@@ -221,12 +325,21 @@
 
     function redrawGraph(tabId) {
         if (tabId === 'tab-c') {
-            // C 탭: 실제 ERD 데이터 로더 (최초 1회만)
             if (!networks['tab-c']) {
                 loadErdGraph();
             } else {
                 networks['tab-c'].redraw();
                 networks['tab-c'].fit();
+            }
+            return;
+        }
+        if (tabId === 'tab-a') {
+            // 탭 진입 시: 데이터 아직 안 받았으면 드롭다운 채우기용 fetch (그래프 렌더 X)
+            if (!infraData) {
+                loadInfraGraph();
+            } else if (networks['tab-a']) {
+                networks['tab-a'].redraw();
+                networks['tab-a'].fit();
             }
             return;
         }
@@ -465,9 +578,503 @@
         return escapeHtml(s).replace(/'/g, '&#39;');
     }
 
-    // 초기 로드 — 첫 탭(A) 만 그리기. 나머지는 탭 전환 시 lazy 하게 그림
+    // ─── Phase 1 A: 인프라 구성도 ─────────────────────────────────
+
+    var INFRA_LEVEL_COLORS = {
+        city:     { background: '#1a237e', border: '#0d124d', font: '#fff' },
+        infra:    { background: '#4e73df', border: '#2e59d9', font: '#fff' },
+        server:   { background: '#1cc88a', border: '#17a673', font: '#fff' },
+        software: { background: '#f6c23e', border: '#dda20a', font: '#333' }
+    };
+
+    // 영문 필드명 → 한글 라벨 (FR-8)
+    var INFRA_ATTR_LABELS = {
+        city_nm: '시·도', dist_nm: '시·군·구', sys_count: '시스템 개수',
+        sys_nm: '시스템명', sys_nm_en: '시스템명 (영문)', infra_type: '인프라 유형',
+        server_count: '서버 개수',
+        server_type: '서버 유형', ip_addr: 'IP 주소', os_nm: '운영체제',
+        server_model: '서버 모델', serial_no: '시리얼 번호', cpu_spec: 'CPU 사양',
+        sw_count: '소프트웨어 개수',
+        sw_category: 'SW 분류', sw_nm: 'SW 이름', sw_ver: 'SW 버전',
+        port: '포트', install_path: '설치 경로', sid: 'SID'
+    };
+
+    var infraData = null;
+    var infraNodeDS = null;
+    var infraEdgeDS = null;
+
+    // 그래프가 실제로 렌더됐는지 상태 플래그
+    var infraGraphRendered = false;
+
+    function loadInfraGraph() {
+        var container = document.getElementById('graph-a');
+        var empty = document.getElementById('infra-empty-msg');
+        empty.classList.remove('show');
+        container.innerHTML = '<div style="padding:40px;text-align:center;color:#888;">드롭다운 채우는 중...</div>';
+        infraGraphRendered = false;
+
+        fetch('/admin/system-graph/api/infra', { credentials: 'same-origin' })
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function(data) {
+                if (!data || !data.nodes || data.nodes.length === 0) {
+                    container.innerHTML = '';
+                    empty.textContent = '등록된 인프라가 없습니다.';
+                    empty.classList.add('show');
+                    return;
+                }
+                infraData = data;
+                populateInfraCityOptions(data);
+                populateInfraSysOptions(data);
+
+                // 필터 초기화
+                var sw = document.getElementById('infra-show-sw'); if (sw) sw.checked = false;
+                var sy = document.getElementById('infra-sys');     if (sy) sy.value = '';
+                var ct = document.getElementById('infra-city');    if (ct) ct.value = '';
+                var dt = document.getElementById('infra-dist');    if (dt) dt.innerHTML = '<option value="">시·군·구 전체</option>';
+
+                // 초기 카운트
+                var cntEl = document.getElementById('infra-count');
+                if (cntEl) cntEl.textContent = '준비 완료 · 시·도 를 선택하면 그래프가 표시됩니다';
+
+                // 그래프는 아직 렌더하지 않음 — 시·도 선택 시 onInfraFilter 에서 렌더
+                container.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#666;">'
+                    + '<div style="font-size:2em;margin-bottom:10px;">📊</div>'
+                    + '<div style="font-size:1.05em;font-weight:600;margin-bottom:6px;">시·도 를 선택해 주세요</div>'
+                    + '<div style="font-size:0.88em;color:#888;">성능을 위해 선택하신 지역만 표시합니다.</div>'
+                    + '</div>';
+            })
+            .catch(function(err) {
+                console.error('Infra 로드 실패', err);
+                container.innerHTML = '';
+                empty.textContent = '인프라 데이터를 불러오지 못했습니다. server.log 확인 필요';
+                empty.classList.add('show');
+            });
+    }
+
+    // 시스템 영문명(sys_nm_en) distinct 목록으로 드롭다운 채움
+    function populateInfraSysOptions(data) {
+        var sel = document.getElementById('infra-sys');
+        if (!sel) return;
+        var set = {};
+        data.nodes.forEach(function(n) {
+            if (n.level === 'infra' && n.attrs && n.attrs.sys_nm_en) {
+                set[n.attrs.sys_nm_en] = true;
+            }
+        });
+        sel.innerHTML = '<option value="">시스템: 전체</option>';
+        Object.keys(set).sort().forEach(function(s) {
+            var opt = document.createElement('option');
+            opt.value = s; opt.textContent = s;
+            sel.appendChild(opt);
+        });
+    }
+
+    function populateInfraCityOptions(data) {
+        var citySel = document.getElementById('infra-city');
+        var distSel = document.getElementById('infra-dist');
+        // 지자체 노드에서 시·도 목록 수집
+        var cityMap = {};
+        data.nodes.forEach(function(n) {
+            if (n.level === 'city' && n.attrs) {
+                var c = n.attrs.city_nm || '';
+                if (c) cityMap[c] = true;
+            }
+        });
+        citySel.innerHTML = '<option value="">시·도 전체</option>';
+        Object.keys(cityMap).sort().forEach(function(c) {
+            var opt = document.createElement('option');
+            opt.value = c; opt.textContent = c;
+            citySel.appendChild(opt);
+        });
+        distSel.innerHTML = '<option value="">시·군·구 전체</option>';
+    }
+
+    window.onInfraCityChange = function() {
+        var citySel = document.getElementById('infra-city');
+        var distSel = document.getElementById('infra-dist');
+        var chosenCity = citySel.value;
+        // 시·군·구 드롭다운을 선택된 시·도 기준으로 재구성
+        var distSet = {};
+        if (infraData) {
+            infraData.nodes.forEach(function(n) {
+                if (n.level === 'city' && n.attrs && n.attrs.city_nm === chosenCity && n.attrs.dist_nm) {
+                    distSet[n.attrs.dist_nm] = true;
+                }
+            });
+        }
+        distSel.innerHTML = '<option value="">시·군·구 전체</option>';
+        Object.keys(distSet).sort().forEach(function(d) {
+            var opt = document.createElement('option');
+            opt.value = d; opt.textContent = d;
+            distSel.appendChild(opt);
+        });
+        onInfraFilter();
+    };
+
+    // 뷰 모드: 'tree' (기본, 텍스트 트리) | 'org' (조직도 박스)
+    var infraViewMode = 'tree';
+
+    window.toggleInfraViewMode = function() {
+        infraViewMode = (infraViewMode === 'tree') ? 'org' : 'tree';
+        var lbl = document.getElementById('infra-view-mode-label');
+        if (lbl) lbl.textContent = infraViewMode === 'tree' ? '🗂️ 조직도 보기' : '📝 텍스트 트리';
+        if (infraGraphRendered) onInfraFilter();  // 재렌더
+    };
+
+    function renderInfraGraph(data) {
+        // 호환성 유지용 stub — 실제 렌더는 renderInfraTree / renderInfraOrgChart
+        infraNodeDS = true; infraEdgeDS = true;
+    }
+
+    // 조직도 렌더 — 소규모(≤ 80 노드) 범위에서만 동작. 초과 시 안내.
+    function renderInfraOrgChart(visible) {
+        var container = document.getElementById('graph-a');
+        if (!container || !infraData) return;
+
+        var visibleCount = 0;
+        for (var k in visible) { if (visible[k]) visibleCount++; }
+
+        if (visibleCount === 0) {
+            container.innerHTML = '<div class="oc-wrap" style="color:#888;">(표시할 항목 없음)</div>';
+            return;
+        }
+        if (visibleCount > 80) {
+            container.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#666;">'
+                + '<div style="font-size:2em;margin-bottom:10px;">🗂️</div>'
+                + '<div style="font-size:1.05em;font-weight:600;margin-bottom:6px;">조직도는 소규모 범위에서만 지원합니다</div>'
+                + '<div style="font-size:0.88em;color:#888;">현재 ' + visibleCount + '개 노드 — <b>80개 이하</b>로 좁혀 주세요 (특정 시스템 선택 권장).</div>'
+                + '<div style="font-size:0.85em;color:#888;margin-top:8px;">또는 "📝 텍스트 트리" 로 전환해 주세요.</div>'
+                + '</div>';
+            return;
+        }
+
+        // 부모 → 자식 맵
+        var childrenOf = {};
+        infraData.edges.forEach(function(e) {
+            (childrenOf[e.from] = childrenOf[e.from] || []).push(e.to);
+        });
+        var nodeById = {};
+        infraData.nodes.forEach(function(n) { nodeById[n.id] = n; });
+
+        var rootCities = infraData.nodes.filter(function(n) {
+            return n.level === 'city' && visible[n.id];
+        });
+        rootCities.sort(function(a, b) {
+            var aa = (a.attrs.city_nm || '') + '|' + (a.attrs.dist_nm || '');
+            var bb = (b.attrs.city_nm || '') + '|' + (b.attrs.dist_nm || '');
+            return aa < bb ? -1 : aa > bb ? 1 : 0;
+        });
+
+        function renderNodeHtml(nodeId) {
+            var n = nodeById[nodeId];
+            if (!n || !visible[nodeId]) return '';
+
+            var meta = '';
+            if (n.level === 'server' && n.attrs && n.attrs.ip_addr) meta = n.attrs.ip_addr;
+            else if (n.level === 'software' && n.attrs && n.attrs.sw_ver) meta = n.attrs.sw_ver;
+            else if (n.level === 'infra' && n.attrs && n.attrs.infra_type) meta = n.attrs.infra_type;
+
+            var html = '<li>'
+                + '<span class="oc-box oc-' + n.level + '" onclick="showInfraNodeDetail(\''
+                    + escapeAttr(nodeId) + '\')">'
+                + '<span class="oc-title">' + escapeHtml(n.label || '(이름 없음)') + '</span>'
+                + (meta ? '<span class="oc-meta">' + escapeHtml(meta) + '</span>' : '')
+                + '</span>';
+
+            var kids = (childrenOf[nodeId] || []).filter(function(c) { return visible[c]; });
+            kids.sort(function(a, b) {
+                var na = nodeById[a], nb = nodeById[b];
+                var la = (na && na.label) || '', lb = (nb && nb.label) || '';
+                return la < lb ? -1 : la > lb ? 1 : 0;
+            });
+            if (kids.length > 0) {
+                html += '<ul>' + kids.map(renderNodeHtml).join('') + '</ul>';
+            }
+            html += '</li>';
+            return html;
+        }
+
+        var htmlRoot = '<div class="oc-wrap"><ul class="oc-tree">'
+                + rootCities.map(renderNodeHtml).join('')
+                + '</ul></div>';
+        container.innerHTML = htmlRoot;
+    }
+
+    // 레벨별 라벨 접두사
+    var LEVEL_PREFIX_LABEL = {
+        city: '', infra: '', server: '', software: ''
+    };
+
+    function renderInfraTree(visible) {
+        var container = document.getElementById('graph-a');
+        if (!container || !infraData) return;
+
+        // 부모 → 자식 배열 구성
+        var childrenOf = {};
+        infraData.edges.forEach(function(e) {
+            (childrenOf[e.from] = childrenOf[e.from] || []).push(e.to);
+        });
+        // 노드 ID 매핑
+        var nodeById = {};
+        infraData.nodes.forEach(function(n) { nodeById[n.id] = n; });
+
+        // 렌더 루트: 보이는 city 노드들
+        var rootCities = infraData.nodes.filter(function(n) {
+            return n.level === 'city' && visible[n.id];
+        });
+        // city 안정 정렬 (시·도→시·군·구 가나다순)
+        rootCities.sort(function(a, b) {
+            var aa = (a.attrs.city_nm || '') + '|' + (a.attrs.dist_nm || '');
+            var bb = (b.attrs.city_nm || '') + '|' + (b.attrs.dist_nm || '');
+            return aa < bb ? -1 : aa > bb ? 1 : 0;
+        });
+
+        var lines = [];
+
+        function renderNode(nodeId, prefix, isLast) {
+            var n = nodeById[nodeId];
+            if (!n || !visible[nodeId]) return;
+
+            var connector = prefix === null ? '' : (isLast ? '└── ' : '├── ');
+            var curPrefix = (prefix || '') + connector;
+            var levelClass = 'tl-' + n.level;
+
+            // 메타 정보 (축약)
+            var meta = '';
+            if (n.level === 'server' && n.attrs && n.attrs.ip_addr) {
+                meta = '(' + escapeHtml(n.attrs.ip_addr) + ')';
+            } else if (n.level === 'software' && n.attrs && n.attrs.sw_ver) {
+                meta = escapeHtml(n.attrs.sw_ver);
+            } else if (n.level === 'infra' && n.attrs && n.attrs.infra_type) {
+                meta = '[' + escapeHtml(n.attrs.infra_type) + ']';
+            }
+
+            lines.push(
+                '<span class="tl-line">'
+                + '<span class="tl-prefix">' + escapeHtml(curPrefix) + '</span>'
+                + '<span class="tl-label ' + levelClass + '" '
+                +   'onclick="showInfraNodeDetail(\'' + escapeAttr(nodeId) + '\')">'
+                +   escapeHtml(n.label || '(이름 없음)')
+                + '</span>'
+                + (meta ? '<span class="tl-meta">' + meta + '</span>' : '')
+                + '</span>'
+            );
+
+            var kids = (childrenOf[nodeId] || []).filter(function(c) { return visible[c]; });
+            // 자식 정렬: 레벨 우선, 그 다음 라벨
+            kids.sort(function(a, b) {
+                var na = nodeById[a], nb = nodeById[b];
+                if (!na || !nb) return 0;
+                var la = (na.label || ''), lb = (nb.label || '');
+                return la < lb ? -1 : la > lb ? 1 : 0;
+            });
+            var childPrefix = (prefix || '') + (prefix === null ? '' : (isLast ? '    ' : '│   '));
+            kids.forEach(function(k, i) {
+                renderNode(k, childPrefix, i === kids.length - 1);
+            });
+        }
+
+        if (rootCities.length === 0) {
+            container.innerHTML = '<pre class="tree-view" style="color:#888;">(표시할 항목 없음)</pre>';
+            return;
+        }
+
+        rootCities.forEach(function(c, i) {
+            renderNode(c.id, null, i === rootCities.length - 1);
+        });
+
+        container.innerHTML = '<pre class="tree-view">' + lines.join('') + '</pre>';
+    }
+
+    function showInfraNodeDetail(nodeId) {
+        var panel = document.getElementById('infra-detail-panel');
+        if (!infraData) return;
+        var n = infraData.nodes.find(function(x) { return x.id === nodeId; });
+        if (!n) return;
+
+        var c = INFRA_LEVEL_COLORS[n.level] || INFRA_LEVEL_COLORS.infra;
+        var levelLabel = ({ city: '지자체', infra: '시스템', server: '서버', software: '소프트웨어' })[n.level] || n.level;
+
+        var html = '<div class="detail-title">' + escapeHtml(n.label) + '</div>';
+        html += '<div class="detail-domain" style="background:' + c.background + ';">' + levelLabel + '</div>';
+        html += '<ul class="col-list">';
+        if (n.attrs) {
+            Object.keys(n.attrs).forEach(function(k) {
+                var label = INFRA_ATTR_LABELS[k] || k;
+                var v = n.attrs[k];
+                if (v === null || v === undefined || v === '') return;
+                html += '<li>'
+                    + '<span class="col-name">' + escapeHtml(label) + '</span>'
+                    + ' <span class="col-desc">' + escapeHtml(String(v)) + '</span>'
+                    + '</li>';
+            });
+        }
+        html += '</ul>';
+        panel.innerHTML = html;
+    }
+
+    // v3: 필터 — 시·도 / 시·군·구 / 유형(드롭다운) / SW 표시(체크). 배치 업데이트.
+    window.onInfraFilter = function() {
+        if (!infraData) return;
+        var city = document.getElementById('infra-city').value;
+        var sysVal = document.getElementById('infra-sys').value;     // '' | 시스템 영문명
+        var dist = document.getElementById('infra-dist').value;
+        var showSw = document.getElementById('infra-show-sw').checked;
+
+        // 렌더 조건 — 시·군·구 또는 시스템 선택해야 그래프 그림 (성능 + 가독성)
+        var canRender = !!(dist || sysVal);
+        var container = document.getElementById('graph-a');
+        if (!canRender) {
+            // placeholder 로 복귀
+            infraGraphRendered = false;
+            if (container) {
+                var hint = city
+                    ? '<div style="padding:60px 20px;text-align:center;color:#666;"><div style="font-size:2em;margin-bottom:10px;">🔍</div><div style="font-size:1.05em;font-weight:600;margin-bottom:6px;">시·군·구 또는 시스템을 선택해 주세요</div><div style="font-size:0.88em;color:#888;">범위를 좁혀야 트리가 정확히 보입니다.</div></div>'
+                    : '<div style="padding:60px 20px;text-align:center;color:#666;"><div style="font-size:2em;margin-bottom:10px;">📊</div><div style="font-size:1.05em;font-weight:600;margin-bottom:6px;">시·도 를 선택해 주세요</div><div style="font-size:0.88em;color:#888;">성능을 위해 선택하신 지역만 표시합니다.</div></div>';
+                container.innerHTML = hint;
+            }
+            var cntEl = document.getElementById('infra-count');
+            if (cntEl) cntEl.textContent = city ? '시·군·구 또는 시스템 선택 대기' : '시·도 선택 대기';
+            return;
+        }
+
+        // 최초 렌더 플래그 — 실제 렌더는 아래 renderInfraTree 에서
+        infraGraphRendered = true;
+
+        function sysAllowed(n) {
+            if (!sysVal) return true;                     // '' = 전체
+            // 인프라(시스템) 노드에서 sys_nm_en 매칭
+            return n.attrs && n.attrs.sys_nm_en === sysVal;
+        }
+
+        // 부모 룩업 (child → parent) — 엣지는 parent → child 방향
+        var parentOf = {};
+        infraData.edges.forEach(function(e) {
+            parentOf[e.to] = e.from;
+        });
+
+        // 각 노드 visible 맵 — 계단식 상위 기준
+        var visible = {};
+
+        // Pass 1: city 만 먼저 판정 (infra 계산 시 부모 city 가 이미 결정되어 있어야 함)
+        infraData.nodes.forEach(function(n) {
+            if (n.level === 'city') {
+                var show = true;
+                if (city && n.attrs && n.attrs.city_nm !== city) show = false;
+                if (dist && n.attrs && n.attrs.dist_nm !== dist) show = false;
+                visible[n.id] = show;
+            }
+        });
+        // Pass 2: infra — 부모 city 가 visible 해야 함 + 유형/지역 조건
+        infraData.nodes.forEach(function(n) {
+            if (n.level === 'infra') {
+                var parentCity = parentOf[n.id];
+                var parentVisible = parentCity ? !!visible[parentCity] : true;
+                var show = parentVisible
+                        && sysAllowed(n)
+                        && (!city || (n.attrs && n.attrs.city_nm === city))
+                        && (!dist || (n.attrs && n.attrs.dist_nm === dist));
+                visible[n.id] = show;
+            }
+        });
+        // Pass 3: server
+        infraData.nodes.forEach(function(n) {
+            if (n.level === 'server') {
+                var parent = parentOf[n.id];
+                visible[n.id] = parent ? !!visible[parent] : false;
+            }
+        });
+        // Pass 4: software — showSw 가 false 면 무조건 숨김 (v3 FR-6)
+        infraData.nodes.forEach(function(n) {
+            if (n.level === 'software') {
+                if (!showSw) { visible[n.id] = false; return; }
+                var parent = parentOf[n.id];
+                visible[n.id] = parent ? !!visible[parent] : false;
+            }
+        });
+
+        // 뷰 모드에 따라 렌더
+        if (infraViewMode === 'org') {
+            renderInfraOrgChart(visible);
+        } else {
+            renderInfraTree(visible);
+        }
+
+        // 레벨별 카운트 표시 (v3 FR-6-COUNT)
+        updateInfraCount(visible, showSw);
+
+        // 빈 상태 — 전 레벨 통틀어 visible 하나도 없을 때만 (v3 FR-6)
+        var anyVisible = false;
+        for (var k in visible) { if (visible[k]) { anyVisible = true; break; } }
+        var emptyMsg = document.getElementById('infra-empty-msg');
+        if (!anyVisible) {
+            emptyMsg.textContent = '필터 조건에 맞는 인프라가 없습니다.';
+            emptyMsg.classList.add('show');
+        } else {
+            emptyMsg.classList.remove('show');
+        }
+    };
+
+    // 격자 배치: 레벨별로 가로 per-row 개씩, 넘치면 다음 줄 + 레벨별로 세로 gap
+    function applyGridLayout(visible) {
+        if (!infraNodeDS || !infraData) return;
+        var PER_ROW = 10;
+        var X_SPACING = 180;
+        var Y_SPACING = 80;
+        var LEVEL_GAP = 100;     // 레벨 간 세로 여유
+
+        var levelOrder = ['city', 'infra', 'server', 'software'];
+        var updates = [];
+        var yCursor = 0;
+
+        levelOrder.forEach(function(level) {
+            var lvlNodes = infraData.nodes.filter(function(n) {
+                return n.level === level && visible[n.id];
+            });
+            if (lvlNodes.length === 0) return;
+            var colsThisLevel = Math.min(PER_ROW, lvlNodes.length);
+            var xOffset = -(colsThisLevel - 1) * X_SPACING / 2; // 화면 가로 중앙 기준 정렬
+            lvlNodes.forEach(function(n, idx) {
+                var row = Math.floor(idx / PER_ROW);
+                var col = idx % PER_ROW;
+                updates.push({
+                    id: n.id,
+                    x: xOffset + col * X_SPACING,
+                    y: yCursor + row * Y_SPACING,
+                    fixed: { x: false, y: false }  // 드래그로 재배치 허용
+                });
+            });
+            var rowsThisLevel = Math.ceil(lvlNodes.length / PER_ROW);
+            yCursor += rowsThisLevel * Y_SPACING + LEVEL_GAP;
+        });
+
+        if (updates.length > 0) {
+            infraNodeDS.update(updates);
+        }
+    }
+
+    // v3 FR-6-COUNT: 필터 바에 레벨별 현재 표시 카운트 업데이트
+    function updateInfraCount(visible, showSw) {
+        var counts = { city: 0, infra: 0, server: 0, software: 0 };
+        if (infraData) {
+            infraData.nodes.forEach(function(n) {
+                if (visible[n.id]) counts[n.level]++;
+            });
+        }
+        var el = document.getElementById('infra-count');
+        if (!el) return;
+        el.textContent = '지자체 ' + counts.city
+            + ' · 시스템 ' + counts.infra
+            + ' · 서버 ' + counts.server
+            + ' · SW ' + (showSw ? counts.software : '숨김');
+    }
+
+    // 초기 로드 — A 탭(첫 탭) 은 드롭다운 채우기용 데이터 fetch 만, 그래프 렌더는 시·도 선택 후
     document.addEventListener('DOMContentLoaded', function() {
-        drawPlaceholder('tab-a');
+        loadInfraGraph();
     });
 </script>
 </body>

@@ -1,12 +1,15 @@
 package com.swmanager.system.repository;
 
 import com.swmanager.system.domain.Infra;
+import com.swmanager.system.dto.InfraGraphDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public interface InfraRepository extends JpaRepository<Infra, Long> {
@@ -33,4 +36,13 @@ public interface InfraRepository extends JpaRepository<Infra, Long> {
             @Param("type") String type,
             @Param("kw") String keyword,
             Pageable pageable);
+
+    /**
+     * 시스템 관계도 A 탭용 — 인프라 마스터 허용 필드만 조회 (Specs FR-3).
+     * 민감 필드(org_cd/dist_cd 등 내부 컬럼 포함) 조회하지 않음.
+     */
+    @Query("SELECT new com.swmanager.system.dto.InfraGraphDTO$InfraMasterView(" +
+           "  i.infraId, i.infraType, i.cityNm, i.distNm, i.sysNm, i.sysNmEn) " +
+           "FROM Infra i")
+    List<InfraGraphDTO.InfraMasterView> fetchAllMasterViews();
 }
