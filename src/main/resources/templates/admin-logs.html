@@ -5,16 +5,16 @@
     <title>시스템 접속 기록</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; padding: 40px; background: #f4f7f6; margin: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; padding: 40px; background: #FAFAF9; margin: 0; }
         .container { max-width: 1400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         
-        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a237e; padding-bottom: 15px; margin-bottom: 20px; }
-        .page-header h2 { margin: 0; color: #1a237e; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #134E4A; padding-bottom: 15px; margin-bottom: 20px; }
+        .page-header h2 { margin: 0; color: #134E4A; }
         
-        .search-section { margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; display: flex; justify-content: flex-end; }
+        .search-section { margin-bottom: 20px; background: #F5F5F4; padding: 15px; border-radius: 8px; display: flex; justify-content: flex-end; }
         .search-section form { display: flex; gap: 10px; width: 100%; justify-content: flex-end; }
         .search-section input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 300px; }
-        .btn-search { padding: 10px 20px; background: #1a237e; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-search { padding: 10px 20px; background: #134E4A; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-back { background: #6c757d; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -23,17 +23,16 @@
         
         .pagination { display: flex; justify-content: center; margin-top: 20px; gap: 5px; }
         .pagination a { padding: 8px 12px; border: 1px solid #ddd; color: #333; text-decoration: none; border-radius: 4px; }
-        .pagination a.active { background: #1a237e; color: white; border-color: #1a237e; }
+        .pagination a.active { background: #134E4A; color: white; border-color: #134E4A; }
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
 <div class="container">
     <div class="page-header">
         <h2><i class="fas fa-list-alt"></i> 시스템 접속 및 행위 로그</h2>
         <div>
             <a th:href="@{/admin/users}" class="btn-back"><i class="fas fa-arrow-left"></i> 사용자 관리로 돌아가기</a>
-            <a th:href="@{/}" style="padding:8px 14px; background:#4e73df; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-home"></i> 메인</a>
-            <a href="/logout" style="padding:8px 14px; background:#e74a3b; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
         </div>
     </div>
 
@@ -65,7 +64,7 @@
                 <td th:text="${log.username}"></td>
                 <td th:text="${log.ipAddr}"></td>
                 <td th:text="${log.menuNm}"></td>
-                <td th:text="${log.actionType}" style="font-weight: bold; color: #1a237e;"></td>
+                <td th:text="${log.actionType}" style="font-weight: bold; color: #134E4A;"></td>
                 <td th:text="${log.actionDetail}" style="text-align: left; padding-left: 20px;"></td>
             </tr>
             <tr th:if="${logs.totalElements == 0}">

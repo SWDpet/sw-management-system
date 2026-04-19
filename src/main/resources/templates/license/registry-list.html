@@ -4,132 +4,183 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>라이선스 대장 - SW 관리 시스템</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
-        
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        
-        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .header-left h1 { font-size: 24px; color: #333; margin-bottom: 5px; }
-        .header-left p { color: #666; font-size: 14px; }
-        .header-right { display: flex; gap: 10px; align-items: center; }
-        .upload-date { font-size: 14px; color: #007bff; font-weight: bold; }
-        
+        :root {
+            --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA;
+            --bg:#FAFAF9; --surface:#FFFFFF;
+            --border:#E7E5E4; --border2:#D6D3D1;
+            --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+        }
+        body { font-family: 'Inter','Noto Sans KR',sans-serif; background: var(--bg); color: var(--text); }
+
+        .container { max-width: 1700px; margin: 0 auto; padding: 28px 32px 56px; }
+
+        /* 라이트 페이지 헤더 */
+        .page-header {
+            padding: 0 0 22px; margin-bottom: 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .page-header h2 {
+            margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--text);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .page-header h2 i { color: var(--primary); font-size: 1.1rem; }
+        .page-header .sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+        .page-header-left { display: flex; flex-direction: column; gap: 4px; }
+        .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .upload-date { font-size: 0.78rem; color: var(--text2); font-weight: 500; display: inline-flex; align-items: center; gap: 5px; padding-right: 8px; }
+        .upload-date i { color: var(--primary); }
+
+        /* Ghost 버튼 (공용 톤) */
+        .btn-top {
+            background: transparent; color: var(--text2);
+            padding: 7px 14px; border-radius: 8px; text-decoration: none;
+            font-size: 0.83rem; font-weight: 600; transition: all 0.15s;
+            border: 1px solid var(--border);
+            display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-top:hover { background: #F5F5F4; border-color: var(--border2); color: var(--text); }
+        .btn-top.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-top.btn-primary:hover { background: var(--primary2); border-color: var(--primary2); color: #fff; }
+        .btn-top.btn-subtle { background: var(--primary-lt); border-color: #99F6E4; color: var(--primary); }
+        .btn-top.btn-subtle:hover { background: #CCFBF1; color: var(--primary2); }
+
         /* 검색 영역 */
-        .search-area { display: flex; gap: 10px; align-items: center; }
-        .search-input { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 250px; font-size: 14px; }
-        .search-input:focus { outline: none; border-color: #007bff; }
-        
-        .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        
-        .filter-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-        .filter-btn { padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; text-align: center; transition: all 0.2s; text-decoration: none; color: #333; display: block; }
-        .filter-btn:hover { background: #f8f9fa; }
-        .filter-btn.active { background: #007bff; color: white; border-color: #007bff; }
-        .filter-count { display: block; font-size: 20px; font-weight: bold; margin-bottom: 5px; }
-        .filter-label { display: block; font-size: 12px; }
-        
-        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .table-header h2 { font-size: 18px; color: #333; }
-        
+        .search-area { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+        .search-input {
+            padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+            width: 320px; font-size: 0.88rem; font-family: inherit;
+            background: var(--surface); color: var(--text);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15,118,110,0.12); }
+
+        .alert { padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem; }
+        .alert-success { background: #F0FDF4; border: 1px solid #86EFAC; color: #166534; }
+        .alert-danger  { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; }
+
+        /* 필터 (제품별 카운트) */
+        .filter-section {
+            background: var(--surface); padding: 18px; border-radius: 12px;
+            margin-bottom: 18px; border: 1px solid var(--border);
+        }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+        .filter-btn {
+            padding: 12px 10px; border: 1px solid var(--border); border-radius: 10px;
+            background: var(--surface); cursor: pointer; text-align: center;
+            transition: all 0.15s; text-decoration: none; color: var(--text); display: block;
+        }
+        .filter-btn:hover { background: var(--primary-lt); border-color: #99F6E4; color: var(--primary); }
+        .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(15,118,110,0.2); }
+        .filter-count { display: block; font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; font-family: 'Inter',sans-serif; font-variant-numeric: tabular-nums; }
+        .filter-label { display: block; font-size: 0.72rem; opacity: 0.85; }
+
+        /* 테이블 섹션 */
+        .table-section {
+            background: var(--surface); padding: 20px 22px; border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+        .table-header h2 { font-size: 1rem; color: var(--text); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .table-header h2 .count { color: var(--muted); font-weight: 500; font-size: 0.85em; }
+
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { 
-            padding: 12px; 
-            text-align: left; 
-            border-bottom: 1px solid #ddd; 
-            font-size: 14px; 
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: default;
+        th, td {
+            padding: 12px 10px; text-align: left; border-bottom: 1px solid #F5F5F4;
+            font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-family: 'Inter','Noto Sans KR',sans-serif;
         }
-        th { background: #f8f9fa; font-weight: bold; color: #333; position: sticky; top: 0; }
-        tr:hover { background: #f8f9fa; }
-        
-        /* 툴팁이 있는 셀 강조 */
-        td[title]:hover {
-            background: #e9ecef;
-            position: relative;
+        thead th {
+            background: var(--surface); color: var(--muted); font-weight: 600;
+            font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0;
+            padding: 14px 10px;
         }
-        
-        /* 컬럼별 너비 조정 */
-        th:nth-child(1), td:nth-child(1) { width: 10%; } /* License ID */
-        th:nth-child(2), td:nth-child(2) { width: 8%; }  /* Product ID */
-        th:nth-child(3), td:nth-child(3) { width: 10%; } /* 등록자 */
-        th:nth-child(4), td:nth-child(4) { width: 10%; } /* 회사 */
-        th:nth-child(5), td:nth-child(5) { width: 12%; } /* 이메일 */
-        th:nth-child(6), td:nth-child(6) { width: 8%; }  /* 발급자 */
-        th:nth-child(7), td:nth-child(7) { width: 9%; }  /* 발급일 */
-        th:nth-child(8), td:nth-child(8) { width: 9%; }  /* 만료일 */
-        th:nth-child(9), td:nth-child(9) { width: 9%; }  /* 상태 */
-        th:nth-child(10), td:nth-child(10) { width: 15%; } /* Actions */
-        
-        .badge { padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
-        .badge-success { background: #d4edda; color: #155724; }
-        .badge-warning { background: #fff3cd; color: #856404; }
-        .badge-danger { background: #f8d7da; color: #721c24; }
-        
-        .btn { padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-block; font-size: 14px; border: none; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-primary:hover { background: #0056b3; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-success:hover { background: #218838; }
-        .btn-home { background: #6c757d; color: white; }
-        .btn-home:hover { background: #5a6268; }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        
-        .btn-sort { background: #6f42c1; color: white; }
-        .btn-sort:hover { background: #5a32a3; }
-        .btn-sort.active { background: #28a745; }
-        .btn-sort.active:hover { background: #218838; }
-        
-        .no-data { text-align: center; padding: 40px; color: #666; }
-        
+        tbody tr { transition: background 0.12s, box-shadow 0.12s; }
+        tbody tr:hover { background: #FAFAF9; box-shadow: inset 3px 0 0 0 var(--primary); }
+        td[title]:hover { background: #F5F5F4; position: relative; }
+
+        /* 컬럼 너비 */
+        th:nth-child(1), td:nth-child(1) { width: 10%; }
+        th:nth-child(2), td:nth-child(2) { width: 8%; }
+        th:nth-child(3), td:nth-child(3) { width: 10%; }
+        th:nth-child(4), td:nth-child(4) { width: 10%; }
+        th:nth-child(5), td:nth-child(5) { width: 12%; }
+        th:nth-child(6), td:nth-child(6) { width: 8%; }
+        th:nth-child(7), td:nth-child(7) { width: 9%; }
+        th:nth-child(8), td:nth-child(8) { width: 9%; }
+        th:nth-child(9), td:nth-child(9) { width: 9%; }
+        th:nth-child(10), td:nth-child(10) { width: 15%; }
+
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .badge-success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+        .badge-warning { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+        .badge-danger  { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+
+        /* 액션 버튼 (작은 고스트) */
+        .btn { padding: 6px 12px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; border: 1px solid var(--border); cursor: pointer; font-family: inherit; background: var(--surface); color: var(--text2); font-weight: 600; transition: all 0.15s; }
+        .btn:hover { background: #F5F5F4; color: var(--text); border-color: var(--border2); }
+        .btn-primary { background: transparent; color: var(--primary); border-color: #99F6E4; }
+        .btn-primary:hover { background: var(--primary-lt); color: var(--primary2); border-color: #5EEAD4; }
+        .btn-success { background: transparent; color: #059669; border-color: #BBF7D0; }
+        .btn-success:hover { background: #F0FDF4; color: #047857; border-color: #86EFAC; }
+        .btn-sm { padding: 4px 10px; font-size: 0.72rem; }
+
+        /* 외국인 정렬 토글 (subtle) */
+        .btn-sort { background: transparent; color: var(--text2); border: 1px solid var(--border); padding: 7px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .btn-sort:hover { background: #F5F5F4; color: var(--text); border-color: var(--border2); }
+        .btn-sort.active { background: var(--primary-lt); color: var(--primary2); border-color: #99F6E4; }
+
+        /* 링크 (License ID) */
+        .lic-id-link { color: var(--primary); text-decoration: none; font-weight: 700; transition: color 0.12s; }
+        .lic-id-link:hover { color: var(--primary2); text-decoration: underline; }
+
+        .no-data { text-align: center; padding: 72px 24px; color: var(--muted); }
+        .no-data .empty-ico { width: 72px; height: 72px; margin: 0 auto 18px; border-radius: 16px; background: #F5F5F4; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+
+        /* 버튼 press 피드백 */
+        .btn:active, .btn-top:active, .btn-sort:active, .filter-btn:active { transform: scale(0.97); transition: transform 0.08s; }
+
         .actions { white-space: nowrap; }
     </style>
 </head>
 <body>
+    <!-- 공용 GNB -->
+    <div th:replace="~{fragments/top-nav :: nav}"></div>
+
     <div class="container">
-        <div class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <h1>📋 라이선스 대장</h1>
-                    <p>License Manager에서 발급된 라이선스 현황</p>
-                </div>
-                <div class="header-right">
-                    <div class="upload-date" th:if="${latestUploadDate != null}">
-                        📅 기준: <span th:text="${#temporals.format(latestUploadDate, 'yyyy-MM-dd HH:mm')}"></span>
-                    </div>
-                    <!-- 메인 대시보드 버튼 -->
-                    <a th:href="@{/}" class="btn btn-home">🏠 메인으로</a>
-                    <a href="/logout" class="btn" style="background:#e74a3b; color:white;">🚪 로그아웃</a>
-                    <!-- GeoNURIS 라이선스 발급 대장 -->
-                    <a th:href="@{/geonuris/license/list}" class="btn"
-                       style="background:#1a5276; color:white;">🔑 GeoNURIS 라이선스</a>
-                    <!-- QR 라이선스 발급 -->
-                    <a th:href="@{/qr-license/issue}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR발급</a>
-                    <!-- QR 라이선스 대장 -->
-                    <a th:href="@{/qr-license/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">QR대장</a>
-                </div>
+        <div class="page-header">
+            <div class="page-header-left">
+                <h2><i class="fas fa-clipboard-list"></i> 라이선스 대장</h2>
+                <span class="sub">License Manager에서 발급된 라이선스 현황</span>
             </div>
-            
-            <!-- 검색 영역 -->
-            <div class="search-area">
-                <input type="text" id="searchInput" class="search-input" 
-                       placeholder="🔍 License ID, 제품명, 등록자, 회사명으로 검색..." 
-                       onkeyup="searchTable()">
-                <select id="productFilter" class="search-input" style="width: 200px;" onchange="filterByProduct()">
-                    <option value="">전체 제품</option>
-                    <option th:each="entry : ${productStats}" 
-                            th:value="${entry.key}" 
-                            th:text="${entry.key} + ' (' + ${entry.value} + ')'"
-                            th:selected="${selectedProductId == entry.key}"></option>
-                </select>
+            <div class="header-actions">
+                <span class="upload-date" th:if="${latestUploadDate != null}">
+                    <i class="fas fa-calendar-days"></i> 기준: <span th:text="${#temporals.format(latestUploadDate, 'yyyy-MM-dd HH:mm')}"></span>
+                </span>
+                <a th:href="@{/geonuris/license/list}" class="btn-top"><i class="fas fa-key"></i> GeoNURIS</a>
+                <a th:href="@{/qr-license/issue}" class="btn-top"><i class="fas fa-qrcode"></i> QR발급</a>
+                <a th:href="@{/qr-license/ledger}" class="btn-top"><i class="fas fa-list"></i> QR대장</a>
             </div>
+        </div>
+
+        <!-- 검색 영역 -->
+        <div class="search-area" style="margin-bottom: 18px;">
+            <input type="text" id="searchInput" class="search-input"
+                   placeholder="License ID, 제품명, 등록자, 회사명 검색"
+                   onkeyup="searchTable()">
+            <select id="productFilter" class="search-input" style="width: 220px;" onchange="filterByProduct()">
+                <option value="">전체 제품</option>
+                <option th:each="entry : ${productStats}"
+                        th:value="${entry.key}"
+                        th:text="${entry.key} + ' (' + ${entry.value} + ')'"
+                        th:selected="${selectedProductId == entry.key}"></option>
+            </select>
         </div>
         
         <!-- 업로드 성공 메시지 -->
@@ -179,18 +230,15 @@
                         <span id="filteredInfo" style="display:none;"> / 필터링: <strong id="filteredCount">0</strong>건</span>)
                     </span>
                 </h2>
-                <div style="display: flex; gap: 10px;">
-                    <!-- 비한글 사용자 상단 정렬 버튼 -->
-                    <button id="sortForeignBtn" class="btn btn-sort" onclick="toggleForeignSort()" title="한글이 아닌 등록자를 맨 위로 정렬">
-                        🌐 외국인 등록자 상단
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button id="sortForeignBtn" class="btn-sort" onclick="toggleForeignSort()" title="한글이 아닌 등록자를 맨 위로 정렬">
+                        <i class="fas fa-globe"></i> 외국인 등록자 상단
                     </button>
-                    <!-- CSV 다운로드 버튼 (모든 권한) -->
-                    <a th:href="@{/license/registry/download/csv}" class="btn btn-primary">
-                        📥 CSV 다운로드
+                    <a th:href="@{/license/registry/download/csv}" class="btn-top">
+                        <i class="fas fa-download"></i> CSV 다운로드
                     </a>
-                    <!-- CSV 업로드 버튼 (EDIT 권한만) -->
-                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn btn-success">
-                        📤 CSV 업로드
+                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn-top btn-primary">
+                        <i class="fas fa-upload"></i> CSV 업로드
                     </a>
                 </div>
             </div>
@@ -214,8 +262,7 @@
                     <tbody>
                         <tr th:each="lic : ${licenses}">
                             <td th:title="${lic.licenseId}">
-                                <a th:href="@{'/license/registry/detail/' + ${lic.id}}" 
-                                   style="color: #007bff; text-decoration: none; font-weight: bold;">
+                                <a th:href="@{'/license/registry/detail/' + ${lic.id}}" class="lic-id-link">
                                     <span th:text="${lic.licenseId}"></span>
                                 </a>
                             </td>
@@ -255,10 +302,11 @@
                 </table>
                 
                 <div class="no-data" th:if="${licenses == null || licenses.isEmpty()}">
-                    <p style="font-size: 18px; margin-bottom: 10px;">📋 등록된 라이선스가 없습니다</p>
-                    <p style="color: #999;">CSV 파일을 업로드하여 대장을 등록하세요.</p>
-                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn btn-success" style="margin-top: 20px;">
-                        📤 CSV 업로드
+                    <div class="empty-ico"><i class="fas fa-clipboard-list"></i></div>
+                    <div style="font-size:0.95rem; font-weight:600; color:var(--text2); margin-bottom:6px;">등록된 라이선스가 없습니다</div>
+                    <div style="font-size:0.82rem; color:var(--muted); margin-bottom: 18px;">CSV 파일을 업로드하여 대장을 등록하세요.</div>
+                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn-top btn-primary">
+                        <i class="fas fa-upload"></i> CSV 업로드
                     </a>
                 </div>
             </div>

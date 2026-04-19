@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1400px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; }
@@ -23,12 +23,12 @@
         .summary-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 0.1rem 0.75rem rgba(58,59,69,0.1); border-left: 4px solid #ddd; text-align: center; }
         .summary-card .card-label { font-size: 0.78em; color: #888; font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
         .summary-card .card-value { font-size: 1.8em; font-weight: 700; }
-        .card-install { border-left-color: #4e73df; }
-        .card-install .card-value { color: #4e73df; }
+        .card-install { border-left-color: #0F766E; }
+        .card-install .card-value { color: #0F766E; }
         .card-patch { border-left-color: #1cc88a; }
         .card-patch .card-value { color: #1cc88a; }
-        .card-fault { border-left-color: #e74a3b; }
-        .card-fault .card-value { color: #e74a3b; }
+        .card-fault { border-left-color: #f08a7e; }
+        .card-fault .card-value { color: #f08a7e; }
         .card-support { border-left-color: #f6c23e; }
         .card-support .card-value { color: #f6c23e; }
         .card-inspect { border-left-color: #36b9cc; }
@@ -50,7 +50,7 @@
         th { background: #f8f9fc; color: #5a5c69; font-weight: 600; }
         tr:hover { background: #f8f9fc; }
         .user-info { background: white; border-radius: 10px; padding: 15px 20px; margin-bottom: 15px; box-shadow: 0 0.1rem 0.75rem rgba(58,59,69,0.1); display: flex; align-items: center; gap: 15px; }
-        .user-info .avatar { width: 50px; height: 50px; border-radius: 50%; background: #4e73df; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.3em; font-weight: 700; }
+        .user-info .avatar { width: 50px; height: 50px; border-radius: 50%; background: #0F766E; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.3em; font-weight: 700; }
         .user-info .uname { font-size: 1.1em; font-weight: 700; color: #333; }
         .user-info .urole { font-size: 0.82em; color: #888; }
 
@@ -61,6 +61,7 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <!-- 헤더 -->
         <div class="page-header">
@@ -77,8 +78,6 @@
                 </form>
                 <a th:href="@{/performance/report}" class="btn btn-secondary"><i class="fas fa-file-alt"></i> 리포트</a>
                 <a th:href="@{/performance/dept}" class="btn btn-success"><i class="fas fa-users"></i> 부서현황</a>
-                <a href="/" class="btn" style="background:#5a5c69; color:white;"><i class="fas fa-home"></i> 홈</a>
-                <a href="/logout" class="btn" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 
@@ -201,7 +200,7 @@
             data: {
                 labels: months.map(function(m) { return m + '월'; }),
                 datasets: [
-                    { label: '설치', data: installs, backgroundColor: 'rgba(78,115,223,0.8)', borderRadius: 4 },
+                    { label: '설치', data: installs, backgroundColor: 'rgba(15, 118, 110,0.8)', borderRadius: 4 },
                     { label: '패치', data: patches, backgroundColor: 'rgba(28,200,138,0.8)', borderRadius: 4 },
                     { label: '장애', data: faults, backgroundColor: 'rgba(231,74,59,0.8)', borderRadius: 4 },
                     { label: '업무지원', data: supports, backgroundColor: 'rgba(246,194,62,0.8)', borderRadius: 4 },
@@ -231,7 +230,7 @@
                 labels: ['설치', '패치', '장애', '업무지원', '점검'],
                 datasets: [{
                     data: [totInstall, totPatch, totFault, totSupport, totInspect],
-                    backgroundColor: ['#4e73df', '#1cc88a', '#e74a3b', '#f6c23e', '#36b9cc']
+                    backgroundColor: ['#0F766E', '#1cc88a', '#f08a7e', '#f6c23e', '#36b9cc']
                 }]
             },
             options: {
@@ -251,7 +250,7 @@
                         setTimeout(function() { location.reload(); }, 1500);
                     } else {
                         document.getElementById('calcResult').textContent = '✗ ' + (data.error || '집계 실패');
-                        document.getElementById('calcResult').style.color = '#e74a3b';
+                        document.getElementById('calcResult').style.color = '#f08a7e';
                     }
                 });
         }

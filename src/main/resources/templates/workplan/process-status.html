@@ -6,7 +6,7 @@
     <title>프로세스 현황</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; margin: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; margin: 0; }
         .container { max-width: 1700px; margin: auto; }
 
         /* 헤더 */
@@ -56,7 +56,7 @@
         .type-PATCH { border-left-color: #00897b; }
         .type-INSPECT { border-left-color: #ff9800; }
         .type-PRE_CONTACT { border-left-color: #9e9e9e; }
-        .type-FAULT { border-left-color: #e74a3b; }
+        .type-FAULT { border-left-color: #f08a7e; }
         .type-SUPPORT { border-left-color: #6a1b9a; }
         .type-SETTLE { border-left-color: #5c6bc0; }
         .type-COMPLETE { border-left-color: #37474f; }
@@ -73,14 +73,13 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <!-- 헤더 -->
         <div class="page-header">
             <h2><i class="fas fa-columns"></i> 프로세스 현황 (지자체별 사업 단계)</h2>
             <div class="header-actions">
                 <a href="/workplan/calendar" class="btn-calendar"><i class="fas fa-calendar"></i> 캘린더</a>
-                <a href="/" class="btn-home"><i class="fas fa-home"></i> 메인</a>
-                <a href="/logout" class="btn-home" style="background:#e74a3b;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 

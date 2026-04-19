@@ -4,77 +4,141 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GeoNURIS 라이선스 발급 - SW 관리 시스템</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
-        .container { max-width: 860px; margin: 0 auto; padding: 24px 20px; }
+        :root {
+            --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA;
+            --bg:#FAFAF9; --surface:#FFFFFF;
+            --border:#E7E5E4; --border2:#D6D3D1;
+            --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+        }
+        body { font-family: 'Inter','Noto Sans KR',sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 960px; margin: 0 auto; padding: 28px 32px 56px; }
 
-        .header { background: white; padding: 20px 24px; border-radius: 8px;
-                  margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                  display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 22px; color: #1a5276; }
-        .header p  { color: #666; font-size: 13px; margin-top: 3px; }
+        .page-header {
+            padding: 0 0 22px; margin-bottom: 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .page-header h2 {
+            margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--text);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .page-header h2 i { color: var(--primary); font-size: 1.1rem; }
+        .page-header .sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; font-weight: 500; }
+        .page-header-left { display: flex; flex-direction: column; gap: 4px; }
+        .header-actions { display: flex; gap: 8px; }
 
-        .btn { display: inline-flex; align-items: center; gap: 4px;
-               padding: 8px 14px; border-radius: 6px;
-               text-decoration: none; font-size: 13px; font-weight: 500;
-               cursor: pointer; border: none; transition: 0.2s;
-               white-space: nowrap; line-height: 1.4; }
-        .btn:hover { opacity: 0.88; }
-        .btn-home     { background: #6c757d; color: white; }
-        .btn-home:hover { background: #5a6268; }
-        .btn-list     { background: #6f42c1; color: white; }
-        .btn-list:hover { background: #5a32a3; }
-        .btn-issue    { background: #28a745; color: white; font-size: 16px;
-                        padding: 12px 40px; width: 100%; margin-top: 10px;
-                        justify-content: center; }
-        .btn-issue:hover { background: #218838; }
+        .btn-top {
+            background: transparent; color: var(--text2);
+            padding: 7px 14px; border-radius: 8px; text-decoration: none;
+            font-size: 0.83rem; font-weight: 600; transition: all 0.15s;
+            border: 1px solid var(--border);
+            display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-top:hover { background: #F5F5F4; border-color: var(--border2); color: var(--text); }
+        .btn-top.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-top.btn-primary:hover { background: var(--primary2); border-color: var(--primary2); color: #fff; }
+        .btn-top:active { transform: scale(0.97); transition: transform 0.08s; }
 
         /* 카드 */
-        .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 18px; }
-        .card-title { padding: 14px 20px; border-bottom: 1px solid #eee; font-size: 15px;
-                      font-weight: bold; color: #333; display: flex; align-items: center; gap: 8px; }
-        .card-body  { padding: 20px; }
+        .card {
+            background: var(--surface); border-radius: 12px;
+            border: 1px solid var(--border); margin-bottom: 18px;
+            overflow: hidden;
+        }
+        .card-title {
+            padding: 14px 20px; border-bottom: 1px solid var(--border);
+            font-size: 0.95rem; font-weight: 700; color: var(--text);
+            display: flex; align-items: center; gap: 8px;
+            background: #FAFAF9;
+        }
+        .card-title .req {
+            color: #DC2626; font-size: 0.72rem; font-weight: 600;
+            padding: 2px 8px; background: #FEF2F2; border-radius: 10px; margin-left: auto;
+        }
+        .card-body { padding: 20px; }
 
         /* 폼 */
-        .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-full   { grid-column: 1 / -1; }
-        .form-group  { display: flex; flex-direction: column; gap: 5px; }
-        .form-group label { font-size: 13px; color: #555; font-weight: 500; }
-        .form-group label .req { color: #e74c3c; margin-left: 2px; }
-        .form-control { padding: 9px 12px; border: 1px solid #ddd; border-radius: 5px;
-                        font-size: 14px; width: 100%; transition: 0.2s; }
-        .form-control:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 2px rgba(0,123,255,0.15); }
-        select.form-control { background: white; cursor: pointer; }
+        .form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-full  { grid-column: 1 / -1; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label {
+            font-size: 0.78rem; color: var(--text2); font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        .form-group label .req { color: #DC2626; margin-left: 2px; }
+        .form-control {
+            padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 0.88rem; width: 100%; transition: all 0.15s;
+            font-family: inherit; color: var(--text);
+            background: var(--surface);
+        }
+        .form-control:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15,118,110,0.12);
+        }
+        select.form-control { cursor: pointer; }
 
-        /* 라이선스 타입 카드 선택 */
+        /* 라이선스 타입 선택 카드 */
         .type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .type-card { border: 2px solid #ddd; border-radius: 8px; padding: 12px 6px;
-                     text-align: center; cursor: pointer; transition: 0.2s; position: relative; }
-        .type-card:hover { border-color: #007bff; background: #f0f7ff; }
+        .type-card {
+            border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 8px;
+            text-align: center; cursor: pointer; transition: all 0.15s;
+            position: relative; background: var(--surface);
+        }
+        .type-card:hover { border-color: #99F6E4; background: var(--primary-lt); }
         .type-card input[type=radio] { display: none; }
-        .type-card.selected { border-color: #007bff; background: #e8f4fd; }
-        .type-card .icon { font-size: 22px; margin-bottom: 5px; }
-        .type-card .name { font-size: 12px; font-weight: bold; color: #333; }
-        .type-card .sub  { font-size: 11px; color: #666; margin-top: 2px; }
+        .type-card.selected {
+            border-color: var(--primary); background: var(--primary-lt);
+            box-shadow: 0 4px 12px rgba(15,118,110,0.18);
+        }
+        .type-card.selected .name { color: var(--primary); }
+        .type-card .icon { font-size: 1.3rem; margin-bottom: 6px; color: var(--text2); }
+        .type-card.selected .icon { color: var(--primary); }
+        .type-card .name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+        .type-card .sub  { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
 
         /* 동적 섹션 */
-        .section-gss    { display: none; }
-        .section-desktop{ display: none; }
-        .section-setl   { display: none; }
+        .section-gss, .section-desktop, .section-setl { display: none; }
 
         /* 체크박스 */
         .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-                         border: 1px solid #eee; border-radius: 6px; cursor: pointer; }
-        .checkbox-item:hover { background: #f8f9fa; }
-        .checkbox-item input { width: 16px; height: 16px; cursor: pointer; }
-        .checkbox-item span  { font-size: 13px; }
+        .checkbox-item {
+            display: flex; align-items: center; gap: 8px; padding: 11px 14px;
+            border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer;
+            transition: all 0.15s; background: var(--surface);
+        }
+        .checkbox-item:hover { background: #FAFAF9; border-color: var(--border2); }
+        .checkbox-item input { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+        .checkbox-item span  { font-size: 0.85rem; color: var(--text2); }
 
         /* 힌트 */
-        .hint { font-size: 11px; color: #999; margin-top: 3px; }
-        .alert-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;
-                       padding: 12px 16px; border-radius: 5px; margin-bottom: 16px; font-size: 14px; }
+        .hint { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+        .alert-error {
+            background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C;
+            padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* 발급 버튼 */
+        .btn-issue {
+            background: linear-gradient(180deg, var(--primary) 0%, var(--primary2) 100%);
+            color: #fff; font-size: 0.95rem; font-weight: 700;
+            padding: 13px 40px; width: 100%; margin-top: 6px;
+            border: none; border-radius: 10px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            font-family: inherit; letter-spacing: 0.02em;
+            box-shadow: 0 4px 14px rgba(15,118,110,0.24);
+        }
+        .btn-issue:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15,118,110,0.32); }
+        .btn-issue:active { transform: scale(0.98); }
+
+        #typeError { color: #DC2626; font-size: 0.78rem; margin-top: 8px; display: none; }
 
         @media (max-width: 640px) {
             .form-grid { grid-template-columns: 1fr; }
@@ -84,65 +148,62 @@
     </style>
 </head>
 <body>
+<!-- 공용 GNB -->
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+
 <div class="container">
 
-    <!-- 헤더 -->
-    <div class="header">
-        <div>
-            <h1>🔑 GeoNURIS 라이선스 발급</h1>
-            <p>GeoNURIS 제품에 대한 새로운 라이선스를 발급합니다</p>
+    <div class="page-header">
+        <div class="page-header-left">
+            <h2><i class="fas fa-key"></i> GeoNURIS 라이선스 발급</h2>
+            <span class="sub">GeoNURIS 제품에 대한 새로운 라이선스를 발급합니다</span>
         </div>
-        <div style="display:flex; gap:8px;">
-            <a th:href="@{/}" class="btn btn-home">🏠 메인</a>
-            <a th:href="@{/geonuris/license/list}" class="btn btn-list">📋 목록</a>
-            <a href="/logout" class="btn" style="background:#e74a3b; color:white;">🚪 로그아웃</a>
+        <div class="header-actions">
+            <a th:href="@{/geonuris/license/list}" class="btn-top"><i class="fas fa-list"></i> 목록으로</a>
         </div>
     </div>
 
-    <!-- 에러 -->
-    <div th:if="${error}" class="alert-error">❌ <span th:text="${message}"></span></div>
+    <div th:if="${error}" class="alert-error"><i class="fas fa-triangle-exclamation"></i> <span th:text="${message}"></span></div>
 
     <form th:action="@{/geonuris/license/issue}" method="post" id="issueForm">
 
         <!-- ① 라이선스 종류 -->
         <div class="card">
-            <div class="card-title">① 라이선스 종류 선택 <span style="color:#e74c3c; font-size:12px;">필수</span></div>
+            <div class="card-title">① 라이선스 종류 선택 <span class="req">필수</span></div>
             <div class="card-body">
                 <div class="type-grid">
                     <label class="type-card" onclick="selectType('GSS30',this)">
                         <input type="radio" name="licenseType" value="GSS30" required>
-                        <div class="icon">🗺️</div>
+                        <div class="icon"><i class="fas fa-map-location-dot"></i></div>
                         <div class="name">GSS 3.0</div>
                         <div class="sub">GeoNURIS GSS</div>
                     </label>
                     <label class="type-card" onclick="selectType('GSS35',this)">
                         <input type="radio" name="licenseType" value="GSS35">
-                        <div class="icon">🗺️</div>
+                        <div class="icon"><i class="fas fa-map-location-dot"></i></div>
                         <div class="name">GSS 3.5</div>
                         <div class="sub">GeoNURIS GSS</div>
                     </label>
                     <label class="type-card" onclick="selectType('DESKTOP',this)">
                         <input type="radio" name="licenseType" value="DESKTOP">
-                        <div class="icon">🖥️</div>
+                        <div class="icon"><i class="fas fa-desktop"></i></div>
                         <div class="name">Desktop</div>
                         <div class="sub">GeoNURIS</div>
                     </label>
                     <label class="type-card" onclick="selectType('SETL_AGENT',this)">
                         <input type="radio" name="licenseType" value="SETL_AGENT">
-                        <div class="icon">⚙️</div>
+                        <div class="icon"><i class="fas fa-gear"></i></div>
                         <div class="name">SETL Agent</div>
                         <div class="sub">GeoNURIS</div>
                     </label>
                     <label class="type-card" onclick="selectType('SETL_PROXY',this)">
                         <input type="radio" name="licenseType" value="SETL_PROXY">
-                        <div class="icon">🔄</div>
+                        <div class="icon"><i class="fas fa-arrows-rotate"></i></div>
                         <div class="name">SETL Proxy</div>
                         <div class="sub">GeoNURIS</div>
                     </label>
                 </div>
-                <p id="typeError" style="color:#e74c3c; font-size:12px; margin-top:8px; display:none;">
-                    라이선스 종류를 선택해주세요.
-                </p>
+                <p id="typeError">라이선스 종류를 선택해주세요.</p>
             </div>
         </div>
 
@@ -234,19 +295,19 @@
                 <div class="checkbox-grid">
                     <label class="checkbox-item">
                         <input type="checkbox" name="pluginEdit" value="true">
-                        <span>✏️ Edit Plugin (편집)</span>
+                        <span><i class="fas fa-pen-to-square" style="color:var(--primary); margin-right:4px;"></i> Edit Plugin (편집)</span>
                     </label>
                     <label class="checkbox-item">
                         <input type="checkbox" name="pluginGdm" value="true">
-                        <span>🗃️ GDM Plugin</span>
+                        <span><i class="fas fa-database" style="color:var(--primary); margin-right:4px;"></i> GDM Plugin</span>
                     </label>
                     <label class="checkbox-item">
                         <input type="checkbox" name="pluginTmbuilder" value="true">
-                        <span>🔧 TMBuilder Plugin</span>
+                        <span><i class="fas fa-wrench" style="color:var(--primary); margin-right:4px;"></i> TMBuilder Plugin</span>
                     </label>
                     <label class="checkbox-item">
                         <input type="checkbox" name="pluginSetl" value="true">
-                        <span>⚙️ SETL Plugin</span>
+                        <span><i class="fas fa-gear" style="color:var(--primary); margin-right:4px;"></i> SETL Plugin</span>
                     </label>
                 </div>
             </div>
@@ -277,8 +338,8 @@
         </div>
 
         <!-- 발급 버튼 -->
-        <button type="submit" class="btn btn-issue" onclick="return validate()">
-            🔑 라이선스 발급
+        <button type="submit" class="btn-issue" onclick="return validate()">
+            <i class="fas fa-key"></i> 라이선스 발급
         </button>
 
     </form>

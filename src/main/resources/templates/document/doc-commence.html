@@ -7,7 +7,7 @@
     <title>착수계 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
@@ -33,7 +33,7 @@
         .form-table input[type=checkbox] { width:16px; height:16px; margin:0 6px 0 0; vertical-align:middle; padding:0; }
         .form-table textarea { height: 80px; resize: vertical; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
-        .required { color: #e74a3b; }
+        .required { color: #f08a7e; }
         .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
 
         /* 동적 행 */
@@ -41,14 +41,14 @@
         .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
         .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
         .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
-        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
-        .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+        .btn-add-row { padding: 5px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: #f08a7e; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
         .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
 
         /* 미리보기 버튼 */
-        .btn-preview { padding: 4px 12px; background: #6f42c1; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-left: 12px; font-weight: 600; vertical-align: middle; }
-        .btn-preview:hover { background: #5a32a3; }
+        .btn-preview { padding: 4px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-left: 12px; font-weight: 600; vertical-align: middle; }
+        .btn-preview:hover { background: #115E59; }
 
         /* 미리보기 모달 */
         .preview-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; overflow-y: auto; }
@@ -61,7 +61,7 @@
         .document-paper h2.doc-title { text-align: center; font-size: 22px; letter-spacing: 8px; margin: 30px 0; }
         .document-paper .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         .document-paper .doc-table th, .document-paper .doc-table td { border: 1px solid #333; padding: 8px 10px; font-size: 13px; }
-        .document-paper .doc-table th { background: #f5f5f5; font-weight: 600; text-align: center; }
+        .document-paper .doc-table th { background: #FAFAF9; font-weight: 600; text-align: center; }
         .document-paper .letterhead { text-align: center; border-bottom: 3px double #333; padding-bottom: 15px; margin-bottom: 20px; }
         .document-paper .letterhead h1 { font-size: 24px; margin: 0; letter-spacing: 6px; }
         .document-paper .letter-info { margin: 10px 0; font-size: 13px; }
@@ -71,11 +71,12 @@
         .document-paper .company-footer { text-align: center; margin-top: 40px; font-size: 16px; font-weight: 700; letter-spacing: 4px; }
         .document-paper .stamp-area { text-align: right; margin-top: 20px; font-size: 12px; color: #666; }
         .document-paper .gantt-table th, .document-paper .gantt-table td { font-size: 11px; padding: 5px 3px; text-align: center; }
-        .document-paper .gantt-bar { background: #4e73df; height: 14px; border-radius: 2px; }
+        .document-paper .gantt-bar { background: #0F766E; height: 14px; border-radius: 2px; }
         .document-paper .sign-line { display: inline-block; width: 120px; border-bottom: 1px solid #333; margin-left: 10px; }
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div class="page-header">
             <h2><i class="fas fa-file-contract"></i> 착수계 작성 (7종 문서 세트)</h2>
@@ -127,7 +128,7 @@
                         </select>
                         <span class="help-text" id="projHint"></span>
                         <div id="projInfoBadge" style="margin-top:8px; display:none; font-size:0.82em;">
-                            <span style="display:inline-block; padding:3px 10px; background:#eef2ff; color:#3730a3; border-radius:4px; margin-right:6px;">[계약일] <b id="badgeContDt">-</b></span>
+                            <span style="display:inline-block; padding:3px 10px; background:#F0FDFA; color:#3730a3; border-radius:4px; margin-right:6px;">[계약일] <b id="badgeContDt">-</b></span>
                             <span style="display:inline-block; padding:3px 10px; background:#ecfdf5; color:#065f46; border-radius:4px; margin-right:6px;">[과업기간] <b id="badgePeriod">-</b> (<b id="badgeMonths">-</b>개월)</span>
                             <span id="badgeWarn" style="display:none; padding:3px 10px; background:#fef3c7; color:#92400e; border-radius:4px;" title="계약일과 과업 시작일이 다릅니다. 공정표는 과업기간 기준으로 작성됩니다.">⚠ 계약일 ≠ 과업시작일</span>
                         </div>
@@ -273,7 +274,7 @@
             <!-- HW 항목 -->
             <div id="estHwSection">
                 <div style="margin:20px 0 8px; font-weight:700; color:#1cc88a;">◎ 1. 하드웨어 유지보수
-                    <button type="button" onclick="addEstEquipRow('estHwTable','HW')" style="margin-left:15px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                    <button type="button" onclick="addEstEquipRow('estHwTable','HW')" style="margin-left:15px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
                 </div>
                 <table class="dynamic-table" id="estHwTable">
                     <thead><tr><th style="width:35px;">No</th><th>품명</th><th style="width:90px;">적용율(%)</th><th>도입가</th><th>비고</th><th style="width:40px;"></th></tr></thead>
@@ -282,8 +283,8 @@
             </div>
 
             <!-- SW 항목 -->
-            <div style="margin:20px 0 8px; font-weight:700; color:#e74a3b;">◎ 2. 소프트웨어 유지보수
-                <button type="button" onclick="addEstEquipRow('estSwTable','SW')" style="margin-left:15px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            <div style="margin:20px 0 8px; font-weight:700; color:#f08a7e;">◎ 2. 소프트웨어 유지보수
+                <button type="button" onclick="addEstEquipRow('estSwTable','SW')" style="margin-left:15px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </div>
             <table class="dynamic-table" id="estSwTable">
                 <thead><tr><th style="width:35px;">No</th><th>품명</th><th style="width:90px;">적용율(%)</th><th>도입가</th><th>비고</th><th style="width:40px;"></th></tr></thead>
@@ -300,7 +301,7 @@
         <!-- ⑨ 사업수행계획서 -->
         <div class="form-section" id="section-8">
             <h3><i class="fas fa-clipboard-list"></i> ⑨ 사업수행계획서 (P10~P13)
-                <button class="btn-preview" type="button" onclick="loadPlanData()" style="margin-left:auto; padding:4px 12px; background:#17a2b8; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-sync"></i> DB 불러오기</button>
+                <button class="btn-preview" type="button" onclick="loadPlanData()" style="margin-left:auto; padding:4px 12px; background:#0F766E; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-sync"></i> DB 불러오기</button>
                 <button class="btn-preview" type="button" onclick="savePlanData()" style="padding:4px 12px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-save"></i> 계획서 저장</button>
             </h3>
             <div class="help-text" style="margin-bottom:10px;">* 사업당 1회 입력하면 다른 문서(준공계/기성계)에서도 재사용됩니다. <strong>저장 버튼을 별도로 눌러야 sw_pjt 및 계획 테이블에 반영됩니다.</strong></div>
@@ -322,7 +323,7 @@
             </table>
 
             <h4 style="margin-top:18px; color:#1565c0;">P12 - 유지관리 대상 제품
-                <button type="button" onclick="addPlanTargetRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                <button type="button" onclick="addPlanTargetRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </h4>
             <table class="dynamic-table" id="planTargetTable">
                 <thead><tr><th>제품명</th><th style="width:90px;">수량</th><th style="width:40px;"></th></tr></thead>
@@ -331,7 +332,7 @@
             <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다 (다중 행 cloning은 후속 작업 예정).</div>
 
             <h4 style="margin-top:18px; color:#1565c0;">P2 - 예정공정표
-                <button type="button" onclick="addPlanScheduleRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                <button type="button" onclick="addPlanScheduleRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </h4>
             <table class="dynamic-table" id="planScheduleTable">
                 <thead><tr><th style="min-width:150px;">공정명</th>
@@ -343,7 +344,7 @@
             <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다.</div>
 
             <h4 style="margin-top:18px; color:#1565c0;">P13 - 공정별 투입인력계획
-                <button type="button" onclick="addPlanManpowerRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 작업단계 추가</button>
+                <button type="button" onclick="addPlanManpowerRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 작업단계 추가</button>
             </h4>
             <table class="dynamic-table" id="planManpowerTable">
                 <thead>
@@ -365,7 +366,7 @@
             </table>
 
             <h4 style="margin-top:18px; color:#1565c0;">다. 투입인력 정보
-                <button type="button" onclick="addPlanPersonnelRow()" style="margin-left:10px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 인원 추가</button>
+                <button type="button" onclick="addPlanPersonnelRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 인원 추가</button>
             </h4>
             <table class="dynamic-table" id="planPersonnelTable">
                 <thead><tr>
@@ -1876,7 +1877,7 @@
                 html += '<tr><td style="text-align:center;">' + (no++) + '</td><td>하드웨어 유지보수</td><td style="text-align:right;">' + Math.floor(hwTotal).toLocaleString() + '</td><td></td></tr>';
             }
             html += '<tr><td style="text-align:center;">' + (no++) + '</td><td>소프트웨어 유지보수</td><td style="text-align:right;">' + Math.floor(swTotal).toLocaleString() + '</td><td></td></tr>';
-            html += '<tr style="font-weight:700; background:#f5f5f5;"><td colspan="2" style="text-align:center;">소 계</td><td style="text-align:right;">' + Math.floor(subTotal).toLocaleString() + '</td><td></td></tr>';
+            html += '<tr style="font-weight:700; background: #FAFAF9;"><td colspan="2" style="text-align:center;">소 계</td><td style="text-align:right;">' + Math.floor(subTotal).toLocaleString() + '</td><td></td></tr>';
 
             var grandTotal;
             if (vatSep) {

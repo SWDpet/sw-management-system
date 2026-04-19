@@ -7,14 +7,14 @@
     <!-- vis-network: 노드·엣지 네트워크 그래프 라이브러리 (Phase 0) -->
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; padding: 40px; background: #f4f7f6; margin: 0; }
+        body { font-family: 'Noto Sans KR', sans-serif; padding: 40px; background: #FAFAF9; margin: 0; }
         .container { max-width: 1400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
 
-        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a237e; padding-bottom: 15px; margin-bottom: 20px; }
-        .page-header h2 { margin: 0; color: #1a237e; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #134E4A; padding-bottom: 15px; margin-bottom: 20px; }
+        .page-header h2 { margin: 0; color: #134E4A; }
         .header-btns a { padding: 8px 14px; color: white; text-decoration: none; border-radius: 5px; font-size: 0.85em; font-weight: 600; margin-left: 4px; }
-        .btn-home { background: #4e73df; }
-        .btn-logout { background: #e74a3b; }
+        .btn-home { background: #0F766E; }
+        .btn-logout { background: #f08a7e; }
 
         /* 탭 */
         .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 0; }
@@ -25,7 +25,7 @@
             transition: all 0.15s;
         }
         .tab-btn:hover { background: #e0e4f0; }
-        .tab-btn.active { background: white; color: #1a237e; border-color: #e5e7eb; margin-bottom: -2px; }
+        .tab-btn.active { background: white; color: #134E4A; border-color: #e5e7eb; margin-bottom: -2px; }
         .tab-btn i { margin-right: 6px; }
 
         .tab-panel { display: none; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; background: white; min-height: 600px; }
@@ -36,7 +36,7 @@
             border: 1px solid #e5e7eb; border-radius: 6px;
             background: #fafbff;
         }
-        .panel-title { margin: 0 0 10px; color: #1a237e; font-size: 1.1em; font-weight: 700; }
+        .panel-title { margin: 0 0 10px; color: #134E4A; font-size: 1.1em; font-weight: 700; }
         .panel-desc { margin: 0 0 15px; color: #666; font-size: 0.9em; }
         .phase-notice {
             display: inline-block; padding: 3px 10px; background: #fff3cd; color: #856404;
@@ -64,9 +64,9 @@
             font-weight: 700; transition: background 0.1s;
         }
         .tl-label:hover { background: rgba(26, 35, 126, 0.08); }
-        .tl-label.active { background: rgba(26, 35, 126, 0.15); outline: 1px dashed #1a237e; }
-        .tl-city { color: #1a237e; }
-        .tl-infra { color: #4e73df; }
+        .tl-label.active { background: rgba(26, 35, 126, 0.15); outline: 1px dashed #134E4A; }
+        .tl-city { color: #134E4A; }
+        .tl-infra { color: #0F766E; }
         .tl-server { color: #1cc88a; }
         .tl-software { color: #dda20a; }
         .tl-meta { color: #888; font-weight: 400; font-size: 0.92em; margin-left: 4px; }
@@ -92,12 +92,12 @@
         /* 수직 연결선 (각 li 위로) */
         .oc-tree ul li::before {
             content: ''; position: absolute; top: 0; left: 50%;
-            width: 2px; height: 22px; background: #1a237e;
+            width: 2px; height: 22px; background: #134E4A;
         }
         /* 수평 연결선 — ul 아래에 한 줄로 형제 잇기 */
         .oc-tree ul::before {
             content: ''; position: absolute; top: 0; left: 10%; right: 10%;
-            height: 2px; background: #1a237e;
+            height: 2px; background: #134E4A;
         }
         .oc-tree ul li:only-child::before { height: 22px; }
         .oc-tree ul:has(> li:only-child)::before,
@@ -113,8 +113,8 @@
             word-break: keep-all;
         }
         .oc-box:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        .oc-city { background: #1a237e; }
-        .oc-infra { background: #4e73df; }
+        .oc-city { background: #134E4A; }
+        .oc-infra { background: #0F766E; }
         .oc-server { background: #1cc88a; }
         .oc-software { background: #f6c23e; color: #333; }
         .oc-title { display: block; font-weight: 700; }
@@ -123,7 +123,7 @@
         /* === A 탭 텍스트 트리 뷰 === */
         .erd-toolbar {
             display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
-            background: #f8f9fa; padding: 12px 14px; border-radius: 8px; margin-bottom: 12px;
+            background: #F5F5F4; padding: 12px 14px; border-radius: 8px; margin-bottom: 12px;
         }
         .erd-toolbar input[type="text"] {
             padding: 6px 10px; border: 1px solid #ccd; border-radius: 4px; width: 240px; font-size: 0.9em;
@@ -143,7 +143,7 @@
             background: #fff; padding: 14px; overflow-y: auto; max-height: 580px;
         }
         .erd-detail .detail-title {
-            margin: 0 0 6px; color: #1a237e; font-size: 1em; font-weight: 700;
+            margin: 0 0 6px; color: #134E4A; font-size: 1em; font-weight: 700;
             word-break: break-all;
         }
         .erd-detail .detail-domain {
@@ -178,13 +178,12 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
 <div class="container">
     <div class="page-header">
         <h2><i class="fas fa-project-diagram"></i> 시스템 관계도</h2>
         <div class="header-btns">
-            <a th:href="@{/}" class="btn-home"><i class="fas fa-home"></i> 메인</a>
             <a th:href="@{/admin/users}" style="background:#858796;"><i class="fas fa-users-cog"></i> 사용자 관리</a>
-            <a href="/logout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
         </div>
     </div>
 
@@ -215,11 +214,11 @@
             <label style="display:inline-flex;align-items:center;gap:5px;font-size:0.88em;padding:4px 10px;border-radius:12px;background:#fff;border:1px solid #dde;cursor:pointer;">
                 <input type="checkbox" id="infra-show-sw" onchange="onInfraFilter()"> 소프트웨어 표시
             </label>
-            <button type="button" onclick="toggleInfraViewMode()" style="padding:6px 12px;background:#fff;color:#1a237e;border:1px solid #1a237e;border-radius:4px;cursor:pointer;font-size:0.85em;">
+            <button type="button" onclick="toggleInfraViewMode()" style="padding:6px 12px;background:#fff;color:#134E4A;border:1px solid #134E4A;border-radius:4px;cursor:pointer;font-size:0.85em;">
                 <span id="infra-view-mode-label">🗂️ 조직도 보기</span>
             </button>
             <span id="infra-count" style="margin-left:auto;color:#555;font-size:0.85em;font-weight:500;">로드 중...</span>
-            <button onclick="loadInfraGraph()" style="padding:6px 14px;background:#1a237e;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.88em;">
+            <button onclick="loadInfraGraph()" style="padding:6px 14px;background:#134E4A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.88em;">
                 <i class="fas fa-sync-alt"></i> 새로고침
             </button>
         </div>
@@ -241,7 +240,7 @@
 
         <div class="erd-toolbar">
             <input type="text" id="erd-search" placeholder="🔍 테이블 검색 (이름 일부 입력)" oninput="onErdSearch()">
-            <label><span class="dot" style="background:#4e73df;"></span><input type="checkbox" class="erd-filter" data-domain="infra" checked onchange="onErdFilter()"> Infra</label>
+            <label><span class="dot" style="background:#0F766E;"></span><input type="checkbox" class="erd-filter" data-domain="infra" checked onchange="onErdFilter()"> Infra</label>
             <label><span class="dot" style="background:#f6c23e;"></span><input type="checkbox" class="erd-filter" data-domain="contract" checked onchange="onErdFilter()"> Contract</label>
             <label><span class="dot" style="background:#1cc88a;"></span><input type="checkbox" class="erd-filter" data-domain="document" checked onchange="onErdFilter()"> Document</label>
             <label><span class="dot" style="background:#a14ed0;"></span><input type="checkbox" class="erd-filter" data-domain="quotation" checked onchange="onErdFilter()"> Quotation</label>
@@ -306,7 +305,7 @@
     // ─── Phase 1 C: ERD 인터랙티브 ─────────────────────────────────
 
     var DOMAIN_COLORS = {
-        infra:     { background: '#4e73df', border: '#2e59d9', font: '#fff' },
+        infra:     { background: '#0F766E', border: '#115E59', font: '#fff' },
         contract:  { background: '#f6c23e', border: '#dda20a', font: '#333' },
         document:  { background: '#1cc88a', border: '#17a673', font: '#fff' },
         quotation: { background: '#a14ed0', border: '#7b35a8', font: '#fff' },
@@ -404,7 +403,7 @@
                 label: e.label || '',
                 arrows: 'to',
                 font: { size: 0, color: '#333', background: '#fff', strokeWidth: 0 }, // FR-8: 기본 숨김
-                color: { color: '#aaa', highlight: '#1a237e', hover: '#1a237e' },
+                color: { color: '#aaa', highlight: '#134E4A', hover: '#134E4A' },
                 smooth: { type: 'curvedCW', roundness: 0.15 }
             };
         });
@@ -555,8 +554,8 @@
     // ─── Phase 1 A: 인프라 구성도 ─────────────────────────────────
 
     var INFRA_LEVEL_COLORS = {
-        city:     { background: '#1a237e', border: '#0d124d', font: '#fff' },
-        infra:    { background: '#4e73df', border: '#2e59d9', font: '#fff' },
+        city:     { background: '#134E4A', border: '#0d124d', font: '#fff' },
+        infra:    { background: '#0F766E', border: '#115E59', font: '#fff' },
         server:   { background: '#1cc88a', border: '#17a673', font: '#fff' },
         software: { background: '#f6c23e', border: '#dda20a', font: '#333' }
     };

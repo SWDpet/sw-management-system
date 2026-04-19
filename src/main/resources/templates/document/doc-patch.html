@@ -5,7 +5,7 @@
     <title>패치내역서 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
@@ -23,7 +23,7 @@
         .form-table textarea { height: auto; }
         .form-table textarea { height: 100px; resize: vertical; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
-        .required { color: #e74a3b; }
+        .required { color: #f08a7e; }
 
         .checkbox-group { display: flex; align-items: center; gap: 15px; }
         .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.88em; }
@@ -31,6 +31,7 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div class="page-header">
             <h2><i class="fas fa-wrench"></i> 패치내역서 작성</h2>

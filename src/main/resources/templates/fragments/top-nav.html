@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- 공통 GNB 프래그먼트 (main-dashboard 기준 동기화) -->
+<nav th:fragment="nav" style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
+        <a href="/" title="메인 대시보드로 이동" style="text-decoration:none; display:inline-flex; align-items:center; cursor:pointer;">
+            <span style="background:#0F766E; color:#fff; padding:7px 14px; border-radius:8px; font-weight:800; font-size:0.95rem; letter-spacing:-0.005em; font-family:'Inter','Noto Sans KR',sans-serif; line-height:1; transition:background 0.15s;" onmouseover="this.style.background='#115E59'" onmouseout="this.style.background='#0F766E'">SW Manager</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
+            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-server" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>서버관리</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-briefcase" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>사업관리</a>
+            </div>
+
+            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-users" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>담당자관리</a>
+            </div>
+
+            <!-- 라이선스 관리 드롭다운 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <div id="licenseMenuWrap" style="position:relative; display:inline-block;">
+                    <a href="#" onclick="toggleLicenseMenu(event)" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-key" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>라이선스 관리 <span style="font-size:0.7em;">▾</span></a>
+                    <div id="licenseMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
+                        <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">라이선스 대장</div>
+                        <a th:href="@{/license/registry/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 라이선스 대장 목록</a>
+                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
+                           th:href="@{/license/registry/upload}" style="display:block; padding:8px 14px; text-decoration:none; color:#7B1FA2; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">⬆ CSV 업로드</a>
+                        <div style="height:1px; background:#eee; margin:6px 0;"></div>
+                        <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">GeoNURIS</div>
+                        <a th:href="@{/geonuris/license/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🔑 GeoNURIS 목록</a>
+                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
+                           th:href="@{/geonuris/license/new}" style="display:block; padding:8px 14px; text-decoration:none; color:#0277bd; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🔑 GeoNURIS 발급</a>
+                    </div>
+                </div>
+                <script>
+                    function toggleLicenseMenu(e) {
+                        if (e) e.preventDefault();
+                        var d = document.getElementById('licenseMenuDropdown');
+                        if (!d) return;
+                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
+                    }
+                    document.addEventListener('click', function(e) {
+                        var wrap = document.getElementById('licenseMenuWrap');
+                        if (wrap && !wrap.contains(e.target)) {
+                            var d = document.getElementById('licenseMenuDropdown');
+                            if (d) d.style.display = 'none';
+                        }
+                    });
+                </script>
+            </div>
+
+            <!-- 견적서 드롭다운 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <div id="quotationMenuWrap" style="position:relative; display:inline-block;">
+                    <a href="#" onclick="toggleQuotationMenu(event)" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-file-invoice-dollar" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>견적서 <span style="font-size:0.7em;">▾</span></a>
+                    <div id="quotationMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
+                        <a th:href="@{/quotation/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#0F766E; font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📝 견적서 목록</a>
+                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authQuotation == 'EDIT'}"
+                           th:href="@{/quotation/new}" style="display:block; padding:8px 14px; text-decoration:none; color:#00a87a; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">➕ 견적서 작성</a>
+                        <div style="height:1px; background:#eee; margin:6px 0;"></div>
+                        <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">대장·기준정보</div>
+                        <a th:href="@{/quotation/ledger}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 견적대장</a>
+                        <a th:href="@{/quotation/patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🧩 패턴관리</a>
+                        <a th:href="@{/quotation/remarks-patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📝 비고패턴</a>
+                        <a th:href="@{/quotation/wage-rates}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">💰 노임단가</a>
+                    </div>
+                </div>
+                <script>
+                    function toggleQuotationMenu(e) {
+                        if (e) e.preventDefault();
+                        var d = document.getElementById('quotationMenuDropdown');
+                        if (!d) return;
+                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
+                    }
+                    document.addEventListener('click', function(e) {
+                        var wrap = document.getElementById('quotationMenuWrap');
+                        if (wrap && !wrap.contains(e.target)) {
+                            var d = document.getElementById('quotationMenuDropdown');
+                            if (d) d.style.display = 'none';
+                        }
+                    });
+                </script>
+            </div>
+
+            <!-- 업무계획 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e8f5e9';this.style.color='#2e7d32'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-calendar-days" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>업무계획</a>
+            </div>
+
+            <!-- 문서관리 드롭다운 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authDocument != null and #authentication.principal.user.authDocument != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <div id="documentMenuWrap" style="position:relative; display:inline-block;">
+                    <a href="#" onclick="toggleDocumentMenu(event)" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#fbe9e7';this.style.color='#e64a19'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-file-lines" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>문서관리 <span style="font-size:0.7em;">▾</span></a>
+                    <div id="documentMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
+                        <a th:href="@{/document/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#e64a19; font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 문서관리 목록</a>
+                        <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authDocument == 'EDIT'}">
+                            <div style="height:1px; background:#eee; margin:6px 0;"></div>
+                            <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">사업 문서 작성</div>
+                            <a th:href="@{/document/create(docType='COMMENCE')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📜 착수계</a>
+                            <a th:href="@{/document/create(docType='INTERIM')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🧾 기성계</a>
+                            <a th:href="@{/document/create(docType='COMPLETION')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">✒ 준공계</a>
+                            <a th:href="@{/document/create(docType='INSPECT')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📝 점검내역서</a>
+                            <div style="height:1px; background:#eee; margin:6px 0;"></div>
+                            <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">운영·유지보수 문서</div>
+                            <a th:href="@{/document/create(docType='FAULT')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">⚠ 장애처리</a>
+                            <a th:href="@{/document/create(docType='SUPPORT')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🤝 업무지원</a>
+                            <a th:href="@{/document/create(docType='INSTALL')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">⬇ 설치보고서</a>
+                            <a th:href="@{/document/create(docType='PATCH')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🧩 패치내역서</a>
+                        </th:block>
+                    </div>
+                </div>
+                <script>
+                    function toggleDocumentMenu(e) {
+                        if (e) e.preventDefault();
+                        var d = document.getElementById('documentMenuDropdown');
+                        if (!d) return;
+                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
+                    }
+                    document.addEventListener('click', function(e) {
+                        var wrap = document.getElementById('documentMenuWrap');
+                        if (wrap && !wrap.contains(e.target)) {
+                            var d = document.getElementById('documentMenuDropdown');
+                            if (d) d.style.display = 'none';
+                        }
+                    });
+                </script>
+            </div>
+
+            <!-- 성과통계 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authPerformance != null and #authentication.principal.user.authPerformance != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
+                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/performance/personal}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f3e5f5';this.style.color='#7B1FA2'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-chart-line" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>성과통계</a>
+            </div>
+
+            <!-- 관리자 드롭다운 -->
+            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" id="adminMenuWrap" style="position:relative; display:inline-block; margin-left:4px;">
+                <a href="#" onclick="toggleAdminMenu(event)" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''"><i class="fas fa-gear" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>관리자 <span style="font-size:0.7em;">▾</span></a>
+                <div id="adminMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
+                    <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">사용자·조직</div>
+                    <a th:href="@{/admin/users}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">👥 사용자 승인</a>
+                    <a th:href="@{/admin/org-units}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🏢 조직도 관리</a>
+                    <div style="height:1px; background:#eee; margin:6px 0;"></div>
+                    <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">시스템</div>
+                    <a th:href="@{/admin/logs}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 로그 관리</a>
+                    <a th:href="@{/admin/system-graph}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🕸️ 시스템 관계도</a>
+                </div>
+            </div>
+            <script>
+                function toggleAdminMenu(e) {
+                    if (e) e.preventDefault();
+                    var d = document.getElementById('adminMenuDropdown');
+                    if (!d) return;
+                    d.style.display = (d.style.display === 'block') ? 'none' : 'block';
+                }
+                document.addEventListener('click', function(e) {
+                    var wrap = document.getElementById('adminMenuWrap');
+                    if (wrap && !wrap.contains(e.target)) {
+                        var d = document.getElementById('adminMenuDropdown');
+                        if (d) d.style.display = 'none';
+                    }
+                });
+            </script>
+
+            <!-- 다크모드 토글 (실험 · 메인 대시보드 최적) -->
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+            <button id="themeToggleBtn" type="button" onclick="window.__toggleTheme && window.__toggleTheme()"
+                title="라이트/다크 모드 전환"
+                style="background:transparent; border:1px solid #E7E5E4; color:#57534E;
+                       width:32px; height:32px; border-radius:8px; cursor:pointer;
+                       display:inline-flex; align-items:center; justify-content:center;
+                       transition: background 0.18s, border-color 0.18s, color 0.18s; padding:0;"
+                onmouseover="this.style.background='#F5F5F4'; this.style.borderColor='#D6D3D1';"
+                onmouseout="this.style.background='transparent'; this.style.borderColor='#E7E5E4';">
+                <i id="themeToggleIcon" class="fas fa-moon" style="font-size:0.78rem;"></i>
+            </button>
+
+            <!-- 마이페이지 (로그아웃 바로 앞) -->
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-circle-user" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>마이페이지</a>
+
+            <!-- 로그아웃 (항상 최우측) -->
+            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#a8a29e;background:transparent;font-size:0.82rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:all 0.18s;" onmouseover="this.style.background='#FEF2F2';this.style.color='#f08a7e'" onmouseout="this.style.background='transparent';this.style.color='#a8a29e'"><i class="fas fa-arrow-right-from-bracket" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>로그아웃</a>
+        </div>
+    </div>
+</nav>
+
+<script>
+/* 다크모드 토글 — localStorage 지속 */
+(function(){
+    var KEY = 'sw_theme';
+    function apply(t) {
+        if (t === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            var ic = document.getElementById('themeToggleIcon');
+            if (ic) { ic.classList.remove('fa-moon'); ic.classList.add('fa-sun'); }
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            var ic2 = document.getElementById('themeToggleIcon');
+            if (ic2) { ic2.classList.remove('fa-sun'); ic2.classList.add('fa-moon'); }
+        }
+    }
+    window.__toggleTheme = function() {
+        var cur = localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
+        var next = cur === 'dark' ? 'light' : 'dark';
+        localStorage.setItem(KEY, next);
+        apply(next);
+    };
+    // 초기 적용
+    try { apply(localStorage.getItem(KEY)); } catch(e) {}
+})();
+</script>
+
+</body>
+</html>

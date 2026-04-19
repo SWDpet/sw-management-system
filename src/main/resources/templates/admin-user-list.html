@@ -5,20 +5,20 @@
     <title>사용자 통합 관리</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 40px 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 40px 20px; color: #333; }
         .container { max-width: 2200px; margin: auto; background: white; border-radius: 12px; padding: 30px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
         .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 30px; }
-        .page-header h2 { margin: 0; color: #1a237e; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        .page-header h2 { margin: 0; color: #134E4A; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
         .header-btns { display: flex; gap: 10px; }
         .btn-top { text-decoration: none; padding: 10px 18px; border-radius: 6px; color: white; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: 0.3s; }
-        .btn-home { background: #4e73df; }
-        .btn-log { background: #e74a3b; } 
-        .section-title { font-size: 1.1rem; font-weight: 700; color: #444; margin: 40px 0 15px 0; border-left: 5px solid #1a237e; padding-left: 10px; }
+        .btn-home { background: #0F766E; }
+        .btn-log { background: #f08a7e; } 
+        .section-title { font-size: 1.1rem; font-weight: 700; color: #444; margin: 40px 0 15px 0; border-left: 5px solid #134E4A; padding-left: 10px; }
         .section-title.pending { color: #e65100; border-left-color: #ff9800; margin-top: 10px; }
         .table-wrap { overflow-x: auto; margin-bottom: 30px; border: 1px solid #e3e6f0; background: #fff; }
         table { width: 100%; border-collapse: collapse; background: #fff; }
         th, td { padding: 10px; border: 1px solid #e3e6f0; text-align: center; font-size: 0.85em; vertical-align: middle; white-space: nowrap; }
-        th { background: #f8f9fc; color: #1a237e; font-weight: bold; border-bottom: 2px solid #1a237e; }
+        th { background: #f8f9fc; color: #134E4A; font-weight: bold; border-bottom: 2px solid #134E4A; }
         input[type="text"], input[type="email"] { width: 100%; box-sizing: border-box; padding: 5px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; text-align: left; }
         /* 컬럼별 최소 너비 — 내용 잘림 방지 */
         td input[name="deptNm"], td input[name="teamNm"] { min-width: 100px; }
@@ -39,16 +39,16 @@
         select { padding: 5px; border: 1px solid #d1d3e2; border-radius: 4px; outline: none; font-size: 0.85em; }
         .btn-action { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; transition: 0.2s; margin: 2px; }
         .btn-approve { background: #1cc88a; } 
-        .btn-update { background: #4e73df; } 
-        .btn-delete { background: #e74a3b; } 
+        .btn-update { background: #0F766E; } 
+        .btn-delete { background: #f08a7e; } 
         .action-cell { display: flex; justify-content: center; align-items: center; gap: 5px; flex-direction: column; }
         .empty-row { padding: 30px; color: #858796; background: #fafafa; }
         
         /* 페이징 스타일 */
         .pagination { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 30px; }
-        .pagination a, .pagination span { padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 5px; text-decoration: none; color: #1a237e; background: white; font-size: 0.9em; }
-        .pagination a:hover { background: #ecf7fe; border-color: #4e73df; }
-        .pagination .active { background: #4e73df; color: white; border-color: #4e73df; font-weight: bold; }
+        .pagination a, .pagination span { padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 5px; text-decoration: none; color: #134E4A; background: white; font-size: 0.9em; }
+        .pagination a:hover { background: #ecf7fe; border-color: #0F766E; }
+        .pagination .active { background: #0F766E; color: white; border-color: #0F766E; font-weight: bold; }
         .pagination .disabled { color: #ccc; cursor: not-allowed; }
         .pagination .disabled:hover { background: white; border-color: #e0e0e0; }
         .page-info { text-align: center; margin-top: 15px; color: #858796; font-size: 0.9em; }
@@ -60,15 +60,15 @@
         .auth-badge.edit { background: #10b981; }
         .auth-more { font-size: 0.72em; color: #6b7280; font-weight: 600; margin-left: 2px; }
         .status-active { color: #10b981; font-weight: 600; font-size: 0.85em; }
-        .status-locked { color: #e74a3b; font-weight: 600; font-size: 0.85em; }
+        .status-locked { color: #f08a7e; font-weight: 600; font-size: 0.85em; }
         .btn-expand { background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 4px;
                       cursor: pointer; font-size: 0.82em; margin-right: 4px; font-weight: 600; }
         .btn-expand.expanded { background: #6b7280; }
-        .user-detail > td { background: #f8f9fc; padding: 16px 20px; border-bottom: 2px solid #1a237e; }
+        .user-detail > td { background: #f8f9fc; padding: 16px 20px; border-bottom: 2px solid #134E4A; }
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 1280px) { .detail-grid { grid-template-columns: 1fr; } }
         .detail-section { background: white; padding: 14px 16px; border: 1px solid #e3e6f0; border-radius: 6px; }
-        .detail-section h4 { margin: 0 0 10px; font-size: 0.92em; color: #1a237e; border-bottom: 1px solid #e0e0e0;
+        .detail-section h4 { margin: 0 0 10px; font-size: 0.92em; color: #134E4A; border-bottom: 1px solid #e0e0e0;
                              padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         .detail-section h4 small { color: #6b7280; font-weight: 400; font-size: 0.85em; }
         .detail-section dl { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; margin: 0; align-items: center; }
@@ -93,12 +93,11 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div class="page-header">
             <h2><i class="fas fa-users-cog"></i> 사용자 통합 관리</h2>
             <div class="header-btns">
-                <a th:href="@{/}" class="btn-top btn-home"><i class="fas fa-home"></i> 메인으로</a>
-                <a href="/logout" class="btn-top" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 
@@ -119,7 +118,7 @@
                     <th>소속기관</th>
                     <th>부서/팀</th>
                     <th>연락처</th>
-                    <th>권한 설정 (대시보드 / 사업 / 담당자 / 서버 / 라이선스 / 견적서 / 사업현황 / 업무계획 / 문서관리 / 성과통계)</th>
+                    <th>권한 설정 (대시보드 / 사업관리 / 담당자 / 서버 / 라이선스 / 견적서 / 업무계획 / 문서관리 / 성과통계)</th>
                     <th>처리</th>
                 </tr>
             </thead>
@@ -159,17 +158,12 @@
                             <option value="EDIT" th:selected="${u.authLicense == 'EDIT'}">라이선스: 편집</option>
                         </select>
                         <!-- ✨ 견적서 권한 추가 -->
-                        <select name="authQuotation" style="border: 1px solid #6B3EF0;" th:attr="form='approveForm' + ${u.userSeq}">
+                        <select name="authQuotation" style="border: 1px solid #0F766E;" th:attr="form='approveForm' + ${u.userSeq}">
                             <option value="NONE" th:selected="${u.authQuotation == 'NONE' or u.authQuotation == null}">견적서: X</option>
                             <option value="VIEW" th:selected="${u.authQuotation == 'VIEW'}">견적서: 조회</option>
                             <option value="EDIT" th:selected="${u.authQuotation == 'EDIT'}">견적서: 편집</option>
                         </select>
                         <!-- 업무계획 및 성과 전산화 권한 -->
-                        <select name="authContract" style="border: 1px solid #0277bd;" th:attr="form='approveForm' + ${u.userSeq}">
-                            <option value="NONE" th:selected="${u.authContract == 'NONE' or u.authContract == null}">사업현황: X</option>
-                            <option value="VIEW" th:selected="${u.authContract == 'VIEW'}">사업현황: 조회</option>
-                            <option value="EDIT" th:selected="${u.authContract == 'EDIT'}">사업현황: 편집</option>
-                        </select>
                         <select name="authWorkPlan" style="border: 1px solid #2e7d32;" th:attr="form='approveForm' + ${u.userSeq}">
                             <option value="NONE" th:selected="${u.authWorkPlan == 'NONE' or u.authWorkPlan == null}">업무계획: X</option>
                             <option value="VIEW" th:selected="${u.authWorkPlan == 'VIEW'}">업무계획: 조회</option>
@@ -204,7 +198,7 @@
             <i class="fas fa-users"></i> 등록된 사용자 관리 (활동 중)
             <span style="font-size: 0.8em; font-weight: normal; color: #666;">
                 (수정 및 삭제가 가능합니다)
-                <span th:if="${totalPages > 0}" style="color: #4e73df; font-weight: bold;">
+                <span th:if="${totalPages > 0}" style="color: #0F766E; font-weight: bold;">
                     - 총 <span th:text="${totalElements}">0</span>명 
                     (페이지 <span th:text="${currentPage + 1}">1</span>/<span th:text="${totalPages}">1</span>)
                 </span>
@@ -214,7 +208,7 @@
         <!-- ✨ 검색 폼 추가 -->
         <div style="background: #f8f9fc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e3e6f0;">
             <div style="display: flex; align-items: center; gap: 15px;">
-                <strong style="color: #1a237e; font-size: 1rem;">🔍 사용자 검색:</strong>
+                <strong style="color: #134E4A; font-size: 1rem;">🔍 사용자 검색:</strong>
                 <form th:action="@{/admin/users}" method="get" style="display: flex; gap: 10px; flex: 1;">
                     <select name="searchType" required style="padding: 8px; border: 1px solid #d1d3e2; border-radius: 6px; font-size: 0.9em; min-width: 140px;">
                         <option value="">검색 타입 선택</option>
@@ -229,7 +223,7 @@
                     <input type="text" name="keyword" placeholder="검색어를 입력하세요" required 
                            th:value="${keyword}"
                            style="flex: 1; padding: 8px 12px; border: 1px solid #d1d3e2; border-radius: 6px; font-size: 0.9em;">
-                    <button type="submit" style="background: #4e73df; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
+                    <button type="submit" style="background: #0F766E; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
                         <i class="fas fa-search"></i> 검색
                     </button>
                     <a th:href="@{/admin/users}" style="background: #858796; color: white; text-decoration: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; font-size: 0.9em; display: flex; align-items: center; gap: 5px;">
@@ -239,7 +233,7 @@
             </div>
             
             <!-- 검색 결과 표시 -->
-            <div th:if="${searchInfo}" style="margin-top: 15px; padding: 10px 15px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 6px; color: #0c5460; font-size: 0.9em;">
+            <div th:if="${searchInfo}" style="margin-top: 15px; padding: 10px 15px; background: #F0FDFA; border: 1px solid #bee5eb; border-radius: 6px; color: #0c5460; font-size: 0.9em;">
                 <i class="fas fa-info-circle"></i> <strong th:text="${searchInfo}">검색 결과</strong>
                 <span th:text="' - 총 ' + ${totalElements} + '명 검색됨'"></span>
             </div>
@@ -349,7 +343,7 @@
                                                    class="sensitive-input" data-sensitive-input="true"
                                                    data-field="tel" th:data-user-seq="${u.userSeq}"
                                                    th:value="${@sensitiveMask.tel(u.tel)}"
-                                                   th:attr="data-mask-initial=${@sensitiveMask.tel(u.tel)}"
+                                                   th:data-mask-initial="${@sensitiveMask.tel(u.tel)}"
                                                    readonly>
                                             <button type="button" class="btn-reveal"
                                                     data-field="tel" th:data-user-seq="${u.userSeq}">🔒 보기</button>
@@ -360,7 +354,7 @@
                                                    class="sensitive-input" data-sensitive-input="true"
                                                    data-field="mobile" th:data-user-seq="${u.userSeq}"
                                                    th:value="${@sensitiveMask.mobile(u.mobile)}"
-                                                   th:attr="data-mask-initial=${@sensitiveMask.mobile(u.mobile)}"
+                                                   th:data-mask-initial="${@sensitiveMask.mobile(u.mobile)}"
                                                    readonly>
                                             <button type="button" class="btn-reveal"
                                                     data-field="mobile" th:data-user-seq="${u.userSeq}">🔒 보기</button>
@@ -371,7 +365,7 @@
                                                    class="sensitive-input" data-sensitive-input="true"
                                                    data-field="email" th:data-user-seq="${u.userSeq}"
                                                    th:value="${@sensitiveMask.email(u.email)}"
-                                                   th:attr="data-mask-initial=${@sensitiveMask.email(u.email)}"
+                                                   th:data-mask-initial="${@sensitiveMask.email(u.email)}"
                                                    readonly>
                                             <button type="button" class="btn-reveal"
                                                     data-field="email" th:data-user-seq="${u.userSeq}">🔒 보기</button>
@@ -382,7 +376,7 @@
                                                    class="sensitive-input" data-sensitive-input="true"
                                                    data-field="address" th:data-user-seq="${u.userSeq}"
                                                    th:value="${@sensitiveMask.address(u.address)}"
-                                                   th:attr="data-mask-initial=${@sensitiveMask.address(u.address)}"
+                                                   th:data-mask-initial="${@sensitiveMask.address(u.address)}"
                                                    readonly>
                                             <button type="button" class="btn-reveal"
                                                     data-field="address" th:data-user-seq="${u.userSeq}">🔒 보기</button>
@@ -393,7 +387,7 @@
                                                    class="sensitive-input" data-sensitive-input="true"
                                                    data-field="ssn" th:data-user-seq="${u.userSeq}"
                                                    th:value="${@sensitiveMask.ssn(u.ssn)}"
-                                                   th:attr="data-mask-initial=${@sensitiveMask.ssn(u.ssn)}"
+                                                   th:data-mask-initial="${@sensitiveMask.ssn(u.ssn)}"
                                                    maxlength="14" readonly>
                                             <button type="button" class="btn-reveal"
                                                     data-field="ssn" th:data-user-seq="${u.userSeq}">🔒 보기</button>
@@ -433,11 +427,6 @@
                                             <option value="NONE" th:selected="${u.authQuotation == 'NONE' or u.authQuotation == null}">견적서: X</option>
                                             <option value="VIEW" th:selected="${u.authQuotation == 'VIEW'}">견적서: 조회</option>
                                             <option value="EDIT" th:selected="${u.authQuotation == 'EDIT'}">견적서: 편집</option>
-                                        </select>
-                                        <select name="authContract">
-                                            <option value="NONE" th:selected="${u.authContract == 'NONE' or u.authContract == null}">사업현황: X</option>
-                                            <option value="VIEW" th:selected="${u.authContract == 'VIEW'}">사업현황: 조회</option>
-                                            <option value="EDIT" th:selected="${u.authContract == 'EDIT'}">사업현황: 편집</option>
                                         </select>
                                         <select name="authWorkPlan">
                                             <option value="NONE" th:selected="${u.authWorkPlan == 'NONE' or u.authWorkPlan == null}">업무계획: X</option>

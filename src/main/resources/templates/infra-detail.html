@@ -6,14 +6,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* 기존 스타일 유지 */
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 40px 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 40px 20px; color: #333; }
         .container { max-width: 1600px; margin: auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
         .page-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1a237e; }
+        .page-header h2 { margin: 0; color: #134E4A; }
         .view-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #d1d3e2; }
-        .view-table th { background: #f8f9fc; color: #1a237e; font-weight: bold; padding: 12px; border: 1px solid #d1d3e2; text-align: center; width: 15%; white-space: nowrap; }
+        .view-table th { background: #f8f9fc; color: #134E4A; font-weight: bold; padding: 12px; border: 1px solid #d1d3e2; text-align: center; width: 15%; white-space: nowrap; }
         .view-table td { padding: 12px 15px; border: 1px solid #d1d3e2; color: #555; }
-        .section-title { font-size: 1.2em; font-weight: 700; color: #4e73df; margin: 40px 0 15px 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #4e73df; padding-bottom: 10px; }
+        .section-title { font-size: 1.2em; font-weight: 700; color: #0F766E; margin: 40px 0 15px 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #0F766E; padding-bottom: 10px; }
         .sub-title { font-size: 1em; font-weight: 700; color: #666; margin: 20px 0 10px 0; padding-left: 10px; border-left: 4px solid #858796; }
         .info-box { border: 1px solid #e3e6f0; border-radius: 8px; padding: 25px; margin-bottom: 25px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .box-web { border-left: 5px solid #0d47a1; }
@@ -31,27 +31,26 @@
         .inner-table td.text-left { text-align: left; padding-left: 10px; }
         .btn-area { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; }
         .btn { padding: 12px 30px; border: none; border-radius: 5px; font-weight: bold; text-decoration: none; display: inline-block; transition: 0.2s; color: white; border: none; cursor: pointer; }
-        .btn-edit { background: #1a237e; }
+        .btn-edit { background: #134E4A; }
         .btn-list { background: #858796; }
-        .btn-del { background: #e74a3b; }
+        .btn-del { background: #f08a7e; }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div class="page-header">
             <h2><i class="fas fa-file-alt"></i> 인프라 자산 상세 정보</h2>
             <div>
-                <a th:href="@{/}" style="padding:8px 14px; background:#4e73df; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600;"><i class="fas fa-home"></i> 메인</a>
                 <a href="/infra/list" style="padding:8px 14px; background:#858796; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-list"></i> 목록</a>
-                <a href="/logout" style="padding:8px 14px; background:#e74a3b; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 
         <div class="section-title">
             <i class="fas fa-landmark"></i> 기본 정보
             <span style="font-size: 0.9em; margin-left: 10px; padding: 4px 10px; border-radius: 4px; color: white;"
-                  th:styleappend="${infra.infraType == 'TEST'} ? 'background-color: #e65100;' : 'background-color: #1a237e;'"
+                  th:styleappend="${infra.infraType == 'TEST'} ? 'background-color: #e65100;' : 'background-color: #134E4A;'"
                   th:text="${infra.infraType == 'TEST'} ? '테스트(TEST)' : '운영(PROD)'">
             </span>
         </div>

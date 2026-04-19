@@ -5,7 +5,7 @@
     <title>설치보고서 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
@@ -23,15 +23,15 @@
         .form-table textarea { height: auto; }
         .form-table textarea { height: 80px; resize: vertical; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
-        .required { color: #e74a3b; }
+        .required { color: #f08a7e; }
 
         /* 동적 행 */
         .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
         .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
         .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
-        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
-        .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+        .btn-add-row { padding: 5px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: #f08a7e; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
         .checkbox-group { display: flex; align-items: center; gap: 15px; }
         .checkbox-group label { display: flex; align-items: center; gap: 5px; font-size: 0.88em; }
@@ -39,6 +39,7 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div class="page-header">
             <h2><i class="fas fa-server"></i> 설치보고서 작성</h2>

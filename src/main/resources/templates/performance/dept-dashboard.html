@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1400px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; }
@@ -28,11 +28,11 @@
         th, td { padding: 10px 12px; text-align: center; font-size: 0.85em; border-bottom: 1px solid #e3e6f0; }
         th { background: #f8f9fc; color: #5a5c69; font-weight: 600; }
         tr:hover { background: #f8f9fc; }
-        .rank-badge { display: inline-block; width: 26px; height: 26px; border-radius: 50%; background: #4e73df; color: white; font-size: 0.78em; font-weight: 700; line-height: 26px; text-align: center; }
+        .rank-badge { display: inline-block; width: 26px; height: 26px; border-radius: 50%; background: #0F766E; color: white; font-size: 0.78em; font-weight: 700; line-height: 26px; text-align: center; }
         .rank-badge.gold { background: #f6c23e; color: #333; }
         .rank-badge.silver { background: #b4b4b4; }
         .rank-badge.bronze { background: #cd7f32; }
-        .name-link { color: #4e73df; font-weight: 600; text-decoration: none; }
+        .name-link { color: #0F766E; font-weight: 600; text-decoration: none; }
         .name-link:hover { text-decoration: underline; }
 
         @media (max-width: 900px) {
@@ -41,6 +41,7 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <!-- 헤더 -->
         <div class="page-header">
@@ -56,8 +57,6 @@
                     <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> 조회</button>
                 </form>
                 <a th:href="@{/performance/personal}" class="btn btn-secondary"><i class="fas fa-user"></i> 개인현황</a>
-                <a href="/" class="btn" style="background:#5a5c69; color:white;"><i class="fas fa-home"></i> 홈</a>
-                <a href="/logout" class="btn" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 
@@ -130,7 +129,7 @@
 
         // 직원별 업무 건수 Bar Chart
         var colors = userNames.map(function(_, i) {
-            var palette = ['#4e73df','#1cc88a','#e74a3b','#f6c23e','#36b9cc','#858796','#5a5c69','#fd7e14','#6f42c1','#20c997'];
+            var palette = ['#0F766E','#1cc88a','#f08a7e','#f6c23e','#36b9cc','#858796','#5a5c69','#fd7e14','#0F766E','#0F766E'];
             return palette[i % palette.length];
         });
 
@@ -169,7 +168,7 @@
                 labels: ['설치', '패치', '장애', '업무지원', '점검'],
                 datasets: [{
                     data: [typeSum.install, typeSum.patch, typeSum.fault, typeSum.support, typeSum.inspect],
-                    backgroundColor: ['#4e73df', '#1cc88a', '#e74a3b', '#f6c23e', '#36b9cc']
+                    backgroundColor: ['#0F766E', '#1cc88a', '#f08a7e', '#f6c23e', '#36b9cc']
                 }]
             },
             options: {

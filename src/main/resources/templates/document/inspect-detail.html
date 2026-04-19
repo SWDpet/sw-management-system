@@ -6,14 +6,14 @@
     <title>점검내역서 상세</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
         .header-actions { display: flex; gap: 8px; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-edit { background: #4e73df; color: white; }
-        .btn-pdf { background: #e74a3b; color: white; }
+        .btn-edit { background: #0F766E; color: white; }
+        .btn-pdf { background: #f08a7e; color: white; }
         .btn-preview { background: #36b9cc; color: white; }
         .btn-back { background: #858796; color: white; }
         .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 0.78em; font-weight: 600; color: white; margin-left: 10px; }
@@ -24,16 +24,16 @@
         .alert-error { background: #f8d7da; color: #721c24; }
 
         .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        .card-title { font-size: 1em; font-weight: 700; color: #1a237e; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8eaf6; }
+        .card-title { font-size: 1em; font-weight: 700; color: #134E4A; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8eaf6; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 30px; }
         .info-item { display: flex; gap: 10px; }
         .info-label { font-weight: 600; color: #5a5c69; min-width: 90px; font-size: 0.88em; }
         .info-value { font-size: 0.88em; }
 
-        .section-header { background: #1a237e; color: white; padding: 8px 14px; font-weight: 700; font-size: 0.92em; margin-top: 0; border-radius: 4px 4px 0 0; }
+        .section-header { background: #134E4A; color: white; padding: 8px 14px; font-weight: 700; font-size: 0.92em; margin-top: 0; border-radius: 4px 4px 0 0; }
         table.dt { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
         table.dt th, table.dt td { padding: 7px 10px; border: 1px solid #ddd; }
-        table.dt thead th { background: #e8eaf6; color: #1a237e; font-weight: 700; text-align: center; }
+        table.dt thead th { background: #e8eaf6; color: #134E4A; font-weight: 700; text-align: center; }
         table.dt .cat { background: #f8f9fc; font-weight: 600; text-align: center; }
         .result-ok { color: #155724; font-weight: 700; }
         .result-check { color: #856404; font-weight: 700; }
@@ -71,6 +71,7 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div th:if="${errorMessage}" class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span></div>
 
@@ -126,7 +127,7 @@
                 <thead><tr><th style="width:50px;">년도</th><th style="width:35px;">월</th><th style="width:35px;">일</th><th>업무</th><th>증상</th><th>조치내용</th></tr></thead>
                 <tbody>
                     <!-- 이전 월 이력 (회색) -->
-                    <tr th:each="v : ${report.previousVisits}" style="background:#f5f5f5;color:#555;">
+                    <tr th:each="v : ${report.previousVisits}" style="background: #FAFAF9;color:#555;">
                         <td style="text-align:center;" th:text="${v.visitYear}"></td>
                         <td style="text-align:center;" th:text="${v.visitMonth}"></td>
                         <td style="text-align:center;" th:text="${v.visitDay}"></td>

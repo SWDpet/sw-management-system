@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1200px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; }
@@ -35,7 +35,7 @@
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
         .stat-item { background: #f8f9fc; border-radius: 8px; padding: 18px; text-align: center; }
         .stat-item .stat-label { font-size: 0.78em; color: #888; margin-bottom: 6px; }
-        .stat-item .stat-value { font-size: 1.6em; font-weight: 700; color: #4e73df; }
+        .stat-item .stat-value { font-size: 1.6em; font-weight: 700; color: #0F766E; }
         .stat-item .stat-unit { font-size: 0.75em; color: #888; }
 
         .rate-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
@@ -59,6 +59,7 @@
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <!-- 헤더 -->
         <div class="page-header">
@@ -66,8 +67,6 @@
             <div style="display:flex; gap:8px;">
                 <a th:href="@{/performance/personal}" class="btn btn-secondary"><i class="fas fa-chart-line"></i> 개인현황</a>
                 <a th:href="@{/performance/dept}" class="btn btn-secondary"><i class="fas fa-users"></i> 부서현황</a>
-                <a href="/" class="btn" style="background:#5a5c69; color:white;"><i class="fas fa-home"></i> 홈</a>
-                <a href="/logout" class="btn" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
 
@@ -235,9 +234,9 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '설치', data: installData, borderColor: '#4e73df', backgroundColor: 'rgba(78,115,223,0.1)', fill: true, tension: 0.3 },
+                        { label: '설치', data: installData, borderColor: '#0F766E', backgroundColor: 'rgba(15, 118, 110,0.1)', fill: true, tension: 0.3 },
                         { label: '패치', data: patchData, borderColor: '#1cc88a', backgroundColor: 'rgba(28,200,138,0.1)', fill: true, tension: 0.3 },
-                        { label: '장애', data: faultData, borderColor: '#e74a3b', backgroundColor: 'rgba(231,74,59,0.1)', fill: true, tension: 0.3 },
+                        { label: '장애', data: faultData, borderColor: '#f08a7e', backgroundColor: 'rgba(231,74,59,0.1)', fill: true, tension: 0.3 },
                         { label: '업무지원', data: supportData, borderColor: '#f6c23e', backgroundColor: 'rgba(246,194,62,0.1)', fill: true, tension: 0.3 }
                     ]
                 },

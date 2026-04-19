@@ -9,9 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6B3EF0;
-            --primary2: #5330C8;
-            --primary-lt: #f0ebff;
+            --primary: #0F766E;
+            --primary2: #115E59;
+            --primary-lt: #F0FDFA;
             --bg: #f5f5f5;
             --surface: #ffffff;
             --text-primary: #222222;
@@ -683,52 +683,7 @@
 
 <!-- Navigation Bar -->
 <!-- GNB (메인 대시보드와 동일) -->
-<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
-        <a href="/" style="text-decoration:none; display:flex; align-items:center; gap:10px;">
-            <span style="width:32px; height:32px; background:#6B3EF0; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1rem; font-family:'Inter',sans-serif;">S</span>
-            <span style="font-weight:800; font-size:1.08rem; color:#222; letter-spacing:-0.01em; font-family:'Noto Sans KR',sans-serif;">SW Manager</span>
-        </a>
-        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
-            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👤 마이페이지</a>
-
-            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">🖥️ 서버관리</a>
-            </div>
-
-            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 사업현황</a>
-            </div>
-
-            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">👥 담당자관리</a>
-            </div>
-
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/license/registry/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 라이선스 대장</a>
-            </div>
-
-            <!-- ✨ 견적서 메뉴 (현재 활성) -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/quotation/list}" style="text-decoration:none; color:#6B3EF0; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; background:#f0ebff;">📝 견적서</a>
-                <a th:href="@{/quotation/ledger}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">📋 견적대장</a>
-                <a th:href="@{/quotation/patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">패턴관리</a>
-                <a th:href="@{/quotation/remarks-patterns}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">비고패턴</a>
-                <a th:href="@{/quotation/wage-rates}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f0ebff';this.style.color='#6B3EF0'" onmouseout="this.style.background='';this.style.color='#444'">노임단가</a>
-            </div>
-
-            <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" th:href="@{/admin/users}" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; margin-left:4px;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''">⚙️ 사용자승인</a>
-
-            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
-            <a href="/logout" style="text-decoration:none; color:#999; font-size:0.8rem; padding:6px 10px; border-radius:6px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">로그아웃</a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
 
 <!-- Main Container -->
 <div class="container">
@@ -918,10 +873,10 @@
                                 <option value="">패턴 선택</option>
                             </select>
                             <button type="button" onclick="saveCurrentRemarksAsPattern()"
-                                    style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:#f8f9fa;color:var(--text-secondary);cursor:pointer;white-space:nowrap;font-family:inherit;"
+                                    style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background: #F5F5F4;color:var(--text-secondary);cursor:pointer;white-space:nowrap;font-family:inherit;"
                                     title="현재 비고 내용을 패턴으로 저장">저장</button>
                             <button type="button" onclick="deleteSelectedRemarksPattern()"
-                                    style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background:#f8f9fa;color:#e74c3c;cursor:pointer;white-space:nowrap;font-family:inherit;"
+                                    style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background: #F5F5F4;color:#e74c3c;cursor:pointer;white-space:nowrap;font-family:inherit;"
                                     title="선택한 패턴 삭제">삭제</button>
                         </div>
                     </div>
@@ -993,7 +948,7 @@
             </div>
 
             <!-- 투입인력 추가 영역 -->
-            <div style="background:#f8f9fa;border:1px solid #e8e8e8;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+            <div style="background: #F5F5F4;border:1px solid #e8e8e8;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
                 <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
                     <div style="flex:1.2;min-width:140px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">기술등급</label>
@@ -1021,7 +976,7 @@
                         <input type="text" id="laborRemarks" placeholder="" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
                     <div>
-                        <button type="button" onclick="addLaborEntry()" style="padding:8px 14px;background:#6B3EF0;color:#fff;border:none;border-radius:6px;font-size:0.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">+ 추가</button>
+                        <button type="button" onclick="addLaborEntry()" style="padding:8px 14px;background:#0F766E;color:#fff;border:none;border-radius:6px;font-size:0.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">+ 추가</button>
                     </div>
                 </div>
             </div>
@@ -1050,10 +1005,10 @@
             <!-- 인쇄 미리보기 (실시간 업데이트) -->
             <div id="laborPreviewArea" style="display:none;margin-bottom:16px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                    <span style="font-weight:700;font-size:0.85rem;color:#6B3EF0;">📋 견적서 인쇄 형식 미리보기</span>
+                    <span style="font-weight:700;font-size:0.85rem;color:#0F766E;">📋 견적서 인쇄 형식 미리보기</span>
                     <span style="font-size:0.72rem;color:#999;">— 실제 견적서에 아래와 같이 표시됩니다</span>
                 </div>
-                <div style="background:#fff;border:2px solid #6B3EF0;border-radius:8px;padding:16px 20px;box-shadow:0 2px 8px rgba(107,62,240,0.08);">
+                <div style="background:#fff;border:2px solid #0F766E;border-radius:8px;padding:16px 20px;box-shadow:0 2px 8px rgba(107,62,240,0.08);">
                     <div id="laborPreviewContent"></div>
                 </div>
             </div>
@@ -1075,7 +1030,7 @@
                     </tr>
                     <tr>
                         <td style="padding:10px 0;font-weight:800;font-size:1rem;">직접인건비 합계</td>
-                        <td style="padding:10px 0;text-align:right;font-weight:800;font-size:1rem;color:#6B3EF0;" id="laborTotal">0</td>
+                        <td style="padding:10px 0;text-align:right;font-weight:800;font-size:1rem;color:#0F766E;" id="laborTotal">0</td>
                     </tr>
                 </table>
             </div>
@@ -1143,7 +1098,7 @@
                     </tr>
                     <tr>
                         <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;text-align:center;background:#fff8e1;">1년 유지보수</td>
-                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;color:#1a237e;" id="swAmtYearlyDisplay">0</td>
+                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;color:#134E4A;" id="swAmtYearlyDisplay">0</td>
                         <td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">
                             <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                 <input type="checkbox" id="swAmtShowYearly" checked> <span>표출</span>
@@ -1152,7 +1107,7 @@
                     </tr>
                     <tr>
                         <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;text-align:center;background:#fff8e1;">월 유지보수</td>
-                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;color:#1a237e;" id="swAmtMonthlyDisplay">0</td>
+                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;color:#134E4A;" id="swAmtMonthlyDisplay">0</td>
                         <td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">
                             <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                 <input type="checkbox" id="swAmtShowMonthly" checked> <span>표출</span>
@@ -1161,10 +1116,10 @@
                     </tr>
                 </tbody>
             </table>
-            <div id="swAmtResultBox" style="display:none;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;">
+            <div id="swAmtResultBox" style="display:none;background:#F0FDFA;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                     <span style="font-size:0.85rem;color:#1e40af;font-weight:600;">계산 결과 (단가)</span>
-                    <span style="font-size:1.15rem;font-weight:800;color:#1a237e;" id="swAmtResultPrice">0</span>
+                    <span style="font-size:1.15rem;font-weight:800;color:#134E4A;" id="swAmtResultPrice">0</span>
                 </div>
                 <div style="font-size:0.78rem;color:#666;margin-top:4px;" id="swAmtResultDesc"></div>
             </div>
@@ -2178,7 +2133,7 @@
                 const manualOpt = document.createElement('option');
                 manualOpt.value = '__MANUAL__';
                 manualOpt.textContent = '── 직접입력 ──';
-                manualOpt.style.color = '#6B3EF0';
+                manualOpt.style.color = '#0F766E';
                 gradeSelect.appendChild(manualOpt);
             }
         } catch (e) {
@@ -3015,7 +2970,7 @@
             'body{background:#e0e0e0;font-family:"Noto Sans KR","Malgun Gothic",sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
             '.toolbar{position:fixed;top:0;left:0;right:0;height:56px;background:#222;display:flex;align-items:center;justify-content:center;gap:12px;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.3);}' +
             '.toolbar button,.toolbar a{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:6px;font-size:0.88rem;font-weight:600;text-decoration:none;border:none;cursor:pointer;}' +
-            '.btn-print{background:#6B3EF0;color:#fff;} .btn-back{background:#555;color:#fff;}' +
+            '.btn-print{background:#0F766E;color:#fff;} .btn-back{background:#555;color:#fff;}' +
             '.page{width:210mm;min-height:297mm;margin:76px auto 40px;background:#fff;padding:12mm 12mm 10mm;box-shadow:0 4px 24px rgba(0,0,0,0.18);}' +
             '.doc-title{text-align:center;font-size:24pt;font-weight:900;letter-spacing:14px;color:#111;margin-bottom:12px;padding-bottom:8px;border-bottom:3px double #222;}' +
             '.ht{width:100%;border-collapse:collapse;margin-bottom:8px;table-layout:fixed;}' +
@@ -3029,7 +2984,7 @@
             '.plbl{width:80px;min-width:80px;background:#f2f0ff;font-size:8pt;font-weight:700;color:#333;display:flex;align-items:center;padding:2px 8px;border-right:1px solid #ccc;}' +
             '.pval{flex:1;font-size:9pt;font-weight:700;display:flex;align-items:center;padding:2px 8px;}' +
             '.abar{display:flex;border:2px solid #333;min-height:28px;margin-bottom:10px;background:#fafafa;}' +
-            '.albl{width:80px;min-width:80px;background:#6B3EF0;color:#fff;font-size:8.5pt;font-weight:800;display:flex;align-items:center;justify-content:center;border-right:2px solid #333;}' +
+            '.albl{width:80px;min-width:80px;background:#0F766E;color:#fff;font-size:8.5pt;font-weight:800;display:flex;align-items:center;justify-content:center;border-right:2px solid #333;}' +
             '.atxt{flex:1;font-size:10pt;font-weight:800;color:#111;display:flex;align-items:center;padding:2px 8px;}' +
             '.anum{font-size:9pt;font-weight:700;color:#333;display:flex;align-items:center;padding:2px 10px;white-space:nowrap;}' +
             '.avat{font-size:7.5pt;font-weight:600;color:#666;display:flex;align-items:center;padding:2px 8px;white-space:nowrap;}' +
@@ -3037,7 +2992,7 @@
             'table.items th{background:#f2f0ff;border:1px solid #333;padding:4px 3px;font-size:7.5pt;font-weight:700;text-align:center;color:#222;}' +
             '.st{width:100%;border-collapse:collapse;margin-bottom:8px;} .st td{border:1px solid #333;padding:4px 8px;font-size:8.5pt;}' +
             '.sl{background:#f2f0ff;font-weight:700;text-align:center;} .sv{text-align:right;font-weight:700;font-size:9.5pt;width:150px;} .sr{width:90px;font-size:7.5pt;}' +
-            '.stot .sl{background:#6B3EF0;color:#fff;font-size:9.5pt;} .stot .sv{font-size:10pt;color:#6B3EF0;font-weight:800;}' +
+            '.stot .sl{background:#0F766E;color:#fff;font-size:9.5pt;} .stot .sv{font-size:10pt;color:#0F766E;font-weight:800;}' +
             '.remarks{border:1px solid #ccc;padding:6px 10px;margin-bottom:10px;min-height:36px;font-size:7.5pt;color:#444;line-height:1.6;}' +
             '.remarks .rt{font-weight:700;font-size:8pt;color:#222;margin-bottom:2px;}' +
             '@media print{body{background:#fff;} .toolbar{display:none!important;} .page{margin:0;box-shadow:none;padding:10mm 10mm 8mm;width:100%;min-height:auto;} .doc-title{font-size:22pt;margin-bottom:8px;padding-bottom:6px;} .ht{margin-bottom:6px;} .ht td{height:20px;padding:1px 5px;font-size:8pt;} .prow{min-height:22px;margin-bottom:6px;} .abar{min-height:24px;margin-bottom:8px;} table.items th{padding:3px 2px;font-size:7pt;} table.items td{padding:2px 3px;font-size:7.5pt;} .st{margin-bottom:6px;} .st td{padding:3px 6px;font-size:8pt;} .remarks{padding:4px 8px;font-size:7pt;line-height:1.5;min-height:auto;}}' +

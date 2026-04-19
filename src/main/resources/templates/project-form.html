@@ -10,19 +10,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #4e73df;
+            --primary-color: #0F766E;
             --secondary-color: #858796;
-            --dark-navy: #1a237e;
+            --dark-navy: #134E4A;
             --bg-color: #f4f7f6;
             --card-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
-        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; background-color: var(--bg-color); margin: 0; padding: 40px 20px; color: #444; }
-        .admin-container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: var(--card-shadow); overflow: hidden; }
-        .page-header { background: var(--dark-navy); color: white; padding: 25px 30px; display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; background-color: #FAFAF9; margin: 0; padding: 0; color: #1C1917; }
+        .admin-container { max-width: 1700px; margin: 0 auto; padding: 28px 32px 56px; }
+        .page-header { padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px solid #E7E5E4; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; font-size: 1.35rem; font-weight: 700; color: #1C1917; display: flex; align-items: center; gap: 10px; }
+        .page-header h2 i { color: #0F766E; font-size: 1.1rem; }
         .header-btns { display: flex; gap: 10px; }
-        .btn-top { background: rgba(255,255,255,0.15); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; transition: 0.3s; border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 5px; }
-        .btn-top:hover { background: white; color: var(--dark-navy); }
+        .btn-top { background: transparent; color: #57534E; padding: 7px 14px; border-radius: 8px; text-decoration: none; font-size: 0.83rem; font-weight: 600; transition: all 0.15s; border: 1px solid #E7E5E4; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-top:hover { background: #F5F5F4; border-color: #D6D3D1; color: #1C1917; }
+        .btn-top.btn-primary { background: #0F766E; color: #fff; border-color: #0F766E; }
+        .btn-top.btn-primary:hover { background: #115E59; border-color: #115E59; color: #fff; }
         form { padding: 30px; }
         fieldset { border: 1px solid #e3e6f0; border-radius: 8px; padding: 25px; margin-bottom: 30px; background: #fcfdff; }
         legend { font-weight: 700; color: var(--primary-color); padding: 0 10px; font-size: 1.1rem; }
@@ -30,14 +33,14 @@
         .form-group { flex: 1; min-width: 220px; display: flex; flex-direction: column; }
         label { font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: #555; }
         input, select { padding: 12px; border: 1px solid #d1d3e2; border-radius: 6px; font-size: 0.95rem; outline: none; transition: 0.2s; }
-        input:focus, select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.1); }
+        input:focus, select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(15, 118, 110,0.1); }
         input[readonly] { background-color: #eaecf4; color: #6e707e; font-weight: 600; cursor: not-allowed; }
         select:disabled { background-color: #eaecf4; color: #aaa; cursor: not-allowed; }
         .code-field { background-color: #f8faff !important; color: #d32f2f !important; font-weight: 700; }
         .page-footer { padding: 25px 30px; background: #f8f9fc; border-top: 1px solid #e3e6f0; display: flex; justify-content: center; gap: 20px; }
         .btn-save { background: #1cc88a; color: white; border: none; padding: 15px 60px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 1.1rem; }
         .btn-cancel { background: var(--secondary-color); color: white; padding: 15px 60px; border-radius: 6px; font-weight: 700; text-decoration: none; font-size: 1.1rem; text-align: center; }
-        .error-msg { color: #e74a3b; font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; text-align: center; }
+        .error-msg { color: #f08a7e; font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; text-align: center; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-box { background: white; padding: 40px; border-radius: 12px; width: 400px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .modal-icon { font-size: 3rem; color: #1cc88a; margin-bottom: 20px; }
@@ -45,25 +48,39 @@
         .modal-desc { color: #666; margin-bottom: 30px; }
         .modal-btns { display: flex; justify-content: center; gap: 10px; }
         .btn-modal { padding: 12px 24px; border-radius: 6px; font-weight: 700; cursor: pointer; border: none; font-size: 1rem; color: white; transition: 0.2s; }
-        .btn-list { background: #4e73df; }
+        .btn-list { background: #0F766E; }
         .btn-new { background: #1cc88a; }
         .btn-modal:hover { opacity: 0.9; transform: translateY(-2px); }
         .equip-table { width:100%; border-collapse:collapse; }
         .equip-table th, .equip-table td { padding:6px 8px; border:1px solid #e3e6f0; font-size:0.85em; text-align:center; }
         .equip-table th { background:#f8f9fc; color:#5a5c69; font-weight:600; }
         .equip-table input { width:100%; padding:5px; border:1px solid #d1d3e2; border-radius:4px; font-size:0.88em; box-sizing:border-box; }
-        .equip-table .btn-del { padding:3px 8px; background:#e74a3b; color:white; border:none; border-radius:3px; font-size:0.75em; cursor:pointer; }
+        .equip-table .btn-del { padding:3px 8px; background:#f08a7e; color:white; border:none; border-radius:3px; font-size:0.75em; cursor:pointer; }
+    
+        /* 테이블 현대화 — 행 높이 + hover 좌측 teal 바 */
+        tbody tr { transition: background 0.12s, box-shadow 0.12s; }
+        tbody tr:hover { background-color: #FAFAF9 !important; box-shadow: inset 3px 0 0 0 #0F766E; }
+        thead th { font-size: 0.76em !important; letter-spacing: 0.05em; text-transform: uppercase; padding: 14px 12px !important; }
+        tbody td { padding: 14px 12px !important; }
+
+        /* 폼 — teal focus ring */
+        input:focus, select:focus, textarea:focus {
+            outline: none !important;
+            border-color: #0F766E !important;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
+        }
+
     </style>
 </head>
 <body>
 
+    <!-- 공통 GNB -->
+    <div th:replace="~{fragments/top-nav :: nav}"></div>
+
 <div class="admin-container">
     <div class="page-header">
         <h2><i class="fas fa-file-invoice-dollar"></i> SW 사업 정보 등록/수정</h2>
-        <div class="header-btns">
-            <a th:href="@{/}" class="btn-top"><i class="fas fa-home"></i> 메인으로</a>
-            <a href="/logout" class="btn-top" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
-        </div>
+        <div class="header-btns"></div>
     </div>
 
     <form id="projectForm" th:action="@{/projects/save}" th:object="${project}" method="post" onsubmit="saveProject(event)">
@@ -355,14 +372,14 @@
                 <thead><tr><th>No</th><th>품명</th><th>규격</th><th>도입가(부가세포함)</th><th>수량</th><th>비고</th><th></th></tr></thead>
                 <tbody></tbody>
             </table>
-            <button type="button" onclick="addEquipRow('hwTable','HW')" style="margin-top:5px; padding:5px 12px; background:#4e73df; color:white; border:none; border-radius:4px; font-size:0.8em; cursor:pointer;">+ HW 추가</button>
+            <button type="button" onclick="addEquipRow('hwTable','HW')" style="margin-top:5px; padding:5px 12px; background:#0F766E; color:white; border:none; border-radius:4px; font-size:0.8em; cursor:pointer;">+ HW 추가</button>
 
-            <div style="margin:20px 0 12px; font-weight:700; color:#e74a3b;">◎ 소프트웨어(SW)</div>
+            <div style="margin:20px 0 12px; font-weight:700; color:#f08a7e;">◎ 소프트웨어(SW)</div>
             <table class="equip-table" id="swTable">
                 <thead><tr><th>No</th><th>품명</th><th>규격</th><th>도입가(부가세포함)</th><th>수량</th><th>비고</th><th></th></tr></thead>
                 <tbody></tbody>
             </table>
-            <button type="button" onclick="addEquipRow('swTable','SW')" style="margin-top:5px; padding:5px 12px; background:#4e73df; color:white; border:none; border-radius:4px; font-size:0.8em; cursor:pointer;">+ SW 추가</button>
+            <button type="button" onclick="addEquipRow('swTable','SW')" style="margin-top:5px; padding:5px 12px; background:#0F766E; color:white; border:none; border-radius:4px; font-size:0.8em; cursor:pointer;">+ SW 추가</button>
 
             <div style="margin-top:15px; text-align:right;">
                 <button type="button" onclick="saveEquipList()" style="padding:10px 24px; background:#1cc88a; color:white; border:none; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.9em;"><i class="fas fa-save"></i> 장비 정보 저장</button>

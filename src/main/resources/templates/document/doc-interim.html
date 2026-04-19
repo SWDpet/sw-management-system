@@ -7,7 +7,7 @@
     <title>기성계 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
         .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
@@ -32,7 +32,7 @@
         .form-table textarea { height: auto; }
         .form-table textarea { height: 80px; resize: vertical; }
         .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
-        .required { color: #e74a3b; }
+        .required { color: #f08a7e; }
         .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
 
         /* 동적 행 */
@@ -40,13 +40,14 @@
         .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
         .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
         .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
-        .btn-add-row { padding: 5px 12px; background: #4e73df; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
-        .btn-del-row { padding: 3px 8px; background: #e74a3b; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+        .btn-add-row { padding: 5px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: #f08a7e; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
         .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
     </style>
 </head>
 <body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
     <div class="container">
         <div class="page-header">
             <h2><i class="fas fa-file-contract"></i> 기성계 작성 (3종 세트)</h2>
@@ -160,8 +161,8 @@
             </table>
 
             <!-- SW 항목 (프로젝트 장비에서 자동 로드) -->
-            <div style="margin:20px 0 8px; font-weight:700; color:#e74a3b;">◎ 유지보수 항목
-                <button type="button" onclick="addInterimItemRow()" style="margin-left:15px; padding:3px 10px; background:#4e73df; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            <div style="margin:20px 0 8px; font-weight:700; color:#f08a7e;">◎ 유지보수 항목
+                <button type="button" onclick="addInterimItemRow()" style="margin-left:15px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
                 <span class="help-text" style="margin-left:10px;">사업 선택 시 장비 자동 로드</span>
             </div>
             <table class="dynamic-table" id="interimItemTable">
