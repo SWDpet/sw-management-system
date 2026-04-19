@@ -145,13 +145,13 @@
 - **위치**: `LoginController.java:37` — `@GetMapping("/login/type/{mode}")`
 - **내용**: 링크·리다이렉트 대상 없음.
 - **권장 조치**: 미사용이면 제거, 필요하면 진입 링크 추가.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 3: `LoginController.loginModePage` 메서드 및 `PathVariable` import 제거. `/login/type/{mode}` 경로 404)
 
 #### 4-5. 미사용 Repository 메서드
 - **위치**: `src/main/java/com/swmanager/system/repository/SwRepository.java:11`
 - **내용**: `findAllByOrderByYearDescCityNmAscDistNmAsc()` 호출처 없음, Repository 자체도 미주입.
 - **권장 조치**: 인터페이스·메서드 삭제 or `SwProjectRepository` 로 통합.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 3: `SwRepository.java` 파일 삭제. 호출자 0건 재확인 후 제거 — `SwProjectRepository` 가 모든 정렬·검색 커버)
 
 ### 추가 확인
 - `src/main/resources/static/` 에 `.js`/`.css` 파일 없음 (이미지 자원만 존재, 템플릿에서 참조 중)
@@ -186,7 +186,7 @@
 - **위치**: `AdminUserController.java:101, 116`
 - **내용**: 검색 `keyword` 를 INFO 로 그대로 기록 → 사용자 입력 원문 장기 보관.
 - **권장 조치**: INFO 에서는 키워드 비노출 or 마스킹, 필요 시 DEBUG 에서 제한적 기록.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 3: line 101 키워드 원문 → 길이만 기록, line 116 INFO→DEBUG + 원문 제거. 레벨 불문 keyword 원문 로그 0건)
 
 ### 추가 확인
 - `System.out.println(...)`: **없음**

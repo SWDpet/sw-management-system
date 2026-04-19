@@ -3,7 +3,6 @@ package com.swmanager.system.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
@@ -31,12 +30,6 @@ public class LoginController {
         if ("true".equals(expired)) {
             model.addAttribute("loginError", "다른 곳에서 로그인하여 현재 세션이 만료되었습니다. 다시 로그인해주세요.");
         }
-        return "login";
-    }
-
-    @GetMapping("/login/type/{mode}")
-    public String loginModePage(@PathVariable("mode") String mode, Model model) {
-        model.addAttribute("mode", mode);
         return "login";
     }
 }

@@ -98,7 +98,9 @@ public class AdminUserController {
             Model model) {
         
         log.info("=== 회원 관리 페이지 접근 ===");
-        log.info("Page: {}, 검색 타입: {}, 키워드: {}", page, searchType, keyword);
+        // [감사 P3 5-4] 키워드 원문 노출 방지 — 길이만 기록
+        log.info("Page: {}, 검색 타입: {}, 키워드 길이: {}", page, searchType,
+                keyword != null ? keyword.length() : 0);
         
         // ✅ 관리자 권한 체크
         checkAdminAuth();
@@ -113,7 +115,9 @@ public class AdminUserController {
         
         // 검색 처리 (페이징 적용)
         if (keyword != null && !keyword.trim().isEmpty() && searchType != null) {
-            log.info("검색 수행 - 타입: {}, 키워드: {}", searchType, keyword);
+            // [감사 P3 5-4] 키워드 원문 로그 금지 — DEBUG 레벨 + 길이만 기록
+            log.debug("검색 수행 - 타입: {}, 키워드 길이: {}", searchType,
+                    keyword != null ? keyword.length() : 0);
             
             switch (searchType) {
                 case "userid":
