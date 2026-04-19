@@ -2,14 +2,8 @@ package com.swmanager.system.service;
 
 import com.swmanager.system.domain.ContStatMst;
 import com.swmanager.system.domain.SwProject;
-import com.swmanager.system.domain.User;
-import com.swmanager.system.dto.SwProjectDTO;
-import com.swmanager.system.exception.DuplicateResourceException;
-import com.swmanager.system.exception.ErrorCode;
-import com.swmanager.system.exception.ResourceNotFoundException;
 import com.swmanager.system.repository.ContStatMstRepository;
 import com.swmanager.system.repository.SwProjectRepository;
-import com.swmanager.system.repository.UserRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * SW 프로젝트 서비스
+ *
+ * 감사 P2 4-2 (스프린트 2b, 2026-04-19) 로 미사용 public 메서드 11개 및
+ * 미호출 private 헬퍼 1종을 제거. 유지 API: getList / search /
+ * getProject / save / delete.
  */
 @Slf4j
 @Service
@@ -34,51 +31,7 @@ import java.util.stream.Collectors;
 public class SwService {
 
     @Autowired private SwProjectRepository swProjectRepository;
-    @Autowired private UserRepository userRepository;
     @Autowired private ContStatMstRepository contStatMstRepository;
-
-    // ========== 기존 메서드 (유지) ==========
-
-    @Transactional(readOnly = true)
-    public List<SwProject> getAllProjects() {
-        return swProjectRepository.findAllOrderByCustom();
-    }
-
-    public void saveProject(SwProject project) {
-        swProjectRepository.save(project);
-    }
-
-    @Transactional(readOnly = true)
-    public SwProject getProjectById(Long id) {
-        return swProjectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", id));
-    }
-
-    public void deleteProject(Long id) {
-        swProjectRepository.deleteById(id);
-    }
-
-    @Transactional(readOnly = true)
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    // ========== 대시보드 ==========
-
-    @Transactional(readOnly = true)
-    public List<Integer> getDistinctYears() {
-        return swProjectRepository.findDistinctYears();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Map<String, Object>> getSystemStats(Integer year) {
-        return swProjectRepository.getSystemStats(year);
-    }
-
-    @Transactional(readOnly = true)
-    public boolean isDuplicate(Integer year, String distCd, String sysNmEn) {
-        return swProjectRepository.existsByYearAndDistCdAndSysNmEn(year, distCd, sysNmEn);
-    }
 
     // ========== 목록 / 검색 ==========
 
@@ -113,17 +66,6 @@ public class SwService {
      * 검색 대상 컬럼:
      *   year, sysNm, sysNmEn, projNm, client, cityNm, distNm, orgNm, pmsCd, stat
      */
-    /**
-     * 계약상태 이름(진행중, 완료 등)으로 검색 시 해당 코드값 목록 반환
-     */
-    private List<String> resolveStatCodes(String token) {
-        String lower = token.toLowerCase();
-        return contStatMstRepository.findAll().stream()
-                .filter(s -> s.getNm() != null && s.getNm().toLowerCase().contains(lower))
-                .map(ContStatMst::getCd)
-                .collect(Collectors.toList());
-    }
-
     private Specification<SwProject> buildAndSpec(List<String> tokens) {
         // 미리 상태코드 매핑 로드
         List<ContStatMst> allStats = contStatMstRepository.findAll();
@@ -183,33 +125,5 @@ public class SwService {
     public void delete(Long id) {
         log.warn("프로젝트 삭제 - ID: {}", id);
         swProjectRepository.deleteById(id);
-    }
-
-    // ========== DTO 지원 ==========
-
-    @Transactional(readOnly = true)
-    public SwProjectDTO getProjectDTOById(Long id) {
-        SwProject entity = swProjectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("프로젝트", id));
-        return SwProjectDTO.fromEntity(entity);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<SwProjectDTO> getProjectListAsDTO(String keyword, Pageable pageable) {
-        Page<SwProject> entities = (keyword != null && !keyword.trim().isEmpty())
-                ? search(keyword, pageable)
-                : swProjectRepository.findAll(pageable);
-        return entities.map(SwProjectDTO::fromEntity);
-    }
-
-    public SwProjectDTO saveProjectFromDTO(SwProjectDTO dto) {
-        log.info("프로젝트 DTO 저장 - 사업명: {}", dto.getProjNm());
-        if (dto.getProjId() == null) {
-            if (swProjectRepository.existsByYearAndDistCdAndSysNmEn(
-                    dto.getYear(), dto.getDistCd(), dto.getSysNmEn())) {
-                throw new DuplicateResourceException(ErrorCode.DUPLICATE_PROJECT);
-            }
-        }
-        return SwProjectDTO.fromEntity(swProjectRepository.save(dto.toEntity()));
     }
 }

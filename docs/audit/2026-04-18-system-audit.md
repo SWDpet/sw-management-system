@@ -125,19 +125,19 @@
 - **위치**: `src/main/java/com/swmanager/system/service/ProjectService.java:10, 16`
 - **내용**: 클래스 자체가 어디에서도 주입/호출되지 않음. `saveProject(...)` 도 호출 흔적 없음.
 - **권장 조치**: 클래스 삭제 or 실제 호출 경로로 통합.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2b: `ProjectService.java` 파일 전체 삭제. 호출자 0건 재확인 후 제거)
 
 #### 4-2. `SwService` 미호출 public 메서드 11개
 - **위치**: `src/main/java/com/swmanager/system/service/SwService.java:43, 47, 52, 57, 62, 69, 74, 79, 191, 198, 205`
 - **내용**: `getAllProjects`, `saveProject`, `getProjectById`, `deleteProject`, `getAllUsers`, `getDistinctYears`, `getSystemStats`, `isDuplicate`, `getProjectDTOById`, `getProjectListAsDTO`, `saveProjectFromDTO` — 전부 호출 없음.
 - **권장 조치**: 실제 사용 예정 없으면 삭제, 있으면 호출 경로·주석·테스트로 의도 명시.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2b: 11개 public 메서드 + 미호출 private 헬퍼 `resolveStatCodes` 제거. 유지 API = `getList/search/getProject/save/delete`. 관련 import/필드(`userRepository` 등) 정리)
 
 #### 4-3. Orphan 템플릿 파일
 - **위치**: `src/main/resources/templates/customer-list.html`, `src/main/resources/templates/license/registry-new-list.html`
 - **내용**: 두 파일 모두 컨트롤러에서 return 하지 않음.
 - **권장 조치**: 삭제 or 실제 라우트에 연결.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2b: 두 orphan 템플릿 파일 삭제. `templates/license/` 는 나머지 3파일 정상 유지)
 
 ### P3 (선택적 정리)
 
