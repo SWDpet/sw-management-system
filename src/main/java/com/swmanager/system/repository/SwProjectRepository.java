@@ -139,6 +139,29 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
     List<String> findDistinctDistNmByYearAndCityNm(
             @Param("year") Integer year, @Param("cityNm") String cityNm);
 
+    // ========== 사업현황 검색 드롭다운 (year-무관) ==========
+
+    /**
+     * [검색 드롭다운] 전체 시도 목록 (year 무관)
+     */
+    @Query("SELECT DISTINCT p.cityNm FROM SwProject p " +
+           "WHERE p.cityNm IS NOT NULL ORDER BY p.cityNm")
+    List<String> findAllDistinctCityNms();
+
+    /**
+     * [검색 드롭다운] 전체 시스템(EN) 목록 (year 무관)
+     */
+    @Query("SELECT DISTINCT p.sysNmEn FROM SwProject p " +
+           "WHERE p.sysNmEn IS NOT NULL AND p.sysNmEn <> '' ORDER BY p.sysNmEn")
+    List<String> findAllDistinctSysNmEns();
+
+    /**
+     * [검색 드롭다운 · AJAX] 시도별 시군구 목록 (year 무관)
+     */
+    @Query("SELECT DISTINCT p.distNm FROM SwProject p " +
+           "WHERE p.cityNm = :city AND p.distNm IS NOT NULL ORDER BY p.distNm")
+    List<String> findAllDistinctDistNmsByCity(@Param("city") String city);
+
     /**
      * 기성계 대상 사업: pay_prog_yn = 'Y' (레거시)
      */

@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,62 +40,84 @@ public class SwService {
     }
 
     /**
-     * 통합 검색
-     *  - '&' 포함 → 각 토큰 AND 조건 (각 토큰은 모든 컬럼 OR)
-     *  - '&' 미포함 → 기존 단일 키워드 LIKE
+     * 통합 검색 (신규 — 드롭다운 필터 4종 + 자유 키워드)
+     *
+     * FR-1: & AND 토큰 방식 제거 → kw 전체 문자열을 단일 키워드로 OR 매칭
+     * FR-10: city 미선택 시 district 무시
+     *
+     * @param kw 자유 키워드 (사업명·발주처·PMS코드 등 OR LIKE)
+     * @param year String 으로 수신 → parseYearSafe 로 Integer 변환 (NFR-7)
+     * @param city 시도명
+     * @param district 시군구명 (city 필수)
+     * @param sysNmEn 시스템영문명 (대문자 정규화)
      */
     @Transactional(readOnly = true)
-    public Page<SwProject> search(String keyword, Pageable pageable) {
-        if (keyword == null || keyword.trim().isEmpty()) {
+    public Page<SwProject> search(
+            String kw, String year, String city, String district, String sysNmEn,
+            Pageable pageable) {
+
+        String kwN   = normalize(kw);
+        Integer yearN = parseYearSafe(year);
+        String cityN = normalize(city);
+        String distN = (cityN == null) ? null : normalize(district);  // FR-10
+        String sysN  = normalizeUpper(sysNmEn);
+
+        if (kwN == null && yearN == null && cityN == null && distN == null && sysN == null) {
             return swProjectRepository.findAll(pageable);
         }
 
-        // 항상 Specification 방식 사용 (계약상태명 검색 지원)
-        List<String> tokens = Arrays.stream(keyword.split("&"))
-                .map(String::trim)
-                .filter(t -> !t.isEmpty())
-                .collect(Collectors.toList());
-        log.debug("키워드 검색 - 토큰: {}", tokens);
-        return swProjectRepository.findAll(buildAndSpec(tokens), pageable);
+        log.debug("검색 - kw={} year={} city={} dist={} sys={}", kwN, yearN, cityN, distN, sysN);
+        return swProjectRepository.findAll(
+                buildSearchSpec(kwN, yearN, cityN, distN, sysN),
+                pageable);
     }
 
     /**
-     * 각 토큰 → (모든 컬럼 OR) 을 AND 로 묶은 Specification
-     *
-     * 검색 대상 컬럼:
-     *   year, sysNm, sysNmEn, projNm, client, cityNm, distNm, orgNm, pmsCd, stat
+     * 레거시 호환 — 단일 kw 호출처 지원 (FR-9 부분 호환)
      */
-    private Specification<SwProject> buildAndSpec(List<String> tokens) {
-        // 미리 상태코드 매핑 로드
+    @Transactional(readOnly = true)
+    public Page<SwProject> search(String keyword, Pageable pageable) {
+        return search(keyword, null, null, null, null, pageable);
+    }
+
+    /**
+     * 필터 조합 Specification
+     *  - year/city/district/sysNmEn: equal AND
+     *  - kw: 다중 컬럼 OR LIKE (구 AND 토큰 로직 제거)
+     */
+    private Specification<SwProject> buildSearchSpec(
+            String kw, Integer year, String city, String district, String sysNmEn) {
+
         List<ContStatMst> allStats = contStatMstRepository.findAll();
 
         return (root, query, cb) -> {
             List<Predicate> andList = new ArrayList<>();
 
-            for (String token : tokens) {
-                String like = "%" + token.toLowerCase() + "%";
+            if (year != null)     andList.add(cb.equal(root.get("year"), year));
+            if (city != null)     andList.add(cb.equal(root.get("cityNm"), city));
+            if (district != null) andList.add(cb.equal(root.get("distNm"), district));
+            if (sysNmEn != null)  andList.add(cb.equal(cb.upper(root.<String>get("sysNmEn")), sysNmEn));
+
+            if (kw != null) {
+                String like = "%" + kw.toLowerCase() + "%";
                 List<Predicate> orList = new ArrayList<>();
 
-                // year: Integer → String 변환 후 LIKE
-                orList.add(cb.like(root.get("year").as(String.class), "%" + token + "%"));
-
-                // 정확한 연도 숫자면 equal 도 추가
+                // year LIKE (문자열 포함 검색용)
+                orList.add(cb.like(root.get("year").as(String.class), "%" + kw + "%"));
                 try {
-                    int yr = Integer.parseInt(token.trim());
+                    int yr = Integer.parseInt(kw.trim());
                     orList.add(cb.equal(root.get("year"), yr));
                 } catch (NumberFormatException ignored) {}
 
-                // 문자열 컬럼들
                 for (String field : List.of(
                         "sysNm", "sysNmEn", "projNm", "client",
                         "cityNm", "distNm", "orgNm", "pmsCd")) {
                     orList.add(cb.like(cb.lower(root.<String>get(field)), like));
                 }
 
-                // 계약상태: stat 코드 직접 매칭 + 상태명으로 코드 변환 매칭
                 orList.add(cb.like(cb.lower(root.<String>get("stat")), like));
                 List<String> matchedCodes = allStats.stream()
-                        .filter(s -> s.getNm() != null && s.getNm().toLowerCase().contains(token.toLowerCase()))
+                        .filter(s -> s.getNm() != null && s.getNm().toLowerCase().contains(kw.toLowerCase()))
                         .map(ContStatMst::getCd)
                         .collect(Collectors.toList());
                 for (String code : matchedCodes) {
@@ -106,8 +127,39 @@ public class SwService {
                 andList.add(cb.or(orList.toArray(new Predicate[0])));
             }
 
-            return cb.and(andList.toArray(new Predicate[0]));
+            return andList.isEmpty()
+                    ? cb.conjunction()
+                    : cb.and(andList.toArray(new Predicate[0]));
         };
+    }
+
+    // ========== 파라미터 정규화 유틸 (NFR-5/NFR-7) ==========
+
+    /** NFR: 길이 100자 이하로 잘라냄 (kw 등 텍스트용) */
+    static final int KW_MAX_LEN = 100;  // package-private for tests
+
+    // package-private 으로 노출 (단위 테스트에서 직접 검증)
+    static String normalize(String v) {
+        if (v == null) return null;
+        String t = v.trim();
+        if (t.isEmpty()) return null;
+        return t.length() > KW_MAX_LEN ? t.substring(0, KW_MAX_LEN) : t;
+    }
+
+    static Integer parseYearSafe(String v) {
+        String n = normalize(v);
+        if (n == null) return null;
+        try {
+            int y = Integer.parseInt(n);
+            return (y >= 2000 && y <= 2099) ? y : null;
+        } catch (NumberFormatException e) {
+            return null;  // NFR-7: 무효 입력 무시
+        }
+    }
+
+    static String normalizeUpper(String v) {
+        String n = normalize(v);
+        return n == null ? null : n.toUpperCase();
     }
 
     // ========== 단건 / 저장 / 삭제 ==========

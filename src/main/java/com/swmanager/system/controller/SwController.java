@@ -45,6 +45,7 @@ import java.util.Map;
 public class SwController {
 
     @Autowired private SwService swService;
+    @Autowired private com.swmanager.system.repository.SwProjectRepository swProjectRepository;
 
     // ★ personInfoRepository 제거 → userRepository 사용 (sw_pjt.person_id = users.user_id)
     @Autowired private UserRepository userRepository;
@@ -153,7 +154,11 @@ public class SwController {
     public String projectList(
             Model model,
             @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "kw",   defaultValue = "") String kw) {
+            @RequestParam(value = "kw",   defaultValue = "") String kw,
+            @RequestParam(value = "year",     required = false) String year,      // String: NFR-7
+            @RequestParam(value = "city",     required = false) String city,
+            @RequestParam(value = "district", required = false) String district,
+            @RequestParam(value = "sysNmEn",  required = false) String sysNmEn) {
 
         CustomUserDetails cu = getCurrentUser();
         if (cu == null) return "redirect:/login";
@@ -165,14 +170,35 @@ public class SwController {
                 .and(Sort.by(Sort.Direction.ASC, "cityNm"))
                 .and(Sort.by(Sort.Direction.ASC, "distNm"))
                 .and(Sort.by(Sort.Direction.ASC, "sysNm"));
-        Pageable pageable = PageRequest.of(page, 10, sort);
-        Page<SwProject> paging = (kw != null && !kw.trim().isEmpty())
-                ? swService.search(kw, pageable)
-                : swService.getList(pageable);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), 10, sort);
+        Page<SwProject> paging = swService.search(kw, year, city, district, sysNmEn, pageable);
 
+        // 드롭다운 옵션 주입
         model.addAttribute("paging", paging);
         model.addAttribute("kw", kw);
+        model.addAttribute("year", year);
+        model.addAttribute("city", city);
+        model.addAttribute("district", district);
+        model.addAttribute("sysNmEn", sysNmEn);
+        model.addAttribute("yearOptions", swProjectRepository.findDistinctYears());
+        model.addAttribute("cityOptions", swProjectRepository.findAllDistinctCityNms());
+        model.addAttribute("sysNmEnOptions", swProjectRepository.findAllDistinctSysNmEns());
+        model.addAttribute("districtOptions",
+                (city != null && !city.isBlank())
+                        ? swProjectRepository.findAllDistinctDistNmsByCity(city)
+                        : java.util.List.of());
         return "project-list";
+    }
+
+    /**
+     * 시군구 AJAX — 시도 선택 시 하위 시군구 옵션 로드
+     * (sw_pjt 기반 실제 존재 distinct, 기존 /api/districts 와 별개)
+     */
+    @GetMapping("/api/dist-options")
+    @ResponseBody
+    public java.util.List<String> getDistOptions(@RequestParam(required = false) String city) {
+        if (city == null || city.isBlank()) return java.util.List.of();
+        return swProjectRepository.findAllDistinctDistNmsByCity(city);
     }
 
     // ===== 상세 조회 =====

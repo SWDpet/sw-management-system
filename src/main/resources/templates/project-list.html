@@ -68,19 +68,38 @@
             white-space: nowrap;
         }
         .btn-search:hover { opacity: 0.9; }
-        .search-hint {
-            font-size: 0.78rem; color: #8e9ab5;
-            display: flex; justify-content: flex-end; width: 100%;
-            gap: 14px; flex-wrap: wrap;
+        /* 신규 검색 (v2) */
+        .search-form-v2 { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .search-form-v2 .search-input { width: 100%; }
+        .filter-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-cell { display: inline-flex; align-items: center; gap: 4px; }
+        .filter-cell select {
+            padding: 7px 12px; border-radius: 8px;
+            border: 1.5px solid #E7E5E4; font-size: 0.85rem;
+            background: #fff; color: #1C1917;
+            font-family: inherit; transition: border-color 0.15s, background 0.15s;
+            min-width: 140px;
         }
-        .search-hint .hint-tag {
-            background: #e8ecf8; color: #0F766E; border-radius: 4px;
-            padding: 2px 7px; font-weight: 600; font-size: 0.85em; cursor: pointer;
-            transition: background 0.15s;
+        .filter-cell select:focus { outline: none; border-color: #0F766E; box-shadow: 0 0 0 3px rgba(15,118,110,0.12); }
+        .filter-cell select:disabled { background: #F5F5F4; color: #A8A29E; cursor: not-allowed; }
+        .filter-cell.pinned select { background: #F0FDFA; border-color: #99F6E4; }
+        .pin-btn {
+            background: transparent; border: 1px solid #E7E5E4; color: #A8A29E;
+            width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.72rem; padding: 0; transition: all 0.15s;
         }
-        .search-hint .hint-tag:hover { background: #d0d9f5; }
-        /* & 구분자 강조 */
-        .search-input.multi-mode { border-color: #0F766E; background: #f5f7ff; }
+        .pin-btn:hover { background: #F5F5F4; color: #57534E; }
+        .pin-btn.active { background: #F0FDFA; color: #0F766E; border-color: #99F6E4; }
+        .search-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-reset {
+            background: transparent; color: #57534E; border: 1px solid #E7E5E4;
+            padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+            font-family: inherit; transition: all 0.15s;
+        }
+        .btn-reset:hover { background: #F5F5F4; color: #1C1917; border-color: #D6D3D1; }
+        .btn-reset:active, .btn-search:active, .pin-btn:active { transform: scale(0.97); }
 
         /* 테이블 영역 */
         .table-area { padding: 30px; }
@@ -159,60 +178,168 @@
         </div>
 
         <div class="search-row">
-            <form th:action="@{/projects/status}" method="get" class="search-form" id="searchForm">
-                <input type="hidden" name="size" value="10">
+            <form th:action="@{/projects/status}" method="get" id="searchForm" class="search-form-v2">
                 <input type="text" name="kw" id="kwInput" th:value="${kw}"
-                       class="search-input"
-                       placeholder="통합 검색 — 여러 조건은 &amp;로 구분 (예: 2024&amp;UPIS)"
-                       autocomplete="off">
-                <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
+                       class="search-input" placeholder="사업명·발주처·PMS코드 검색" autocomplete="off">
+                <div class="filter-grid">
+                    <div class="filter-cell" data-field="year">
+                        <button type="button" class="pin-btn" data-target="year" title="조건 고정">📌</button>
+                        <select name="year">
+                            <option value="">전체 연도</option>
+                            <option th:each="y : ${yearOptions}"
+                                    th:value="${y}"
+                                    th:text="${y + '년'}"
+                                    th:selected="${year != null and year == y.toString()}"></option>
+                        </select>
+                    </div>
+                    <div class="filter-cell" data-field="city">
+                        <button type="button" class="pin-btn" data-target="city" title="조건 고정">📌</button>
+                        <select name="city" id="citySelect">
+                            <option value="">전체 시도</option>
+                            <option th:each="c : ${cityOptions}"
+                                    th:value="${c}" th:text="${c}"
+                                    th:selected="${city != null and city == c}"></option>
+                        </select>
+                    </div>
+                    <div class="filter-cell" data-field="district">
+                        <button type="button" class="pin-btn" data-target="district" title="조건 고정">📌</button>
+                        <select name="district" id="districtSelect" th:disabled="${city == null or #strings.isEmpty(city)}">
+                            <option value="">전체 시군구</option>
+                            <option th:each="d : ${districtOptions}"
+                                    th:value="${d}" th:text="${d}"
+                                    th:selected="${district != null and district == d}"></option>
+                        </select>
+                    </div>
+                    <div class="filter-cell" data-field="sysNmEn">
+                        <button type="button" class="pin-btn" data-target="sysNmEn" title="조건 고정">📌</button>
+                        <select name="sysNmEn">
+                            <option value="">전체 시스템</option>
+                            <option th:each="s : ${sysNmEnOptions}"
+                                    th:value="${s}" th:text="${s}"
+                                    th:selected="${sysNmEn != null and sysNmEn == s}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="search-actions">
+                    <button type="submit" class="btn-search"><i class="fas fa-magnifying-glass"></i> 검색</button>
+                    <button type="button" class="btn-reset" onclick="window.__resetFilters()"><i class="fas fa-rotate-left"></i> 초기화</button>
+                </div>
             </form>
-            <!-- 검색 힌트 바 -->
-            <div class="search-hint">
-                <span>💡 <strong>&amp;</strong> 로 조건 추가 →</span>
-                <span class="hint-tag" onclick="appendHint('&amp;진행중')">진행중</span>
-                <span class="hint-tag" onclick="appendHint('&amp;완료')">완료</span>
-                <span class="hint-tag" th:each="y : ${#numbers.sequence(2020, 2026)}"
-                      th:onclick="'appendHint(\'&amp;' + ${y} + '\')'"
-                      th:text="${y}">연도</span>
-                <!-- 현재 검색어가 & 포함 시 조건 뱃지 표시 -->
-                <span th:if="${kw != null and kw.contains('&')}" style="margin-left:8px; color:#0F766E; font-weight:600;">
-                    🔍 AND 검색 적용 중:
-                    <span th:each="t, i : ${kw.split('&amp;')}"
-                          style="background:#dde3f8; border-radius:4px; padding:1px 7px; margin-left:4px;"
-                          th:text="${t.trim()}"></span>
-                </span>
-            </div>
         </div>
         <script>
-            // 검색어에 & 포함 시 input 강조
-            (function() {
-                var inp = document.getElementById('kwInput');
-                if (inp) {
-                    function checkMulti() {
-                        if (inp.value.includes('&')) {
-                            inp.classList.add('multi-mode');
-                        } else {
-                            inp.classList.remove('multi-mode');
-                        }
-                    }
-                    inp.addEventListener('input', checkMulti);
-                    checkMulti(); // 초기 상태 반영
-                }
-            })();
+        (function(){
+            var PIN_KEY = 'swProjSearchPins';
+            var VAL_KEY = 'swProjSearchValues';
+            var FIELDS  = ['year','city','district','sysNmEn'];
 
-            // 힌트 태그 클릭 시 검색창에 토큰 추가
-            function appendHint(token) {
-                var inp = document.getElementById('kwInput');
-                if (!inp) return;
-                var current = inp.value.trim();
-                // 이미 해당 토큰이 있으면 추가하지 않음
-                var clean = token.replace(/^&/, '').trim();
-                if (current.split('&').map(function(t){return t.trim();}).includes(clean)) return;
-                inp.value = current ? (current + token) : clean;
-                inp.dispatchEvent(new Event('input'));
-                inp.focus();
+            function loadPins() {
+                try { return JSON.parse(localStorage.getItem(PIN_KEY)) || {}; }
+                catch(e) { console.warn('pin parse fail', e); return {}; }
             }
+            function savePins(p) { try { localStorage.setItem(PIN_KEY, JSON.stringify(p)); } catch(e) {} }
+            function loadVals() {
+                try { return JSON.parse(localStorage.getItem(VAL_KEY)) || {}; }
+                catch(e) { return {}; }
+            }
+            function saveVals(v) { try { localStorage.setItem(VAL_KEY, JSON.stringify(v)); } catch(e) {} }
+
+            var urlParams = new URLSearchParams(location.search);
+            var pins = loadPins();
+            var vals = loadVals();
+
+            // 1. 핀 버튼 상태 초기화 + URL 우선 복원 (OQ-3)
+            FIELDS.forEach(function(f) {
+                var select = document.querySelector('[name="' + f + '"]');
+                var btn = document.querySelector('.pin-btn[data-target="' + f + '"]');
+                var cell = document.querySelector('.filter-cell[data-field="' + f + '"]');
+                if (!select || !btn || !cell) return;
+
+                if (pins[f]) {
+                    btn.classList.add('active');
+                    cell.classList.add('pinned');
+                    // URL 에 값이 없고 LocalStorage 에만 있으면 복원
+                    if (!urlParams.has(f) && vals[f]) {
+                        // 옵션에 해당 값이 있어야만 복원 (없으면 DB에 옵션 없음)
+                        var exists = Array.prototype.some.call(select.options, function(o) { return o.value === vals[f]; });
+                        if (exists) select.value = vals[f];
+                    }
+                }
+
+                // 핀 토글
+                btn.addEventListener('click', function() {
+                    pins[f] = !pins[f];
+                    if (pins[f]) {
+                        btn.classList.add('active');
+                        cell.classList.add('pinned');
+                        vals[f] = select.value;
+                    } else {
+                        btn.classList.remove('active');
+                        cell.classList.remove('pinned');
+                        delete vals[f];
+                    }
+                    savePins(pins);
+                    saveVals(vals);
+                });
+
+                // 핀 켜진 필드 값 변경 시 vals 업데이트
+                select.addEventListener('change', function() {
+                    if (pins[f]) { vals[f] = select.value; saveVals(vals); }
+                });
+            });
+
+            // 2. 시도 변경 시 시군구 AJAX (NFR-8: 실패 시 기존 옵션 보존)
+            var citySelect = document.getElementById('citySelect');
+            var distSelect = document.getElementById('districtSelect');
+            if (citySelect && distSelect) {
+                citySelect.addEventListener('change', function() {
+                    var c = citySelect.value;
+                    if (!c) {
+                        distSelect.innerHTML = '<option value="">전체 시군구</option>';
+                        distSelect.disabled = true;
+                        return;
+                    }
+                    distSelect.disabled = false;
+
+                    // NFR-8: 실패 대비 기존 옵션 백업
+                    var prevHtml = distSelect.innerHTML;
+
+                    fetch('/projects/api/dist-options?city=' + encodeURIComponent(c))
+                        .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+                        .then(function(list) {
+                            distSelect.innerHTML = '<option value="">전체 시군구</option>';
+                            list.forEach(function(d) {
+                                var opt = document.createElement('option');
+                                opt.value = d; opt.textContent = d;
+                                distSelect.appendChild(opt);
+                            });
+                        })
+                        .catch(function(err) {
+                            // NFR-8: 기존 옵션 복원 + 경고 placeholder
+                            console.warn('dist-options 로드 실패', err);
+                            distSelect.innerHTML = prevHtml;
+                            var ph = document.createElement('option');
+                            ph.textContent = '⚠ 로드 실패 — 새로고침 후 재시도';
+                            ph.disabled = true;
+                            distSelect.insertBefore(ph, distSelect.firstChild);
+                        });
+                });
+            }
+
+            // 3. 초기화 — 핀 켜진 필드만 유지
+            window.__resetFilters = function() {
+                var kwInp = document.getElementById('kwInput');
+                if (kwInp) kwInp.value = '';
+                FIELDS.forEach(function(f) {
+                    if (pins[f]) return;
+                    var sel = document.querySelector('[name="' + f + '"]');
+                    if (sel) sel.value = '';
+                });
+                // 시군구는 시도가 빈 경우 비활성화
+                if (citySelect && distSelect && !citySelect.value) {
+                    distSelect.disabled = true;
+                }
+            };
+        })();
         </script>
 
         <div class="table-area">
@@ -269,17 +396,17 @@
         <div class="pagination-container" th:if="${paging.totalPages > 1}">
             <ul class="pagination">
                 <li class="page-item" th:classappend="${!paging.hasPrevious} ? 'disabled'">
-                    <a th:href="@{/projects/status(page=${paging.number - 1}, kw=${kw != null ? kw : ''}, size=10)}">이전</a>
+                    <a th:href="@{/projects/status(page=${paging.number - 1}, kw=${kw != null ? kw : ''}, year=${year}, city=${city}, district=${district}, sysNmEn=${sysNmEn})}">이전</a>
                 </li>
                 
                 <li th:each="page: ${#numbers.sequence(0, paging.totalPages - 1)}"
                     th:if="${page >= paging.number - 5 and page <= paging.number + 5}"
                     class="page-item" th:classappend="${page == paging.number} ? 'active'">
-                    <a th:text="${page + 1}" th:href="@{/projects/status(page=${page}, kw=${kw != null ? kw : ''}, size=10)}"></a>
+                    <a th:text="${page + 1}" th:href="@{/projects/status(page=${page}, kw=${kw != null ? kw : ''}, year=${year}, city=${city}, district=${district}, sysNmEn=${sysNmEn})}"></a>
                 </li>
                 
                 <li class="page-item" th:classappend="${!paging.hasNext} ? 'disabled'">
-                    <a th:href="@{/projects/status(page=${paging.number + 1}, kw=${kw != null ? kw : ''}, size=10)}">다음</a>
+                    <a th:href="@{/projects/status(page=${paging.number + 1}, kw=${kw != null ? kw : ''}, year=${year}, city=${city}, district=${district}, sysNmEn=${sysNmEn})}">다음</a>
                 </li>
             </ul>
         </div>
