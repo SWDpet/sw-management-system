@@ -1,0 +1,30 @@
+# ========================================
+# 로컬 개발 환경 예시 (저장소 포함)
+# ========================================
+# 이 파일은 템플릿입니다. 실제 사용 시:
+#   cp application-local.properties.example application-local.properties
+# 로 복사 후 값을 채우세요. application-local.properties 는 .gitignore 대상이라
+# 커밋되지 않습니다.
+#
+# 활성 방법:
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+#
+# 감사 P2 5-1 조치 (스프린트 2c, 2026-04-19): 운영 기본값은
+# application.properties 에서 show-sql=false / format_sql=false. 본 예시는
+# 로컬에서만 SQL 디버그를 활성화하는 방법을 보여줍니다.
+# ========================================
+
+server.port=9090
+
+# DB 연결 (비밀번호는 DB_PASSWORD 환경변수에서 읽음)
+spring.datasource.url=jdbc:postgresql://211.104.137.55:5881/SW_Dept
+spring.datasource.username=postgres
+spring.datasource.password=${DB_PASSWORD}
+
+# 로컬 SQL 디버그 (선택적)
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# logback 로거를 로컬에서만 DEBUG 로 올리려면 실행 시 JVM 옵션으로:
+#   -Dlogging.level.org.hibernate.SQL=DEBUG
+#   -Dlogging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE

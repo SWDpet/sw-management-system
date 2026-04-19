@@ -111,7 +111,8 @@ public class GlobalExceptionHandler {
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         
-        log.error("ValidationException: {}", e.getMessage());
+        // [감사 P2 5-3] rejected value 등 민감 입력 노출 방지 — 원문 메시지 제거
+        log.error("ValidationException 발생 (path={})", request.getRequestURI());
         
         String errorMessage = "입력값이 올바르지 않습니다.";
         

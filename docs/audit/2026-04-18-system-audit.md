@@ -49,7 +49,7 @@
 - **위치**: `DocumentController.java:1355, 1370`
 - **내용**: `/document/api/infra-servers` 가 `macAddr` 평문 반환. 자산 식별 정보 유출 가능.
 - **권장 조치**: `macAddr` 마스킹/제외 + 문서 VIEW 이상 권한 체크 적용.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2c: `getInfraServers` 응답에서 `macAddr` 키 제거, 메서드 진입부에 `NONE` 권한 차단(VIEW/EDIT 통과) 추가)
 
 ### 추가 점검 요약
 - `.env` 파일: **없음**
@@ -166,19 +166,19 @@
 - **위치**: `src/main/resources/application.properties:28`
 - **내용**: 기본 설정에 활성. prod override 없으면 운영에서도 SQL 이 로그로 출력 → 쿼리·파라미터 조합에 따라 민감 데이터 노출.
 - **권장 조치**: 기본값 `false`, 로컬 전용(`application-local.properties`) 에서만 `true`.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2c: `application.properties` show-sql/format_sql false + `logback-spring.xml` org.hibernate.SQL/BasicBinder 레벨 WARN + 신규 `application-local.properties.example` 로컬 가이드)
 
 #### 5-2. `GeonurisLicenseService` 라이선스 필드 값 debug 로그
 - **위치**: `src/main/java/com/swmanager/system/geonuris/service/GeonurisLicenseService.java:193, 218`
 - **내용**: `log.debug("LicenseVo.{} = ...", fieldName, value)` 형태로 MAC 주소 등 식별 정보가 debug 로그에 남을 가능성.
 - **권장 조치**: 값 마스킹(`***`) or 민감 필드는 필드명만 기록.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2c: `setStr/setInt` 의 debug 로그에서 value 제거, 필드명만 기록. setter fallback 경로도 동일 처리)
 
 #### 5-3. `GlobalExceptionHandler` 에서 `e.getMessage()` 원문 로그
 - **위치**: `src/main/java/com/swmanager/system/exception/GlobalExceptionHandler.java:114`
 - **내용**: `ValidationException` 에서 `e.getMessage()` 그대로 로그. 바인딩 오류 메시지에 rejected value 가 포함되면 입력값(비밀번호·토큰 유사값) 노출 가능.
 - **권장 조치**: 고정 문구로 로그 or 필드명만 남기고 값은 마스킹.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2c: `log.error("ValidationException: {}", e.getMessage())` → `log.error("ValidationException 발생 (path={})", request.getRequestURI())`. rejected value/원문 메시지 노출 제거)
 
 ### P3 (로거 스타일 개선)
 

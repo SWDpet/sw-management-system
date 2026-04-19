@@ -190,14 +190,16 @@ public class GeonurisLicenseService {
             Field f = cls.getDeclaredField(fieldName);
             f.setAccessible(true);
             f.set(obj, value != null ? value : "");
-            log.debug("LicenseVo.{} = \"{}\"", fieldName, value);
+            // [감사 P2 5-2] 값 로그 제거 (필드명만 기록)
+            log.debug("LicenseVo.{} 세팅 완료", fieldName);
         } catch (NoSuchFieldException e) {
             // setter 방식 fallback
             try {
                 Method m = cls.getDeclaredMethod("set" + fieldName, String.class);
                 m.setAccessible(true);
                 m.invoke(obj, value != null ? value : "");
-                log.debug("LicenseVo.set{}(\"{}\") [setter]", fieldName, value);
+                // [감사 P2 5-2] 값 로그 제거
+                log.debug("LicenseVo.set{} [setter] 세팅 완료", fieldName);
             } catch (Exception ex) {
                 log.warn("LicenseVo.{} 세팅 실패: {}", fieldName, ex.getMessage());
             }
@@ -215,7 +217,8 @@ public class GeonurisLicenseService {
             Field f = cls.getDeclaredField(fieldName);
             f.setAccessible(true);
             f.setInt(obj, value);
-            log.debug("LicenseVo.{} = {}", fieldName, value);
+            // [감사 P2 5-2] 값 로그 제거
+            log.debug("LicenseVo.{} 세팅 완료", fieldName);
         } catch (NoSuchFieldException e) {
             log.warn("LicenseVo.{} int 필드 없음", fieldName);
         } catch (Exception e) {

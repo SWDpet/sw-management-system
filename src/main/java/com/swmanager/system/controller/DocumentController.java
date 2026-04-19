@@ -1447,10 +1447,24 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
-    /** GET /document/api/infra-servers?distNm=양양군&sysNmEn=UPIS - 인프라 서버정보 조회 */
+    /** GET /document/api/infra-servers?distNm=양양군&sysNmEn=UPIS - 인프라 서버정보 조회
+     *
+     * 응답 키 (감사 P2 1-4 조치, 스프린트 2c 2026-04-19):
+     *   serverId, serverType, ipAddr, osNm, serverModel, serialNo,
+     *   cpuSpec, memorySpec, diskSpec, networkSpec, powerSpec,
+     *   osDetail, rackLocation, note, softwares.
+     *   민감 식별정보(MAC 주소, 계정 ID/PW 등) 는 응답에서 제외됨.
+     */
     @GetMapping("/api/infra-servers")
     @ResponseBody
     public ResponseEntity<?> getInfraServers(@RequestParam String distNm, @RequestParam String sysNmEn) {
+        // [감사 P2 1-4] 문서 VIEW 이상 권한 필요 (NONE 차단)
+        if ("NONE".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("success", false);
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "조회 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
         var infraList = infraRepository.findByDistNmAndSysNmEn(distNm, sysNmEn);
         if (infraList.isEmpty()) {
             return ResponseEntity.ok(java.util.Collections.emptyList());
@@ -1463,7 +1477,7 @@ public class DocumentController {
             m.put("serverType", s.getServerType());
             m.put("ipAddr", s.getIpAddr());
             m.put("osNm", s.getOsNm());
-            m.put("macAddr", s.getMacAddr());
+            // [감사 P2 1-4] MAC 주소 응답 제외 (민감정보)
             m.put("serverModel", s.getServerModel());
             m.put("serialNo", s.getSerialNo());
             m.put("cpuSpec", s.getCpuSpec());
