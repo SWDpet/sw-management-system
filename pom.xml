@@ -113,6 +113,20 @@
     <build>
         <finalName>sw-manager</finalName>
         <plugins>
+            <!-- Lombok annotation processor 명시 (mvn clean 후 Lombok 미처리 방지) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <!-- ✅ 빌드 전 GeoNURIS_License.jar 파일 존재 체크 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

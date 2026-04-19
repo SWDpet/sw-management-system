@@ -1,7 +1,7 @@
 ---
 tags: [plan, sprint, feature]
 sprint: "5"
-status: draft
+status: v2 (사용자 피드백 반영)
 created: "2026-04-19"
 ---
 
@@ -10,7 +10,13 @@ created: "2026-04-19"
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-19
 - **선행**: `f12e417` (보안 스프린트 4 보류 기록)
-- **상태**: 초안 (codex 검토 대기)
+- **상태**: v2 (구현 완료 후 사용자 피드백 반영)
+
+### 개정 이력
+| 버전 | 일자 | 변경 |
+|------|------|------|
+| v1 | 2026-04-19 | 초안 — 연쇄 드롭다운 5단(연도→시도→시군구→시스템→사업), 저장 키 `proj_id` |
+| v2 | 2026-04-19 | 사용자 피드백 반영 — **4개 문서는 3단(시도→시군구→시스템)** 으로 간소화. 연도·사업 단계 제거. 저장 키 **`infra_id`** 로 재정의. 지원 대상 라디오 가로 배치. 조직도 관리자 메뉴 링크 추가 |
 
 ---
 
@@ -38,29 +44,29 @@ created: "2026-04-19"
 | ID | 내용 |
 |----|------|
 | FR-1-A | `doc-fault.html`, `doc-support.html`, `doc-install.html`, `doc-patch.html` 의 기존 단일 `infraId` select 제거. |
-| FR-1-B | `doc-commence.html` 의 연쇄 드롭다운 블록(Line 105-127) 과 **동일 UI 패턴** 적용: `selYear → selCity → selDist → selSystem → projId`. |
-| FR-1-C | JS 핸들러(`onYearChange/onCityChange/onDistChange/onSystemChange`) 를 공통 모듈로 추출하여 4개 문서에서 재사용 (필수). **`doc-commence.html`, `doc-inspect.html` 의 기존 인라인 로직 마이그레이션은 본 스프린트에서 분리 — 후속 리팩터 스프린트로 이관**. 사유: 두 문서의 인라인 JS 가 복잡해 마이그레이션 리스크가 4개 문서 UI 통일 목표보다 크고, 공통 모듈 파일은 이미 제공됨. |
-| FR-1-D | 사용하는 API 는 **기존 그대로** 재사용 — `DocumentController`:  /api/project-years, /project-cities, /project-districts, /project-systems, /projects. 서버 신규 엔드포인트 없음. |
-| FR-1-E | 저장 스키마: 각 문서의 `tb_document.proj_id` 는 이미 FK 로 존재 — 동일하게 `projId` 를 DB 에 저장. 4개 문서에서 `infraId` 단일 저장을 중단하고 `proj_id` 를 **단일 원본(single source of truth)** 로 사용. 필요 시 `proj → infra` 파생은 런타임 조회. |
-| FR-1-F | **기존 레코드(draft/완료 모두) 편집 재진입 시 규칙** (codex 지적 반영): (a) 연쇄 드롭다운을 **빈 상태로 초기화** — 자동 추정 금지. (b) 기존 저장된 `infraId` 또는 `proj_id` 기준으로 **현재 대상(지자체/시스템명)을 읽기 전용 배너**로 상단 표시 ("현재 대상: 양양군 UPIS 2025 — 저장 시 재선택 필요"). (c) 저장 버튼은 **사용자가 연쇄 드롭다운으로 `projId` 를 명시적으로 다시 선택**하기 전까지 비활성. (d) `infraId` 하나가 여러 `proj_id` 에 매핑되는 구조 특성상 자동 복원은 데이터 손상 위험 — 재선택 강제로 결정적(deterministic) 마이그레이션 확보. |
+| FR-1-B | **v2 개정**: 4개 문서용 **3단 연쇄 드롭다운** `selCity → selDist → selSystem` 적용. 연도·사업 단계 제거. (착수계·점검내역서는 별도 5단 체계 유지 — 계약 단위 구분 필요) |
+| FR-1-C | 공통 JS 모듈 2개 배포: (a) `document-infra-selector.js` — 4개 문서용 3단(인프라 기반). (b) `document-project-selector.js` — 착수계·점검내역서용 5단(사업 기반, 미래 전환용). 둘 다 현재 제공. `doc-commence.html`/`doc-inspect.html` 마이그레이션은 **후속 스프린트로 이관**. |
+| FR-1-D | 4개 문서용 신규 API (DocumentController): `/api/infra-cities`, `/api/infra-districts`, `/api/infra-systems`, `/api/infra-find`. `tb_infra_master` 의 distinct 값 기반. 기존 `/api/project-*` API 는 착수계·점검내역서에서 계속 사용. |
+| FR-1-E | **v2 개정**: 4개 문서의 단일 원본은 **`tb_document.infra_id`** (지자체+시스템 식별). `proj_id` 는 4개 문서에서 사용하지 않음 (null 저장). 사용자 요구는 "계약 연도 단위 구분 불필요, 지자체·시스템 식별만 충분" — 이에 따라 v1 의 proj_id 기반 정책을 폐기하고 infra_id 기반으로 재정의. |
+| FR-1-F | **기존 레코드(draft/완료 모두) 편집 재진입 시 규칙**: (a) 연쇄 드롭다운을 **빈 상태로 초기화** — 자동 추정 금지. (b) 기존 저장값(`infraId` 또는 과거 `proj_id`) 기준으로 **현재 대상을 읽기 전용 배너**로 상단 표시 ("현재 대상: 양양군 UPIS — 저장 시 재선택 필요"). (c) 저장 버튼은 **사용자가 시도→시군구→시스템명으로 `infraId` 를 명시적으로 다시 선택**하기 전까지 비활성. (d) 자동 복원 금지로 데이터 손상 위험 제거. |
 
 ### 2-2. 업무지원 내부/외부 구분 (G2)
 
 | ID | 내용 |
 |----|------|
-| FR-2-A | `doc-support.html` 상단에 **라디오 버튼** (또는 토글) 추가: `외부(지자체)` / `내부(자사 조직)`. 기본값 `외부`. |
-| FR-2-B | **외부 선택** 시: 2-1 의 지자체 연쇄 드롭다운 노출. |
+| FR-2-A | `doc-support.html` 상단에 **라디오 버튼** (가로 배치): `외부(지자체)` / `내부(자사 조직)`. 기본값 `외부`. v2: `display:flex` 로 깔끔한 한 줄 레이아웃, `input[type=radio]` 기본 크기 강제. |
+| FR-2-B | **외부 선택** 시: 2-1 의 3단(시도/시군구/시스템명) 드롭다운 노출. |
 | FR-2-C | **내부 선택** 시: 조직 연쇄 드롭다운 노출 — `본부/연구소 → (부서) → (팀)`. 계층은 **가변** (FR-3-A) — 하위 유닛이 없으면 해당 단계 비활성. 저장 시 **가장 말단 선택 유닛의 `org_unit_id`** 를 기록. 예: "GIS사업본부 > GIS 사업4팀" 선택 시 팀 id 저장, "스마트시티본부" 선택 시 본부 id 저장. |
 | FR-2-D | 문서 저장 시 `support_target_type` 값으로 `EXTERNAL` / `INTERNAL` 저장. |
-| FR-2-E | 외부 저장 시: `proj_id` 채움, `org_unit_id` = null. 내부 저장 시: `org_unit_id` 채움, `proj_id` = null. |
-| FR-2-F | 목록/조회 화면에서 대상 표시 로직: EXTERNAL → "지자체·사업명", INTERNAL → "본부/부서/팀 경로". |
+| FR-2-E | **v2 개정**: 외부 저장 시 `infra_id` 채움, `org_unit_id` = null. 내부 저장 시 `org_unit_id` 채움, `infra_id`/`proj_id` = null. (v1 의 proj_id 기반 대신 infra_id 로) |
+| FR-2-F | 목록/조회 화면에서 대상 표시 로직: EXTERNAL → "지자체 + 시스템명" (infra 기반), INTERNAL → "본부 > 부서 > 팀" 경로. |
 
 ### 2-3. 조직도 CRUD (G3)
 
 | ID | 내용 |
 |----|------|
 | FR-3-A | 신규 테이블 `tb_org_unit` — **단일 자기참조** (self-FK `parent_id`) 로 계층 표현. 타입 필드(`unit_type`) 는 `DIVISION`(본부·연구소·부 중 최상위) / `DEPARTMENT`(부서) / `TEAM`(팀). **깊이 가변 허용** — 1단(본부만), 2단(본부→부 또는 본부→팀), 3단(본부→부→팀) 모두 유효. 실제 회사 조직은 혼재(예: GIS사업본부 → GIS 사업4팀 은 부 레벨 생략, 스마트시티본부 는 하위 없음). 관리 화면은 임의 깊이 트리 표시. |
-| FR-3-B | 관리 화면 `/admin/org-units` (관리자 전용) — 트리뷰 + 추가/수정/삭제 모달. 삭제 시 하위 유닛 존재하면 차단 + 경고. |
+| FR-3-B | 관리 화면 `/admin/org-units` (관리자 전용) — 트리뷰 + 추가/수정/삭제 모달. 삭제 시 하위 유닛 존재하면 차단 + 경고. **메인 대시보드 상단 네비게이션에 "🏢 조직도 관리" 링크 노출** (관리자 계정만). |
 | FR-3-C | 기본 데이터 시드: 현재 회사 조직 구조 초기값으로 삽입 (본 스프린트 시작 시 사용자에게 현재 조직도 값 확인 후 seed SQL 작성). |
 | FR-3-D | 조직 트리 조회 API: `GET /api/org-units/tree` (전체 트리) / `GET /api/org-units/children/{parentId}` (부분 로드). |
 | FR-3-E | `users.deptNm/teamNm` 등 기존 문자열 필드와의 관계: 본 스프린트에서는 **분리 유지** — `tb_org_unit` 는 문서 선택용 정규 데이터. `users` 매핑은 별도 스프린트에서 연결. |
@@ -134,8 +140,10 @@ created: "2026-04-19"
 | Template (수정) | `doc-fault.html`, `doc-support.html`, `doc-install.html`, `doc-patch.html` | 지자체 드롭다운을 연쇄로 교체. 업무지원에 라디오+조직 드롭다운. 설치/패치에 환경 select |
 | Template (수정) | `doc-commence.html`, `doc-inspect.html` | 공통 JS 모듈 사용으로 전환 (중복 제거) |
 | Template (신규) | `admin/org-unit-management.html` | 조직도 트리 관리 화면 |
-| Static (신규) | `static/js/document-project-selector.js` | 공통 연쇄 드롭다운 모듈 |
+| Static (신규) | `static/js/document-infra-selector.js` | **4개 문서용 3단(시도/시군구/시스템명) 인프라 선택 모듈** (v2 핵심) |
+| Static (신규) | `static/js/document-project-selector.js` | 착수계·점검내역서용 5단 사업 선택 모듈 (미래 전환 대비) |
 | Static (신규) | `static/js/org-unit-selector.js` | 조직 연쇄 드롭다운 모듈 |
+| Template (수정) | `main-dashboard.html` | 관리자 네비게이션에 "조직도 관리" 링크 |
 | Docs (수정) | `docs/ERD.md`, `docs/erd-*.mmd` | `tb_org_unit` 추가 반영 |
 | Docs (수정) | `docs/audit/dashboard.md` (해당 시) | 이번 변경을 향후 개선 TODO 와 상충 없음 확인 |
 

@@ -62,6 +62,11 @@ public class Document {
     @Column(name = "environment", length = 20)
     private String environment;
 
+    // [스프린트 5 v2] 4개 문서(장애/업무지원/설치/패치)용 지역 식별 — sigungu_code.adm_sect_c FK.
+    // 이 4개 문서는 사업/인프라와 독립된 성과·히스토리 관리용이므로 region_code + sys_type 으로 단일 식별.
+    @Column(name = "region_code", length = 10)
+    private String regionCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;

@@ -9,6 +9,7 @@ import com.swmanager.system.exception.InsufficientPermissionException;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -95,6 +96,7 @@ public class AdminUserController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) String searchType,
             @RequestParam(required = false) String keyword,
+            @RequestParam(value = "expand", required = false) String expand,
             Model model) {
         
         log.info("=== 회원 관리 페이지 접근 ===");
@@ -156,6 +158,18 @@ public class AdminUserController {
             // 검색이 없으면 전체 조회 (페이징)
             activeUserPage = userRepository.findByEnabledTrue(pageable);
         }
+
+        // [스프린트 6] expand 쉼표 리스트 파싱 → Set<Long> 으로 Thymeleaf 전달
+        java.util.Set<Long> expandIds = new java.util.HashSet<>();
+        if (expand != null && !expand.isBlank()) {
+            for (String s : expand.split(",")) {
+                try { expandIds.add(Long.parseLong(s.trim())); }
+                catch (NumberFormatException ignored) {}
+            }
+        }
+        model.addAttribute("expandIds", expandIds);
+        model.addAttribute("expandCsv", expandIds.isEmpty() ? "" :
+                expandIds.stream().map(String::valueOf).reduce((a, b) -> a + "," + b).orElse(""));
 
         model.addAttribute("pendingUsers", pendingUsers);
         model.addAttribute("activeUsers", activeUserPage.getContent());
@@ -261,7 +275,9 @@ public class AdminUserController {
             @RequestParam(value = "authWorkPlan", required = false, defaultValue = "NONE") String authWorkPlan,
             @RequestParam(value = "authDocument", required = false, defaultValue = "NONE") String authDocument,
             @RequestParam(value = "authContract", required = false, defaultValue = "NONE") String authContract,
-            @RequestParam(value = "authPerformance", required = false, defaultValue = "NONE") String authPerformance) {
+            @RequestParam(value = "authPerformance", required = false, defaultValue = "NONE") String authPerformance,
+            @RequestParam(value = "expand", required = false) String expand,
+            @RequestParam(value = "page", required = false) Integer page) {
 
         log.info("회원 정보 수정 요청 - userSeq: {}", userSeq);
 
@@ -296,10 +312,60 @@ public class AdminUserController {
         userRepository.save(user);
 
         log.info("회원 정보 수정 완료 - userid: {}", user.getUserid());
-        
+
         logService.log("회원관리", "수정", "관리자가 사용자 정보 수정: " + user.getUserid());
 
-        return "redirect:/admin/users";
+        // [스프린트 6] 펼침 상태·페이지 유지 — 안전한 쿼리 조립
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        if (page != null) parts.add("page=" + page);
+        if (expand != null && !expand.isBlank()) {
+            java.util.List<String> ids = new java.util.ArrayList<>();
+            for (String s : expand.split(",")) {
+                try { ids.add(Long.valueOf(s.trim()).toString()); }
+                catch (NumberFormatException ignored) {}
+            }
+            if (!ids.isEmpty()) parts.add("expand=" + String.join(",", ids));
+        }
+        String target = "redirect:/admin/users" + (parts.isEmpty() ? "" : "?" + String.join("&", parts));
+        return target;
+    }
+
+    /**
+     * [스프린트 6 FR-3-C] 민감정보 필드별 평문 조회 API (ADMIN 전용, 감사 로그 기록).
+     * 필드 1개만 반환하여 일괄 수집을 차단.
+     */
+    @ResponseBody
+    @GetMapping("/api/{userSeq}/sensitive")
+    public ResponseEntity<?> getSensitiveField(
+            @PathVariable Long userSeq,
+            @RequestParam String field) {
+        checkAdminAuth();
+        User u = userRepository.findById(userSeq).orElse(null);
+        if (u == null) {
+            return ResponseEntity.status(404).body(java.util.Map.of(
+                    "success", false,
+                    "error", java.util.Map.of("code", "NOT_FOUND", "message", "사용자 없음")));
+        }
+        String value;
+        switch (field) {
+            case "ssn":     value = u.getSsn(); break;
+            case "tel":     value = u.getTel(); break;
+            case "mobile":  value = u.getMobile(); break;
+            case "email":   value = u.getEmail(); break;
+            case "address": value = u.getAddress(); break;
+            default:
+                return ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "error", java.util.Map.of("code", "INVALID_FIELD", "message", "허용되지 않는 필드")));
+        }
+        CustomUserDetails cu = getCurrentUser();
+        String actor = (cu != null && cu.getUser() != null) ? cu.getUser().getUsername() : "unknown";
+        logService.log("회원관리", "민감정보조회",
+                "관리자 " + actor + " → userSeq=" + userSeq + " field=" + field);
+        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("field", field);
+        body.put("value", value != null ? value : "");
+        return ResponseEntity.ok(body);
     }
 
     /**

@@ -1,7 +1,7 @@
 ---
 tags: [dev-plan, sprint]
 sprint: "5"
-status: draft
+status: v2 (사용자 피드백 반영)
 created: "2026-04-19"
 ---
 
@@ -9,9 +9,15 @@ created: "2026-04-19"
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [[../plans/doc-selector-org-env|기획서]] (승인)
-- **참고**: [[../plans/doc-selector-org-env.seed|조직도 seed 초안]]
-- **상태**: 초안 (codex 검토 대기)
+- **근거 기획서**: [[../plans/doc-selector-org-env|기획서 v2]] (승인)
+- **참고**: [[../plans/doc-selector-org-env.seed|조직도 seed]]
+- **상태**: v2 — 구현 완료 후 사용자 피드백 반영
+
+### 개정 이력
+| 버전 | 변경 |
+|------|------|
+| v1 | 5단 드롭다운(연도→시도→시군구→시스템→사업) 가정, 저장 키 `proj_id` |
+| v2 | 4개 문서는 **3단(시도→시군구→시스템)** 간소화. 저장 키 `infra_id` 로 재정의. 지원 대상 라디오 가로 배치. 조직도 관리 메뉴 링크 추가. 신규 JS 모듈 `document-infra-selector.js` 도입 |
 
 ---
 
@@ -219,8 +225,8 @@ JS: radio 변경 시 표시 토글 + 선택 유닛 id 저장. 저장 payload 에
 | T1 | `tb_org_unit` 테이블·인덱스·seed 생성 | psql `\dt tb_org_unit` + `SELECT COUNT(*) FROM tb_org_unit` | 테이블 존재 + 40 내외 |
 | T2 | `tb_document` 3 컬럼 추가 | psql `\d tb_document` | support_target_type/org_unit_id/environment 존재 |
 | T3 | 4개 문서 템플릿에 `infraId` 단일 select 제거 | `rg -n "id=\"infraId\"" src/main/resources/templates/document/{doc-fault,doc-support,doc-install,doc-patch}.html` | 0 hits |
-| T4 | 연쇄 드롭다운 4문서 적용 | 동일 4파일에 `id="selYear"` 존재 | 4 hits |
-| T5 | 공통 JS 모듈 존재 | `test -f src/main/resources/static/js/document-project-selector.js && test -f src/main/resources/static/js/org-unit-selector.js` | exit 0 |
+| T4 | 3단 드롭다운 4문서 적용 (v2) | 동일 4파일에 `id="selCity"` + `id="selDist"` + `id="selSystem"` 존재하고 `id="selYear"` 는 없음 | selCity 4, selDist 4, selSystem 4, selYear 0 |
+| T5 | 공통 JS 모듈 존재 | `test -f src/main/resources/static/js/document-infra-selector.js && test -f src/main/resources/static/js/document-project-selector.js && test -f src/main/resources/static/js/org-unit-selector.js` | exit 0 |
 | T6 | 공통 JS 모듈 배포 확인 (commence/inspect 마이그레이션은 본 스프린트 범위 외) | `test -f src/main/resources/static/js/document-project-selector.js` | exit 0 |
 | T7 | 업무지원 라디오 + 조직 드롭다운 | `rg -n 'name="supportTargetType"' src/main/resources/templates/document/doc-support.html` + `rg -n "OrgUnitSelector.init" src/main/resources/templates/document/doc-support.html` | 각 ≥ 1 |
 | T8 | 설치·패치 환경 select | `rg -n 'id="environment"' src/main/resources/templates/document/{doc-install,doc-patch}.html` | 각 1 hit |
@@ -229,14 +235,15 @@ JS: radio 변경 시 표시 토글 + 선택 유닛 id 저장. 저장 payload 에
 | T11 | 서버 재기동 + 시작 로그 | `bash server-restart.sh` | `Started SwmanagerApplication` + ERROR 0 |
 | T12 | 조직 트리 API 응답 (NFR-5 응답 스키마 제한 — codex 지적 반영) | `curl -s --cookie "SWMANAGER_SESSION=..." http://localhost:9090/api/org-units/tree \| jq 'flatten \| .[0] \| keys'` | 결과 키셋이 **정확히** `["unit_id","name","unit_type","parent_id","children"]` (추가로 `sort_order` 허용). **금지 키**: `use_yn`, `created_at`, `updated_at`, `createdAt`, `updatedAt`. 최상위 배열 길이 10. |
 | T13 | 관리 화면 접근 제어 | 비-ADMIN 계정으로 `/admin/org-units` 접근 | 302 리다이렉트 또는 403 |
-| T14 | 기존 레코드 편집 저장 차단 (FR-1-F 백엔드) | 기존 infraId 만 있는 문서 편집에서 projId 재선택 없이 저장 시도 | HTTP 400 `code=RESELECT_REQUIRED` |
-| T14-UX | FR-1-F 프런트 UX 검증 (codex 지적 반영) | 레거시 레코드(draft **및** 완료) 각각 편집 페이지 진입 후 DOM 검사 | (a) `#legacyTargetBanner` 가시(`display:block`) + `#legacyTargetText` 값 채움, (b) 저장 버튼 `disabled=true`, (c) 연쇄 드롭다운 초기 빈 상태, (d) `selYear` 변경 후 끝까지 선택해 `#projId` 에 값 세팅되면 저장 버튼 `disabled=false` 로 전환. draft/완료 모두 동일 거동. |
+| T14 | 기존 레코드 편집 저장 차단 (FR-1-F 백엔드) | 기존 infraId/projId 없이 저장 시도 | HTTP 400 `code=RESELECT_REQUIRED` with message "지자체/시스템을 다시 선택하세요." |
+| T14-UX | FR-1-F 프런트 UX 검증 (v2 개정) | 레거시 레코드(draft **및** 완료) 각각 편집 페이지 진입 후 DOM 검사 | (a) `#legacyTargetBanner` 가시 + 대상 텍스트 채움, (b) 저장 버튼 `disabled=true`, (c) 드롭다운(`#selCity/selDist/selSystem`) 초기 빈 상태, (d) 시도→시군구→시스템명 선택해 infra_id 채워지면 저장 버튼 활성. draft/완료 동일 거동. |
 | T15 | 설치·패치 environment 누락 저장 | environment null 로 저장 시도 | HTTP 400 |
 | T16 | 업무지원 내부/외부 상반 필드 정합 | EXTERNAL 저장 시 org_unit_id null, INTERNAL 저장 시 proj_id null | DB 조회로 확인 |
 | T17 | 조직 삭제 시 하위 존재 시 차단 | 하위 있는 DIVISION 삭제 API 호출 | HTTP 400 |
 | T18 | ERD 문서 갱신 | `rg "tb_org_unit" docs/ERD.md` | ≥ 1 hit |
 | T19 | 업무지원 목록 대상 표시 분기 (FR-2-F) | 업무지원 EXTERNAL/INTERNAL 각 1건 생성 후 목록 조회 | EXTERNAL 행: 지자체+시스템 텍스트. INTERNAL 행: 조직 경로 텍스트 (예: `AI GIS 연구본부 > AI GIS 연구부 > 연구1팀`) |
 | T20 | 설치·패치 목록 환경 뱃지 (FR-4-C) | PROD/TEST 각 1건 생성 후 목록 DOM 검사 | `.env-badge-prod` / `.env-badge-test` 클래스 출력, 라벨 "운영"/"테스트" 정확 |
+| T21 | 관리자 네비게이션에 조직도 메뉴 노출 (FR-3-B, v2) | `rg -n "/admin/org-units" src/main/resources/templates/main-dashboard.html` | ≥ 1 hit |
 
 ---
 

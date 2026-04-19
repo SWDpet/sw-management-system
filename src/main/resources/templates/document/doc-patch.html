@@ -43,15 +43,13 @@
         <div class="form-section">
             <h3><i class="fas fa-file-alt"></i> 패치내역서</h3>
             <table class="form-table">
-                <tr><th>사업 선택 <span class="required">*</span></th>
+                <tr><th>대상 <span class="required">*</span></th>
                     <td colspan="3">
                         <div id="legacyTargetBanner" style="display:none;"></div>
                         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                            <select id="selYear" style="flex:0 0 100px;"><option value="">연도</option></select>
-                            <select id="selCity" style="flex:1 1 140px; min-width:140px;"><option value="">-- 연도 먼저 선택 --</option></select>
-                            <select id="selDist" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시도 먼저 선택 --</option></select>
-                            <select id="selSystem" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시군구 먼저 선택 --</option></select>
-                            <select id="projId" style="flex:2 1 260px; min-width:220px;"><option value="">-- 시스템 먼저 선택 --</option></select>
+                            <select id="selSido" style="flex:1 1 160px; min-width:160px;"><option value="">시도</option></select>
+                            <select id="selSigungu" style="flex:1 1 160px; min-width:160px;"><option value="">-- 시도 먼저 선택 --</option></select>
+                            <select id="selSystem" style="flex:1 1 180px; min-width:180px;"><option value="">시스템</option></select>
                         </div>
                     </td>
                 </tr>
@@ -107,29 +105,28 @@
         </div>
     </div>
 
-    <script src="/js/document-project-selector.js"></script>
+    <script src="/js/document-region-selector.js"></script>
     <script th:inline="javascript">
         /*<![CDATA[*/
         var LEGACY_TARGET_TEXT = /*[[${legacyTargetText}]]*/ null;
         /*]]>*/
 
-        var currentProjId = null;
+        var currentRegion = null;
 
         function setSaveEnabled() {
             var btn = document.getElementById('btnSave');
             var env = document.getElementById('environment').value;
-            if (btn) btn.disabled = !(currentProjId && env);
+            if (btn) btn.disabled = !(currentRegion && env);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             if (LEGACY_TARGET_TEXT) {
-                DocumentProjectSelector.setLegacyBanner('#legacyTargetBanner', LEGACY_TARGET_TEXT);
+                DocumentRegionSelector.setLegacyBanner('#legacyTargetBanner', LEGACY_TARGET_TEXT);
             }
-            DocumentProjectSelector.init({
-                yearEl: '#selYear', cityEl: '#selCity', distEl: '#selDist',
-                systemEl: '#selSystem', projectEl: '#projId',
-                onProjectChange: function(projId) {
-                    currentProjId = projId;
+            DocumentRegionSelector.init({
+                sidoEl: '#selSido', sigunguEl: '#selSigungu', systemEl: '#selSystem',
+                onChange: function(payload) {
+                    currentRegion = payload;
                     setSaveEnabled();
                 }
             });
@@ -137,7 +134,7 @@
         });
 
         function saveDocument() {
-            if (!currentProjId) { alert('사업을 선택해 주세요.'); return; }
+            if (!currentRegion) { alert('시도·시군구·시스템을 모두 선택해 주세요.'); return; }
             var env = document.getElementById('environment').value;
             if (!env) { alert('환경 구분(운영/테스트)을 선택해 주세요.'); return; }
 
@@ -163,7 +160,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     docType: 'PATCH',
-                    projId: currentProjId,
+                    regionCode: currentRegion.regionCode,
+                    sysType: currentRegion.sysType,
                     environment: env,
                     title: title,
                     sections: sections

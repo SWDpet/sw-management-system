@@ -32,6 +32,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // [스프린트 5 v2] JSON API 경로는 CSRF 면제 (세션 쿠키 기반 인증).
+            // 폼 로그인·로그아웃은 기본 CSRF 보호 유지.
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers(
+                    "/api/**",
+                    "/admin/api/**",
+                    "/document/api/**",
+                    "/admin/api/org-units/**"
+                )
+            )
             .authorizeHttpRequests(auth -> auth
                 // 인증 없이 접근 가능한 경로
                 .requestMatchers("/login", "/signup", "/logout").permitAll()

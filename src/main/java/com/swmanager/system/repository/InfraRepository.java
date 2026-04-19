@@ -17,6 +17,26 @@ public interface InfraRepository extends JpaRepository<Infra, Long> {
     /** 시군구 + 시스템영문명으로 인프라 조회 (점검내역서용) */
     @Query("SELECT i FROM Infra i WHERE i.distNm = :distNm AND i.sysNmEn = :sysNmEn")
     java.util.List<Infra> findByDistNmAndSysNmEn(@Param("distNm") String distNm, @Param("sysNmEn") String sysNmEn);
+
+    // ========== 스프린트 5 후속: 시도/시군구/시스템명 3단 드롭다운용 ==========
+
+    /** 전체 시도(city_nm) distinct */
+    @Query("SELECT DISTINCT i.cityNm FROM Infra i WHERE i.cityNm IS NOT NULL ORDER BY i.cityNm")
+    List<String> findDistinctCities();
+
+    /** 시도 기준 시군구(dist_nm) distinct */
+    @Query("SELECT DISTINCT i.distNm FROM Infra i WHERE i.cityNm = :cityNm AND i.distNm IS NOT NULL ORDER BY i.distNm")
+    List<String> findDistinctDistrictsByCity(@Param("cityNm") String cityNm);
+
+    /** 시도+시군구 기준 시스템명(sys_nm_en) distinct */
+    @Query("SELECT DISTINCT i.sysNmEn FROM Infra i WHERE i.cityNm = :cityNm AND i.distNm = :distNm AND i.sysNmEn IS NOT NULL ORDER BY i.sysNmEn")
+    List<String> findDistinctSystemsByRegion(@Param("cityNm") String cityNm, @Param("distNm") String distNm);
+
+    /** 시도+시군구+시스템명으로 단일 infra 조회 (동일 조합 첫 번째) */
+    @Query("SELECT i FROM Infra i WHERE i.cityNm = :cityNm AND i.distNm = :distNm AND i.sysNmEn = :sysNmEn ORDER BY i.infraId")
+    List<Infra> findByCityDistSystem(@Param("cityNm") String cityNm,
+                                     @Param("distNm") String distNm,
+                                     @Param("sysNmEn") String sysNmEn);
     
     // [수정됨] 통합 검색 쿼리
     // 1. infraType(운영/테스트)은 정확히 일치해야 함

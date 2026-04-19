@@ -41,23 +41,25 @@
             <table class="form-table">
                 <tr><th>지원 대상 <span class="required">*</span></th>
                     <td colspan="3">
-                        <label style="margin-right:16px;">
-                            <input type="radio" name="supportTargetType" value="EXTERNAL" checked> 외부(지자체)
-                        </label>
-                        <label>
-                            <input type="radio" name="supportTargetType" value="INTERNAL"> 내부(자사 조직)
-                        </label>
+                        <div style="display:flex; gap:16px; align-items:center;">
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;">
+                                <input type="radio" name="supportTargetType" value="EXTERNAL" checked style="width:auto; height:auto; margin:0;">
+                                외부(지자체)
+                            </label>
+                            <label style="display:inline-flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;">
+                                <input type="radio" name="supportTargetType" value="INTERNAL" style="width:auto; height:auto; margin:0;">
+                                내부(자사 조직)
+                            </label>
+                        </div>
                     </td>
                 </tr>
-                <tr id="externalRow"><th>사업 선택 <span class="required">*</span></th>
+                <tr id="externalRow"><th>대상 <span class="required">*</span></th>
                     <td colspan="3">
                         <div id="legacyTargetBanner" style="display:none;"></div>
                         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                            <select id="selYear" style="flex:0 0 100px;"><option value="">연도</option></select>
-                            <select id="selCity" style="flex:1 1 140px; min-width:140px;"><option value="">-- 연도 먼저 선택 --</option></select>
-                            <select id="selDist" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시도 먼저 선택 --</option></select>
-                            <select id="selSystem" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시군구 먼저 선택 --</option></select>
-                            <select id="projId" style="flex:2 1 260px; min-width:220px;"><option value="">-- 시스템 먼저 선택 --</option></select>
+                            <select id="selSido" style="flex:1 1 160px; min-width:160px;"><option value="">시도</option></select>
+                            <select id="selSigungu" style="flex:1 1 160px; min-width:160px;"><option value="">-- 시도 먼저 선택 --</option></select>
+                            <select id="selSystem" style="flex:1 1 180px; min-width:180px;"><option value="">시스템</option></select>
                         </div>
                     </td>
                 </tr>
@@ -114,7 +116,7 @@
         </div>
     </div>
 
-    <script src="/js/document-project-selector.js"></script>
+    <script src="/js/document-region-selector.js"></script>
     <script src="/js/org-unit-selector.js"></script>
     <script th:inline="javascript">
         /*<![CDATA[*/
@@ -122,14 +124,14 @@
         /*]]>*/
 
         var currentTargetType = 'EXTERNAL';
-        var currentProjId = null;
+        var currentRegion = null;
         var currentOrgUnitId = null;
 
         function setSaveEnabled() {
             var btn = document.getElementById('btnSave');
             if (!btn) return;
             if (currentTargetType === 'EXTERNAL') {
-                btn.disabled = !currentProjId;
+                btn.disabled = !currentRegion;
             } else {
                 btn.disabled = !currentOrgUnitId;
             }
@@ -145,13 +147,12 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             if (LEGACY_TARGET_TEXT) {
-                DocumentProjectSelector.setLegacyBanner('#legacyTargetBanner', LEGACY_TARGET_TEXT);
+                DocumentRegionSelector.setLegacyBanner('#legacyTargetBanner', LEGACY_TARGET_TEXT);
             }
-            DocumentProjectSelector.init({
-                yearEl: '#selYear', cityEl: '#selCity', distEl: '#selDist',
-                systemEl: '#selSystem', projectEl: '#projId',
-                onProjectChange: function(projId) {
-                    currentProjId = projId;
+            DocumentRegionSelector.init({
+                sidoEl: '#selSido', sigunguEl: '#selSigungu', systemEl: '#selSystem',
+                onChange: function(payload) {
+                    currentRegion = payload;
                     setSaveEnabled();
                 }
             });
@@ -168,8 +169,8 @@
         });
 
         function saveDocument() {
-            if (currentTargetType === 'EXTERNAL' && !currentProjId) {
-                alert('사업을 선택해 주세요.'); return;
+            if (currentTargetType === 'EXTERNAL' && !currentRegion) {
+                alert('시도·시군구·시스템을 모두 선택해 주세요.'); return;
             }
             if (currentTargetType === 'INTERNAL' && !currentOrgUnitId) {
                 alert('조직을 선택해 주세요.'); return;
@@ -193,7 +194,8 @@
             var payload = {
                 docType: 'SUPPORT',
                 supportTargetType: currentTargetType,
-                projId: currentTargetType === 'EXTERNAL' ? currentProjId : null,
+                regionCode: currentTargetType === 'EXTERNAL' ? currentRegion.regionCode : null,
+                sysType: currentTargetType === 'EXTERNAL' ? currentRegion.sysType : null,
                 orgUnitId: currentTargetType === 'INTERNAL' ? currentOrgUnitId : null,
                 title: title,
                 sections: sections

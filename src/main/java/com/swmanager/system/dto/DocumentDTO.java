@@ -50,6 +50,11 @@ public class DocumentDTO {
     private String targetDisplay;     // 목록 표시용 통합 텍스트 (FR-2-F)
     private String environmentLabel;  // 운영 / 테스트 (FR-4-C)
 
+    // [v2] 4개 문서용 — region_code 기반 지역 표시 (sysNm 은 기존 필드 재사용)
+    private String regionCode;        // sigungu_code.adm_sect_c
+    private String regionSidoNm;      // 조회 시 sigungu_code 에서 룩업
+    private String regionSigunguNm;   // 조회 시 sigungu_code 에서 룩업
+
     // 문서 상세 섹션
     private List<DetailSectionDTO> sections;
 
@@ -130,7 +135,8 @@ public class DocumentDTO {
         // [스프린트 5] 새 필드
         builder.supportTargetType(doc.getSupportTargetType())
                .environment(doc.getEnvironment())
-               .environmentLabel(getEnvironmentLabel(doc.getEnvironment()));
+               .environmentLabel(getEnvironmentLabel(doc.getEnvironment()))
+               .regionCode(doc.getRegionCode());
 
         if (doc.getOrgUnit() != null) {
             builder.orgUnitId(doc.getOrgUnit().getUnitId())
@@ -172,6 +178,12 @@ public class DocumentDTO {
                 return buildOrgUnitPath(doc.getOrgUnit());
             }
             return "내부";
+        }
+        // [v2] 4개 문서 region_code 기반 — 실제 시도/시군구명은 Service.enrichRegion 에서 보강됨
+        // 여기서는 regionCode/sysType 존재 여부로만 판단. 최종 문자열은 Service 가 targetDisplay 재계산.
+        // (fromEntity 시점엔 Repository 접근 불가이므로 placeholder 만 반환)
+        if (doc.getRegionCode() != null) {
+            return "[" + doc.getRegionCode() + "] " + (doc.getSysType() != null ? doc.getSysType() : "");
         }
         if (doc.getProject() != null) {
             var p = doc.getProject();

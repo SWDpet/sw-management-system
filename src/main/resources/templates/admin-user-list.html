@@ -15,10 +15,26 @@
         .btn-log { background: #e74a3b; } 
         .section-title { font-size: 1.1rem; font-weight: 700; color: #444; margin: 40px 0 15px 0; border-left: 5px solid #1a237e; padding-left: 10px; }
         .section-title.pending { color: #e65100; border-left-color: #ff9800; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; background: #fff; border: 1px solid #e3e6f0; }
-        th, td { padding: 10px; border: 1px solid #e3e6f0; text-align: center; font-size: 0.85em; vertical-align: middle; }
+        .table-wrap { overflow-x: auto; margin-bottom: 30px; border: 1px solid #e3e6f0; background: #fff; }
+        table { width: 100%; border-collapse: collapse; background: #fff; }
+        th, td { padding: 10px; border: 1px solid #e3e6f0; text-align: center; font-size: 0.85em; vertical-align: middle; white-space: nowrap; }
         th { background: #f8f9fc; color: #1a237e; font-weight: bold; border-bottom: 2px solid #1a237e; }
-        input[type="text"], input[type="email"] { width: 90%; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; text-align: center; }
+        input[type="text"], input[type="email"] { width: 100%; box-sizing: border-box; padding: 5px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; text-align: left; }
+        /* 컬럼별 최소 너비 — 내용 잘림 방지 */
+        td input[name="deptNm"], td input[name="teamNm"] { min-width: 100px; }
+        td input[name="tel"], td input[name="mobile"] { min-width: 130px; }
+        td input[name="email"] { min-width: 220px; }
+        td input[name="positionTitle"] { min-width: 70px; }
+        td input[name="address"] { min-width: 220px; }
+        td input[name="ssn"] { min-width: 150px; }
+        td input[name="certificate"] { min-width: 150px; }
+        td input[name="techGrade"] { min-width: 100px; }
+        td input[name="tasks"] { min-width: 180px; }
+        td input[readonly] { min-width: 80px; }
+        td input[name="address"],
+        td input[name="email"],
+        td input[name="certificate"],
+        td input[name="tasks"] { text-align: left; }
         input[readonly] { background: #f9f9f9; color: #666; border: none; }
         select { padding: 5px; border: 1px solid #d1d3e2; border-radius: 4px; outline: none; font-size: 0.85em; }
         .btn-action { color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; transition: 0.2s; margin: 2px; }
@@ -36,6 +52,44 @@
         .pagination .disabled { color: #ccc; cursor: not-allowed; }
         .pagination .disabled:hover { background: white; border-color: #e0e0e0; }
         .page-info { text-align: center; margin-top: 15px; color: #858796; font-size: 0.9em; }
+
+        /* [스프린트 6] 하이브리드 레이아웃: 권한 요약 뱃지 + 행 확장 */
+        .auth-badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 0.72em;
+                      color: white; margin: 1px 2px; font-weight: 600; letter-spacing: 0.3px; }
+        .auth-badge.view { background: #3b82f6; }
+        .auth-badge.edit { background: #10b981; }
+        .auth-more { font-size: 0.72em; color: #6b7280; font-weight: 600; margin-left: 2px; }
+        .status-active { color: #10b981; font-weight: 600; font-size: 0.85em; }
+        .status-locked { color: #e74a3b; font-weight: 600; font-size: 0.85em; }
+        .btn-expand { background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 4px;
+                      cursor: pointer; font-size: 0.82em; margin-right: 4px; font-weight: 600; }
+        .btn-expand.expanded { background: #6b7280; }
+        .user-detail > td { background: #f8f9fc; padding: 16px 20px; border-bottom: 2px solid #1a237e; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 1280px) { .detail-grid { grid-template-columns: 1fr; } }
+        .detail-section { background: white; padding: 14px 16px; border: 1px solid #e3e6f0; border-radius: 6px; }
+        .detail-section h4 { margin: 0 0 10px; font-size: 0.92em; color: #1a237e; border-bottom: 1px solid #e0e0e0;
+                             padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .detail-section h4 small { color: #6b7280; font-weight: 400; font-size: 0.85em; }
+        .detail-section dl { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; margin: 0; align-items: center; }
+        .detail-section dl dt { font-weight: 600; color: #4b5563; font-size: 0.85em; }
+        .detail-section dl dd { margin: 0; font-size: 0.88em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .detail-section dl dd input, .detail-section dl dd select,
+        .detail-section dl dd textarea { flex: 1; min-width: 100px; box-sizing: border-box; padding: 6px 8px;
+            border: 1px solid #d1d3e2; border-radius: 4px; font-size: 0.88em; }
+        .detail-section.sensitive .sensitive-input { background: #fff7ed; }
+        .detail-section.sensitive input.is-revealed { background: #fef3c7; border-color: #f59e0b; }
+        .btn-reveal { background: white; border: 1px solid #d1d3e2; border-radius: 4px; padding: 5px 9px;
+                      font-size: 0.78em; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
+        .btn-reveal.revealed { background: #fef3c7; border-color: #f59e0b; }
+        .reveal-warning { display: block; flex-basis: 100%; color: #b45309; font-size: 0.75em; margin-top: 4px; }
+        .auth-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px; }
+        .auth-grid select { width: 100%; padding: 5px 6px; font-size: 0.82em; border: 1px solid #d1d3e2; border-radius: 4px; }
+        .detail-actions { margin-top: 16px; text-align: right; }
+        .detail-actions button { padding: 8px 20px; border-radius: 5px; font-weight: 600; font-size: 0.9em;
+                                 cursor: pointer; margin-left: 6px; }
+        .detail-actions .btn-save-detail { background: #10b981; color: white; border: none; }
+        .detail-actions .btn-cancel-edit { background: white; border: 1px solid #d1d3e2; color: #4b5563; }
     </style>
 </head>
 <body>
@@ -44,8 +98,6 @@
             <h2><i class="fas fa-users-cog"></i> 사용자 통합 관리</h2>
             <div class="header-btns">
                 <a th:href="@{/}" class="btn-top btn-home"><i class="fas fa-home"></i> 메인으로</a>
-                <a th:href="@{/admin/logs}" class="btn-top btn-log"><i class="fas fa-history"></i> 로그 관리</a>
-                <a th:href="@{/admin/system-graph}" class="btn-top" style="background:#0d9488; color:white;"><i class="fas fa-project-diagram"></i> 시스템 관계도</a>
                 <a href="/logout" class="btn-top" style="background:#e74a3b; color:white;"><i class="fas fa-sign-out-alt"></i> 로그아웃</a>
             </div>
         </div>
@@ -54,9 +106,10 @@
             <i class="fas fa-user-clock"></i> 가입 및 수정 승인 대기
             <span style="font-size: 0.8em; font-weight: normal; color: #666;">(권한을 설정하고 승인 버튼을 누르세요)</span>
         </div>
+        <div class="table-wrap">
         <table>
             <colgroup>
-                <col style="width: 6%;"> <col style="width: 6%;"> <col style="width: 8%;"> 
+                <col style="width: 6%;"> <col style="width: 6%;"> <col style="width: 8%;">
                 <col style="width: 12%;"> <col style="width: 8%;"> <col style="width: 50%;"> <col style="width: 10%;">
             </colgroup>
             <thead>
@@ -145,6 +198,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <div class="section-title">
             <i class="fas fa-users"></i> 등록된 사용자 관리 (활동 중)
@@ -190,131 +244,236 @@
                 <span th:text="' - 총 ' + ${totalElements} + '명 검색됨'"></span>
             </div>
         </div>
+        <div class="table-wrap">
+        <!-- [스프린트 6] 하이브리드 레이아웃: 7컬럼 목록 + 행 확장 상세 -->
         <table>
-            <colgroup>
-                <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 5%;">
-                <col style="width: 4%;"> <col style="width: 4%;"> <col style="width: 5%;"> <col style="width: 5%;">
-                <col style="width: 7%;"> <col style="width: 4%;"> <col style="width: 6%;"> <col style="width: 5%;">
-                <col style="width: 5%;"> <col style="width: 4%;"> <col style="width: 6%;">
-                <col style="width: 26%;"> <col style="width: 6%;">
-            </colgroup>
             <thead>
                 <tr>
-                    <th>아이디</th>
-                    <th>성명</th>
-                    <th>소속기관</th>
-                    <th>부서</th>
-                    <th>팀</th>
-                    <th>연락처</th>
-                    <th>휴대전화</th>
-                    <th>이메일</th>
-                    <th>직급</th>
-                    <th>주소</th>
-                    <th>주민번호</th>
-                    <th>자격증</th>
-                    <th>기술등급</th>
-                    <th>업무</th>
-                    <th>권한</th>
-                    <th>관리</th>
+                    <th style="min-width:90px;">아이디</th>
+                    <th style="min-width:80px;">성명</th>
+                    <th style="min-width:140px;">소속기관</th>
+                    <th style="min-width:100px;">부서</th>
+                    <th style="min-width:200px;">권한 요약</th>
+                    <th style="min-width:70px;">상태</th>
+                    <th style="min-width:170px;">관리</th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="u : ${activeUsers}">
-                    <td><input type="text" th:value="${u.userid}" readonly></td>
-                    <td><input type="text" th:value="${u.username}" readonly></td>
-                    <td><input type="text" th:value="${u.orgNm}" readonly></td>
-
-                    <td><input type="text" name="deptNm" th:value="${u.deptNm}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="teamNm" th:value="${u.teamNm}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="tel" th:value="${u.tel}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="mobile" th:value="${u.mobile}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="email" name="email" th:value="${u.email}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="positionTitle" th:value="${u.positionTitle}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="address" th:value="${u.address}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="ssn" th:value="${u.ssn}" th:attr="form='updateForm' + ${u.userSeq}" maxlength="14"></td>
-                    <td><input type="text" name="certificate" th:value="${u.certificate}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="techGrade" th:value="${u.techGrade}" th:attr="form='updateForm' + ${u.userSeq}"></td>
-                    <td><input type="text" name="tasks" th:value="${u.tasks}" placeholder="콤마로 다중 입력" th:attr="form='updateForm' + ${u.userSeq}" title="여러 업무는 콤마(,)로 구분"></td>
-
-                    <!-- 권한 칸 (오른쪽 border 없음) -->
-                    <td style="border-right: none; padding: 5px;">
-                        <div style="display: flex; flex-direction: column; gap: 5px;">
-                            <select name="authDashboard" style="width: 100%;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authDashboard == 'NONE'}">대시보드: X</option>
-                                <option value="VIEW" th:selected="${u.authDashboard == 'VIEW'}">대시보드: 조회</option>
-                                <option value="EDIT" th:selected="${u.authDashboard == 'EDIT'}">대시보드: 편집</option>
-                            </select>
-                            <select name="authProject" style="width: 100%;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authProject == 'NONE'}">사업관리: X</option>
-                                <option value="VIEW" th:selected="${u.authProject == 'VIEW'}">사업관리: 조회</option>
-                                <option value="EDIT" th:selected="${u.authProject == 'EDIT'}">사업관리: 편집</option>
-                            </select>
-                            <select name="authPerson" style="width: 100%;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authPerson == 'NONE'}">담당자: X</option>
-                                <option value="VIEW" th:selected="${u.authPerson == 'VIEW'}">담당자: 조회</option>
-                                <option value="EDIT" th:selected="${u.authPerson == 'EDIT'}">담당자: 편집</option>
-                            </select>
-                            <select name="authInfra" style="width: 100%;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authInfra == 'NONE'}">서버관리: X</option>
-                                <option value="VIEW" th:selected="${u.authInfra == 'VIEW'}">서버관리: 조회</option>
-                                <option value="EDIT" th:selected="${u.authInfra == 'EDIT'}">서버관리: 편집</option>
-                            </select>
-                            <select name="authLicense" style="width: 100%; border: 1px solid #667eea; background-color: #f8f9ff;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authLicense == 'NONE' or u.authLicense == null}">라이선스: X</option>
-                                <option value="VIEW" th:selected="${u.authLicense == 'VIEW'}">라이선스: 조회</option>
-                                <option value="EDIT" th:selected="${u.authLicense == 'EDIT'}">라이선스: 편집</option>
-                            </select>
-                            <!-- ✨ 견적서 권한 추가 -->
-                            <select name="authQuotation" style="width: 100%; border: 1px solid #6B3EF0; background-color: #f8f0ff;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authQuotation == 'NONE' or u.authQuotation == null}">견적서: X</option>
-                                <option value="VIEW" th:selected="${u.authQuotation == 'VIEW'}">견적서: 조회</option>
-                                <option value="EDIT" th:selected="${u.authQuotation == 'EDIT'}">견적서: 편집</option>
-                            </select>
-                            <!-- 업무계획 및 성과 전산화 권한 -->
-                            <select name="authContract" style="width: 100%; border: 1px solid #0277bd; background-color: #e1f5fe;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authContract == 'NONE' or u.authContract == null}">사업현황: X</option>
-                                <option value="VIEW" th:selected="${u.authContract == 'VIEW'}">사업현황: 조회</option>
-                                <option value="EDIT" th:selected="${u.authContract == 'EDIT'}">사업현황: 편집</option>
-                            </select>
-                            <select name="authWorkPlan" style="width: 100%; border: 1px solid #2e7d32; background-color: #e8f5e9;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authWorkPlan == 'NONE' or u.authWorkPlan == null}">업무계획: X</option>
-                                <option value="VIEW" th:selected="${u.authWorkPlan == 'VIEW'}">업무계획: 조회</option>
-                                <option value="EDIT" th:selected="${u.authWorkPlan == 'EDIT'}">업무계획: 편집</option>
-                            </select>
-                            <select name="authDocument" style="width: 100%; border: 1px solid #e64a19; background-color: #fbe9e7;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authDocument == 'NONE' or u.authDocument == null}">문서관리: X</option>
-                                <option value="VIEW" th:selected="${u.authDocument == 'VIEW'}">문서관리: 조회</option>
-                                <option value="EDIT" th:selected="${u.authDocument == 'EDIT'}">문서관리: 편집</option>
-                            </select>
-                            <select name="authPerformance" style="width: 100%; border: 1px solid #7B1FA2; background-color: #f3e5f5;" th:attr="form='updateForm' + ${u.userSeq}">
-                                <option value="NONE" th:selected="${u.authPerformance == 'NONE' or u.authPerformance == null}">성과통계: X</option>
-                                <option value="VIEW" th:selected="${u.authPerformance == 'VIEW'}">성과통계: 조회</option>
-                                <option value="EDIT" th:selected="${u.authPerformance == 'EDIT'}">성과통계: 편집</option>
-                            </select>
-                        </div>
+                <th:block th:each="u : ${activeUsers}">
+                <!-- 목록 행 (7컬럼) -->
+                <tr class="user-row">
+                    <td th:text="${u.userid}">id</td>
+                    <td th:text="${u.username}">이름</td>
+                    <td th:text="${u.orgNm}">소속</td>
+                    <td th:text="${u.deptNm}">부서</td>
+                    <td>
+                        <th:block th:with="badges=${@authSummary.summarize(u, 4)}">
+                            <span th:each="b : ${badges.list}"
+                                  th:class="|auth-badge ${b.cssClass}|"
+                                  th:text="${b.label}">뱃지</span>
+                            <span th:if="${badges.moreCount > 0}" class="auth-more"
+                                  th:text="|+${badges.moreCount}|">+0</span>
+                            <span th:if="${badges.list.isEmpty() and badges.moreCount == 0}" style="color:#ccc;">-</span>
+                        </th:block>
                     </td>
-                    
-                    <!-- 관리 칸 (왼쪽 border 없음) -->
-                    <td style="border-left: none; padding: 5px;">
-                        <div style="display: flex; flex-direction: column; gap: 5px;">
-                            <form th:action="@{/admin/users/update}" method="post" th:id="'updateForm' + ${u.userSeq}" onsubmit="return confirm('정보를 수정하시겠습니까?');">
-                                <input type="hidden" name="userSeq" th:value="${u.userSeq}">
-                                <button type="submit" class="btn-action btn-update" style="width: 100%;">수정</button>
-                            </form>
-                            
-                            <form th:action="@{/admin/users/delete}" method="post" onsubmit="return confirm('정말로 이 사용자를 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.');">
-                                <input type="hidden" name="userSeq" th:value="${u.userSeq}">
-                                <button type="submit" class="btn-action btn-delete" style="width: 100%;">삭제</button>
-                            </form>
-                        </div>
+                    <td>
+                        <span th:if="${u.lockTime == null}" class="status-active">활성</span>
+                        <span th:if="${u.lockTime != null}" class="status-locked">잠금</span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn-expand"
+                                th:data-user-seq="${u.userSeq}"
+                                th:attr="aria-controls=|detail-${u.userSeq}|,aria-expanded=${expandIds != null and expandIds.contains(u.userSeq)} ? 'true' : 'false'">▾ 펼치기</button>
+                        <form th:action="@{/admin/users/delete}" method="post"
+                              style="display:inline;"
+                              onsubmit="return confirm('정말로 이 사용자를 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.');">
+                            <input type="hidden" name="userSeq" th:value="${u.userSeq}">
+                            <button type="submit" class="btn-action btn-delete">삭제</button>
+                        </form>
                     </td>
                 </tr>
+                <!-- 상세 확장 행 -->
+                <tr class="user-detail"
+                    th:id="|detail-${u.userSeq}|"
+                    th:data-user-seq="${u.userSeq}"
+                    th:style="${expandIds != null and expandIds.contains(u.userSeq)} ? 'display:table-row' : 'display:none'">
+                    <td colspan="7">
+                        <form th:action="@{/admin/users/update}" method="post"
+                              th:id="|updateForm-${u.userSeq}|"
+                              th:data-user-seq="${u.userSeq}"
+                              onsubmit="return confirm('정보를 수정하시겠습니까?');">
+                            <input type="hidden" name="userSeq" th:value="${u.userSeq}">
+                            <input type="hidden" name="page" th:value="${currentPage}">
+                            <input type="hidden" name="expand" data-expand-input="true" th:value="${expandCsv}">
+
+                            <div class="detail-grid">
+                                <!-- 1. 기본정보 -->
+                                <section class="detail-section">
+                                    <h4>기본정보</h4>
+                                    <dl>
+                                        <dt>아이디</dt>
+                                        <dd th:text="${u.userid}">id</dd>
+                                        <dt>성명</dt>
+                                        <dd th:text="${u.username}">이름</dd>
+                                        <dt>직급</dt>
+                                        <dd><input type="text" name="positionTitle" th:value="${u.positionTitle}"></dd>
+                                        <dt>가입일</dt>
+                                        <dd th:text="${u.regDt != null ? #temporals.format(u.regDt,'yyyy-MM-dd') : '-'}">-</dd>
+                                    </dl>
+                                </section>
+                                <!-- 2. 소속·기술 -->
+                                <section class="detail-section">
+                                    <h4>소속·기술</h4>
+                                    <dl>
+                                        <dt>소속기관</dt>
+                                        <dd th:text="${u.orgNm}">기관</dd>
+                                        <dt>부서</dt>
+                                        <dd><input type="text" name="deptNm" th:value="${u.deptNm}"></dd>
+                                        <dt>팀</dt>
+                                        <dd><input type="text" name="teamNm" th:value="${u.teamNm}"></dd>
+                                        <dt>기술등급</dt>
+                                        <dd><input type="text" name="techGrade" th:value="${u.techGrade}"></dd>
+                                        <dt>자격증</dt>
+                                        <dd><input type="text" name="certificate" th:value="${u.certificate}"></dd>
+                                        <dt>업무</dt>
+                                        <dd><input type="text" name="tasks" th:value="${u.tasks}" placeholder="콤마로 다중 입력"></dd>
+                                    </dl>
+                                </section>
+                                <!-- 3. 민감정보 (서버 렌더 시 마스킹된 값만, 평문 금지) -->
+                                <section class="detail-section sensitive">
+                                    <h4>민감정보 <small>🔒 기본 마스킹</small></h4>
+                                    <dl>
+                                        <dt>연락처</dt>
+                                        <dd>
+                                            <input type="text" name="tel"
+                                                   class="sensitive-input" data-sensitive-input="true"
+                                                   data-field="tel" th:data-user-seq="${u.userSeq}"
+                                                   th:value="${@sensitiveMask.tel(u.tel)}"
+                                                   th:attr="data-mask-initial=${@sensitiveMask.tel(u.tel)}"
+                                                   readonly>
+                                            <button type="button" class="btn-reveal"
+                                                    data-field="tel" th:data-user-seq="${u.userSeq}">🔒 보기</button>
+                                        </dd>
+                                        <dt>휴대전화</dt>
+                                        <dd>
+                                            <input type="text" name="mobile"
+                                                   class="sensitive-input" data-sensitive-input="true"
+                                                   data-field="mobile" th:data-user-seq="${u.userSeq}"
+                                                   th:value="${@sensitiveMask.mobile(u.mobile)}"
+                                                   th:attr="data-mask-initial=${@sensitiveMask.mobile(u.mobile)}"
+                                                   readonly>
+                                            <button type="button" class="btn-reveal"
+                                                    data-field="mobile" th:data-user-seq="${u.userSeq}">🔒 보기</button>
+                                        </dd>
+                                        <dt>이메일</dt>
+                                        <dd>
+                                            <input type="text" name="email"
+                                                   class="sensitive-input" data-sensitive-input="true"
+                                                   data-field="email" th:data-user-seq="${u.userSeq}"
+                                                   th:value="${@sensitiveMask.email(u.email)}"
+                                                   th:attr="data-mask-initial=${@sensitiveMask.email(u.email)}"
+                                                   readonly>
+                                            <button type="button" class="btn-reveal"
+                                                    data-field="email" th:data-user-seq="${u.userSeq}">🔒 보기</button>
+                                        </dd>
+                                        <dt>주소</dt>
+                                        <dd>
+                                            <input type="text" name="address"
+                                                   class="sensitive-input" data-sensitive-input="true"
+                                                   data-field="address" th:data-user-seq="${u.userSeq}"
+                                                   th:value="${@sensitiveMask.address(u.address)}"
+                                                   th:attr="data-mask-initial=${@sensitiveMask.address(u.address)}"
+                                                   readonly>
+                                            <button type="button" class="btn-reveal"
+                                                    data-field="address" th:data-user-seq="${u.userSeq}">🔒 보기</button>
+                                        </dd>
+                                        <dt>주민번호</dt>
+                                        <dd>
+                                            <input type="text" name="ssn"
+                                                   class="sensitive-input" data-sensitive-input="true"
+                                                   data-field="ssn" th:data-user-seq="${u.userSeq}"
+                                                   th:value="${@sensitiveMask.ssn(u.ssn)}"
+                                                   th:attr="data-mask-initial=${@sensitiveMask.ssn(u.ssn)}"
+                                                   maxlength="14" readonly>
+                                            <button type="button" class="btn-reveal"
+                                                    data-field="ssn" th:data-user-seq="${u.userSeq}">🔒 보기</button>
+                                        </dd>
+                                    </dl>
+                                </section>
+                                <!-- 4. 권한 -->
+                                <section class="detail-section">
+                                    <h4>권한</h4>
+                                    <div class="auth-grid">
+                                        <select name="authDashboard">
+                                            <option value="NONE" th:selected="${u.authDashboard == 'NONE'}">대시보드: X</option>
+                                            <option value="VIEW" th:selected="${u.authDashboard == 'VIEW'}">대시보드: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authDashboard == 'EDIT'}">대시보드: 편집</option>
+                                        </select>
+                                        <select name="authProject">
+                                            <option value="NONE" th:selected="${u.authProject == 'NONE'}">사업관리: X</option>
+                                            <option value="VIEW" th:selected="${u.authProject == 'VIEW'}">사업관리: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authProject == 'EDIT'}">사업관리: 편집</option>
+                                        </select>
+                                        <select name="authPerson">
+                                            <option value="NONE" th:selected="${u.authPerson == 'NONE'}">담당자: X</option>
+                                            <option value="VIEW" th:selected="${u.authPerson == 'VIEW'}">담당자: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authPerson == 'EDIT'}">담당자: 편집</option>
+                                        </select>
+                                        <select name="authInfra">
+                                            <option value="NONE" th:selected="${u.authInfra == 'NONE'}">서버관리: X</option>
+                                            <option value="VIEW" th:selected="${u.authInfra == 'VIEW'}">서버관리: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authInfra == 'EDIT'}">서버관리: 편집</option>
+                                        </select>
+                                        <select name="authLicense">
+                                            <option value="NONE" th:selected="${u.authLicense == 'NONE' or u.authLicense == null}">라이선스: X</option>
+                                            <option value="VIEW" th:selected="${u.authLicense == 'VIEW'}">라이선스: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authLicense == 'EDIT'}">라이선스: 편집</option>
+                                        </select>
+                                        <select name="authQuotation">
+                                            <option value="NONE" th:selected="${u.authQuotation == 'NONE' or u.authQuotation == null}">견적서: X</option>
+                                            <option value="VIEW" th:selected="${u.authQuotation == 'VIEW'}">견적서: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authQuotation == 'EDIT'}">견적서: 편집</option>
+                                        </select>
+                                        <select name="authContract">
+                                            <option value="NONE" th:selected="${u.authContract == 'NONE' or u.authContract == null}">사업현황: X</option>
+                                            <option value="VIEW" th:selected="${u.authContract == 'VIEW'}">사업현황: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authContract == 'EDIT'}">사업현황: 편집</option>
+                                        </select>
+                                        <select name="authWorkPlan">
+                                            <option value="NONE" th:selected="${u.authWorkPlan == 'NONE' or u.authWorkPlan == null}">업무계획: X</option>
+                                            <option value="VIEW" th:selected="${u.authWorkPlan == 'VIEW'}">업무계획: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authWorkPlan == 'EDIT'}">업무계획: 편집</option>
+                                        </select>
+                                        <select name="authDocument">
+                                            <option value="NONE" th:selected="${u.authDocument == 'NONE' or u.authDocument == null}">문서관리: X</option>
+                                            <option value="VIEW" th:selected="${u.authDocument == 'VIEW'}">문서관리: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authDocument == 'EDIT'}">문서관리: 편집</option>
+                                        </select>
+                                        <select name="authPerformance">
+                                            <option value="NONE" th:selected="${u.authPerformance == 'NONE' or u.authPerformance == null}">성과통계: X</option>
+                                            <option value="VIEW" th:selected="${u.authPerformance == 'VIEW'}">성과통계: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authPerformance == 'EDIT'}">성과통계: 편집</option>
+                                        </select>
+                                    </div>
+                                </section>
+                            </div>
+                            <div class="detail-actions">
+                                <button type="button" class="btn-cancel-edit">취소</button>
+                                <button type="submit" class="btn-save-detail"><i class="fas fa-save"></i> 저장</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                </th:block>
                 <tr th:if="${#lists.isEmpty(activeUsers)}">
-                    <td colspan="16" class="empty-row">등록된 사용자가 없습니다.</td>
+                    <td colspan="7" class="empty-row">등록된 사용자가 없습니다.</td>
                 </tr>
             </tbody>
         </table>
-        
+        </div>
+
+        <script src="/js/admin-user.js"></script>
+
         <!-- ✨ 페이징 UI -->
         <div th:if="${totalPages > 0}">
             <div class="pagination">

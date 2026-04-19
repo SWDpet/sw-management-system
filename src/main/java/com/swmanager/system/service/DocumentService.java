@@ -41,8 +41,13 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public DocumentDTO getDocumentDTOById(Integer docId) {
-        return DocumentDTO.fromEntity(getDocumentById(docId));
+        return enrichRegion(DocumentDTO.fromEntity(getDocumentById(docId)));
     }
+
+    @Autowired(required = false)
+    private com.swmanager.system.repository.SigunguCodeRepository sigunguCodeRepository;
+    @Autowired(required = false)
+    private com.swmanager.system.repository.SysMstRepository sysMstRepository;
 
     @Transactional(readOnly = true)
     public Page<DocumentDTO> searchDocuments(String docType, String status,
@@ -57,7 +62,40 @@ public class DocumentService {
 
         Page<Document> page = documentRepository.searchDocuments(
                 docType, status, cityNm, distNm, authorId, from, to, keyword, pageable);
-        return page.map(DocumentDTO::fromEntity);
+        return page.map(d -> enrichRegion(DocumentDTO.fromEntity(d)));
+    }
+
+    /**
+     * [스프린트 5 v2] 4개 문서의 region_code / sys_type 을 sigungu_code / sys_mst 에서 룩업해
+     * DTO 에 시도·시군구·시스템명을 채움. 목록/상세 표시용.
+     */
+    private DocumentDTO enrichRegion(DocumentDTO dto) {
+        if (dto == null) return null;
+        if (dto.getRegionCode() != null && sigunguCodeRepository != null) {
+            sigunguCodeRepository.findById(dto.getRegionCode()).ifPresent(sc -> {
+                dto.setRegionSidoNm(sc.getSidoNm());
+                dto.setRegionSigunguNm(sc.getSggNm());
+            });
+        }
+        if (dto.getSysType() != null && sysMstRepository != null) {
+            sysMstRepository.findById(dto.getSysType()).ifPresent(sm -> dto.setSysNm(sm.getNm()));
+        }
+        // 4개 문서 targetDisplay 재계산: "시도 시군구 - 시스템명"
+        if (dto.getRegionCode() != null) {
+            StringBuilder sb = new StringBuilder();
+            if (dto.getRegionSidoNm() != null) sb.append(dto.getRegionSidoNm()).append(' ');
+            if (dto.getRegionSigunguNm() != null) sb.append(dto.getRegionSigunguNm());
+            if (dto.getSysNm() != null) {
+                if (sb.length() > 0) sb.append(" - ");
+                sb.append(dto.getSysNm());
+            } else if (dto.getSysType() != null) {
+                if (sb.length() > 0) sb.append(" - ");
+                sb.append(dto.getSysType());
+            }
+            String s = sb.toString().trim();
+            if (!s.isEmpty()) dto.setTargetDisplay(s);
+        }
+        return dto;
     }
 
     @Transactional(readOnly = true)

@@ -58,6 +58,8 @@ public class DocumentController {
     @Autowired private SwProjectRepository swProjectRepository;
     @Autowired private com.swmanager.system.repository.OrgUnitRepository orgUnitRepository;
     @Autowired private com.swmanager.system.service.OrgUnitService orgUnitService;
+    @Autowired private com.swmanager.system.repository.SigunguCodeRepository sigunguCodeRepository;
+    @Autowired private com.swmanager.system.repository.SysMstRepository sysMstRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private LogService logService;
     @Autowired private ProcessMasterRepository processMasterRepository;
@@ -299,11 +301,14 @@ public class DocumentController {
             Long orgUnitId = requestData.get("orgUnitId") != null ? Long.valueOf(requestData.get("orgUnitId").toString()) : null;
             String environment = (String) requestData.get("environment"); // PROD / TEST
 
-            // [스프린트 5 FR-1-F] 4개 문서 작성/편집 시 projId 또는 orgUnitId 필수 (레거시 infraId 단독 저장 차단)
+            // [스프린트 5 v2] 4개 문서는 사업·인프라 무관 — region_code + sys_type 으로 식별
+            String regionCode = (String) requestData.get("regionCode");
+            // sysType 은 sys_mst.cd 값 (상단에서 이미 받음). 4개 문서에서는 필수.
+
             if ("FAULT".equals(docType) || "INSTALL".equals(docType) || "PATCH".equals(docType)) {
-                if (projId == null) {
+                if (regionCode == null || regionCode.isEmpty() || sysType == null || sysType.isEmpty()) {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "사업을 다시 선택하세요.")));
+                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "지역·시스템을 다시 선택하세요.")));
                 }
             }
             if ("SUPPORT".equals(docType)) {
@@ -311,9 +316,10 @@ public class DocumentController {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
                             "error", Map.of("code", "INVALID_INPUT", "message", "지원 대상(외부/내부)을 선택하세요.")));
                 }
-                if ("EXTERNAL".equals(supportTargetType) && projId == null) {
+                if ("EXTERNAL".equals(supportTargetType)
+                        && (regionCode == null || regionCode.isEmpty() || sysType == null || sysType.isEmpty())) {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "사업을 다시 선택하세요.")));
+                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "지역·시스템을 다시 선택하세요.")));
                 }
                 if ("INTERNAL".equals(supportTargetType) && orgUnitId == null) {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
@@ -340,14 +346,22 @@ public class DocumentController {
                 doc.setDocNo(docNo.trim().isEmpty() ? null : docNo.trim());
             }
 
-            // sw_pjt 연결 + 레거시 infra 정리 (FR-1-E: proj_id 를 단일 소스로)
-            if (projId != null) {
-                doc.setProject(swProjectRepository.findById(projId).orElse(null));
-                // [스프린트 5 FR-1-E] 레거시 문서가 infra_id 만 갖고 있던 경우,
-                // 프로젝트 재선택 후에는 infra_id 를 null 로 만들어 검색·필터 분기 혼선 방지
-                if ("FAULT".equals(docType) || "SUPPORT".equals(docType)
-                        || "INSTALL".equals(docType) || "PATCH".equals(docType)) {
-                    doc.setInfra(null);
+            // [스프린트 5 v2] 4개 문서는 region_code + sys_type 저장 (사업·인프라 null)
+            boolean isFourDocType = "FAULT".equals(docType) || "INSTALL".equals(docType)
+                    || "PATCH".equals(docType) || "SUPPORT".equals(docType);
+            if (isFourDocType) {
+                doc.setInfra(null);
+                doc.setProject(null);
+                if (regionCode != null && !regionCode.isEmpty()) {
+                    doc.setRegionCode(regionCode);
+                }
+                if (sysType != null && !sysType.isEmpty()) {
+                    doc.setSysType(sysType);
+                }
+            } else {
+                // 착수계/기성계/준공계/점검내역서 등은 기존 방식 유지 (proj_id 연결)
+                if (projId != null) {
+                    doc.setProject(swProjectRepository.findById(projId).orElse(null));
                 }
             }
 
@@ -356,7 +370,8 @@ public class DocumentController {
                 doc.setSupportTargetType(supportTargetType);
                 if ("INTERNAL".equals(supportTargetType) && orgUnitId != null) {
                     doc.setOrgUnit(orgUnitRepository.findById(orgUnitId).orElse(null));
-                    doc.setProject(null); // 내부 저장 시 proj_id null
+                    doc.setRegionCode(null);  // 내부 저장 시 지역도 null
+                    doc.setSysType(null);
                 } else if ("EXTERNAL".equals(supportTargetType)) {
                     doc.setOrgUnit(null); // 외부 저장 시 org_unit_id null
                 }
@@ -818,6 +833,90 @@ public class DocumentController {
     public ResponseEntity<List<String>> getProjectSystems(
             @RequestParam Integer year, @RequestParam String cityNm, @RequestParam String distNm) {
         return ResponseEntity.ok(swProjectRepository.findDistinctSysNmEnByYearAndCity(year, cityNm, distNm));
+    }
+
+    // ========== 스프린트 5 v2 (2026-04-19): 4개 문서용 지역+시스템 드롭다운 ==========
+    // 4개 문서(장애/업무지원/설치/패치) 는 사업·인프라와 독립된 성과·히스토리 관리용.
+    // 시도·시군구는 sigungu_code 마스터, 시스템은 sys_mst 마스터 기반.
+
+    /** 시도 목록 (sigungu_code distinct) */
+    @ResponseBody
+    @GetMapping("/api/region-sidos")
+    public ResponseEntity<List<String>> getRegionSidos() {
+        return ResponseEntity.ok(sigunguCodeRepository.findDistinctSidoNm());
+    }
+
+    /** 시도 → 시군구 목록 (행정구역코드 + 시군구명) */
+    @ResponseBody
+    @GetMapping("/api/region-sigungus")
+    public ResponseEntity<List<Map<String, Object>>> getRegionSigungus(@RequestParam String sidoNm) {
+        var list = sigunguCodeRepository.findBySidoNmOrderBySggNm(sidoNm);
+        List<Map<String, Object>> result = list.stream().map(s -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("admSectC", s.getAdmSectC());
+            m.put("sggNm", s.getSggNm());
+            m.put("sidoNm", s.getSidoNm());
+            return m;
+        }).toList();
+        return ResponseEntity.ok(result);
+    }
+
+    /** 전체 시스템 목록 (sys_mst) */
+    @ResponseBody
+    @GetMapping("/api/systems-all")
+    public ResponseEntity<List<Map<String, Object>>> getSystemsAll() {
+        var list = sysMstRepository.findAll();
+        List<Map<String, Object>> result = list.stream().map(s -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("cd", s.getCd());
+            m.put("nm", s.getNm());
+            return m;
+        }).toList();
+        return ResponseEntity.ok(result);
+    }
+
+    // ========== 스프린트 5 v1 (2026-04-19, 사용자 피드백 v2 로 사용 중단):
+    // tb_infra_master 기반 3단 API. 현재는 사용처 없음. 추후 정리 대상.
+    // 유지 이유: commence/inspect 의 점검내역서 infra 조회 경로(getInfraServers)가 있어
+    // 단순 삭제 보류. ==========
+
+    @ResponseBody
+    @GetMapping("/api/infra-cities")
+    public ResponseEntity<List<String>> getInfraCities() {
+        return ResponseEntity.ok(infraRepository.findDistinctCities());
+    }
+
+    @ResponseBody
+    @GetMapping("/api/infra-districts")
+    public ResponseEntity<List<String>> getInfraDistricts(@RequestParam String cityNm) {
+        return ResponseEntity.ok(infraRepository.findDistinctDistrictsByCity(cityNm));
+    }
+
+    @ResponseBody
+    @GetMapping("/api/infra-systems")
+    public ResponseEntity<List<String>> getInfraSystems(
+            @RequestParam String cityNm, @RequestParam String distNm) {
+        return ResponseEntity.ok(infraRepository.findDistinctSystemsByRegion(cityNm, distNm));
+    }
+
+    @ResponseBody
+    @GetMapping("/api/infra-find")
+    public ResponseEntity<Map<String, Object>> findInfraByRegion(
+            @RequestParam String cityNm, @RequestParam String distNm, @RequestParam String sysNmEn) {
+        var list = infraRepository.findByCityDistSystem(cityNm, distNm, sysNmEn);
+        Map<String, Object> body = new HashMap<>();
+        if (list.isEmpty()) {
+            body.put("found", false);
+            return ResponseEntity.ok(body);
+        }
+        var infra = list.get(0);
+        body.put("found", true);
+        body.put("infraId", infra.getInfraId());
+        body.put("cityNm", infra.getCityNm());
+        body.put("distNm", infra.getDistNm());
+        body.put("sysNm", infra.getSysNm());
+        body.put("sysNmEn", infra.getSysNmEn());
+        return ResponseEntity.ok(body);
     }
 
     /** 최종: 연도+지자체+시스템 → 사업 목록 */
