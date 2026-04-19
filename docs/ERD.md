@@ -250,6 +250,8 @@
 | tb_work_plan | tb_work_plan | parent_plan_id | N:1 (self) |
 | tb_contract_participant | sw_pjt | proj_id | N:1 |
 | tb_contract_participant | users | user_id | N:1 |
+| tb_org_unit | tb_org_unit | parent_id | N:1 (self) |
+| tb_document | tb_org_unit | org_unit_id | N:1 (업무지원 내부 대상, 스프린트 5) |
 | tb_document | tb_infra_master | infra_id | N:1 |
 | tb_document | tb_work_plan | plan_id | N:1 |
 | tb_document | sw_pjt | proj_id | N:1 |

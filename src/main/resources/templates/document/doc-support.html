@@ -31,7 +31,7 @@
         <div class="page-header">
             <h2><i class="fas fa-headset"></i> 업무지원 내역서 작성</h2>
             <div class="header-actions">
-                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <button id="btnSave" onclick="saveDocument()" class="btn-save" disabled><i class="fas fa-save"></i> 저장</button>
                 <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
             </div>
         </div>
@@ -39,14 +39,35 @@
         <div class="form-section">
             <h3><i class="fas fa-file-alt"></i> 업무지원 내역서</h3>
             <table class="form-table">
-                <tr><th>지자체 <span class="required">*</span></th>
+                <tr><th>지원 대상 <span class="required">*</span></th>
                     <td colspan="3">
-                        <select id="infraId">
-                            <option value="">선택</option>
-                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
-                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
-                                    th:selected="${infra.infraId == infraId}"></option>
-                        </select>
+                        <label style="margin-right:16px;">
+                            <input type="radio" name="supportTargetType" value="EXTERNAL" checked> 외부(지자체)
+                        </label>
+                        <label>
+                            <input type="radio" name="supportTargetType" value="INTERNAL"> 내부(자사 조직)
+                        </label>
+                    </td>
+                </tr>
+                <tr id="externalRow"><th>사업 선택 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <div id="legacyTargetBanner" style="display:none;"></div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <select id="selYear" style="flex:0 0 100px;"><option value="">연도</option></select>
+                            <select id="selCity" style="flex:1 1 140px; min-width:140px;"><option value="">-- 연도 먼저 선택 --</option></select>
+                            <select id="selDist" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시도 먼저 선택 --</option></select>
+                            <select id="selSystem" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시군구 먼저 선택 --</option></select>
+                            <select id="projId" style="flex:2 1 260px; min-width:220px;"><option value="">-- 시스템 먼저 선택 --</option></select>
+                        </div>
+                    </td>
+                </tr>
+                <tr id="internalRow" style="display:none;"><th>조직 선택 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <select id="selDivision" style="flex:1 1 180px; min-width:180px;"><option value="">본부/연구소</option></select>
+                            <select id="selDepartment" style="flex:1 1 180px; min-width:180px;" disabled><option value="">-- 본부 먼저 선택 --</option></select>
+                            <select id="selTeam" style="flex:1 1 180px; min-width:180px;" disabled><option value="">-- 부서 먼저 선택 --</option></select>
+                        </div>
                     </td>
                 </tr>
                 <tr><th>요청일 <span class="required">*</span></th>
@@ -93,14 +114,71 @@
         </div>
     </div>
 
-    <script>
+    <script src="/js/document-project-selector.js"></script>
+    <script src="/js/org-unit-selector.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var LEGACY_TARGET_TEXT = /*[[${legacyTargetText}]]*/ null;
+        /*]]>*/
+
+        var currentTargetType = 'EXTERNAL';
+        var currentProjId = null;
+        var currentOrgUnitId = null;
+
+        function setSaveEnabled() {
+            var btn = document.getElementById('btnSave');
+            if (!btn) return;
+            if (currentTargetType === 'EXTERNAL') {
+                btn.disabled = !currentProjId;
+            } else {
+                btn.disabled = !currentOrgUnitId;
+            }
+        }
+
+        function onTargetTypeChange() {
+            var radios = document.querySelectorAll('input[name="supportTargetType"]');
+            radios.forEach(function(r) { if (r.checked) currentTargetType = r.value; });
+            document.getElementById('externalRow').style.display = (currentTargetType === 'EXTERNAL') ? '' : 'none';
+            document.getElementById('internalRow').style.display = (currentTargetType === 'INTERNAL') ? '' : 'none';
+            setSaveEnabled();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (LEGACY_TARGET_TEXT) {
+                DocumentProjectSelector.setLegacyBanner('#legacyTargetBanner', LEGACY_TARGET_TEXT);
+            }
+            DocumentProjectSelector.init({
+                yearEl: '#selYear', cityEl: '#selCity', distEl: '#selDist',
+                systemEl: '#selSystem', projectEl: '#projId',
+                onProjectChange: function(projId) {
+                    currentProjId = projId;
+                    setSaveEnabled();
+                }
+            });
+            OrgUnitSelector.init({
+                divisionEl: '#selDivision', departmentEl: '#selDepartment', teamEl: '#selTeam',
+                onUnitChange: function(unitId) {
+                    currentOrgUnitId = unitId;
+                    setSaveEnabled();
+                }
+            });
+            document.querySelectorAll('input[name="supportTargetType"]').forEach(function(r) {
+                r.addEventListener('change', onTargetTypeChange);
+            });
+        });
+
         function saveDocument() {
-            var infraId = document.getElementById('infraId').value;
+            if (currentTargetType === 'EXTERNAL' && !currentProjId) {
+                alert('사업을 선택해 주세요.'); return;
+            }
+            if (currentTargetType === 'INTERNAL' && !currentOrgUnitId) {
+                alert('조직을 선택해 주세요.'); return;
+            }
+
             var title = '업무지원 내역서';
 
             var sections = [
                 { sectionKey: 'support', sectionData: {
-                    infraId: infraId,
                     userId: document.getElementById('support_user').value,
                     type: document.getElementById('support_type').value,
                     method: document.getElementById('support_method').value,
@@ -112,15 +190,19 @@
                 }}
             ];
 
+            var payload = {
+                docType: 'SUPPORT',
+                supportTargetType: currentTargetType,
+                projId: currentTargetType === 'EXTERNAL' ? currentProjId : null,
+                orgUnitId: currentTargetType === 'INTERNAL' ? currentOrgUnitId : null,
+                title: title,
+                sections: sections
+            };
+
             fetch('/document/api/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    docType: 'SUPPORT',
-                    infraId: infraId || null,
-                    title: title,
-                    sections: sections
-                })
+                body: JSON.stringify(payload)
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -128,7 +210,7 @@
                     alert('저장되었습니다. 문서번호: ' + data.docNo);
                     location.href = '/document/detail/' + data.docId;
                 } else {
-                    alert(data.error || '저장 실패');
+                    alert((data.error && (data.error.message || data.error)) || '저장 실패');
                 }
             });
         }

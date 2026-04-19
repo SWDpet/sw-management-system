@@ -41,6 +41,15 @@ public class DocumentDTO {
     private String createdAt;
     private String updatedAt;
 
+    // [스프린트 5] 새 필드
+    private String supportTargetType; // EXTERNAL / INTERNAL
+    private Long orgUnitId;
+    private String orgUnitName;
+    private String orgUnitPath;       // "본부 > 부서 > 팀" 표시용
+    private String environment;       // PROD / TEST
+    private String targetDisplay;     // 목록 표시용 통합 텍스트 (FR-2-F)
+    private String environmentLabel;  // 운영 / 테스트 (FR-4-C)
+
     // 문서 상세 섹션
     private List<DetailSectionDTO> sections;
 
@@ -118,7 +127,68 @@ public class DocumentDTO {
                     .collect(Collectors.toList()));
         }
 
+        // [스프린트 5] 새 필드
+        builder.supportTargetType(doc.getSupportTargetType())
+               .environment(doc.getEnvironment())
+               .environmentLabel(getEnvironmentLabel(doc.getEnvironment()));
+
+        if (doc.getOrgUnit() != null) {
+            builder.orgUnitId(doc.getOrgUnit().getUnitId())
+                   .orgUnitName(doc.getOrgUnit().getName())
+                   .orgUnitPath(buildOrgUnitPath(doc.getOrgUnit()));
+        }
+
+        // 목록 표시용 통합 타겟 텍스트 (FR-2-F)
+        builder.targetDisplay(buildTargetDisplay(doc));
+
         return builder.build();
+    }
+
+    private static String getEnvironmentLabel(String env) {
+        if (env == null) return null;
+        return switch (env) {
+            case "PROD" -> "운영";
+            case "TEST" -> "테스트";
+            default -> env;
+        };
+    }
+
+    /** 조직 유닛의 루트→대상 이름 경로를 " > " 로 연결. 순환 방어 포함. */
+    private static String buildOrgUnitPath(com.swmanager.system.domain.OrgUnit leaf) {
+        if (leaf == null) return null;
+        java.util.LinkedList<String> names = new java.util.LinkedList<>();
+        var cur = leaf;
+        int guard = 0;
+        while (cur != null && guard++ < 10) {
+            names.addFirst(cur.getName());
+            cur = cur.getParent();
+        }
+        return String.join(" > ", names);
+    }
+
+    private static String buildTargetDisplay(Document doc) {
+        if ("SUPPORT".equals(doc.getDocType()) && "INTERNAL".equals(doc.getSupportTargetType())) {
+            if (doc.getOrgUnit() != null) {
+                return buildOrgUnitPath(doc.getOrgUnit());
+            }
+            return "내부";
+        }
+        if (doc.getProject() != null) {
+            var p = doc.getProject();
+            StringBuilder sb = new StringBuilder();
+            if (p.getCityNm() != null) sb.append(p.getCityNm()).append(' ');
+            if (p.getDistNm() != null && !p.getDistNm().equals(p.getCityNm())) sb.append(p.getDistNm()).append(' ');
+            if (p.getSysNm() != null) sb.append("- ").append(p.getSysNm());
+            return sb.toString().trim();
+        }
+        if (doc.getInfra() != null) {
+            var i = doc.getInfra();
+            StringBuilder sb = new StringBuilder();
+            if (i.getCityNm() != null) sb.append(i.getCityNm()).append(' ');
+            if (i.getDistNm() != null && !i.getDistNm().equals(i.getCityNm())) sb.append(i.getDistNm());
+            return sb.toString().trim();
+        }
+        return "";
     }
 
     // 유틸리티: 문서유형 한글

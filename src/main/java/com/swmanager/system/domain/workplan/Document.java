@@ -1,6 +1,7 @@
 package com.swmanager.system.domain.workplan;
 
 import com.swmanager.system.domain.Infra;
+import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.User;
 import jakarta.persistence.*;
@@ -47,6 +48,19 @@ public class Document {
 
     @Column(name = "status", nullable = false, length = 20)
     private String status = "DRAFT"; // DRAFT(작성중), COMPLETED(작성완료)
+
+    // [스프린트 5] 업무지원 대상 구분: EXTERNAL(지자체) / INTERNAL(자사 조직)
+    @Column(name = "support_target_type", length = 20)
+    private String supportTargetType;
+
+    // [스프린트 5] 내부 업무지원 시 조직 유닛
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "org_unit_id")
+    private OrgUnit orgUnit;
+
+    // [스프린트 5] 설치/패치 환경 구분: PROD(운영) / TEST(테스트)
+    @Column(name = "environment", length = 20)
+    private String environment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)

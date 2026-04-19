@@ -457,3 +457,129 @@ CREATE INDEX IF NOT EXISTS idx_tb_work_plan_assignee ON tb_work_plan(assignee_id
 CREATE INDEX IF NOT EXISTS idx_tb_work_plan_parent   ON tb_work_plan(parent_plan_id);
 CREATE INDEX IF NOT EXISTS idx_tb_work_plan_status   ON tb_work_plan(status);
 CREATE INDEX IF NOT EXISTS idx_tb_work_plan_start    ON tb_work_plan(start_date);
+
+-- ============================================================
+-- 스프린트 5 (2026-04-19): 조직도 + 문서 선택 UI 통일 + 운영/테스트 구분
+-- 기획서: docs/plans/doc-selector-org-env.md
+-- ============================================================
+
+-- 조직도 마스터 (self-FK 로 가변 계층)
+CREATE TABLE IF NOT EXISTS tb_org_unit (
+    unit_id       BIGSERIAL PRIMARY KEY,
+    parent_id     BIGINT REFERENCES tb_org_unit(unit_id) ON DELETE RESTRICT,
+    unit_type     VARCHAR(20) NOT NULL CHECK (unit_type IN ('DIVISION','DEPARTMENT','TEAM')),
+    name          VARCHAR(100) NOT NULL,
+    sort_order    INTEGER DEFAULT 0,
+    use_yn        VARCHAR(1) DEFAULT 'Y',
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_unit_parent ON tb_org_unit(parent_id);
+CREATE INDEX IF NOT EXISTS idx_org_unit_type   ON tb_org_unit(unit_type);
+CREATE INDEX IF NOT EXISTS idx_org_unit_use    ON tb_org_unit(use_yn);
+
+-- 조직도 초기 seed (멱등: 이미 적재돼 있으면 skip)
+DO $$
+DECLARE
+    v_biz_mgmt_id         BIGINT;
+    v_global_biz_id       BIGINT;
+    v_global_plan_id      BIGINT;
+    v_ai_strategy_id      BIGINT;
+    v_ai_gis_research_id  BIGINT;
+    v_sw_research_id      BIGINT;
+    v_sw_sales_id         BIGINT;
+    v_gis_biz_id          BIGINT;
+    v_urban_biz_id        BIGINT;
+    v_smartcity_id        BIGINT;
+    v_dept_id             BIGINT;
+BEGIN
+    IF EXISTS (SELECT 1 FROM tb_org_unit WHERE unit_type='DIVISION' AND name='경영관리본부' AND use_yn='Y') THEN
+        RETURN;
+    END IF;
+
+    -- DIVISION
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', '경영관리본부', 10) RETURNING unit_id INTO v_biz_mgmt_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', '글로벌사업본부', 20) RETURNING unit_id INTO v_global_biz_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', '글로벌기획본부', 30) RETURNING unit_id INTO v_global_plan_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', 'AI전략기획본부', 40) RETURNING unit_id INTO v_ai_strategy_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', 'AI GIS 연구본부', 50) RETURNING unit_id INTO v_ai_gis_research_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', 'SW기술연구소', 60) RETURNING unit_id INTO v_sw_research_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', 'SW영업본부', 70) RETURNING unit_id INTO v_sw_sales_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', 'GIS사업본부', 80) RETURNING unit_id INTO v_gis_biz_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', '도시계획사업본부', 90) RETURNING unit_id INTO v_urban_biz_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (NULL, 'DIVISION', '스마트시티본부', 100) RETURNING unit_id INTO v_smartcity_id;
+
+    -- 경영관리본부 하위
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_biz_mgmt_id, 'DEPARTMENT', '인사총무부', 10);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_biz_mgmt_id, 'DEPARTMENT', '재무회계부', 20);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_biz_mgmt_id, 'TEAM', '베트남 경영관리팀', 30);
+
+    -- 글로벌사업본부 하위
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_global_biz_id, 'DEPARTMENT', '해외사업부', 10) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', '해외사업팀', 10);
+
+    -- AI전략기획본부 (본부 직속 팀)
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_ai_strategy_id, 'TEAM', 'AI기획팀', 10);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_ai_strategy_id, 'TEAM', '디자인팀', 20);
+
+    -- AI GIS 연구본부 하위
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_ai_gis_research_id, 'DEPARTMENT', 'AI GIS 연구부', 10) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', '연구1팀', 10);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', '연구2팀', 20);
+
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_ai_gis_research_id, 'DEPARTMENT', 'R&D기획부', 20) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', 'R&D기획팀', 10);
+
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_ai_gis_research_id, 'DEPARTMENT', 'SW지원부', 30) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', 'SW지원팀', 10);
+
+    -- SW기술연구소 하위
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_sw_research_id, 'DEPARTMENT', '응용개발연구부', 10);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_sw_research_id, 'DEPARTMENT', '제품개발연구부', 20);
+
+    -- SW영업본부 하위
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_sw_sales_id, 'DEPARTMENT', 'GIS SW영업부', 10) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', 'GIS SW영업팀', 10);
+
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_sw_sales_id, 'DEPARTMENT', '도시계획 SW영업부', 20) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', '도시계획 SW영업팀', 10);
+
+    -- GIS사업본부 하위 (부 + 본부 직속 팀 혼재)
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_gis_biz_id, 'DEPARTMENT', 'GIS사업1부', 10) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', 'GIS1부 사업1팀', 10);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', 'GIS1부 사업2팀', 20);
+
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_gis_biz_id, 'DEPARTMENT', 'GIS사업2부', 20) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', 'GIS2부 사업팀', 10);
+
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_gis_biz_id, 'TEAM', 'GIS 사업4팀', 30);
+
+    -- 도시계획사업본부 하위
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_urban_biz_id, 'DEPARTMENT', '도시계획사업부', 10) RETURNING unit_id INTO v_dept_id;
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', '도시계획사업1팀', 10);
+    INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) VALUES (v_dept_id, 'TEAM', '도시계획사업2팀', 20);
+END $$;
+
+-- tb_document 3 컬럼 보강
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS support_target_type VARCHAR(20);
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS org_unit_id BIGINT;
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS environment VARCHAR(20);
+
+-- FK/CHECK 는 멱등적으로 추가
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_tb_document_org_unit') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT fk_tb_document_org_unit FOREIGN KEY (org_unit_id) REFERENCES tb_org_unit(unit_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_tb_document_support_target_type') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT ck_tb_document_support_target_type CHECK (support_target_type IS NULL OR support_target_type IN ('EXTERNAL','INTERNAL'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_tb_document_environment') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT ck_tb_document_environment CHECK (environment IS NULL OR environment IN ('PROD','TEST'));
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_tb_document_org_unit     ON tb_document(org_unit_id);
+CREATE INDEX IF NOT EXISTS idx_tb_document_environment  ON tb_document(environment);
+CREATE INDEX IF NOT EXISTS idx_tb_document_support_type ON tb_document(support_target_type);

@@ -43,7 +43,7 @@
         <div class="page-header">
             <h2><i class="fas fa-server"></i> 설치보고서 작성</h2>
             <div class="header-actions">
-                <button onclick="saveDocument()" class="btn-save"><i class="fas fa-save"></i> 저장</button>
+                <button id="btnSave" onclick="saveDocument()" class="btn-save" disabled><i class="fas fa-save"></i> 저장</button>
                 <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
             </div>
         </div>
@@ -51,13 +51,24 @@
         <div class="form-section">
             <h3><i class="fas fa-file-alt"></i> 설치보고서</h3>
             <table class="form-table">
-                <tr><th>지자체 <span class="required">*</span></th>
+                <tr><th>사업 선택 <span class="required">*</span></th>
                     <td colspan="3">
-                        <select id="infraId">
-                            <option value="">선택</option>
-                            <option th:each="infra : ${infraList}" th:value="${infra.infraId}"
-                                    th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
-                                    th:selected="${infra.infraId == infraId}"></option>
+                        <div id="legacyTargetBanner" style="display:none;"></div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <select id="selYear" style="flex:0 0 100px;"><option value="">연도</option></select>
+                            <select id="selCity" style="flex:1 1 140px; min-width:140px;"><option value="">-- 연도 먼저 선택 --</option></select>
+                            <select id="selDist" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시도 먼저 선택 --</option></select>
+                            <select id="selSystem" style="flex:1 1 140px; min-width:140px;"><option value="">-- 시군구 먼저 선택 --</option></select>
+                            <select id="projId" style="flex:2 1 260px; min-width:220px;"><option value="">-- 시스템 먼저 선택 --</option></select>
+                        </div>
+                    </td>
+                </tr>
+                <tr><th>환경 구분 <span class="required">*</span></th>
+                    <td colspan="3">
+                        <select id="environment" required style="max-width:200px;">
+                            <option value="">환경 선택</option>
+                            <option value="PROD">운영</option>
+                            <option value="TEST">테스트</option>
                         </select>
                     </td>
                 </tr>
@@ -113,7 +124,35 @@
         </div>
     </div>
 
-    <script>
+    <script src="/js/document-project-selector.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var LEGACY_TARGET_TEXT = /*[[${legacyTargetText}]]*/ null;
+        /*]]>*/
+
+        var currentProjId = null;
+
+        function setSaveEnabled() {
+            var btn = document.getElementById('btnSave');
+            var env = document.getElementById('environment').value;
+            if (btn) btn.disabled = !(currentProjId && env);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (LEGACY_TARGET_TEXT) {
+                DocumentProjectSelector.setLegacyBanner('#legacyTargetBanner', LEGACY_TARGET_TEXT);
+            }
+            DocumentProjectSelector.init({
+                yearEl: '#selYear', cityEl: '#selCity', distEl: '#selDist',
+                systemEl: '#selSystem', projectEl: '#projId',
+                onProjectChange: function(projId) {
+                    currentProjId = projId;
+                    setSaveEnabled();
+                }
+            });
+            document.getElementById('environment').addEventListener('change', setSaveEnabled);
+        });
+
         function addSwRow() {
             var html = '<tr><td><input type="text"></td><td><input type="text"></td>' +
                 '<td><input type="text"></td><td><input type="text"></td>' +
@@ -122,7 +161,10 @@
         }
 
         function saveDocument() {
-            var infraId = document.getElementById('infraId').value;
+            if (!currentProjId) { alert('사업을 선택해 주세요.'); return; }
+            var env = document.getElementById('environment').value;
+            if (!env) { alert('환경 구분(운영/테스트)을 선택해 주세요.'); return; }
+
             var title = '설치보고서';
 
             var swRows = [];
@@ -138,7 +180,6 @@
 
             var sections = [
                 { sectionKey: 'install', sectionData: {
-                    infraId: infraId,
                     userId: document.getElementById('install_user').value,
                     installDate: document.getElementById('install_date').value,
                     serverInfo: document.getElementById('install_server_info').value,
@@ -156,7 +197,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     docType: 'INSTALL',
-                    infraId: infraId || null,
+                    projId: currentProjId,
+                    environment: env,
                     title: title,
                     sections: sections
                 })
@@ -167,7 +209,7 @@
                     alert('저장되었습니다. 문서번호: ' + data.docNo);
                     location.href = '/document/detail/' + data.docId;
                 } else {
-                    alert(data.error || '저장 실패');
+                    alert((data.error && (data.error.message || data.error)) || '저장 실패');
                 }
             });
         }

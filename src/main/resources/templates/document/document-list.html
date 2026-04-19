@@ -141,7 +141,8 @@
                         <th>No</th>
                         <th>문서번호</th>
                         <th>문서유형</th>
-                        <th>지자체</th>
+                        <th>대상</th>
+                        <th>환경</th>
                         <th>제목</th>
                         <th>작성자</th>
                         <th>상태</th>
@@ -153,7 +154,22 @@
                         <td th:text="${documents.totalElements - (documents.number * documents.size) - stat.index}">1</td>
                         <td th:text="${d.docNo}">-</td>
                         <td><span class="badge type-badge" th:text="${T(com.swmanager.system.dto.DocumentDTO).getDocTypeLabel(d.docType)}">유형</span></td>
-                        <td th:text="${d.cityNm == null ? '-' : (d.distNm == null or d.distNm.isEmpty() or d.cityNm == d.distNm ? d.cityNm : d.cityNm + ' ' + d.distNm)}">-</td>
+                        <td>
+                            <!-- [스프린트 5 FR-2-F] 업무지원 INTERNAL 시 조직 표시, 그 외 지자체 fallback -->
+                            <span th:if="${d.docType == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
+                                  style="color:#00897b; font-weight:600;"
+                                  th:text="${'[내부] ' + (d.orgUnitPath != null ? d.orgUnitPath : (d.orgUnitName != null ? d.orgUnitName : '-'))}">-</span>
+                            <span th:unless="${d.docType == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
+                                  th:text="${d.targetDisplay != null and !d.targetDisplay.isEmpty() ? d.targetDisplay : '-'}">-</span>
+                        </td>
+                        <td>
+                            <!-- [스프린트 5 FR-4-C] 설치/패치 환경 뱃지 -->
+                            <span th:if="${d.environment == 'PROD'}" class="env-badge-prod"
+                                  style="padding:2px 8px; border-radius:3px; background:#1cc88a; color:white; font-size:0.75em; font-weight:600;">운영</span>
+                            <span th:if="${d.environment == 'TEST'}" class="env-badge-test"
+                                  style="padding:2px 8px; border-radius:3px; background:#f6c23e; color:white; font-size:0.75em; font-weight:600;">테스트</span>
+                            <span th:if="${d.environment == null}" style="color:#ccc;">-</span>
+                        </td>
                         <td th:text="${d.title}">제목</td>
                         <td th:text="${d.authorName}">-</td>
                         <td>
@@ -163,7 +179,7 @@
                         <td th:text="${d.createdAt != null ? #strings.substring(d.createdAt, 0, 10) : '-'}">-</td>
                     </tr>
                     <tr th:if="${documents.totalElements == 0}" class="empty-row">
-                        <td colspan="8"><i class="fas fa-inbox"></i> 등록된 문서가 없습니다.</td>
+                        <td colspan="9"><i class="fas fa-inbox"></i> 등록된 문서가 없습니다.</td>
                     </tr>
                 </tbody>
             </table>

@@ -56,6 +56,8 @@ public class DocumentController {
     @Autowired private InfraRepository infraRepository;
     @Autowired private PersonInfoRepository personInfoRepository;
     @Autowired private SwProjectRepository swProjectRepository;
+    @Autowired private com.swmanager.system.repository.OrgUnitRepository orgUnitRepository;
+    @Autowired private com.swmanager.system.service.OrgUnitService orgUnitService;
     @Autowired private UserRepository userRepository;
     @Autowired private LogService logService;
     @Autowired private ProcessMasterRepository processMasterRepository;
@@ -221,6 +223,31 @@ public class DocumentController {
                     existingData.put("projNm", p.getProjNm());
                 }
 
+                // [스프린트 5 FR-1-F] 레거시 대상 표시용 배너 텍스트
+                String legacyTargetText = null;
+                if (existingDoc.getProject() != null) {
+                    var p = existingDoc.getProject();
+                    legacyTargetText = String.format("%s %s - %s (%s)",
+                            p.getCityNm() != null ? p.getCityNm() : "",
+                            p.getDistNm() != null ? p.getDistNm() : "",
+                            p.getSysNm() != null ? p.getSysNm() : (p.getSysNmEn() != null ? p.getSysNmEn() : ""),
+                            p.getYear() != null ? p.getYear() : "");
+                } else if (existingDoc.getInfra() != null) {
+                    var inf = existingDoc.getInfra();
+                    legacyTargetText = String.format("%s %s - %s",
+                            inf.getCityNm() != null ? inf.getCityNm() : "",
+                            inf.getDistNm() != null ? inf.getDistNm() : "",
+                            inf.getSysNm() != null ? inf.getSysNm() : "");
+                }
+                if (legacyTargetText != null) legacyTargetText = legacyTargetText.trim();
+                model.addAttribute("legacyTargetText", legacyTargetText);
+
+                // [스프린트 5] 기존 레코드의 support/environment 도 템플릿 노출
+                model.addAttribute("existingSupportTargetType", existingDoc.getSupportTargetType());
+                model.addAttribute("existingOrgUnitId",
+                        existingDoc.getOrgUnit() != null ? existingDoc.getOrgUnit().getUnitId() : null);
+                model.addAttribute("existingEnvironment", existingDoc.getEnvironment());
+
                 model.addAttribute("existingDoc", existingData);
                 model.addAttribute("existingDocId", docId);
             } catch (Exception e) {
@@ -267,6 +294,39 @@ public class DocumentController {
 
             String docNo = (String) requestData.get("docNo"); // 수동입력 문서번호
 
+            // [스프린트 5] 새 필드
+            String supportTargetType = (String) requestData.get("supportTargetType"); // EXTERNAL / INTERNAL
+            Long orgUnitId = requestData.get("orgUnitId") != null ? Long.valueOf(requestData.get("orgUnitId").toString()) : null;
+            String environment = (String) requestData.get("environment"); // PROD / TEST
+
+            // [스프린트 5 FR-1-F] 4개 문서 작성/편집 시 projId 또는 orgUnitId 필수 (레거시 infraId 단독 저장 차단)
+            if ("FAULT".equals(docType) || "INSTALL".equals(docType) || "PATCH".equals(docType)) {
+                if (projId == null) {
+                    return ResponseEntity.badRequest().body(Map.of("success", false,
+                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "사업을 다시 선택하세요.")));
+                }
+            }
+            if ("SUPPORT".equals(docType)) {
+                if (supportTargetType == null || !("EXTERNAL".equals(supportTargetType) || "INTERNAL".equals(supportTargetType))) {
+                    return ResponseEntity.badRequest().body(Map.of("success", false,
+                            "error", Map.of("code", "INVALID_INPUT", "message", "지원 대상(외부/내부)을 선택하세요.")));
+                }
+                if ("EXTERNAL".equals(supportTargetType) && projId == null) {
+                    return ResponseEntity.badRequest().body(Map.of("success", false,
+                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "사업을 다시 선택하세요.")));
+                }
+                if ("INTERNAL".equals(supportTargetType) && orgUnitId == null) {
+                    return ResponseEntity.badRequest().body(Map.of("success", false,
+                            "error", Map.of("code", "INVALID_INPUT", "message", "조직을 선택하세요.")));
+                }
+            }
+            if ("INSTALL".equals(docType) || "PATCH".equals(docType)) {
+                if (environment == null || !("PROD".equals(environment) || "TEST".equals(environment))) {
+                    return ResponseEntity.badRequest().body(Map.of("success", false,
+                            "error", Map.of("code", "INVALID_INPUT", "message", "환경 구분(운영/테스트)을 선택하세요.")));
+                }
+            }
+
             Document doc;
             if (docId != null) {
                 doc = documentService.getDocumentById(docId);
@@ -280,9 +340,31 @@ public class DocumentController {
                 doc.setDocNo(docNo.trim().isEmpty() ? null : docNo.trim());
             }
 
-            // sw_pjt 연결
+            // sw_pjt 연결 + 레거시 infra 정리 (FR-1-E: proj_id 를 단일 소스로)
             if (projId != null) {
                 doc.setProject(swProjectRepository.findById(projId).orElse(null));
+                // [스프린트 5 FR-1-E] 레거시 문서가 infra_id 만 갖고 있던 경우,
+                // 프로젝트 재선택 후에는 infra_id 를 null 로 만들어 검색·필터 분기 혼선 방지
+                if ("FAULT".equals(docType) || "SUPPORT".equals(docType)
+                        || "INSTALL".equals(docType) || "PATCH".equals(docType)) {
+                    doc.setInfra(null);
+                }
+            }
+
+            // [스프린트 5] 업무지원 대상 타입 + 내부 조직
+            if ("SUPPORT".equals(docType) && supportTargetType != null) {
+                doc.setSupportTargetType(supportTargetType);
+                if ("INTERNAL".equals(supportTargetType) && orgUnitId != null) {
+                    doc.setOrgUnit(orgUnitRepository.findById(orgUnitId).orElse(null));
+                    doc.setProject(null); // 내부 저장 시 proj_id null
+                } else if ("EXTERNAL".equals(supportTargetType)) {
+                    doc.setOrgUnit(null); // 외부 저장 시 org_unit_id null
+                }
+            }
+
+            // [스프린트 5] 설치/패치 환경 구분
+            if (("INSTALL".equals(docType) || "PATCH".equals(docType)) && environment != null) {
+                doc.setEnvironment(environment);
             }
 
             // 섹션 데이터 저장
