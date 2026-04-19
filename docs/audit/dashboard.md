@@ -73,12 +73,33 @@ SORT file.name ASC
 
 > 감사 20건 완료 후, 대화 과정에서 도출된 추가 개선 후보.
 
-### DB 보안 강화 (우선순위 ⚠ 높음)
-- [ ] `211.104.137.55:5881` 외부 개방 차단 — `pg_hba.conf` IP whitelist
-- [ ] DB superuser 대신 앱 전용 유저(`swmanager_app`) 분리
-- [ ] DB 비밀번호 회전 (감사 1-1 에서 보류)
-- [ ] VPN 도입 (OpenVPN / WireGuard)
-- [ ] `log_connections` / `log_statement='ddl'` 감사 로그 활성
+### ⏸ 보류 결정 — DB 보안 강화 (스프린트 4 연기, 2026-04-19)
+
+**결정 사유**: 현재 시스템은 일부 사용자만 쓰는 상태이며 개발 속도가 우선. 네트워크·계정·웹 보안 조치는 개발 일정 안정화 이후 재논의.
+
+**수용된 잔존 리스크**:
+- `211.104.137.55:5881` 인터넷 공개 유지 → 브루트포스·스캔 노출 지속
+- `postgres` superuser 로 앱 접속 (추정) → RCE 시 blast radius 큼
+- Spring Boot 3.2.1 구버전 → 공개 CVE 노출
+- 파일 업로드 확장자 화이트리스트 없음 (DocumentAttachmentService.java:36-55)
+- `/signup` 공개 → 익명 계정 생성 가능
+- 앱·DB 같은 Windows 11 서버 → RCE 시 localhost 로 DB 직결
+
+**재논의 트리거 조건** (하나라도 해당 시 즉시 재개):
+- 외부 사용자 범위 확대 (사용자 수 증가 / 공개 도메인 배포)
+- 보안 사고 의심 징후 (이상 로그, 불명 IP 지속 시도, 브루트포스 성공 의심)
+- DB 에 더 민감한 데이터 추가 (PII 대량, 결제정보 등)
+- 감사 기관·고객사 보안 요구
+- 분기 1회 정기 재검토 (최소)
+
+**최소 비용 권장 조치** (언제 해도 OK):
+- [ ] 강력한 비번 1회 설정 (32자 random) — 10분, 워크플로우 무영향
+- [ ] DB 감사 로그 활성 (`log_connections=on`) — 10분, 사후 추적용
+- [ ] Shodan 에서 `211.104.137.55` 현황 1회 확인 — 5분, 이미 노출 중인지 파악
+
+**재개 시 시작 지점**:
+- `docs/plans/security-hardening-v2-draft.md` — codex 검토까지 완료된 초안
+- codex 추천 TOP 3: 5881 외부 차단 / `postgres`→`swmanager_app` / Tailscale+SSL
 
 ### 인프라 / 운영
 - [ ] Shodan / Censys 에 211.104.137.55 노출 여부 확인
@@ -87,6 +108,13 @@ SORT file.name ASC
 ### 코드 품질 (P2/P3 이후 여력 생길 때)
 - [ ] phase1 DDL 정식 정리 (감사 2-2 후속, 스프린트 2a 주석에 가이드만)
 - [ ] Validation 메시지 `rejected value` 포함 여부 전역 감사 (스프린트 2c 5-3 후속)
+
+### Windows 11 DB 서버 운영 (별도 TODO)
+- [ ] Windows 11 은 원칙적으로 데스크탑 OS — 서버 라이선스 회색지대
+- [ ] 자동 업데이트 재부팅 정책 점검
+- [ ] PostgreSQL 서비스 복구(재시작) 설정 점검
+- [ ] `pg_dump` 자동 백업 스케줄 점검
+- [ ] Windows 관리자 계정 / BitLocker 복구 키 소재 확인
 
 ---
 
