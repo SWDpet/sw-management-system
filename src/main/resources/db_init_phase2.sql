@@ -1,4 +1,22 @@
--- Phase 2: DB 테이블 생성
+-- ============================================================
+-- Phase 2: DB 증분 DDL 스크립트
+-- ============================================================
+-- ⚠ 본 스크립트는 phase1 이후의 **증분 DDL** 입니다.
+--   이 파일만으로는 신규 환경 초기화가 불가능하며, 별도 phase1
+--   스키마(또는 JPA DDL 생성) 가 선행되어야 합니다.
+--
+-- 전제 테이블 목록 (phase1 에서 생성되어 있어야 함):
+--   sw_pjt, users, tb_infra_master, tb_infra_server,
+--   tb_infra_software, tb_infra_link_upis, tb_infra_link_api,
+--   tb_infra_memo, access_logs, ps_info, tb_performance_summary,
+--   sys_mst, sigungu_code, prj_types, maint_tp_mst,
+--   cont_stat_mst, cont_frm_mst, pjt_equip, tb_pjt_target,
+--   tb_pjt_manpower_plan, tb_pjt_schedule
+--
+-- phase1 DDL 정리는 향후 별도 스프린트에서 일괄 정비 예정
+-- (감사 2026-04-18 P2 2-2 조치 기록, 스프린트 2a).
+-- ============================================================
+
 -- 1. 사업별 과업참여자 배정
 CREATE TABLE IF NOT EXISTS tb_contract_participant (
     participant_id SERIAL PRIMARY KEY,
@@ -298,3 +316,144 @@ ON CONFLICT DO NOTHING;
 
 -- pjt_server_info 테이블 제거 (더 이상 사용하지 않음)
 DROP TABLE IF EXISTS pjt_server_info CASCADE;
+
+-- ============================================================
+-- 문서 관리 계열 테이블 (감사 P2 2-2 조치, 스프린트 2a)
+-- Entity 기준: Document, DocumentDetail, DocumentHistory,
+--              DocumentAttachment, DocumentSignature,
+--              InspectChecklist, InspectIssue, WorkPlan
+-- 모두 IF NOT EXISTS 로 멱등.
+-- ============================================================
+
+-- 문서 마스터
+CREATE TABLE IF NOT EXISTS tb_document (
+    doc_id          BIGSERIAL PRIMARY KEY,
+    doc_no          VARCHAR(50) UNIQUE,
+    doc_type        VARCHAR(30) NOT NULL,
+    sys_type        VARCHAR(20),
+    infra_id        BIGINT REFERENCES tb_infra_master(infra_id),
+    plan_id         BIGINT,
+    proj_id         BIGINT REFERENCES sw_pjt(proj_id),
+    title           VARCHAR(500) NOT NULL,
+    status          VARCHAR(20) NOT NULL,
+    author_id       BIGINT NOT NULL REFERENCES users(user_id),
+    approver_id     BIGINT REFERENCES users(user_id),
+    approved_at     TIMESTAMP,
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_document_proj   ON tb_document(proj_id);
+CREATE INDEX IF NOT EXISTS idx_tb_document_infra  ON tb_document(infra_id);
+CREATE INDEX IF NOT EXISTS idx_tb_document_type   ON tb_document(doc_type);
+CREATE INDEX IF NOT EXISTS idx_tb_document_status ON tb_document(status);
+
+-- 문서 섹션 상세 (jsonb)
+CREATE TABLE IF NOT EXISTS tb_document_detail (
+    detail_id       BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
+    section_key     VARCHAR(50) NOT NULL,
+    section_data    JSONB NOT NULL,
+    sort_order      INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_document_detail_doc ON tb_document_detail(doc_id);
+
+-- 문서 변경 이력
+CREATE TABLE IF NOT EXISTS tb_document_history (
+    history_id      BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
+    action          VARCHAR(30) NOT NULL,
+    changed_field   VARCHAR(100),
+    old_value       TEXT,
+    new_value       TEXT,
+    actor_id        BIGINT NOT NULL REFERENCES users(user_id),
+    comment         TEXT,
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_document_history_doc ON tb_document_history(doc_id);
+
+-- 문서 첨부파일
+CREATE TABLE IF NOT EXISTS tb_document_attachment (
+    attach_id       BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
+    file_name       VARCHAR(300) NOT NULL,
+    file_path       VARCHAR(500) NOT NULL,
+    file_size       BIGINT,
+    mime_type       VARCHAR(100),
+    uploaded_at     TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_document_attachment_doc ON tb_document_attachment(doc_id);
+
+-- 문서 서명
+CREATE TABLE IF NOT EXISTS tb_document_signature (
+    sign_id         BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
+    signer_type     VARCHAR(30) NOT NULL,
+    signer_name     VARCHAR(50) NOT NULL,
+    signer_org      VARCHAR(200),
+    signature_image VARCHAR(500),
+    signed_at       TIMESTAMP,
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_document_signature_doc ON tb_document_signature(doc_id);
+
+-- 점검 체크리스트 (문서 기반)
+CREATE TABLE IF NOT EXISTS tb_inspect_checklist (
+    check_id        BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
+    inspect_month   VARCHAR(7),
+    target_sw       VARCHAR(50),
+    check_item      VARCHAR(300) NOT NULL,
+    check_method    VARCHAR(500),
+    check_result    VARCHAR(20),
+    sort_order      INTEGER DEFAULT 0,
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_inspect_checklist_doc ON tb_inspect_checklist(doc_id);
+
+-- 점검 이슈/방문이력 (문서 기반)
+CREATE TABLE IF NOT EXISTS tb_inspect_issue (
+    issue_id        BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
+    issue_year      VARCHAR(4),
+    issue_month     VARCHAR(2),
+    issue_day       VARCHAR(2),
+    task_type       VARCHAR(50),
+    symptom         TEXT,
+    action_taken    TEXT,
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_inspect_issue_doc ON tb_inspect_issue(doc_id);
+
+-- 작업/점검 계획 (self-FK: parent_plan_id)
+CREATE TABLE IF NOT EXISTS tb_work_plan (
+    plan_id         BIGSERIAL PRIMARY KEY,
+    infra_id        BIGINT REFERENCES tb_infra_master(infra_id),
+    plan_type       VARCHAR(30) NOT NULL,
+    process_step    VARCHAR(100),
+    title           VARCHAR(300) NOT NULL,
+    description     TEXT,
+    assignee_id     BIGINT REFERENCES users(user_id),
+    start_date      DATE NOT NULL,
+    end_date        DATE,
+    location        VARCHAR(300),
+    repeat_type     VARCHAR(20) NOT NULL,
+    parent_plan_id  BIGINT REFERENCES tb_work_plan(plan_id),
+    status          VARCHAR(20) NOT NULL,
+    status_reason   VARCHAR(500),
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_by      BIGINT REFERENCES users(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_infra    ON tb_work_plan(infra_id);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_assignee ON tb_work_plan(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_parent   ON tb_work_plan(parent_plan_id);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_status   ON tb_work_plan(status);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_start    ON tb_work_plan(start_date);

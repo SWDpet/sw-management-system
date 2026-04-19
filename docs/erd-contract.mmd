@@ -1,5 +1,5 @@
 ---
-title: "2. Contract & Work Plan"
+title: "2. Participants & Work Plan"
 ---
 erDiagram
     users {
@@ -12,42 +12,33 @@ erDiagram
         bigint infra_id PK
         varchar sys_nm
     }
-    tb_contract {
-        int contract_id PK
-        bigint infra_id FK
-        varchar contract_name
-        varchar contract_type
-        bigint contract_amount
-        date start_date
-        date end_date
-        varchar progress_status
+    sw_pjt {
+        bigint proj_id PK
+        varchar proj_name
+        varchar sys_nm_en
     }
     tb_contract_participant {
         int participant_id PK
-        int contract_id FK
+        bigint proj_id FK
         bigint user_id FK
         varchar role_type
+        varchar tech_grade
+        varchar task_desc
         boolean is_site_rep
-    }
-    tb_contract_target {
-        int target_id PK
-        int contract_id FK
-        bigint sw_id FK
-        varchar product_name
-        int quantity
+        int sort_order
     }
     tb_work_plan {
         int plan_id PK
         bigint infra_id FK
         varchar plan_type
         bigint assignee_id FK
+        bigint parent_plan_id FK
         varchar title
         date start_date
         varchar status
     }
-    tb_infra_master ||--o{ tb_contract : "has"
-    tb_contract ||--o{ tb_contract_participant : "has"
-    tb_contract ||--o{ tb_contract_target : "has"
+    sw_pjt ||--o{ tb_contract_participant : "has participants"
     users ||--o{ tb_contract_participant : "joins"
     tb_infra_master ||--o{ tb_work_plan : "has"
     users ||--o{ tb_work_plan : "assigned"
+    tb_work_plan ||--o{ tb_work_plan : "parent/child"

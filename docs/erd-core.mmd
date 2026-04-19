@@ -38,12 +38,6 @@ erDiagram
         int period_year
         int period_month
     }
-    tb_inspect_cycle {
-        int cycle_id PK
-        bigint infra_id FK
-        bigint assignee_id FK
-        varchar cycle_type
-    }
     license_registry {
         bigint id PK
         varchar license_id
@@ -63,4 +57,3 @@ erDiagram
         varchar serial_number
     }
     users ||--o{ tb_performance_summary : "has"
-    users ||--o{ tb_inspect_cycle : "assigned"

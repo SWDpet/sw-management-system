@@ -74,7 +74,7 @@
 - **위치**: `Document.java:15`, `WorkPlan.java:15`, `PjtSchedule.java:15` 등 (엔티티 쪽) vs `db_init_phase2.sql`
 - **내용**: `tb_document`, `tb_work_plan`, `tb_pjt_schedule` 등의 `CREATE TABLE` 이 `db_init_phase2.sql` 에 없음. 이 스크립트만으로 초기화하는 환경에서는 **엔티티 접근 시 즉시 테이블 미존재 오류**.
 - **권장 조치**: (a) 단계형이라면 의존 스크립트(phase1 등) 를 주석에 명시, (b) 단독 초기화 용도라면 누락 테이블 DDL 추가.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2a: phase1 의존 주석 블록 추가 + `tb_document` 계열 7개 + `tb_work_plan` 총 8개 `CREATE TABLE IF NOT EXISTS` 추가)
 
 ### 참고 사례 (이전 발견)
 - `tb_contract_participant.proj_id`: DB 인스턴스에 컬럼 누락 → ALTER 로 보정 후 B 탭 작업 중 발견 (이미 롤백됨). 동일 패턴 재발 가능성.
@@ -89,31 +89,31 @@
 - **위치**: `docs/erd-contract.mmd:15` (ERD) vs `src/main/java/.../domain/` (엔티티 없음)
 - **내용**: `docs/erd-contract.mmd` 는 `tb_contract` 를 1급 테이블로 정의하지만 대응 엔티티·테이블 없음. FK 모델 구현 불가. 문서↔구현 불일치 지속.
 - **권장 조치**: (a) `tb_contract` 엔티티·리포·서비스 구현 or (b) ERD contract 섹션 제거·갱신 (현재 프로젝트 기반 모델 반영).
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2a: `erd-contract.mmd` 에서 `tb_contract`/`tb_contract_target` 블록·관계선 제거. `ERD.md` 5/7번 섹션을 "미구현" 으로 표기)
 
 #### 3-2. ContractParticipant FK 가 ERD 와 다름
 - **위치**: `ContractParticipant.java:23-24` vs `docs/erd-contract.mmd`
 - **내용**: ERD 는 `contract_id → tb_contract`, 실제 엔티티는 `proj_id → SwProject`. 스키마 drift 로 운영·개발 혼선.
 - **권장 조치**: 단일 진실 소스 정리 — 엔티티/스키마에 `contract_id` 복원 or ERD·plans 를 프로젝트 기반으로 갱신.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2a: `erd-contract.mmd` 의 `tb_contract_participant` FK 를 `proj_id → sw_pjt` 로 교체. `ERD.md` 6번 섹션·FK 요약 표 동기화)
 
 #### 3-3. `tb_inspect_cycle` 도메인 미구현
 - **위치**: `docs/erd-core.mmd:41` vs domain layer
 - **내용**: ERD 에 `tb_inspect_cycle` 있으나 엔티티·리포·컨트롤러 없음. 점검 주기 생명주기 모델이 코드에 없음.
 - **권장 조치**: 도메인 구현 or ERD 에서 제거(구현 전까지).
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2a: `erd-core.mmd` 에서 `tb_inspect_cycle` 블록·관계선 제거. `ERD.md` 도메인 요약·FK 표에서도 항목 제거)
 
 #### 3-4. A 탭 유형 필터가 plans 와 다름
 - **위치**: `templates/admin-system-graph.html:212` vs `docs/plans/system-graph-infra-perf.md`
 - **내용**: plans 는 `infra-type` 드롭다운(전체/UPIS/KRAS/기타), 현재 UI 는 `infra-sys`(시스템명). FR 불일치, 운영자 필터 의미론 변경.
 - **권장 조치**: 유형 필터 복원 or plans 를 "시스템명 필터" 로 공식 개정.
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2a: `system-graph-infra-perf.md` 를 v3 로 개정 — FR-2 를 `sys_nm_en` 드롭다운 기반으로 재정의. 회귀 매트릭스/사용자 시나리오 동기화)
 
 #### 3-5. A 탭 렌더러가 plans 규약과 다름
 - **위치**: `admin-system-graph.html:698-701`
 - **내용**: infra-perf plans 는 vis-network hierarchical + DataSet 배치 업데이트 요구, 현재는 텍스트 트리/조직도 커스텀 로직. FR-1/FR-4 및 NFR 타이밍 가정이 런타임과 불일치.
 - **권장 조치**: vis-network 경로 재구현 or plans·테스트를 새 렌더러 계약으로 갱신 (사용자가 선택한 방향은 text tree 이므로 plans 갱신 권장).
-- **사용자 검토**: ☐ 조치함 / ☐ 보류 / ☐ 불필요
+- **사용자 검토**: ☑ **조치함** (2026-04-19, 스프린트 2a: `system-graph-infra-perf.md` v3 — FR-1 을 "텍스트 트리 기본 + 조직도(≤80 노드) 토글" 로 확정, FR-4 DataSet 배치 업데이트 → `innerHTML` 1회 replace 로 대체)
 
 ---
 
