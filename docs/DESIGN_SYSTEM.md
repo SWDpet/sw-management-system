@@ -231,6 +231,35 @@ button:active:not(:disabled) { transform: scale(0.97); transition: transform 0.0
 
 ---
 
+## 🔒 마스킹 정책 (S3-B, 2026-04-20)
+
+민감정보(tel/mobile/email/ssn/address) 의 표시 정책을 단일 기준으로 명시.
+
+**확정 정책 (한 문장)**:
+> DB는 항상 unmasked 원본을 저장하고, 일반 화면(마이페이지·관리자·로그·디버그 포함)에서는 SensitiveMask 출력 형태로 마스킹 표시한다. 단, 문서관리·견적서(PDF 포함)에서는 항상 unmasked 원본을 노출한다.
+
+| 영역 | 표시 정책 |
+|------|----------|
+| **DB 저장** | **항상 unmasked 원본** (정정 대상) |
+| **마이페이지** | **마스킹 표시** (현재 미적용 — 별도 sprint S3-C 예정) |
+| **관리자 사용자 목록 등 일반 화면** | 마스킹 표시 (호출 측에서 명시적 적용) |
+| **로그/디버그 출력** | **마스킹 표시** (값 절대 미포함, **userid + 필드명만** 기록) |
+| **문서관리(document)·견적서(quotation)·견적서 PDF·실문서** | **항상 unmasked** |
+
+### 회귀 방지 메커니즘 (S3-B)
+
+마스킹 표시된 값이 폼 submit 으로 DB 에 다시 저장되는 회귀를 차단:
+
+1. **`SensitiveMask`** — 화면 표시 시점에 마스킹 적용 (스프린트 6 도입)
+2. **`MaskingDetector`** — 폼 입력값에 마스킹 패턴 감지 (S3-B 도입)
+   - 1차: `SensitiveMask(currentDb) == input` 동등 비교 (100% 회귀 확정)
+   - 2차: 컬럼별 정규식 (tel: `^\d{2,4}-\*{4}-\d{4}$` 등)
+3. **MyPageController 가드** — 감지 시 DB 기존값 유지 + 사용자 토스트 + WARN 로그(값 미포함)
+
+**관련 문서**: [`docs/plans/users-masking-regression-fix.md`](plans/users-masking-regression-fix.md), [`docs/dev-plans/users-masking-regression-fix.md`](dev-plans/users-masking-regression-fix.md)
+
+---
+
 ## 🔐 로그인 페이지 — Minimal Gradient Mesh
 
 ### 디자인 컨셉

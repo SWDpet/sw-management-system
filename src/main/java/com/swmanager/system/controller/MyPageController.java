@@ -29,6 +29,7 @@ public class MyPageController {
     @Autowired private LogService logService;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private com.swmanager.system.i18n.MessageResolver messages;
+    @Autowired private com.swmanager.system.util.MaskingDetector maskingDetector;  // S3-B
 
     /**
      * 현재 로그인한 사용자 정보 가져오기
@@ -119,15 +120,45 @@ public class MyPageController {
 
         user.setDeptNm(deptNm);
         user.setTeamNm(teamNm);
-        user.setTel(tel);
-        user.setMobile(mobile);
-        user.setEmail(email);
         user.setPositionTitle(positionTitle);
-        user.setAddress(address);
-        user.setSsn(ssn);
         user.setCertificate(certificate);
         user.setTechGrade(techGrade);
         user.setTasks(tasks);
+
+        // S3-B: 마스킹 회귀 가드 — 입력값에 마스킹 패턴이 감지되면 DB 기존값 유지
+        java.util.List<String> blockedFields = new java.util.ArrayList<>();
+        if (maskingDetector.isMaskedTel(tel, user.getTel())) {
+            blockedFields.add("tel");
+        } else {
+            user.setTel(tel);
+        }
+        if (maskingDetector.isMaskedTel(mobile, user.getMobile())) {
+            blockedFields.add("mobile");
+        } else {
+            user.setMobile(mobile);
+        }
+        if (maskingDetector.isMaskedEmail(email, user.getEmail())) {
+            blockedFields.add("email");
+        } else {
+            user.setEmail(email);
+        }
+        if (maskingDetector.isMaskedSsn(ssn, user.getSsn())) {
+            blockedFields.add("ssn");
+        } else {
+            user.setSsn(ssn);
+        }
+        if (maskingDetector.isMaskedAddress(address, user.getAddress())) {
+            blockedFields.add("address");
+        } else {
+            user.setAddress(address);
+        }
+
+        if (!blockedFields.isEmpty()) {
+            // 값 절대 미포함, userid + 필드명만 기록 (S3-B 정책)
+            log.warn("MASKING_GUARD_BLOCKED: userid={} fields={}", user.getUserid(), blockedFields);
+            rttr.addFlashAttribute("warningMessage",
+                    "다음 필드는 마스킹된 값이 감지되어 변경되지 않았습니다: " + String.join(", ", blockedFields));
+        }
         // 권한(authDashboard, authProject, authPerson)은 관리자만 변경 가능 — 사용자 입력 무시
 
         // 관리자는 즉시 수정, 일반 사용자는 재승인 요청(비활성화)

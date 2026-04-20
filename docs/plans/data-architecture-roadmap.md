@@ -22,6 +22,18 @@ created: "2026-04-20"
 
 ---
 
+## 🚫 영구 패스 (사용자 결정, 2026-04-20)
+
+다음 라이선스 관련 스프린트는 **운영 정책상 수동 한글화 작업 진행 중**이며 자동 정제/Enum 도입이 부적합. **본 로드맵에서 영구 제외**:
+
+- **S4** `license-country-cleanup-and-csv-fix` (license_registry.country)
+- **S11** `license-registry-type-enum` (license_registry.license_type)
+- **S12** `geonuris-license-type-enum` (geonuris_license.license_type)
+- **S14** `qr-license-decision`
+- **S13** (S4 병합 → 자동 패스)
+
+향후 디자인/데이터 작업 시 **Claude는 위 스프린트를 절대 추천하지 않음**. 사용자가 명시적으로 다시 요청할 때만 진행.
+
 ## 0. 개요
 
 ### 0-1. 감사 결과 핵심 수치

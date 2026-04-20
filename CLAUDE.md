@@ -4,6 +4,20 @@
 
 ---
 
+## 🚫 라이선스 관련 스프린트 영구 패스
+
+**사용자 결정 (2026-04-20)**: 다음 라이선스 데이터 정제/Enum 도입 스프린트는 **수동 한글화 작업 정책상** 영구 제외. 데이터 아키텍처 로드맵 작업 시 **Claude는 절대 추천 X**:
+
+- **S4** `license-country-cleanup-and-csv-fix` (license_registry.country)
+- **S11** `license-registry-type-enum`
+- **S12** `geonuris-license-type-enum`
+- **S13** (S4 병합)
+- **S14** `qr-license-decision`
+
+사용자가 명시적으로 다시 요청할 때만 진행. 자세한 내용은 [`docs/plans/data-architecture-roadmap.md`](./docs/plans/data-architecture-roadmap.md) §🚫 영구 패스 섹션 참조.
+
+---
+
 ## 🎨 디자인 관련 작업 시 필수 체크
 
 **사용자가 디자인·UI·스타일 관련 이야기를 꺼내면, 반드시 먼저 상기시킬 것:**

@@ -11,7 +11,22 @@ import org.springframework.stereotype.Component;
  * Thymeleaf 3.1 에서 T(...) 정적 호출이 금지되므로 Spring Bean 으로 등록하여
  * ${@sensitiveMask.tel(...)} 형태로 호출 가능하게 함.
  *
- * 정책:
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ * 사용처별 정책 (S3-B users-masking-regression-fix, 2026-04-20):
+ *
+ *  • DB 저장        : 항상 unmasked 원본 (마스킹 값 저장 금지)
+ *  • 마이페이지     : 마스킹 표시 (현재 미적용 — 별도 sprint S3-C 예정)
+ *  • 관리자 사용자 목록 등 일반 화면: 마스킹 표시 (호출 측에서 명시적 사용)
+ *  • 문서관리·견적서·견적서 PDF·실문서: unmasked (마스킹 호출 금지)
+ *  • 로그/디버그   : 마스킹 표시 (값 절대 미포함, userid + 필드명만 기록)
+ *
+ * 회귀 방지: 마스킹된 값이 폼 submit 으로 DB 저장되는 회귀를
+ *   {@link MaskingDetector} + MyPageController 가드 로 차단 (S3-B).
+ *
+ * 자세한 정책: docs/DESIGN_SYSTEM.md §마스킹 정책 + docs/plans/users-masking-regression-fix.md
+ * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ *
+ * 정책 (마스킹 동작):
  *   - null/empty 입력 → 빈 문자열 반환
  *   - 포맷이 예상과 다를 경우에도 **원본 반환 금지** (FR-3-A).
  *     안전 기본 마스킹("***" 또는 "첫자 + ***") 로 대체.
