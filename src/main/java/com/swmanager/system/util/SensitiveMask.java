@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  * 사용처별 정책 (S3-B users-masking-regression-fix, 2026-04-20):
  *
  *  • DB 저장        : 항상 unmasked 원본 (마스킹 값 저장 금지)
- *  • 마이페이지     : 마스킹 표시 (현재 미적용 — 별도 sprint S3-C 예정)
+ *  • 마이페이지     : unmasked (본인 전용 — 본인 정보를 본인이 확인·수정하는 화면이므로 마스킹하지 않음)
  *  • 관리자 사용자 목록 등 일반 화면: 마스킹 표시 (호출 측에서 명시적 사용)
  *  • 문서관리·견적서·견적서 PDF·실문서: unmasked (마스킹 호출 금지)
  *  • 로그/디버그   : 마스킹 표시 (값 절대 미포함, userid + 필드명만 기록)
