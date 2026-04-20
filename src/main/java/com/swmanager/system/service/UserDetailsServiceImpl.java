@@ -3,6 +3,7 @@ package com.swmanager.system.service;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.i18n.MessageResolver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.LockedException;
@@ -21,17 +22,20 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     private LoginAttemptService loginAttemptService;
 
+    @Autowired
+    private MessageResolver messages;
+
     @Override
     public UserDetails loadUserByUsername(String userid) throws UsernameNotFoundException {
         // DB 조회 1회만 수행
         User user = userRepository.findByUserid(userid)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자 없음: " + userid));
+                .orElseThrow(() -> new UsernameNotFoundException(messages.get("error.user.not_found", userid)));
 
         // 조회된 User 객체로 잠금 여부 확인 (추가 DB 조회 없음)
         if (loginAttemptService.isLocked(user)) {
             long remaining = loginAttemptService.getRemainingLockMinutes(user);
             log.warn("잠긴 계정 로그인 시도 차단 - userid: {}, 남은시간: {}분", userid, remaining);
-            throw new LockedException("계정이 잠겼습니다. " + remaining + "분 후 다시 시도해주세요.");
+            throw new LockedException(messages.get("error.auth.account_locked", remaining));
         }
 
         return new CustomUserDetails(user);

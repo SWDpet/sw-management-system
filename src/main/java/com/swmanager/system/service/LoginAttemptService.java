@@ -1,5 +1,6 @@
 package com.swmanager.system.service;
 
+import com.swmanager.system.config.SecurityLoginProperties;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,21 +13,19 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * 로그인 시도 제한 서비스
- * - 5회 연속 실패 시 계정 15분 잠금
- * - 잠금 해제 후 자동 카운트 리셋
+ * 로그인 시도 제한 서비스.
  *
- * 최적화: User 객체를 직접 받아 DB 중복 조회 제거
+ * 임계값은 `SecurityLoginProperties`에서 주입 (기획서 FR-B4).
+ * 기본값: `security.login.max-failed-attempts=5`, `security.login.lock-time-minutes=15`.
+ * 최적화: User 객체를 직접 받아 DB 중복 조회 제거.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoginAttemptService {
 
-    private static final int MAX_FAILED_ATTEMPTS = 5;
-    private static final long LOCK_TIME_MINUTES = 15;
-
     private final UserRepository userRepository;
+    private final SecurityLoginProperties loginProps;
 
     // ====== User 객체 기반 메서드 (DB 조회 없음) ======
 
@@ -38,7 +37,7 @@ public class LoginAttemptService {
     public boolean isLocked(User user) {
         if (user.getLockTime() == null) return false;
 
-        LocalDateTime unlockTime = user.getLockTime().plusMinutes(LOCK_TIME_MINUTES);
+        LocalDateTime unlockTime = user.getLockTime().plusMinutes(loginProps.getLockTimeMinutes());
         if (LocalDateTime.now().isAfter(unlockTime)) {
             // 잠금 시간 경과 → 자동 해제
             user.setFailedAttempts(0);
@@ -56,7 +55,7 @@ public class LoginAttemptService {
     public long getRemainingLockMinutes(User user) {
         if (user.getLockTime() == null) return 0;
 
-        LocalDateTime unlockTime = user.getLockTime().plusMinutes(LOCK_TIME_MINUTES);
+        LocalDateTime unlockTime = user.getLockTime().plusMinutes(loginProps.getLockTimeMinutes());
         long remaining = Duration.between(LocalDateTime.now(), unlockTime).toMinutes();
         return Math.max(0, remaining + 1);
     }
@@ -71,7 +70,7 @@ public class LoginAttemptService {
         user.setFailedAttempts(newFailCount);
 
         boolean locked = false;
-        if (newFailCount >= MAX_FAILED_ATTEMPTS) {
+        if (newFailCount >= loginProps.getMaxFailedAttempts()) {
             user.setLockTime(LocalDateTime.now());
             locked = true;
             log.warn("계정 잠금 - userid: {}, 실패횟수: {}", user.getUserid(), newFailCount);

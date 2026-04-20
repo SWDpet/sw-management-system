@@ -4,6 +4,7 @@ import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentAttachment;
 import com.swmanager.system.repository.workplan.DocumentAttachmentRepository;
 import com.swmanager.system.repository.workplan.DocumentRepository;
+import com.swmanager.system.i18n.MessageResolver;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ public class DocumentAttachmentService {
 
     @Autowired private DocumentAttachmentRepository attachmentRepository;
     @Autowired private DocumentRepository documentRepository;
+    @Autowired private MessageResolver messages;
 
     @Value("${file.upload-dir:./uploads/documents}")
     private String uploadDir;
@@ -35,7 +37,7 @@ public class DocumentAttachmentService {
      */
     public DocumentAttachment saveAttachment(Integer docId, MultipartFile file) throws IOException {
         Document doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.document.not_found", docId)));
 
         // 저장 경로 생성
         String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
@@ -78,7 +80,7 @@ public class DocumentAttachmentService {
      */
     public void deleteAttachment(Integer attachId) {
         DocumentAttachment attachment = attachmentRepository.findById(attachId)
-                .orElseThrow(() -> new IllegalArgumentException("첨부파일을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.attachment.not_found")));
 
         // 파일 삭제
         try {

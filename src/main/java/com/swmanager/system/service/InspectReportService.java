@@ -1,5 +1,7 @@
 package com.swmanager.system.service;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.InspectCheckResult;
 import com.swmanager.system.domain.InspectReport;
 import com.swmanager.system.domain.InspectTemplate;
@@ -16,6 +18,7 @@ import com.swmanager.system.repository.InspectVisitLogRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.workplan.DocumentRepository;
+import com.swmanager.system.i18n.MessageResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +39,7 @@ public class InspectReportService {
     private final DocumentRepository documentRepository;
     private final SwProjectRepository swProjectRepository;
     private final UserRepository userRepository;
+    private final MessageResolver messages;
 
     // ===== 저장 (신규/수정 통합) =====
 
@@ -52,7 +56,7 @@ public class InspectReportService {
         } else {
             // 수정: 기존 레코드에서 createdBy 유지
             InspectReport existing = reportRepository.findById(report.getId())
-                    .orElseThrow(() -> new IllegalArgumentException("점검내역서를 찾을 수 없습니다: " + report.getId()));
+                    .orElseThrow(() -> new IllegalArgumentException(messages.get("error.inspect_report.not_found", report.getId())));
             report.setCreatedBy(existing.getCreatedBy());
             report.setCreatedAt(existing.getCreatedAt());
             report.setUpdatedBy(user);
@@ -88,7 +92,7 @@ public class InspectReportService {
         }
 
         // COMPLETED 상태면 문서관리(tb_document)에 연계
-        if ("COMPLETED".equals(saved.getStatus())) {
+        if (DocumentStatus.COMPLETED == saved.getStatus()) {
             linkToDocument(saved);
         }
 
@@ -104,12 +108,12 @@ public class InspectReportService {
             if (doc == null) {
                 doc = new Document();
                 doc.setDocNo(docNo);
-                doc.setDocType("INSPECT");
+                doc.setDocType(DocumentType.INSPECT);
             }
 
             doc.setSysType(report.getSysType());
             doc.setTitle(report.getDocTitle() != null ? report.getDocTitle() : "점검내역서");
-            doc.setStatus("COMPLETED");
+            doc.setStatus(DocumentStatus.COMPLETED);
 
             // 프로젝트 연결
             if (report.getPjtId() != null) {
@@ -135,7 +139,7 @@ public class InspectReportService {
     @Transactional(readOnly = true)
     public InspectReportDTO findById(Long id) {
         InspectReport report = reportRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("점검내역서를 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.inspect_report.not_found", id)));
 
         InspectReportDTO dto = InspectReportDTO.fromEntity(report);
 
@@ -196,7 +200,7 @@ public class InspectReportService {
     @Transactional
     public void delete(Long id) {
         InspectReport report = reportRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("점검내역서를 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.inspect_report.not_found", id)));
         visitLogRepository.deleteByReportId(id);
         checkResultRepository.deleteByReportId(id);
         reportRepository.delete(report);

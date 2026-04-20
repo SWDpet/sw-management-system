@@ -1,5 +1,7 @@
 package com.swmanager.system.domain.workplan;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.SwProject;
@@ -25,8 +27,9 @@ public class Document {
     @Column(name = "doc_no", length = 50)
     private String docNo; // 수동입력: 타부서에서 문서번호 부여
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "doc_type", nullable = false, length = 30)
-    private String docType; // COMMENCE, INTERIM, COMPLETION, INSPECT, FAULT, SUPPORT, INSTALL, PATCH
+    private DocumentType docType; // COMMENCE, INTERIM, COMPLETION, INSPECT, FAULT, SUPPORT, INSTALL, PATCH
 
     @Column(name = "sys_type", length = 20)
     private String sysType; // UPIS, KRAS, IPSS, GIS_SW, APIMS, ETC
@@ -46,8 +49,9 @@ public class Document {
     @Column(name = "title", nullable = false, length = 500)
     private String title;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status = "DRAFT"; // DRAFT(작성중), COMPLETED(작성완료)
+    private DocumentStatus status = DocumentStatus.DRAFT; // DRAFT(작성중), COMPLETED(작성완료)
 
     // [스프린트 5] 업무지원 대상 구분: EXTERNAL(지자체) / INTERNAL(자사 조직)
     @Column(name = "support_target_type", length = 20)
@@ -107,7 +111,7 @@ public class Document {
     public void prePersist() {
         if (this.createdAt == null) this.createdAt = LocalDateTime.now();
         if (this.updatedAt == null) this.updatedAt = LocalDateTime.now();
-        if (this.status == null) this.status = "DRAFT";
+        if (this.status == null) this.status = DocumentStatus.DRAFT;
     }
 
     @PreUpdate

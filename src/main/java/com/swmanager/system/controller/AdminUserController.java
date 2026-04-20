@@ -33,6 +33,7 @@ public class AdminUserController {
 
     @Autowired private UserRepository userRepository;
     @Autowired private LogService logService;
+    @Autowired private com.swmanager.system.i18n.MessageResolver messages;
     
     // 페이지당 표시할 사용자 수
     private static final int PAGE_SIZE = 10;
@@ -224,7 +225,7 @@ public class AdminUserController {
         checkAdminAuth();
 
         User user = userRepository.findById(userSeq)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.user.not_found", userSeq)));
 
         user.setAuthDashboard(authDashboard);
         user.setAuthProject(authProject);
@@ -285,7 +286,7 @@ public class AdminUserController {
         checkAdminAuth();
 
         User user = userRepository.findById(userSeq)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음 ID: " + userSeq));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.user.not_found", userSeq)));
 
         user.setDeptNm(deptNm);
         user.setTeamNm(teamNm);

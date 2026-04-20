@@ -22,6 +22,7 @@ import java.util.Map;
 public class ExcelExportService {
 
     @Autowired private DocumentService documentService;
+    @Autowired private com.swmanager.system.i18n.MessageResolver messages;
 
     /**
      * 성과 리포트 엑셀 생성
@@ -183,7 +184,7 @@ public class ExcelExportService {
                 .filter(d -> "design_estimate".equals(d.getSectionKey()))
                 .findFirst()
                 .map(DocumentDetail::getSectionData)
-                .orElseThrow(() -> new IllegalStateException("설계내역서 데이터가 없습니다."));
+                .orElseThrow(() -> new IllegalStateException(messages.get("error.export.design_data_empty")));
 
         String estimateType = (String) estData.getOrDefault("estimateType", "TYPE_A");
         String designDate = (String) estData.getOrDefault("designDate", "");
@@ -1423,7 +1424,7 @@ public class ExcelExportService {
                 .filter(d -> "detail_sheet".equals(d.getSectionKey()))
                 .findFirst()
                 .map(DocumentDetail::getSectionData)
-                .orElseThrow(() -> new IllegalStateException("기성내역서 데이터가 없습니다."));
+                .orElseThrow(() -> new IllegalStateException(messages.get("error.export.performance_data_empty")));
 
         // inspector 섹션 (금회기성금액 등 기성검사원 폼 입력)
         Map<String, Object> inspData = doc.getDetails().stream()

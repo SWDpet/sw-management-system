@@ -228,3 +228,71 @@
 1. **Phase 1 보안 스프린트** — P1 4건을 1주 안에 정리
 2. **Phase 2 정합성 스프린트** — 스키마 drift + 문서 정리 (P2 대부분)
 3. **Phase 3 클린업** — Dead code 와 P3 항목 (기술 부채 정리 때)
+
+---
+
+## 📦 감사 외 후속 스프린트 — `refactor-01-hardcoding`
+
+감사 범위에는 없었지만 사용자 요청(2026-04-20)으로 진행된 "소스 하드코딩 개선" 스프린트.
+
+- **기획서**: [docs/plans/hardcoding-improvement.md](../plans/hardcoding-improvement.md) v6
+- **개발계획서**: [docs/dev-plans/hardcoding-improvement.md](../dev-plans/hardcoding-improvement.md) v2
+- **Pre-flight 결과**: [docs/dev-plans/hardcoding-preflight-result.md](../dev-plans/hardcoding-preflight-result.md)
+
+### #1-A Enum 전환 — ☑ 조치함 (2026-04-20)
+- `DocumentStatus` (DRAFT/COMPLETED), `DocumentType` (8종) Enum 신규
+- Entity/DTO/Service/Controller/Repository 12개 파일 리터럴 → Enum 참조 치환
+- `EnumConversionConfig` (`StringToEnumConverterFactory`), `EnumErrorResponseFactory`, `GlobalExceptionHandler` 인프라 추가
+- NFR-4 리터럴 검증 통과 (범위 외 `WorkPlanDTO`/`PerformanceService` WorkPlan 라인/Javadoc만 히트)
+- 테스트 22건 Green (`DocumentStatusTest`/`DocumentTypeTest`/`EnumErrorResponseFactoryTest`/`DocumentStatusBindingServiceTest`)
+
+### #1-B 메시지·설정 외부화 — ☑ 조치함 (2026-04-20)
+
+---
+
+## 📦 추가 감사 스프린트 — `data-architecture-audit` ✅ 완료 (2026-04-20)
+
+- **기획서**: [docs/plans/data-architecture-audit.md](../plans/data-architecture-audit.md) v2
+- **개발계획서**: [docs/dev-plans/data-architecture-audit.md](../dev-plans/data-architecture-audit.md) v2
+- **감사 결과**: [docs/audit/data-architecture-utilization-audit.md](./data-architecture-utilization-audit.md)
+- **최종 로드맵**: [docs/plans/data-architecture-roadmap.md](../plans/data-architecture-roadmap.md) v2
+
+### 배경
+- 사용자가 초기 설계한 **9개 마스터 테이블**(`prj_types`, `sys_mst`, `cont_frm_mst`, `maint_tp_mst`, `cont_stat_mst`, `sigungu_code`, `sw_pjt`, `ps_info`, `users`)을 후속 agent 기반 개발에서 **활용하지 않고 재조합** 사례가 있다는 지적
+- `sys-type-normalization` 스프린트 기획 중 `sys_mst` 존재 미확인이 계기가 되어 전면 감사로 전환
+
+### 주요 성과
+- 감사 대상 34개 테이블 전수 분석 (Batch A/B/C)
+- **23개 발견 사례** (① 데이터 정제 5 / ② 중복 7 / ③ 부분 중복 3 / ④ 마스터 신설 5 / ⑤ 레거시 3)
+- **`#1-A` Enum 재평가**: 유지 확정 (롤백 불필요) — §7-2 결정 매트릭스 점수 4/16
+- **17개 후속 스프린트** 로드맵 수립 (P1 6 + P2 6 + P3 4 + closed-by-S1 1)
+- **7주 기본 + 2주 버퍼** 실행 계획 (Wave 1~4)
+
+### 확정된 마스터 활용 원칙 (후속 스프린트 공통 기준)
+- **견적서 담당자** / **점검자(점검내역서)** → `users` (내부 직원)
+- **확인자(점검내역서)** / **사업·라이선스 고객** → `ps_info` (고객사 담당자)
+- **시스템 코드** → `sys_mst` (37종, `UPIS_SW`는 `UPIS` 통합)
+- **계약/유지보수/프로젝트 유형** → `cont_stat_mst` / `maint_tp_mst` / `prj_types`
+- **지자체·행정구역** → `sigungu_code`
+
+### 즉시 실행 대상 (P1 Wave 1)
+- `process-master-dedup` — 1450건 → 5건 + UNIQUE 제약
+- `legacy-contract-tables-drop` — tb_contract/target DROP (사용자 확정)
+- `qt-remarks-users-link` — 견적서 비고 담당자 `users` FK
+- `license-country-cleanup-and-csv-fix` — CSV 매핑 버그 + country 정제
+- `access-log-userid-fix` — access_logs.userid 오염 정제
+- `license-registry-type-enum` — Enum 도입
+
+### P1 Wave 2 (대형 통합)
+- `inspect-comprehensive-redesign` — 문서관리 전체 재설계 (테스트 단계 활용)
+- `MessageResolver` `@Component` + Spring Boot 자동구성(`spring.messages.basename=messages`) 적용
+- `messages.properties`(ko), `messages_en.properties`(영문) 신규 — 14개 키
+- 12개 파일 24건 한글 에러 메시지 → `messages.get(...)` 치환
+- `SecurityLoginProperties` (`@Validated @Min @Max`) — `LoginAttemptService` 상수 외부화
+- 테스트 19건(6개 파일) Green: MessageResolver 정상·Fallback/WARN 로그·키 커버리지 14개·@Validated 경계값·LoginAttempt 주입 동작·DocumentService 통합성
+- 전체 62 테스트 Green
+
+### 후속 백로그 (기획서 §8-4)
+- `sys-type-normalization` — `sw_pjt.sys_nm_en` 숫자값 `"112"` 정제 + SystemType Enum
+- `inspect-result-schema-split` — `inspect_check_result.result` 자유 텍스트 분리
+- WorkPlan 계열 Enum — `PerformanceService`/`WorkPlanDTO` 범위

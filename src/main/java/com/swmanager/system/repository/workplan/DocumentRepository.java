@@ -1,5 +1,6 @@
 package com.swmanager.system.repository.workplan;
 
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.workplan.Document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,7 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
     Optional<Document> findByDocNo(String docNo);
 
     // 문서유형별 목록
-    List<Document> findByDocTypeOrderByCreatedAtDesc(String docType);
+    List<Document> findByDocTypeOrderByCreatedAtDesc(DocumentType docType);
 
     // 인프라별 문서 목록
     List<Document> findByInfra_InfraIdOrderByCreatedAtDesc(Long infraId);
@@ -101,7 +102,7 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
            "AND d.status = 'APPROVED' " +
            "AND d.approvedAt BETWEEN :from AND :to")
     Long countApprovedByTypeAndUser(
-            @Param("docType") String docType,
+            @Param("docType") DocumentType docType,
             @Param("userId") Long userId,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to);

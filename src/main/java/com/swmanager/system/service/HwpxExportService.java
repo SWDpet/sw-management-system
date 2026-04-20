@@ -1,5 +1,6 @@
 package com.swmanager.system.service;
 
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentDetail;
@@ -30,6 +31,9 @@ public class HwpxExportService {
 
     @Autowired
     private DocumentService documentService;
+
+    @Autowired
+    private com.swmanager.system.i18n.MessageResolver messages;
 
     @Autowired(required = false)
     private com.swmanager.system.repository.PjtTargetRepository pjtTargetRepository;
@@ -194,13 +198,16 @@ public class HwpxExportService {
     /**
      * docType + templateType에 따른 템플릿 파일 경로 결정
      */
-    private String resolveTemplatePath(String docType, String templateType, int months) {
+    private String resolveTemplatePath(DocumentType docType, String templateType, int months) {
         if ("letter".equals(templateType)) {
+            if (docType == null) {
+                throw new IllegalArgumentException(messages.get("error.document.type_empty"));
+            }
             return switch (docType) {
-                case "COMMENCE" -> "templates/hwpx/letter_commence.hwpx";
-                case "INTERIM" -> "templates/hwpx/letter_interim.hwpx";
-                case "COMPLETION" -> "templates/hwpx/letter_completion.hwpx";
-                default -> throw new IllegalArgumentException("지원하지 않는 문서 유형: " + docType);
+                case COMMENCE -> "templates/hwpx/letter_commence.hwpx";
+                case INTERIM -> "templates/hwpx/letter_interim.hwpx";
+                case COMPLETION -> "templates/hwpx/letter_completion.hwpx";
+                default -> throw new IllegalArgumentException(messages.get("error.document.type_unsupported", docType));
             };
         }
         if ("inspector".equals(templateType)) {
@@ -220,7 +227,7 @@ public class HwpxExportService {
         if ("completion_full".equals(templateType)) {
             return "templates/hwpx/completion_full_v1.hwpx";
         }
-        throw new IllegalArgumentException("알 수 없는 templateType: " + templateType);
+        throw new IllegalArgumentException(messages.get("error.document.type_unsupported", templateType));
     }
 
     /**
@@ -248,8 +255,8 @@ public class HwpxExportService {
             map.put("{{용역명}}", projNm);
 
             // 문서번호: commence/completion은 _앞/_뒤 분리, interim은 단일
-            String docType = doc.getDocType();
-            if ("COMMENCE".equals(docType) || "COMPLETION".equals(docType)) {
+            DocumentType docType = doc.getDocType();
+            if (DocumentType.COMMENCE == docType || DocumentType.COMPLETION == docType) {
                 map.put("{{문서번호_앞}}", docNo);
                 map.put("{{문서번호_뒤}}", "");
             } else {
@@ -258,10 +265,10 @@ public class HwpxExportService {
             }
 
             // 제목: 용역명 + 접미사 분리
-            String titleSuffix = switch (docType) {
-                case "COMMENCE" -> "착수계 제출 건";
-                case "INTERIM" -> "기성금 신청 건";
-                case "COMPLETION" -> "준공계 제출 건";
+            String titleSuffix = docType == null ? "" : switch (docType) {
+                case COMMENCE -> "착수계 제출 건";
+                case INTERIM -> "기성금 신청 건";
+                case COMPLETION -> "준공계 제출 건";
                 default -> "";
             };
             map.put("{{제목_용역명}}", projNm);
@@ -1147,7 +1154,7 @@ public class HwpxExportService {
         try {
             ClassPathResource resource = new ClassPathResource(templatePath);
             if (!resource.exists()) {
-                throw new RuntimeException("템플릿 파일을 찾을 수 없습니다: " + templatePath);
+                throw new RuntimeException(messages.get("error.template.file_not_found", templatePath));
             }
 
             byte[] templateBytes;
@@ -1297,7 +1304,7 @@ public class HwpxExportService {
             return java.util.Arrays.copyOf(channel.array(), (int) channel.size());
         } catch (Exception e) {
             log.error("HWPX 생성 실패: {}", e.getMessage(), e);
-            throw new RuntimeException("HWPX 생성 중 오류: " + e.getMessage(), e);
+            throw new RuntimeException(messages.get("error.export.hwpx_generation", e.getMessage()), e);
         }
     }
 }

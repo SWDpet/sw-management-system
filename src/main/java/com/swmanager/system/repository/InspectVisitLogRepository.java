@@ -1,5 +1,6 @@
 package com.swmanager.system.repository;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.domain.InspectVisitLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,10 +31,15 @@ public interface InspectVisitLogRepository extends JpaRepository<InspectVisitLog
            "WHERE v.reportId IN (" +
            "  SELECT r.id FROM InspectReport r " +
            "  WHERE r.pjtId = :pjtId " +
-           "    AND r.status = 'COMPLETED' " +
+           "    AND r.status = :status " +
            "    AND r.inspectMonth < :currentMonth" +
            ") " +
            "ORDER BY v.visitYear ASC, v.visitMonth ASC, v.visitDay ASC, v.sortOrder ASC")
     List<InspectVisitLog> findPreviousVisitsByProject(@Param("pjtId") Long pjtId,
-                                                      @Param("currentMonth") String currentMonth);
+                                                      @Param("currentMonth") String currentMonth,
+                                                      @Param("status") DocumentStatus status);
+
+    default List<InspectVisitLog> findPreviousVisitsByProject(Long pjtId, String currentMonth) {
+        return findPreviousVisitsByProject(pjtId, currentMonth, DocumentStatus.COMPLETED);
+    }
 }

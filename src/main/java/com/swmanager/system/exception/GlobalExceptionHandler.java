@@ -4,13 +4,17 @@ import com.swmanager.system.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import org.slf4j.MDC;
+import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -56,6 +60,57 @@ public class GlobalExceptionHandler {
         return null;
     }
     
+    /**
+     * Enum 바인딩 실패: query/path 파라미터 또는 @RequestParam Enum 변환 실패.
+     * 기획서 §5-7-4 allowed 생성 규칙: requiredType 기반 Enum values.
+     * 기획서 §8-2 UNKNOWN_ENUM_VALUE 로그 키 + MDC 구조화 필드.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public Object handleEnumTypeMismatch(
+            MethodArgumentTypeMismatchException e,
+            HttpServletRequest request) {
+        logUnknownEnum(e.getRequiredType(), String.valueOf(e.getValue()), request);
+        return EnumErrorResponseFactory.from(e, request);
+    }
+
+    /**
+     * Enum 바인딩 실패: JSON request body 역직렬화 실패 (InvalidFormatException 래핑).
+     * 기획서 §5-7-4 allowed 생성 규칙: InvalidFormatException.getTargetType() 기반.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public Object handleJsonEnumMismatch(
+            HttpMessageNotReadableException e,
+            HttpServletRequest request) {
+        Throwable cause = e.getCause();
+        Class<?> targetType = null;
+        Object inputValue = null;
+        if (cause instanceof com.fasterxml.jackson.databind.exc.InvalidFormatException ife) {
+            targetType = ife.getTargetType();
+            inputValue = ife.getValue();
+        }
+        logUnknownEnum(targetType, String.valueOf(inputValue), request);
+        return EnumErrorResponseFactory.from(e, request);
+    }
+
+    private void logUnknownEnum(Class<?> enumType, String inputValue, HttpServletRequest req) {
+        try {
+            MDC.put("eventKey", "UNKNOWN_ENUM_VALUE");
+            MDC.put("enumType", enumType != null ? enumType.getName() : "UNKNOWN");
+            MDC.put("inputValue", String.valueOf(inputValue));
+            MDC.put("endpoint", (req != null ? req.getMethod() + " " + req.getRequestURI() : ""));
+            MDC.put("userid", (req != null && req.getUserPrincipal() != null)
+                    ? req.getUserPrincipal().getName() : "anonymous");
+            org.slf4j.LoggerFactory.getLogger("com.swmanager.system.monitoring.EnumBindingMonitor")
+                    .error("UNKNOWN_ENUM_VALUE: type={}, value={}", enumType, inputValue);
+        } finally {
+            MDC.remove("eventKey");
+            MDC.remove("enumType");
+            MDC.remove("inputValue");
+            MDC.remove("endpoint");
+            MDC.remove("userid");
+        }
+    }
+
     /**
      * ResourceNotFoundException 처리
      */

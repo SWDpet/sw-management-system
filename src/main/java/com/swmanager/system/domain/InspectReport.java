@@ -1,5 +1,6 @@
 package com.swmanager.system.domain;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,8 +50,9 @@ public class InspectReport {
     @Column(name = "dbms_ip", length = 50)
     private String dbmsIp;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
-    private String status;
+    private DocumentStatus status;
 
     @Column(name = "insp_sign", columnDefinition = "TEXT")
     private String inspSign;
@@ -75,7 +77,7 @@ public class InspectReport {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) {
-            this.status = "DRAFT";
+            this.status = DocumentStatus.DRAFT;
         }
     }
 

@@ -27,6 +27,7 @@ public class PdfExportService {
 
     @Autowired private TemplateEngine templateEngine;
     @Autowired private DocumentService documentService;
+    @Autowired private com.swmanager.system.i18n.MessageResolver messages;
 
     private static final String COMPANY_NAME = "(주)정도UIT";
     private static final String COMPANY_TEL = "T 02)561-7117";
@@ -57,17 +58,9 @@ public class PdfExportService {
         context.setVariable("sections", sectionMap);
         context.setVariable("signatures", doc.getSignatures());
 
-        String templateName = switch (doc.getDocType()) {
-            case "COMMENCE" -> "pdf/pdf-commence";
-            case "INTERIM" -> "pdf/pdf-interim";
-            case "COMPLETION" -> "pdf/pdf-completion";
-            case "INSPECT" -> "pdf/pdf-inspect";
-            case "FAULT" -> "pdf/pdf-fault";
-            case "SUPPORT" -> "pdf/pdf-support";
-            case "INSTALL" -> "pdf/pdf-install";
-            case "PATCH" -> "pdf/pdf-patch";
-            default -> "pdf/pdf-default";
-        };
+        String templateName = doc.getDocType() != null
+                ? doc.getDocType().pdfTemplateName()
+                : "pdf/pdf-default";
 
         return templateEngine.process(templateName, context);
     }
@@ -99,7 +92,7 @@ public class PdfExportService {
             return os.toByteArray();
         } catch (Exception e) {
             log.error("PDF 변환 실패", e);
-            throw new RuntimeException("PDF 변환 중 오류 발생: " + e.getMessage(), e);
+            throw new RuntimeException(messages.get("error.export.pdf_conversion", e.getMessage()), e);
         }
     }
 

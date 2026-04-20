@@ -1,10 +1,13 @@
 package com.swmanager.system.service;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.*;
 import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.workplan.*;
+import com.swmanager.system.i18n.MessageResolver;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,6 +30,7 @@ public class DocumentService {
     @Autowired private InspectChecklistRepository inspectChecklistRepository;
     @Autowired private InspectIssueRepository inspectIssueRepository;
     @Autowired private InfraRepository infraRepository;
+    @Autowired private MessageResolver messages;
 
     // === 문서번호: 수동입력 (타부서에서 부여) ===
     // generateDocNo() 삭제됨 - 문서번호는 비워두고 사용자가 직접 입력
@@ -36,7 +40,7 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public Document getDocumentById(Integer docId) {
         return documentRepository.findById(docId)
-                .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다. ID: " + docId));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.document.not_found", docId)));
     }
 
     @Transactional(readOnly = true)
@@ -118,7 +122,7 @@ public class DocumentService {
     /**
      * 문서 생성
      */
-    public Document createDocument(String docType, String sysType, Long infraId,
+    public Document createDocument(DocumentType docType, String sysType, Long infraId,
                                     Integer contractId, Integer planId,
                                     String title, User author) {
         Document doc = new Document();
@@ -126,7 +130,7 @@ public class DocumentService {
         doc.setDocType(docType);
         doc.setSysType(sysType);
         doc.setTitle(title);
-        doc.setStatus("DRAFT");
+        doc.setStatus(DocumentStatus.DRAFT);
         doc.setAuthor(author);
 
         if (infraId != null) {
@@ -167,12 +171,15 @@ public class DocumentService {
     /**
      * 문서 상태 변경 (DRAFT ↔ COMPLETED 만 지원)
      */
-    public Document changeStatus(Integer docId, String newStatus, User actor, String comment) {
+    public Document changeStatus(Integer docId, DocumentStatus newStatus, User actor, String comment) {
         Document doc = getDocumentById(docId);
-        String oldStatus = doc.getStatus();
+        DocumentStatus oldStatus = doc.getStatus();
         doc.setStatus(newStatus);
 
-        recordHistory(doc, "STATUS_CHANGE", "status", oldStatus, newStatus, actor, comment);
+        recordHistory(doc, "STATUS_CHANGE", "status",
+                oldStatus != null ? oldStatus.name() : null,
+                newStatus != null ? newStatus.name() : null,
+                actor, comment);
         return documentRepository.save(doc);
     }
 
@@ -263,7 +270,7 @@ public class DocumentService {
     // === 성과통계용 ===
 
     @Transactional(readOnly = true)
-    public Long countApprovedDocuments(String docType, Long userId, LocalDateTime from, LocalDateTime to) {
+    public Long countApprovedDocuments(DocumentType docType, Long userId, LocalDateTime from, LocalDateTime to) {
         return documentRepository.countApprovedByTypeAndUser(docType, userId, from, to);
     }
 }

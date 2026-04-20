@@ -1,6 +1,8 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.Document;
@@ -258,18 +260,13 @@ public class DocumentController {
         }
 
         // 문서유형별 템플릿 분기
-        String template = switch (docType) {
-            case "COMMENCE" -> "document/doc-commence";
-            case "INTERIM" -> "document/doc-interim";
-            case "COMPLETION" -> "document/doc-completion";
-            case "INSPECT" -> "document/doc-inspect";
-            case "FAULT" -> "document/doc-fault";
-            case "SUPPORT" -> "document/doc-support";
-            case "INSTALL" -> "document/doc-install";
-            case "PATCH" -> "document/doc-patch";
-            default -> "document/document-list";
-        };
-        return template;
+        DocumentType docTypeEnum;
+        try {
+            docTypeEnum = DocumentType.fromString(docType);
+        } catch (IllegalArgumentException e) {
+            docTypeEnum = null;
+        }
+        return docTypeEnum != null ? docTypeEnum.templateName() : "document/document-list";
     }
 
     // === 문서 저장 (공통 API) ===
@@ -285,7 +282,14 @@ public class DocumentController {
             CustomUserDetails cu = getCurrentUser();
             User author = cu != null ? cu.getUser() : null;
 
-            String docType = (String) requestData.get("docType");
+            String docTypeRaw = (String) requestData.get("docType");
+            DocumentType docType;
+            try {
+                docType = DocumentType.fromString(docTypeRaw);
+            } catch (IllegalArgumentException iae) {
+                return ResponseEntity.badRequest().body(Map.of("success", false,
+                        "error", Map.of("code", "INVALID_INPUT", "message", "유효하지 않은 문서유형입니다: " + docTypeRaw)));
+            }
             String sysType = (String) requestData.get("sysType");
             Long infraId = requestData.get("infraId") != null ? Long.valueOf(requestData.get("infraId").toString()) : null;
             Integer contractId = requestData.get("contractId") != null ? Integer.valueOf(requestData.get("contractId").toString()) : null;
@@ -305,13 +309,13 @@ public class DocumentController {
             String regionCode = (String) requestData.get("regionCode");
             // sysType 은 sys_mst.cd 값 (상단에서 이미 받음). 4개 문서에서는 필수.
 
-            if ("FAULT".equals(docType) || "INSTALL".equals(docType) || "PATCH".equals(docType)) {
+            if (DocumentType.FAULT == docType || DocumentType.INSTALL == docType || DocumentType.PATCH == docType) {
                 if (regionCode == null || regionCode.isEmpty() || sysType == null || sysType.isEmpty()) {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
                             "error", Map.of("code", "RESELECT_REQUIRED", "message", "지역·시스템을 다시 선택하세요.")));
                 }
             }
-            if ("SUPPORT".equals(docType)) {
+            if (DocumentType.SUPPORT == docType) {
                 if (supportTargetType == null || !("EXTERNAL".equals(supportTargetType) || "INTERNAL".equals(supportTargetType))) {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
                             "error", Map.of("code", "INVALID_INPUT", "message", "지원 대상(외부/내부)을 선택하세요.")));
@@ -326,7 +330,7 @@ public class DocumentController {
                             "error", Map.of("code", "INVALID_INPUT", "message", "조직을 선택하세요.")));
                 }
             }
-            if ("INSTALL".equals(docType) || "PATCH".equals(docType)) {
+            if (DocumentType.INSTALL == docType || DocumentType.PATCH == docType) {
                 if (environment == null || !("PROD".equals(environment) || "TEST".equals(environment))) {
                     return ResponseEntity.badRequest().body(Map.of("success", false,
                             "error", Map.of("code", "INVALID_INPUT", "message", "환경 구분(운영/테스트)을 선택하세요.")));
@@ -347,8 +351,8 @@ public class DocumentController {
             }
 
             // [스프린트 5 v2] 4개 문서는 region_code + sys_type 저장 (사업·인프라 null)
-            boolean isFourDocType = "FAULT".equals(docType) || "INSTALL".equals(docType)
-                    || "PATCH".equals(docType) || "SUPPORT".equals(docType);
+            boolean isFourDocType = DocumentType.FAULT == docType || DocumentType.INSTALL == docType
+                    || DocumentType.PATCH == docType || DocumentType.SUPPORT == docType;
             if (isFourDocType) {
                 doc.setInfra(null);
                 doc.setProject(null);
@@ -366,7 +370,7 @@ public class DocumentController {
             }
 
             // [스프린트 5] 업무지원 대상 타입 + 내부 조직
-            if ("SUPPORT".equals(docType) && supportTargetType != null) {
+            if (DocumentType.SUPPORT == docType && supportTargetType != null) {
                 doc.setSupportTargetType(supportTargetType);
                 if ("INTERNAL".equals(supportTargetType) && orgUnitId != null) {
                     doc.setOrgUnit(orgUnitRepository.findById(orgUnitId).orElse(null));
@@ -378,7 +382,7 @@ public class DocumentController {
             }
 
             // [스프린트 5] 설치/패치 환경 구분
-            if (("INSTALL".equals(docType) || "PATCH".equals(docType)) && environment != null) {
+            if ((DocumentType.INSTALL == docType || DocumentType.PATCH == docType) && environment != null) {
                 doc.setEnvironment(environment);
             }
 
@@ -397,6 +401,7 @@ public class DocumentController {
 
             logService.log("문서관리", docId != null ? "수정" : "등록",
                     DocumentDTO.getDocTypeLabel(docType) + " " + (docId != null ? "수정" : "등록") + " (ID: " + doc.getDocId() + ")");
+            // Note: DocumentDTO.getDocTypeLabel(DocumentType) 은 Enum 직접 전달
 
             Map<String, Object> result = new HashMap<>();
             result.put("success", true);
@@ -414,22 +419,19 @@ public class DocumentController {
     @ResponseBody
     @PostMapping("/api/status/{id}")
     public ResponseEntity<Map<String, Object>> changeStatus(@PathVariable Integer id,
-                                                             @RequestParam String status,
+                                                             @RequestParam DocumentStatus status,
                                                              @RequestParam(required = false) String comment) {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
 
-        // DRAFT, COMPLETED 만 허용
-        if (!"DRAFT".equals(status) && !"COMPLETED".equals(status)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "허용되지 않는 상태입니다."));
-        }
+        // ConverterFactory 가 DRAFT/COMPLETED 만 허용. 그 외는 400 자동 응답.
 
         CustomUserDetails cu = getCurrentUser();
         User actor = cu != null ? cu.getUser() : null;
 
         Document doc = documentService.changeStatus(id, status, actor, comment);
-        logService.log("문서관리", "상태변경", "문서 상태변경 (ID: " + id + " → " + status + ")");
+        logService.log("문서관리", "상태변경", "문서 상태변경 (ID: " + id + " → " + status.name() + ")");
 
         return ResponseEntity.ok(Map.of("success", true, "status", doc.getStatus()));
     }
@@ -496,12 +498,7 @@ public class DocumentController {
             Document doc = documentService.getDocumentById(id);
             String projNm = (doc.getProject() != null && doc.getProject().getProjNm() != null)
                     ? doc.getProject().getProjNm() : "문서";
-            String docTypeLabel = switch (doc.getDocType()) {
-                case "COMMENCE" -> "착수계";
-                case "INTERIM" -> "기성계";
-                case "COMPLETION" -> "준공계";
-                default -> doc.getDocType();
-            };
+            String docTypeLabel = doc.getDocType() != null ? doc.getDocType().label() : "";
             String typeLabel = switch (type) {
                 case "letter" -> "_공문";
                 case "inspector" -> "";
@@ -533,7 +530,7 @@ public class DocumentController {
             Document doc = documentService.getDocumentById(id);
             byte[] excelBytes;
             String suffix;
-            if ("INTERIM".equals(doc.getDocType())) {
+            if (DocumentType.INTERIM == doc.getDocType()) {
                 excelBytes = excelExportService.generateInterimReport(id);
                 suffix = "_기성내역서.xlsx";
             } else {
@@ -562,29 +559,24 @@ public class DocumentController {
     public ResponseEntity<byte[]> downloadZip(@PathVariable Integer id) {
         try {
             Document doc = documentService.getDocumentById(id);
-            String docType = doc.getDocType();
+            DocumentType docType = doc.getDocType();
             String projNm = (doc.getProject() != null && doc.getProject().getProjNm() != null)
                     ? doc.getProject().getProjNm() : "문서";
-            String docTypeLabel = switch (docType) {
-                case "COMMENCE" -> "착수계";
-                case "INTERIM" -> "기성계";
-                case "COMPLETION" -> "준공계";
-                default -> docType;
-            };
+            String docTypeLabel = docType != null ? docType.label() : "";
 
             java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
             try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(baos)) {
                 // 공문
-                if ("COMMENCE".equals(docType) || "INTERIM".equals(docType) || "COMPLETION".equals(docType)) {
+                if (DocumentType.COMMENCE == docType || DocumentType.INTERIM == docType || DocumentType.COMPLETION == docType) {
                     addZipEntry(zos, projNm + "_" + docTypeLabel + "_공문.hwpx", hwpxExportService.generateHwpx(id, "letter"));
                 }
-                if ("COMMENCE".equals(docType)) {
+                if (DocumentType.COMMENCE == docType) {
                     addZipEntry(zos, projNm + "_착수계.hwpx", hwpxExportService.generateHwpx(id, "commence_body"));
                     addZipEntry(zos, projNm + "_설계내역서.xlsx", excelExportService.generateDesignEstimate(id));
-                } else if ("INTERIM".equals(docType)) {
+                } else if (DocumentType.INTERIM == docType) {
                     addZipEntry(zos, projNm + "_기성검사원.hwpx", hwpxExportService.generateHwpx(id, "inspector"));
                     addZipEntry(zos, projNm + "_기성내역서.xlsx", excelExportService.generateInterimReport(id));
-                } else if ("COMPLETION".equals(docType)) {
+                } else if (DocumentType.COMPLETION == docType) {
                     try { addZipEntry(zos, projNm + "_준공계_KRAS.hwpx", hwpxExportService.generateHwpx(id, "completion_body")); } catch (Exception ignore) {}
                     try { addZipEntry(zos, projNm + "_준공계_UPIS.hwpx", hwpxExportService.generateHwpx(id, "completion_body_upis")); } catch (Exception ignore) {}
                 }
@@ -980,9 +972,15 @@ public class DocumentController {
             @RequestParam(required = false) String sysNmEn) {
 
         List<com.swmanager.system.domain.SwProject> projects;
-        if ("INTERIM".equals(docType)) {
+        DocumentType docTypeEnum;
+        try {
+            docTypeEnum = DocumentType.fromString(docType);
+        } catch (IllegalArgumentException iae) {
+            return ResponseEntity.badRequest().body(List.of());
+        }
+        if (DocumentType.INTERIM == docTypeEnum) {
             projects = swProjectRepository.findByYearAndInterimYnOrderByCityNmAscDistNmAsc(year, "Y");
-        } else if ("COMPLETION".equals(docType)) {
+        } else if (DocumentType.COMPLETION == docTypeEnum) {
             projects = swProjectRepository.findByYearAndCompletionYnOrderByCityNmAscDistNmAsc(year, "Y");
         } else {
             return ResponseEntity.badRequest().body(List.of());
@@ -1021,7 +1019,13 @@ public class DocumentController {
             CustomUserDetails cu = getCurrentUser();
             User author = cu != null ? cu.getUser() : null;
 
-            String docType = (String) requestData.get("docType");
+            String docTypeRaw = (String) requestData.get("docType");
+            DocumentType docType;
+            try {
+                docType = DocumentType.fromString(docTypeRaw);
+            } catch (IllegalArgumentException iae) {
+                return ResponseEntity.badRequest().body(Map.of("error", "유효하지 않은 문서유형: " + docTypeRaw));
+            }
             @SuppressWarnings("unchecked")
             List<Number> projIds = (List<Number>) requestData.get("projIds");
             @SuppressWarnings("unchecked")
@@ -1044,7 +1048,7 @@ public class DocumentController {
 
                     // 문서 생성 - 기성계는 "기성금 신청 건", 준공계는 "준공계 제출 건"
                     String title = "「" + p.getProjNm() + "」" +
-                            (("INTERIM".equals(docType)) ? "기성금 신청 건" : "준공계 제출 건");
+                            ((DocumentType.INTERIM == docType) ? "기성금 신청 건" : "준공계 제출 건");
 
                     Document doc = documentService.createDocument(docType, p.getSysNmEn(), null, null, null, title, author);
                     doc.setProject(p);
@@ -1054,7 +1058,7 @@ public class DocumentController {
                     documentService.saveSection(doc.getDocId(), "letter", letterData, 0);
 
                     // 본문 섹션 자동 생성
-                    if ("INTERIM".equals(docType)) {
+                    if (DocumentType.INTERIM == docType) {
                         // inspector 섹션 (기성검사원)
                         Map<String, Object> insp = new HashMap<>();
                         insp.put("name", p.getProjNm());
@@ -1122,7 +1126,7 @@ public class DocumentController {
             }
 
             logService.log("문서관리", "일괄생성",
-                    docType + " 일괄생성 (성공: " + successCount + ", 실패: " + failCount + ")");
+                    docType.name() + " 일괄생성 (성공: " + successCount + ", 실패: " + failCount + ")");
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
@@ -1139,7 +1143,7 @@ public class DocumentController {
 
     /** 일괄 생성용 공문(letter) 데이터 빌드 */
     private Map<String, Object> buildBatchLetterData(com.swmanager.system.domain.SwProject p,
-                                                      String docType, Map<String, Object> commonData) {
+                                                      DocumentType docType, Map<String, Object> commonData) {
         Map<String, Object> data = new HashMap<>();
 
         // 수신자 자동 생성
@@ -1155,7 +1159,7 @@ public class DocumentController {
         }
 
         // 제목 - 기성계는 "기성금 신청 건", 준공계는 "준공계 제출 건"
-        String titleSuffix = "INTERIM".equals(docType) ? "기성금 신청 건" : "준공계 제출 건";
+        String titleSuffix = DocumentType.INTERIM == docType ? "기성금 신청 건" : "준공계 제출 건";
         data.put("title", "「" + p.getProjNm() + "」" + titleSuffix);
 
         // 본문
@@ -1168,7 +1172,7 @@ public class DocumentController {
 
         String body2;
         String attachList;
-        if ("INTERIM".equals(docType)) {
+        if (DocumentType.INTERIM == docType) {
             body2 = "2. 귀 기관과 당사 간에 계약(" + contDtFmt + ")한 『" + p.getProjNm() +
                     "』과 관련하여 붙임과 같이 기성을 신청하오니 검토 후 조치하여 주시기 바랍니다.";
             attachList = "1. 기성검사원 1부.\n                          2. 기성내역서 1부.\n                          3. 점검내역서 1부.    끝.";

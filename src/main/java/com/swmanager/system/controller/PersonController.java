@@ -36,6 +36,7 @@ public class PersonController {
 
     @Autowired private PersonInfoRepository personInfoRepository;
     @Autowired private LogService logService;
+    @Autowired private com.swmanager.system.i18n.MessageResolver messages;
     
     @Autowired private SigunguCodeRepository sigunguRepository;
     @Autowired private SysMstRepository sysMstRepository;
@@ -126,7 +127,7 @@ public class PersonController {
         }
         
         PersonInfo person = personInfoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 담당자 정보가 없습니다. ID: " + id));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.person.not_found", id)));
         
         model.addAttribute("person", person);
         model.addAttribute("isDetail", true);

@@ -1,5 +1,6 @@
 package com.swmanager.system.dto;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.domain.InspectReport;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +25,7 @@ public class InspectReportDTO {
     private String inspDbms;
     private String inspGis;
     private String dbmsIp;
-    private String status;
+    private DocumentStatus status;
     private String inspSign;
     private String confSign;
     private String createdBy;
@@ -80,7 +81,7 @@ public class InspectReportDTO {
         e.setInspDbms(this.inspDbms);
         e.setInspGis(this.inspGis);
         e.setDbmsIp(this.dbmsIp);
-        e.setStatus(this.status != null ? this.status : "DRAFT");
+        e.setStatus(this.status != null ? this.status : DocumentStatus.DRAFT);
         e.setInspSign(this.inspSign);
         e.setConfSign(this.confSign);
         return e;

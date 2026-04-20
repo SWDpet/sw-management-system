@@ -28,6 +28,7 @@ public class MyPageController {
     @Autowired private UserRepository userRepository;
     @Autowired private LogService logService;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private com.swmanager.system.i18n.MessageResolver messages;
 
     /**
      * 현재 로그인한 사용자 정보 가져오기
@@ -77,7 +78,7 @@ public class MyPageController {
         }
         
         User user = userRepository.findById(currentUser.getUser().getUserSeq())
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.user.not_found", currentUser.getUser().getUserSeq())));
         
         model.addAttribute("user", user);
         
@@ -114,7 +115,7 @@ public class MyPageController {
         }
 
         User user = userRepository.findById(currentUser.getUser().getUserSeq())
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.user.not_found", currentUser.getUser().getUserSeq())));
 
         user.setDeptNm(deptNm);
         user.setTeamNm(teamNm);
@@ -171,7 +172,7 @@ public class MyPageController {
         }
 
         User user = userRepository.findById(currentUser.getUser().getUserSeq())
-                .orElseThrow(() -> new IllegalArgumentException("사용자 정보가 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException(messages.get("error.user.not_found", currentUser.getUser().getUserSeq())));
 
         // 1. 현재 비밀번호 일치 확인
         if (!passwordEncoder.matches(currentPw, user.getPassword())) {

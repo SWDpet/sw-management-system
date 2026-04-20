@@ -1,5 +1,7 @@
 package com.swmanager.system.dto;
 
+import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentDetail;
 import lombok.*;
@@ -16,7 +18,7 @@ public class DocumentDTO {
 
     private Integer docId;
     private String docNo;
-    private String docType;
+    private DocumentType docType;
     private String sysType;
     private Long infraId;
     private String cityNm;
@@ -32,7 +34,7 @@ public class DocumentDTO {
     private String projStartDt;
     private String projEndDt;
     private String title;
-    private String status;
+    private DocumentStatus status;
     private Long authorId;
     private String authorName;
     private Long approverId;
@@ -173,7 +175,7 @@ public class DocumentDTO {
     }
 
     private static String buildTargetDisplay(Document doc) {
-        if ("SUPPORT".equals(doc.getDocType()) && "INTERNAL".equals(doc.getSupportTargetType())) {
+        if (DocumentType.SUPPORT == doc.getDocType() && "INTERNAL".equals(doc.getSupportTargetType())) {
             if (doc.getOrgUnit() != null) {
                 return buildOrgUnitPath(doc.getOrgUnit());
             }
@@ -204,36 +206,15 @@ public class DocumentDTO {
     }
 
     // 유틸리티: 문서유형 한글
-    public static String getDocTypeLabel(String docType) {
-        if (docType == null) return "";
-        return switch (docType) {
-            case "COMMENCE" -> "착수계";
-            case "INTERIM" -> "기성계";
-            case "COMPLETION" -> "준공계";
-            case "INSPECT" -> "점검내역서";
-            case "FAULT" -> "장애처리";
-            case "SUPPORT" -> "업무지원";
-            case "INSTALL" -> "설치보고서";
-            case "PATCH" -> "패치내역서";
-            default -> docType;
-        };
+    public static String getDocTypeLabel(DocumentType docType) {
+        return docType != null ? docType.label() : "-";
     }
 
-    public static String getStatusLabel(String status) {
-        if (status == null) return "";
-        return switch (status) {
-            case "DRAFT" -> "작성중";
-            case "COMPLETED" -> "작성완료";
-            default -> status;
-        };
+    public static String getStatusLabel(DocumentStatus status) {
+        return status != null ? status.label() : "-";
     }
 
-    public static String getStatusColor(String status) {
-        if (status == null) return "#858796";
-        return switch (status) {
-            case "DRAFT" -> "#858796";
-            case "COMPLETED" -> "#1cc88a";
-            default -> "#858796";
-        };
+    public static String getStatusColor(DocumentStatus status) {
+        return status != null ? status.color() : "#858796";
     }
 }
