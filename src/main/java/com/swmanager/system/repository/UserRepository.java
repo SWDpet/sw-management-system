@@ -22,6 +22,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     Optional<User> findByUserid(String userid);
 
+    /**
+     * userid 존재 여부 (LogService Orphan Guard 등 경량 체크용)
+     */
+    boolean existsByUserid(String userid);
+
     Optional<User> findFirstByUsername(String username);
     
     /**
