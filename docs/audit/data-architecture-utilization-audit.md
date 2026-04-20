@@ -414,8 +414,8 @@ status: ✅ 완료 (Batch A/B/C + Phase 3 로드맵 승인)
 
 | 테이블 | 레코드 | 판정 |
 |--------|--------|------|
-| `tb_contract` (30컬럼) | **0건** | **⑤ 완전 고아 — DROP 확정 (사용자 2026-04-20)** — Java Entity·Repository·Service·Controller 모두 없음. 이전 감사(2026-04-18 C3-3-1)에서 ERD 제거 조치 완료(2026-04-19 스프린트 2a). **기능 매핑**: `sw_pjt`의 `cont_ent`/`cont_dept`/`cont_dt`/`cont_amt`/`cont_type`/`maint_type`/`org_nm`/`dist_nm` + `ps_info` + `sigungu_code`로 완전 대체 가능 |
-| `tb_contract_target` (8컬럼) | **0건** | **DROP 확정 (사용자 2026-04-20)** — `tb_contract` FK 관계라 함께 제거 |
+| `tb_contract` (30컬럼) | **✅ DROP 완료 (2026-04-20)** | 옵션 B로 FK 2건 + `tb_document.contract_id` 컬럼 + `tb_contract_participant.contract_id` 컬럼·INDEX 동시 정리. V017 마이그 + V100 주석 처리 완료 |
+| `tb_contract_target` (8컬럼) | **✅ DROP 완료 (2026-04-20)** | 동일 |
 | `tb_inspect_checklist` (9컬럼: check_id/doc_id/inspect_month/target_sw/check_item/check_method/check_result/sort_order) | **0건** | **⑤ 레거시 + ② 중복** — `inspect_check_result`와 **동일 기능** 중복 설계 → 삭제 권고 |
 | `tb_inspect_issue` (9컬럼: issue_id/doc_id/issue_year/issue_month/issue_day/task_type/symptom/action_taken) | **0건** | **⑤ 레거시 + ② 중복** — `inspect_visit_log`와 **동일 기능** 중복 설계 → 삭제 권고 |
 | `tb_document_signature` | **0건** | **② or ⑤** — 현재 `inspect_report.insp_sign`/`conf_sign` TEXT 컬럼에 서명 저장 중. 이 테이블은 중복 설계 |

@@ -132,11 +132,11 @@ created: "2026-04-20"
 - **의존성**: 없음
 - **예상 기간**: 1~2일
 
-#### S6. `legacy-contract-tables-drop` ✅ 사용자 확정
+#### S6. `legacy-contract-tables-drop` ✅ **완료 (2026-04-20)**
 - **배경**: `tb_contract`/`tb_contract_target` 완전 고아 (Entity 0건 + Repository 0건 + ERD 제거됨 + 데이터 0건). `sw_pjt` + `ps_info` + `sigungu_code`로 기능 완전 대체
-- **조치**: 단순 DROP TABLE (데이터·참조 0건이라 안전)
-- **의존성**: 없음
-- **예상 기간**: 0.5일
+- **조치**: **옵션 B 완료** — FR-0 사전검증 중 외부 FK 2건 발견(`tb_document.contract_id`, `tb_contract_participant.contract_id`) → FK·컬럼·INDEX 동시 정리 + tb_contract/target DROP. V017 마이그 + V100 주석 처리.
+- **실행 결과**: V017 `PASS: all legacy contract artifacts dropped`. 사후 검증 PASS. 서버 기동 정상.
+- **실제 소요**: 0.5일 (예상 일치)
 
 #### ~~S7. `legacy-inspect-tables-drop`~~ → **S1 하위 태스크로 편입** (v2)
 - **배경**: `tb_inspect_checklist` 0건 (`inspect_check_result`와 완전 중복), `tb_inspect_issue` 0건 (`inspect_visit_log`와 완전 중복), `tb_document_signature` 0건 (`inspect_report.insp_sign`/`conf_sign`과 중복)

@@ -163,11 +163,11 @@
 | port, sw_acc_id, sw_acc_pw | VARCHAR(255) | |
 | sid, install_path | VARCHAR(255) | |
 
-### 5. ~~Contract - tb_contract~~ (미구현, 감사 P2 3-1 제거)
+### 5. ~~Contract - tb_contract~~ (삭제 완료 2026-04-20, sprint `legacy-contract-tables-drop` 옵션 B)
 
-> 이 테이블은 현재 엔티티·스키마에 존재하지 않으며 실제 비즈니스 로직은
-> `sw_pjt` (프로젝트) 를 중심으로 운영된다. 계약 마스터가 필요해지면 별도
-> 기획서에서 재정의.
+> 2026-04-20 DB 스키마에서 완전 제거 (DROP TABLE). Java Entity·Repository·Service·Controller 모두 없었으며 실데이터 0건.
+> `sw_pjt` (프로젝트) + `ps_info` + `sigungu_code` 로 기능 완전 대체.
+> 함께 제거: `tb_document.contract_id` FK·컬럼, `tb_contract_participant.contract_id` FK·컬럼·INDEX.
 
 ### 6. Participants - tb_contract_participant
 | Column | Type | Constraint |
@@ -181,9 +181,9 @@
 | is_site_rep | BOOLEAN | default=false |
 | sort_order | INT | default=0 |
 
-### 7. ~~Contract - tb_contract_target~~ (미구현, 감사 P2 3-1 제거)
+### 7. ~~Contract - tb_contract_target~~ (삭제 완료 2026-04-20, sprint `legacy-contract-tables-drop` 옵션 B)
 
-> 테이블 미존재. `tb_contract` 제거와 함께 ERD 에서 제외.
+> 2026-04-20 DB 스키마에서 완전 제거 (DROP TABLE). 실데이터 0건.
 
 ### 8. Work Plan - tb_work_plan
 | Column | Type | Constraint |

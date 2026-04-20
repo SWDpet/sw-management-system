@@ -48,14 +48,18 @@ COMMENT ON COLUMN users.tech_grade IS '기술자등급(고급/중급/초급)';
 
 -- ============================================================
 -- 3. tb_contract (계약/사업 정보)
+-- ⚠️ DROPPED (2026-04-20, sprint: legacy-contract-tables-drop, 옵션 B)
+-- 사유: 완전 고아 테이블 (Entity/Repository/Service 0, 데이터 0, ERD 제거).
+--      sw_pjt + ps_info + sigungu_code 로 기능 완전 대체.
+-- 롤백 필요 시: git show 8d79f82:swdept/sql/V100_work_plan_performance_tables.sql 라인 49-93 참조
 -- ============================================================
+/*
 CREATE TABLE IF NOT EXISTS tb_contract (
     contract_id     SERIAL PRIMARY KEY,
     infra_id        BIGINT REFERENCES tb_infra_master(infra_id),
     contract_name   VARCHAR(300) NOT NULL,
     contract_no     VARCHAR(100),
     contract_type   VARCHAR(30) NOT NULL DEFAULT 'UNIT_PRICE',
-        -- UNIT_PRICE(단가계약), PROCUREMENT(조달계약), PRIVATE(수의계약), SUBCONTRACT(하도급계약)
     contract_method VARCHAR(100),
     contract_law    VARCHAR(100),
     contract_clause VARCHAR(100),
@@ -67,9 +71,7 @@ CREATE TABLE IF NOT EXISTS tb_contract (
     end_date        DATE,
     actual_end_date DATE,
     progress_status VARCHAR(30) NOT NULL DEFAULT 'BUDGET',
-        -- BUDGET, CONTRACTING, COMMENCED, IN_PROGRESS, INTERIM, COMPLETED, SETTLED
     contract_year   INTEGER,
-    -- 발주처 정보
     client_org      VARCHAR(200),
     client_addr     VARCHAR(500),
     client_phone    VARCHAR(50),
@@ -77,42 +79,48 @@ CREATE TABLE IF NOT EXISTS tb_contract (
     client_dept     VARCHAR(100),
     client_contact  VARCHAR(50),
     client_contact_phone VARCHAR(50),
-    -- 하도급 정보
     prime_contractor    VARCHAR(200),
     subcontract_amount  BIGINT,
     subcontract_type    VARCHAR(100),
     purchase_order_no   VARCHAR(100),
-    -- 감사 필드
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
-
 COMMENT ON TABLE tb_contract IS '계약/사업 정보';
 CREATE INDEX idx_contract_infra ON tb_contract(infra_id);
 CREATE INDEX idx_contract_year ON tb_contract(contract_year);
 CREATE INDEX idx_contract_status ON tb_contract(progress_status);
+*/
 
 -- ============================================================
 -- 4. tb_contract_participant (과업참여자)
+-- ⚠️ LEGACY DEFINITION (여기 정의는 사용 안 함)
+-- 사유: 이 파일의 정의는 contract_id FK 를 사용하는 구버전.
+--      실제 사용되는 DDL 은 src/main/resources/db_init_phase2.sql:21-27 의
+--      proj_id → sw_pjt 버전. 본 스프린트에서 contract_id 컬럼/FK/INDEX 모두 DROP.
+--      V100 은 신규 환경에서 실수로 실행돼도 재생성 안 되도록 주석 처리.
 -- ============================================================
+/*
 CREATE TABLE IF NOT EXISTS tb_contract_participant (
     participant_id  SERIAL PRIMARY KEY,
     contract_id     INTEGER NOT NULL REFERENCES tb_contract(contract_id) ON DELETE CASCADE,
     user_id         BIGINT REFERENCES users(user_id),
     role_type       VARCHAR(20) NOT NULL DEFAULT 'PARTICIPANT',
-        -- RESPONSIBLE(책임기술자), PARTICIPANT(참여기술자)
     tech_grade      VARCHAR(20),
     task_desc       VARCHAR(500),
     is_site_rep     BOOLEAN NOT NULL DEFAULT FALSE,
     sort_order      INTEGER DEFAULT 0
 );
-
 COMMENT ON TABLE tb_contract_participant IS '과업참여자';
 CREATE INDEX idx_participant_contract ON tb_contract_participant(contract_id);
+*/
 
 -- ============================================================
 -- 5. tb_contract_target (유지보수 대상)
+-- ⚠️ DROPPED (2026-04-20, sprint: legacy-contract-tables-drop, 옵션 B)
+-- 롤백: git show 8d79f82:swdept/sql/V100_work_plan_performance_tables.sql 라인 113-128
 -- ============================================================
+/*
 CREATE TABLE IF NOT EXISTS tb_contract_target (
     target_id       SERIAL PRIMARY KEY,
     contract_id     INTEGER NOT NULL REFERENCES tb_contract(contract_id) ON DELETE CASCADE,
@@ -123,9 +131,9 @@ CREATE TABLE IF NOT EXISTS tb_contract_target (
     sw_id           BIGINT REFERENCES tb_infra_software(sw_id),
     sort_order      INTEGER DEFAULT 0
 );
-
 COMMENT ON TABLE tb_contract_target IS '유지보수 대상 S/W 목록';
 CREATE INDEX idx_target_contract ON tb_contract_target(contract_id);
+*/
 
 -- ============================================================
 -- 6. tb_inspect_cycle (정기점검 주기 설정)
