@@ -49,22 +49,24 @@ CREATE TABLE IF NOT EXISTS tb_service_purpose (
 );
 
 -- 기본 공정명 데이터
+-- V018 (process-master-dedup 2026-04-20) 이후: UNIQUE(sys_nm_en, process_name) 적용됨
 INSERT INTO tb_process_master (sys_nm_en, process_name, sort_order) VALUES
 ('UPIS', '도시계획정보체계용 GIS SW 유지관리', 1),
 ('KRAS', '부동산종합공부시스템용 GIS SW 유지관리', 1),
 ('IPSS', '지하시설물관리시스템용 GIS SW 유지관리', 1),
 ('GIS_SW', 'GIS SW 유지관리', 1),
 ('APIMS', '도로관리시스템용 GIS SW 유지관리', 1)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (sys_nm_en, process_name) DO NOTHING;
 
 -- 기본 용역 목적 데이터
+-- V018 이후: UNIQUE INDEX uq_service_purpose_sys_type_md5 (sys_nm_en, purpose_type, md5(purpose_text)) 적용됨
 INSERT INTO tb_service_purpose (sys_nm_en, purpose_type, purpose_text, sort_order) VALUES
 ('UPIS', 'PURPOSE', '도시계획정보체계(UPIS)의 최신 버전 유지와 원활한 서비스를 제공', 1),
 ('KRAS', 'PURPOSE', '부동산종합공부시스템(KRAS)의 최신 버전 유지와 원활한 서비스를 제공', 1),
 ('IPSS', 'PURPOSE', '지하시설물관리시스템(IPSS)의 최신 버전 유지와 원활한 서비스를 제공', 1),
 ('GIS_SW', 'PURPOSE', 'GIS SW의 최신 버전 유지와 원활한 서비스를 제공', 1),
 ('APIMS', 'PURPOSE', '도로관리시스템(APIMS)의 최신 버전 유지와 원활한 서비스를 제공', 1)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (sys_nm_en, purpose_type, md5(purpose_text)) DO NOTHING;
 
 -- users.field_role 컬럼 추가 (분야별: 유지보수책임기술자/유지보수참여기술자)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS field_role VARCHAR(50);

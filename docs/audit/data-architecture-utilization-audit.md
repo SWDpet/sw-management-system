@@ -201,7 +201,7 @@ status: ✅ 완료 (Batch A/B/C + Phase 3 로드맵 승인)
 
 | # | 발견 | 유형 | 우선순위 | 제안 스프린트 |
 |---|------|------|---------|--------------|
-| 1 | `tb_process_master`/`tb_service_purpose` 290배 중복 삽입 | ② | **P1** | `process-master-dedup` |
+| 1 | `tb_process_master`/`tb_service_purpose` 290배 중복 삽입 | ② | **P1** | `process-master-dedup` ✅ **완료 2026-04-20** (1450→5, UNIQUE+NOT NULL, 멱등성 3회 PASS) |
 | 2 | `inspect_check_result.result` 자유 텍스트 혼재 | ② | **P1** | `inspect-result-schema-split` |
 | 3 | `UPIS_SW` → `UPIS` 통합 22건 + `inspect_template.APP` 28건 삭제 (**사용자 확정**: UPIS_SW=UPIS, APP 섹션 미사용) | ① + ⑤ | **P1** | `upis-sw-merge-and-app-cleanup` |
 | 3-B | 점검자(`insp_*`) → users FK / 확인자(`conf_*`) → ps_info FK 연동 (**사용자 확정**) | ② | **P1** | `inspect-inspector-confirmer-link` |

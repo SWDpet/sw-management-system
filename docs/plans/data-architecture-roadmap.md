@@ -108,7 +108,7 @@ created: "2026-04-20"
 - **의존성**: 없음 (테스트 데이터 초기화 허용)
 - **예상 기간**: 5~7일 (기획서+개발계획서+구현+테스트)
 
-#### S2. `process-master-dedup`
+#### S2. `process-master-dedup` ✅ **완료 (2026-04-20)**
 - **배경**: `tb_process_master` 1450건 / `tb_service_purpose` 1450건 — 각 DISTINCT 5건뿐, **290배 중복 INSERT**
 - **조치**: 중복 삭제 → DISTINCT 5건만 유지 + UNIQUE 제약 추가 + `DbInitRunner` `ON CONFLICT DO NOTHING` 적용
 - **의존성**: 없음
