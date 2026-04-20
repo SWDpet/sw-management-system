@@ -2,6 +2,7 @@ package com.swmanager.system.quotation.service;
 
 import com.swmanager.system.quotation.domain.*;
 import com.swmanager.system.quotation.dto.QuotationDTO;
+import com.swmanager.system.quotation.dto.RemarksPatternDto;
 import com.swmanager.system.quotation.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class QuotationService {
     private final RemarksPatternRepository remarksPatternRepository;
     private final WageRateRepository wageRateRepository;
     private final QuoteNumberSeqRepository seqRepository;
+    private final RemarksRenderer remarksRenderer;  // S3
 
     /** ROUNDDOWN 절사 헬퍼 */
     private static long roundDown(long value, int unit) {
@@ -276,9 +278,19 @@ public class QuotationService {
 
     // ===== 비고 패턴 =====
 
+    /**
+     * 비고 패턴 목록 (S3: DTO + renderedContent 추가).
+     *  - 각 패턴의 user_id 기반 placeholder 치환 결과를 함께 반환.
+     */
     @Transactional(readOnly = true)
-    public List<RemarksPattern> getRemarksPatterns() {
-        return remarksPatternRepository.findAllByOrderBySortOrderAscPatternNameAsc();
+    public List<RemarksPatternDto> getRemarksPatterns() {
+        return remarksPatternRepository.findAllByOrderBySortOrderAscPatternNameAsc().stream()
+                .map(p -> {
+                    RemarksPatternDto dto = RemarksPatternDto.from(p);
+                    dto.setRenderedContent(remarksRenderer.render(p.getContent(), p.getUserId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     @Transactional

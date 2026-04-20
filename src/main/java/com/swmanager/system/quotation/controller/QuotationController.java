@@ -523,10 +523,10 @@ public class QuotationController {
 
     // ===== 비고 패턴 REST API =====
 
-    /** 비고 패턴 목록 */
+    /** 비고 패턴 목록 (S3: DTO + renderedContent 포함) */
     @GetMapping("/api/quotation/remarks-patterns")
     @ResponseBody
-    public List<com.swmanager.system.quotation.domain.RemarksPattern> getRemarksPatterns() {
+    public List<com.swmanager.system.quotation.dto.RemarksPatternDto> getRemarksPatterns() {
         checkViewAuth();
         return quotationService.getRemarksPatterns();
     }

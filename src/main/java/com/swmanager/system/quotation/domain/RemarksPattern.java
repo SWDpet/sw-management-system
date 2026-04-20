@@ -29,4 +29,13 @@ public class RemarksPattern {
     /** 정렬 순서 */
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
+
+    /**
+     * S3 (qt-remarks-users-link, 2026-04-20):
+     * 담당자 user_id (NULL 허용)
+     *  - 값이 있으면 RemarksRenderer가 content의 {username}/{dept_nm}/{position_title} 치환
+     *  - NULL 이면 placeholder 미치환 (content 원문 그대로 출력)
+     */
+    @Column(name = "user_id")
+    private Long userId;
 }

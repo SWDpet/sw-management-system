@@ -1628,7 +1628,9 @@
         if (!patternId) return;
         var pattern = remarksPatterns.find(function(p) { return String(p.patternId) === String(patternId); });
         if (pattern) {
-            document.getElementById('quotationRemarks').value = pattern.content;
+            // S3 (qt-remarks-users-link): 서버 치환 결과(renderedContent) 우선, 미존재 시 원문 fallback
+            document.getElementById('quotationRemarks').value =
+                pattern.renderedContent || pattern.content;
         }
     }
 
