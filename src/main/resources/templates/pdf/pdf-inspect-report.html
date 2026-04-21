@@ -80,13 +80,13 @@
                     <td colspan="2" th:text="${report.visits != null and !report.visits.isEmpty() ? report.visits[0].visitYear + '년 ' + report.visits[0].visitMonth + '월 ' + report.visits[0].visitDay + '일' : '-'}"></td></tr>
                 <tr>
                     <th>점 검 자</th>
-                    <td th:text="${report.inspName}" style="text-align:center;"></td>
+                    <td th:text="${report.inspectorUsername}" style="text-align:center;"></td>
                     <td style="text-align:center;">
                         <span th:if="${report.inspSign != null and !report.inspSign.isEmpty()}"><img th:src="${report.inspSign}" class="sign-img"/></span>
                         <span>(인)</span>
                     </td>
                     <th>확 인 자</th>
-                    <td th:text="${report.confName}" style="text-align:center;"></td>
+                    <td th:text="${report.confirmerName}" style="text-align:center;"></td>
                     <td style="text-align:center;">
                         <span th:if="${report.confSign != null and !report.confSign.isEmpty()}"><img th:src="${report.confSign}" class="sign-img"/></span>
                         <span>(인)</span>

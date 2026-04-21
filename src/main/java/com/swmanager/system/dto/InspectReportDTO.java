@@ -1,5 +1,6 @@
 package com.swmanager.system.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.domain.InspectReport;
 import lombok.Getter;
@@ -9,8 +10,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * S1 inspect-comprehensive-redesign (A4):
+ *  - 점검자: inspUserId + 조인 표시용 inspectorUsername/inspectorOrg
+ *  - 확인자: confPsInfoId + 조인 표시용 confirmerName/confirmerOrg
+ *  - 기존 inspCompany/inspName/confOrg/confName 문자열 4필드는 제거.
+ */
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)  // S1: 기존 UI 의 inspName/confName 등 legacy field 무시
 public class InspectReportDTO {
 
     private Long id;
@@ -18,10 +26,17 @@ public class InspectReportDTO {
     private String inspectMonth;
     private String sysType;
     private String docTitle;
-    private String inspCompany;
-    private String inspName;
-    private String confOrg;
-    private String confName;
+
+    // S1 A4: FK 기반 점검자/확인자
+    private Long inspUserId;
+    private Long confPsInfoId;
+
+    // 렌더링용 (조인 결과, DB 저장 X)
+    private String inspectorUsername;
+    private String inspectorOrg;
+    private String confirmerName;
+    private String confirmerOrg;
+
     private String inspDbms;
     private String inspGis;
     private String dbmsIp;
@@ -38,8 +53,6 @@ public class InspectReportDTO {
 
     /**
      * 이전 월 이력 (읽기전용, DB에 저장되지 않음)
-     * - 같은 프로젝트의 이전 월 COMPLETED 보고서의 방문이력을 동적으로 조회
-     * - 작성/미리보기/상세/PDF 화면에서만 표시
      */
     private List<InspectVisitLogDTO> previousVisits = new ArrayList<>();
 
@@ -50,10 +63,8 @@ public class InspectReportDTO {
         dto.setInspectMonth(e.getInspectMonth());
         dto.setSysType(e.getSysType());
         dto.setDocTitle(e.getDocTitle());
-        dto.setInspCompany(e.getInspCompany());
-        dto.setInspName(e.getInspName());
-        dto.setConfOrg(e.getConfOrg());
-        dto.setConfName(e.getConfName());
+        dto.setInspUserId(e.getInspUserId());
+        dto.setConfPsInfoId(e.getConfPsInfoId());
         dto.setInspDbms(e.getInspDbms());
         dto.setInspGis(e.getInspGis());
         dto.setDbmsIp(e.getDbmsIp());
@@ -74,10 +85,8 @@ public class InspectReportDTO {
         e.setInspectMonth(this.inspectMonth);
         e.setSysType(this.sysType);
         e.setDocTitle(this.docTitle);
-        e.setInspCompany(this.inspCompany);
-        e.setInspName(this.inspName);
-        e.setConfOrg(this.confOrg);
-        e.setConfName(this.confName);
+        e.setInspUserId(this.inspUserId);
+        e.setConfPsInfoId(this.confPsInfoId);
         e.setInspDbms(this.inspDbms);
         e.setInspGis(this.inspGis);
         e.setDbmsIp(this.dbmsIp);

@@ -29,17 +29,17 @@ public class InspectReport {
     @Column(name = "doc_title", length = 300)
     private String docTitle;
 
-    @Column(name = "insp_company", length = 100)
-    private String inspCompany;
+    /**
+     * S1 inspect-comprehensive-redesign (A4):
+     *  - 점검자: 내부 직원 (users.user_id FK)
+     *  - 확인자: 고객 담당자 (ps_info.id FK)
+     *  - 기존 insp_name/insp_company/conf_name/conf_org 컬럼은 V022 에서 DROP.
+     */
+    @Column(name = "insp_user_id")
+    private Long inspUserId;
 
-    @Column(name = "insp_name", length = 50)
-    private String inspName;
-
-    @Column(name = "conf_org", length = 100)
-    private String confOrg;
-
-    @Column(name = "conf_name", length = 50)
-    private String confName;
+    @Column(name = "conf_ps_info_id")
+    private Long confPsInfoId;
 
     @Column(name = "insp_dbms", length = 200)
     private String inspDbms;

@@ -107,7 +107,7 @@ created: "2026-04-20"
 
 ### 🔴 P1 — 즉시 처리 권장 (독립 6건 + S1 하위 태스크)
 
-#### S1. `inspect-comprehensive-redesign` ⭐ (통합 스프린트)
+#### S1. `inspect-comprehensive-redesign` ⭐ (통합 스프린트) ✅ **완료 (2026-04-22)**
 - **배경**: 문서관리 테스트 단계로 스키마 재설계·데이터 초기화 허용 (사용자 확정)
 - **포함 조치 6건**:
   1. `inspect_check_result.result` → `result_code` + `result_text` 스키마 분리 (자유 텍스트 정규화)
@@ -118,7 +118,9 @@ created: "2026-04-20"
   6. `check_section_mst` 마스터 신설 (DB/DBMS/GIS/AP 섹션 — APP 제외 결정 후)
 - **영향**: `inspect_report` + `inspect_check_result` + `inspect_template` + `inspect_visit_log` + `tb_document` 테이블 스키마
 - **의존성**: 없음 (테스트 데이터 초기화 허용)
-- **예상 기간**: 5~7일 (기획서+개발계획서+구현+테스트)
+- **예상 기간**: 5~7일
+- **실제 소요**: 1일 (2026-04-21 ~ 2026-04-22, 기획·개발계획·구현·검증 포함)
+- **실행 결과**: V022 마이그 Phase 0~10 모두 PASS, Exit Gate 1/2/3 통과, 백업 테이블 4종 생성 (RUN_ID=20260421_235813), 전체 테스트 151건 green
 
 #### S2. `process-master-dedup` ✅ **완료 (2026-04-20)**
 - **배경**: `tb_process_master` 1450건 / `tb_service_purpose` 1450건 — 각 DISTINCT 5건뿐, **290배 중복 INSERT**

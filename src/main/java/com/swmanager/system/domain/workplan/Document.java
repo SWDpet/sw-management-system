@@ -101,11 +101,9 @@ public class Document {
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DocumentSignature> signatures = new ArrayList<>();
 
-    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InspectChecklist> checklists = new ArrayList<>();
-
-    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<InspectIssue> issues = new ArrayList<>();
+    // S1 inspect-comprehensive-redesign: InspectChecklist/InspectIssue 테이블 DROP
+    // (tb_inspect_checklist → inspect_check_result 로 통합)
+    // (tb_inspect_issue → inspect_visit_log 로 통합)
 
     @PrePersist
     public void prePersist() {

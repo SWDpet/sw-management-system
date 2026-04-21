@@ -230,7 +230,7 @@
             </table>
         </div>
 
-        <!-- UPIS_SW: 제품 테이블 -->
+        <!-- UPIS(SW) 제품 테이블 -->
         <div id="targetSW" style="display:none;">
             <table class="check-table">
                 <thead><tr><th>제품명</th><th style="text-align:center;">버전</th><th style="text-align:center;">수량</th><th>용도</th><th style="text-align:center;">설치일</th></tr></thead>
@@ -345,7 +345,7 @@
             <tbody id="gisCheckBody"></tbody>
         </table>
 
-        <!-- 표준시스템 점검결과 (UPIS/UPIS_SW) -->
+        <!-- 표준시스템 점검결과 (UPIS) -->
         <div class="sub-title" id="appTitle" style="margin-top:30px;">표준시스템 점검결과</div>
         <table class="check-table" id="appCheckTable">
             <thead><tr><th style="width:100px;">대분류</th><th style="width:100px;">중분류</th><th>점검 내용</th><th style="width:140px;">결과</th></tr></thead>
@@ -616,20 +616,18 @@ function fillSelect(id, list, label) {
 
 // === 시스템유형 자동 결정 ===
 function determineSysType(sysNmEn, swAmt, hwAmt) {
+    // S1 inspect-comprehensive-redesign (2026-04-21): UPIS_SW → UPIS 통합.
+    // HW/SW 구분은 더 이상 sysType 으로 나누지 않음.
     var sys = (sysNmEn || '').toUpperCase();
     if (sys.indexOf('KRAS') >= 0) return 'KRAS';
-    if (sys.indexOf('UPIS') >= 0) {
-        if (hwAmt && hwAmt > 0) return 'UPIS';      // HW+SW
-        return 'UPIS_SW';                              // SW only
-    }
+    if (sys.indexOf('UPIS') >= 0) return 'UPIS';
     if (sys.indexOf('IPSS') >= 0) return 'IPSS';
     return 'ETC';
 }
 
 function getSysTypeLabel(sysType) {
     switch(sysType) {
-        case 'UPIS': return 'UPIS (HW+SW)';
-        case 'UPIS_SW': return 'UPIS (SW전용)';
+        case 'UPIS': return 'UPIS';
         case 'KRAS': return 'KRAS';
         case 'IPSS': return 'IPSS';
         default: return sysType || '미정';
@@ -768,7 +766,6 @@ function loadSystemDiagram(sysType) {
     var diagrams = {
         'KRAS': krasDiagram,
         'UPIS': upisDiagram,
-        'UPIS_SW': upisDiagram,
         'IPSS': upisDiagram
     };
     area.style.border = 'none';
@@ -809,17 +806,6 @@ function onSysTypeChange() {
         updateGisHeader('UPIS');
         // 번호 동적 업데이트
         updateSectionNumbers('UPIS');
-    } else if (sysType === 'UPIS_SW') {
-        // UPIS SW전용
-        tabServer.style.display = 'none';
-        tabSw.textContent = '③ SW 점검결과';
-        targetSW.style.display = '';
-        dbmsSection.style.display = 'none';
-        appTitle.textContent = '표준시스템 점검결과';
-        appTable.style.display = '';
-        if (appEtcTable) appEtcTable.style.display = '';
-        updateGisHeader('UPIS');
-        updateSectionNumbers('UPIS_SW');
     } else if (sysType === 'KRAS') {
         // KRAS — 7번 섹션 + 기타 모두 숨김 (FR-7)
         tabServer.style.display = 'none';
@@ -855,15 +841,13 @@ function updateGisHeader(type) {
 }
 
 function updateSectionNumbers(type) {
+    // S1: UPIS_SW → UPIS 통합 (2026-04-21)
     if (type === 'UPIS') {
         document.getElementById('dbCheckTitle').textContent = '3. UPIS DB 서버 점검결과';
         document.getElementById('apCheckTitle').textContent = '4. UPIS AP 서버 점검결과';
         document.getElementById('dbmsCheckTitle').textContent = '5. DBMS (Oracle) 점검결과';
         document.getElementById('gisTitle').textContent = '6. GIS 엔진 점검결과';
         document.getElementById('appTitle').textContent = '7. 표준시스템 점검결과';
-    } else if (type === 'UPIS_SW') {
-        document.getElementById('gisTitle').textContent = '1. GIS 엔진 점검결과';
-        document.getElementById('appTitle').textContent = '2. 표준시스템 점검결과';
     } else if (type === 'KRAS') {
         document.getElementById('gisTitle').textContent = '1. GIS 엔진 점검결과';
     }

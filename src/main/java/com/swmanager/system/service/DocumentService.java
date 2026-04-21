@@ -27,8 +27,7 @@ public class DocumentService {
     @Autowired private DocumentDetailRepository documentDetailRepository;
     @Autowired private DocumentHistoryRepository documentHistoryRepository;
     @Autowired private DocumentSignatureRepository documentSignatureRepository;
-    @Autowired private InspectChecklistRepository inspectChecklistRepository;
-    @Autowired private InspectIssueRepository inspectIssueRepository;
+    // S1 inspect-comprehensive-redesign: InspectChecklist/Issue Repository 제거 (테이블 DROP)
     @Autowired private InfraRepository infraRepository;
     @Autowired private MessageResolver messages;
 
@@ -210,48 +209,10 @@ public class DocumentService {
         return documentHistoryRepository.findByDocument_DocIdOrderByCreatedAtDesc(docId);
     }
 
-    // === 점검 체크리스트 ===
-
-    public InspectChecklist saveChecklist(Integer docId, Integer inspectMonth,
-                                           String targetSw, String checkItem,
-                                           String checkMethod, String checkResult, Integer sortOrder) {
-        Document doc = getDocumentById(docId);
-        InspectChecklist item = new InspectChecklist();
-        item.setDocument(doc);
-        item.setInspectMonth(inspectMonth);
-        item.setTargetSw(targetSw);
-        item.setCheckItem(checkItem);
-        item.setCheckMethod(checkMethod);
-        item.setCheckResult(checkResult);
-        item.setSortOrder(sortOrder);
-        return inspectChecklistRepository.save(item);
-    }
-
-    @Transactional(readOnly = true)
-    public List<InspectChecklist> getChecklists(Integer docId) {
-        return inspectChecklistRepository.findByDocument_DocIdOrderBySortOrder(docId);
-    }
-
-    // === 점검 이슈/장애 이력 ===
-
-    public InspectIssue saveIssue(Integer docId, Integer issueYear, Integer issueMonth,
-                                    Integer issueDay, String taskType, String symptom, String actionTaken) {
-        Document doc = getDocumentById(docId);
-        InspectIssue issue = new InspectIssue();
-        issue.setDocument(doc);
-        issue.setIssueYear(issueYear);
-        issue.setIssueMonth(issueMonth);
-        issue.setIssueDay(issueDay);
-        issue.setTaskType(taskType);
-        issue.setSymptom(symptom);
-        issue.setActionTaken(actionTaken);
-        return inspectIssueRepository.save(issue);
-    }
-
-    @Transactional(readOnly = true)
-    public List<InspectIssue> getIssues(Integer docId) {
-        return inspectIssueRepository.findByDocument_DocIdOrderByIssueYearDescIssueMonthDescIssueDayDesc(docId);
-    }
+    // S1 inspect-comprehensive-redesign (2026-04-21):
+    // 점검 체크리스트(tb_inspect_checklist), 점검 이슈(tb_inspect_issue) 기능은
+    // inspect_check_result / inspect_visit_log 에 통합되어 본 Service 에서 제거.
+    // 관련 API 엔드포인트 / Repository / Entity 모두 삭제됨.
 
     // === 전자서명 ===
 

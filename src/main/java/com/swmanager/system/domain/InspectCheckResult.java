@@ -31,8 +31,16 @@ public class InspectCheckResult {
     @Column(name = "item_method", length = 300)
     private String itemMethod;
 
-    @Column(name = "result", length = 500)
-    private String result;
+    /**
+     * S1 inspect-comprehensive-redesign: result → result_code + result_text 분리
+     *  - result_code: InspectResultCode name (NORMAL/PARTIAL/ABNORMAL/NOT_APPLICABLE)
+     *  - result_text: 자유 텍스트 (사유/비고)
+     */
+    @Column(name = "result_code", length = 20)
+    private String resultCode;
+
+    @Column(name = "result_text", length = 500)
+    private String resultText;
 
     @Column(name = "remarks", length = 300)
     private String remarks;

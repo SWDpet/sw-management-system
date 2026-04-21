@@ -97,10 +97,10 @@
                 <div class="info-item"><span class="info-label">점검월</span><span class="info-value" th:text="${report.inspectMonth} ?: '-'"></span></div>
                 <div class="info-item"><span class="info-label">시스템유형</span><span class="info-value" th:text="${report.sysType} ?: '-'"></span></div>
                 <div class="info-item"><span class="info-label">문서제목</span><span class="info-value" th:text="${report.docTitle} ?: '-'"></span></div>
-                <div class="info-item"><span class="info-label">점검업체</span><span class="info-value" th:text="${report.inspCompany} ?: '-'"></span></div>
-                <div class="info-item"><span class="info-label">점검자</span><span class="info-value" th:text="${report.inspName} ?: '-'"></span></div>
-                <div class="info-item"><span class="info-label">확인기관</span><span class="info-value" th:text="${report.confOrg} ?: '-'"></span></div>
-                <div class="info-item"><span class="info-label">확인자</span><span class="info-value" th:text="${report.confName} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">점검업체</span><span class="info-value" th:text="${report.inspectorOrg} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">점검자</span><span class="info-value" th:text="${report.inspectorUsername} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">확인기관</span><span class="info-value" th:text="${report.confirmerOrg} ?: '-'"></span></div>
+                <div class="info-item"><span class="info-label">확인자</span><span class="info-value" th:text="${report.confirmerName} ?: '-'"></span></div>
                 <div class="info-item"><span class="info-label">작성자</span><span class="info-value" th:text="${report.createdBy} ?: '-'"></span></div>
                 <div class="info-item"><span class="info-label">작성일</span><span class="info-value" th:text="${report.createdAt != null ? #strings.substring(report.createdAt.toString(), 0, 16) : '-'}"></span></div>
             </div>

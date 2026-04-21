@@ -246,7 +246,7 @@ INSERT INTO inspect_template (template_type, section, category, item_name, item_
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- UPIS GIS엔진 점검결과 (UPIS/UPIS_SW 공용) - 6항목
+-- UPIS GIS엔진 점검결과 - 6항목 (S1 에서 UPIS_SW 통합)
 -- 칼럼: 대상 | 점검 항목 | 점검 내용 및 방법 | 결과
 -- ============================================================
 INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
@@ -255,49 +255,15 @@ INSERT INTO inspect_template (template_type, section, category, item_name, item_
 ('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'Desktop Pro 데이터저장소 구동확인', 'Desktop Pro 실행 후 데이터저장소에서 GSS 데이터 불러오기', 3),
 ('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 구동확인', '윈도우 서비스 "GeoNURIS GeoWeb Server 64bit" 구동 상태 확인', 4),
 ('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 로그파일 삭제', 'C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store (DEM/SLOP 제외)', 5),
-('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 서비스 확인', 'http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출', 6),
-('UPIS_SW', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 구동확인', 'ps -ef | grep GSS 실행 확인', 1),
-('UPIS_SW', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 로그파일 삭제', '/GeoNURIS_Spatial_Server/log 경로의 로그 중 1달 전 파일 삭제', 2),
-('UPIS_SW', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'Desktop Pro 데이터저장소 구동확인', 'Desktop Pro 실행 후 데이터저장소에서 GSS 데이터 불러오기', 3),
-('UPIS_SW', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 구동확인', '윈도우 서비스 "GeoNURIS GeoWeb Server 64bit" 구동 상태 확인', 4),
-('UPIS_SW', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 로그파일 삭제', 'C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store (DEM/SLOP 제외)', 5),
-('UPIS_SW', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 서비스 확인', 'http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출', 6)
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 서비스 확인', 'http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출', 6)
+-- S1 inspect-comprehensive-redesign (2026-04-21): UPIS_SW 6행은 UPIS 와 중복이라 제거
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- UPIS 표준시스템 점검결과 (UPIS/UPIS_SW 공용) - 14항목
--- 칼럼: 대분류 | 중분류 | 점검 내용 | 결과
+-- S1 inspect-comprehensive-redesign (2026-04-21):
+--   UPIS/UPIS_SW 표준시스템 점검결과 (APP 섹션 28행) 전체 제거 (A3 opt1)
+--   사용자 결정: "UPIS APP와 UPIS_SW APP는 사용하지 않음" (2026-04-20)
 -- ============================================================
-INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
-('UPIS', 'APP', '도시계획', '조회/검색', '필지/고시/조서/이력/재해취약성 상세정보 조회·검색', 1),
-('UPIS', 'APP', '도시계획', 'KRAS 연계', '부동산토지공부 토지정보(지목/소유구분/면적) 표출 여부', 2),
-('UPIS', 'APP', '도시계획', 'KRAS 연계', '토지이용계획확인서 표출 (해당 필지 확인)', 3),
-('UPIS', 'APP', '도시계획', 'KRAS 연계', '건축물대장 표출 여부', 4),
-('UPIS', 'APP', '통계조회', '시스템통계', '도시계획 통계 데이터 표출 여부', 5),
-('UPIS', 'APP', '전자심의', '메뉴활성화', '전자심의 메뉴 존재 확인', 6),
-('UPIS', 'APP', '지구단위계획', '조회/검색', '계획정보/규제정보/정보관리 상세정보 조회·검색', 7),
-('UPIS', 'APP', '비정형자료실', '메뉴활성화', '비정형자료실 메뉴 존재 확인', 8),
-('UPIS', 'APP', '관리자', '사용자관리', '사용자승인/사용자관리/메뉴권한관리 정상 여부', 9),
-('UPIS', 'APP', 'GIS엔진', '지도 요청', '현황도/주제도/도시계획시설 등 표출 여부', 10),
-('UPIS', 'APP', 'GIS엔진', '필지 이동', '주소 검색 시 필지 이동', 11),
-('UPIS', 'APP', 'GIS엔진', '하일라이팅', '검색 필지 하일라이팅', 12),
-('UPIS', 'APP', 'GIS엔진', '필지정보', '시설정보/용도지역 등 정보 표출', 13),
-('UPIS', 'APP', 'GIS엔진', '이력정보', '시설정보/용도지역 등 이력 표출', 14),
-('UPIS_SW', 'APP', '도시계획', '조회/검색', '필지/고시/조서/이력/재해취약성 상세정보 조회·검색', 1),
-('UPIS_SW', 'APP', '도시계획', 'KRAS 연계', '부동산토지공부 토지정보(지목/소유구분/면적) 표출 여부', 2),
-('UPIS_SW', 'APP', '도시계획', 'KRAS 연계', '토지이용계획확인서 표출 (해당 필지 확인)', 3),
-('UPIS_SW', 'APP', '도시계획', 'KRAS 연계', '건축물대장 표출 여부', 4),
-('UPIS_SW', 'APP', '통계조회', '시스템통계', '도시계획 통계 데이터 표출 여부', 5),
-('UPIS_SW', 'APP', '전자심의', '메뉴활성화', '전자심의 메뉴 존재 확인', 6),
-('UPIS_SW', 'APP', '지구단위계획', '조회/검색', '계획정보/규제정보/정보관리 상세정보 조회·검색', 7),
-('UPIS_SW', 'APP', '비정형자료실', '메뉴활성화', '비정형자료실 메뉴 존재 확인', 8),
-('UPIS_SW', 'APP', '관리자', '사용자관리', '사용자승인/사용자관리/메뉴권한관리 정상 여부', 9),
-('UPIS_SW', 'APP', 'GIS엔진', '지도 요청', '현황도/주제도/도시계획시설 등 표출 여부', 10),
-('UPIS_SW', 'APP', 'GIS엔진', '필지 이동', '주소 검색 시 필지 이동', 11),
-('UPIS_SW', 'APP', 'GIS엔진', '하일라이팅', '검색 필지 하일라이팅', 12),
-('UPIS_SW', 'APP', 'GIS엔진', '필지정보', '시설정보/용도지역 등 정보 표출', 13),
-('UPIS_SW', 'APP', 'GIS엔진', '이력정보', '시설정보/용도지역 등 이력 표출', 14)
-ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- KRAS GIS엔진 점검결과 - 점검내역서_KRAS샘플.docx Table 8
