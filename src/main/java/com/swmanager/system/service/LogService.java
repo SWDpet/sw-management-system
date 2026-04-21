@@ -1,5 +1,6 @@
 package com.swmanager.system.service;
 
+import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.domain.AccessLog;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.repository.AccessLogRepository;
@@ -43,7 +44,34 @@ public class LogService {
     @Autowired
     private UserRepository userRepository;
 
+    /**
+     * S9 신규 Enum 경로 — 앞으로 이 오버로드만 사용.
+     * action Enum 의 label 한글이 DB 에 저장됨 (기존 데이터와 호환).
+     */
+    public void log(String menuNm, AccessActionType action, String detail) {
+        String label = (action != null) ? action.getLabel() : null;
+        logInternal(menuNm, label, detail);
+    }
+
+    /**
+     * S9 Deprecated — 신규 호출 금지. ArchUnit 게이트로 회귀 차단.
+     * 기존 DB action_type 값 호환 + unknown 리터럴 fail-soft 저장.
+     *
+     * @deprecated S9 (2026-04-21). {@link #log(String, AccessActionType, String)} 사용.
+     */
+    @Deprecated(since = "S9", forRemoval = false)
     public void log(String menuNm, String actionType, String detail) {
+        AccessActionType normalized = AccessActionType.fromKoLabel(actionType);
+        if (actionType != null && normalized == null) {
+            log.warn("ACCESS_LOG_ACTION_UNKNOWN: raw='{}'", actionType);
+        }
+        // fail-soft: 매칭된 경우 정규 label 로, 미매칭 시 원본 문자열 그대로 저장
+        String label = (normalized != null) ? normalized.getLabel() : actionType;
+        logInternal(menuNm, label, detail);
+    }
+
+    /** 공통 저장 — Auth/IP/Guard/AccessLog 저장 공통 경로 */
+    private void logInternal(String menuNm, String actionLabel, String detail) {
         try {
             HttpServletRequest request = ((ServletRequestAttributes)
                     RequestContextHolder.currentRequestAttributes()).getRequest();
@@ -70,7 +98,7 @@ public class LogService {
             entry.setUsername(username);
             entry.setIpAddr(ip);
             entry.setMenuNm(menuNm);
-            entry.setActionType(actionType);
+            entry.setActionType(actionLabel);
             entry.setActionDetail(detail);
 
             accessLogRepository.save(entry);

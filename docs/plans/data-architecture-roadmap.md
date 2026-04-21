@@ -167,12 +167,13 @@ created: "2026-04-20"
 - **의존성**: 사용자 정책 결정 선행 (prj_types 통일 여부)
 - **예상 기간**: 3~4일
 
-#### S9. `access-log-action-and-menu-sync`
+#### S9. `access-log-action-and-menu-sync` ✅ **완료 (2026-04-21)**
 - **포함**:
-  - `access_logs.action_type` 20종(조회/수정/등록/...) → `AccessActionType` Enum 신설
-  - `MenuName` 상수 4종 누락 (라이선스대장/견적서/GeoNURIS라이선스/회원가입) 추가
+  - `access_logs.action_type` 20+종 → `AccessActionType` Enum **13종** 신설 (동의어 매핑 + fromKoLabel 정규화)
+  - `MenuName` 상수 **5종 누락** (QR라이선스/라이선스대장/GeoNURIS라이선스/견적서/회원가입) 추가 — 로드맵 기록 "4종"에서 **실측 5종으로 정정** (S9 기획서 §1-2 참조: `docs/plans/access-log-action-and-menu-sync.md`)
+  - ArchUnit CI 게이트 + fail-soft 정규화
 - **의존성**: 없음
-- **예상 기간**: 2일
+- **실제 소요**: 0.5일 (예상 2일보다 단축)
 
 #### S10. `inspect-check-result-category-master`
 - **배경**: `inspect_check_result.category` 35종 자유 텍스트 (공백 차이 등 오염 포함). S1 후속

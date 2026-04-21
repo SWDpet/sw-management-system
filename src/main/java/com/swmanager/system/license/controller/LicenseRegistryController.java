@@ -1,5 +1,7 @@
 package com.swmanager.system.license.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.license.domain.LicenseRegistry;
 import com.swmanager.system.license.domain.LicenseUploadHistory;
 import com.swmanager.system.license.service.LicenseRegistryService;
@@ -180,7 +182,7 @@ public class LicenseRegistryController {
                      totalCount, successCount, duplicateCount, failCount);
             
             // 로그 기록
-            logService.log("라이선스대장", "등록", 
+            logService.log(MenuName.LICENSE_REGISTRY, AccessActionType.CREATE,
                 String.format("CSV 업로드 완료 - 파일: %s, 총: %d건, 신규: %d건, 중복: %d건, 실패: %d건 - 사용자: %s",
                     fileName, totalCount, successCount, duplicateCount, failCount, uploadedBy));
             
@@ -320,7 +322,7 @@ public class LicenseRegistryController {
             LicenseRegistry savedLicense = registryService.updateLicense(id, updatedLicense);
             
             // 로그 기록
-            logService.log("라이선스대장", "수정", 
+            logService.log(MenuName.LICENSE_REGISTRY, AccessActionType.UPDATE,
                 String.format("라이선스 수정 완료 - License ID: %s, Product: %s - 사용자: %s",
                     savedLicense.getLicenseId(), savedLicense.getProductId(), userDetails.getUsername()));
             
@@ -368,7 +370,7 @@ public class LicenseRegistryController {
             String filename = license.getLicenseId() + ".lic";
             
             // 로그 기록
-            logService.log("라이선스대장", "다운로드", 
+            logService.log(MenuName.LICENSE_REGISTRY, AccessActionType.DOWNLOAD,
                 String.format("라이선스 파일 다운로드 - License ID: %s, Product: %s - 사용자: %s",
                     license.getLicenseId(), license.getProductId(), userDetails.getUsername()));
             
@@ -551,7 +553,7 @@ public class LicenseRegistryController {
             ByteArrayResource resource = new ByteArrayResource(bytes);
             
             // 로그 기록
-            logService.log("라이선스대장", "다운로드", 
+            logService.log(MenuName.LICENSE_REGISTRY, AccessActionType.DOWNLOAD,
                 String.format("CSV 다운로드 완료 - 총 %d건 - 사용자: %s", licenses.size(), userDetails.getUsername()));
             
             log.info("CSV 다운로드 완료 - {} 건", licenses.size());

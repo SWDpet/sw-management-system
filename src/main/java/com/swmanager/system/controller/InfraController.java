@@ -1,5 +1,7 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.config.CustomUserDetails;
@@ -144,7 +146,7 @@ public class InfraController {
         model.addAttribute("userAuth", auth); 
         
         // 목록 조회 로그 기록
-        logService.log("서버관리", "조회", "서버관리 현황 목록 조회 (유형: " + type + ")");
+        logService.log(MenuName.INFRA, AccessActionType.VIEW, "서버관리 현황 목록 조회 (유형: " + type + ")");
         
         log.info("인프라 목록 조회 성공 - 총 {}건", infraList.getTotalElements());
         return "infra-list";
@@ -189,7 +191,7 @@ public class InfraController {
         
         // 상세 조회 로그 기록
         String sysNm = (infra != null) ? infra.getSysNm() : "Unknown";
-        logService.log("서버관리", "조회", "인프라 상세 조회 (ID: " + id + ", 시스템: " + sysNm + ")");
+        logService.log(MenuName.INFRA, AccessActionType.VIEW, "인프라 상세 조회 (ID: " + id + ", 시스템: " + sysNm + ")");
 
         return "infra-detail";
     }
@@ -231,9 +233,9 @@ public class InfraController {
         boolean isNew = (infra.getInfraId() == null);
         infraService.saveInfra(infra);
         
-        String action = isNew ? "등록" : "수정";
-        String msg = String.format("인프라 자산 %s (ID: %d, 시스템: %s)", action, infra.getInfraId(), infra.getSysNm());
-        logService.log("서버관리", action, msg);
+        AccessActionType action = isNew ? AccessActionType.CREATE : AccessActionType.UPDATE;
+        String msg = String.format("인프라 자산 %s (ID: %d, 시스템: %s)", action.getLabel(), infra.getInfraId(), infra.getSysNm());
+        logService.log(MenuName.INFRA, action, msg);
         
         log.info("인프라 저장 성공 - ID: {}", infra.getInfraId());
 
@@ -261,7 +263,7 @@ public class InfraController {
         infraService.deleteInfra(id);
         
         String msg = String.format("인프라 자산 삭제 (ID: %d, 시스템: %s)", id, sysNm);
-        logService.log("서버관리", "삭제", msg);
+        logService.log(MenuName.INFRA, AccessActionType.DELETE, msg);
         
         log.info("인프라 삭제 완료 - ID: {}", id);
 

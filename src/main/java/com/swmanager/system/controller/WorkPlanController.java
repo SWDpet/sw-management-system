@@ -1,5 +1,7 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
@@ -90,7 +92,7 @@ public class WorkPlanController {
         model.addAttribute("users", users);
         model.addAttribute("userAuth", auth);
 
-        logService.log("업무계획", "조회", "업무 캘린더 조회");
+        logService.log(MenuName.WORK_PLAN, AccessActionType.VIEW, "업무 캘린더 조회");
         return "workplan/workplan-calendar";
     }
 
@@ -135,7 +137,7 @@ public class WorkPlanController {
         model.addAttribute("users", users);
         model.addAttribute("userAuth", auth);
 
-        logService.log("업무계획", "조회", "프로세스 현황 조회");
+        logService.log(MenuName.WORK_PLAN, AccessActionType.VIEW, "프로세스 현황 조회");
         return "workplan/process-status";
     }
 
@@ -242,8 +244,8 @@ public class WorkPlanController {
         boolean isNew = (dto.getPlanId() == null);
         WorkPlan saved = workPlanService.saveWorkPlan(dto, user);
 
-        String action = isNew ? "등록" : "수정";
-        logService.log("업무계획", action, "업무계획 " + action + " (ID: " + saved.getPlanId() + ", " + saved.getTitle() + ")");
+        AccessActionType action = isNew ? AccessActionType.CREATE : AccessActionType.UPDATE;
+        logService.log(MenuName.WORK_PLAN, action, "업무계획 " + action.getLabel() + " (ID: " + saved.getPlanId() + ", " + saved.getTitle() + ")");
 
         rttr.addFlashAttribute("successMessage", "업무계획이 " + (isNew ? "등록" : "수정") + "되었습니다.");
         return "redirect:/workplan/calendar";
@@ -262,7 +264,7 @@ public class WorkPlanController {
         String title = target.getTitle();
         workPlanService.deleteWorkPlan(id);
 
-        logService.log("업무계획", "삭제", "업무계획 삭제 (ID: " + id + ", " + title + ")");
+        logService.log(MenuName.WORK_PLAN, AccessActionType.DELETE, "업무계획 삭제 (ID: " + id + ", " + title + ")");
         rttr.addFlashAttribute("successMessage", "업무계획이 삭제되었습니다.");
         return "redirect:/workplan/calendar";
     }
@@ -281,7 +283,7 @@ public class WorkPlanController {
         }
 
         WorkPlan updated = workPlanService.updateStatus(id, status, reason);
-        logService.log("업무계획", "상태변경", "업무계획 상태변경 (ID: " + id + ", " + status + ")");
+        logService.log(MenuName.WORK_PLAN, AccessActionType.UPDATE, "업무계획 상태변경 (ID: " + id + ", " + status + ")");
 
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);

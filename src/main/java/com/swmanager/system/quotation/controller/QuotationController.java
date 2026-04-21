@@ -1,6 +1,8 @@
 package com.swmanager.system.quotation.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -117,7 +119,7 @@ public class QuotationController {
         checkEditAuth();
         model.addAttribute("patterns", quotationService.getPatterns(null));
         addCreatorSelectData(model);
-        logService.log("견적서", "접근", "견적서 작성 페이지 접근");
+        logService.log(MenuName.QUOTATION, AccessActionType.VIEW, "견적서 작성 페이지 접근");
         return "quotation/quotation-form";
     }
 
@@ -222,7 +224,7 @@ public class QuotationController {
         model.addAttribute("showSeal", showSealValue);
         model.addAttribute("templateType", dto.getTemplateType() != null ? dto.getTemplateType() : 1);
 
-        logService.log("견적서", "미리보기", "견적서 미리보기: " + dto.getQuoteNumber());
+        logService.log(MenuName.QUOTATION, AccessActionType.PREVIEW, "견적서 미리보기: " + dto.getQuoteNumber());
         int tplType = dto.getTemplateType() != null ? dto.getTemplateType() : 1;
         return tplType == 2 ? "quotation/quotation-preview2" : "quotation/quotation-preview";
     }
@@ -286,7 +288,7 @@ public class QuotationController {
     public ResponseEntity<Map<String, Object>> recalculateAmounts() {
         checkEditAuth();
         int count = quotationService.recalculateAllGrandTotals();
-        logService.log("견적서", "금액재계산", "견적서 " + count + "건 금액 일괄 재계산 완료");
+        logService.log(MenuName.QUOTATION, AccessActionType.BATCH, "견적서 " + count + "건 금액 일괄 재계산 완료");
         return ResponseEntity.ok(Map.of("success", true, "count", count));
     }
 
@@ -350,7 +352,7 @@ public class QuotationController {
                 dto.setCreatedBy(getCurrentUserName());
             }
             Quotation saved = quotationService.createQuotation(dto);
-            logService.log("견적서", "생성", "견적서 발행: " + saved.getQuoteNumber() + " - " + saved.getProjectName());
+            logService.log(MenuName.QUOTATION, AccessActionType.CREATE, "견적서 발행: " + saved.getQuoteNumber() + " - " + saved.getProjectName());
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "id", saved.getQuoteId(),
@@ -375,7 +377,7 @@ public class QuotationController {
         try {
             dto.setQuoteId(id);
             quotationService.updateQuotation(dto);
-            logService.log("견적서", "수정", "견적서 수정: ID " + id);
+            logService.log(MenuName.QUOTATION, AccessActionType.UPDATE, "견적서 수정: ID " + id);
             return ResponseEntity.ok(Map.of("success", true, "message", "견적서가 수정되었습니다."));
         } catch (Exception e) {
             log.error("견적서 수정 실패", e);
@@ -390,7 +392,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             quotationService.deleteQuotation(id);
-            logService.log("견적서", "삭제", "견적서 삭제: ID " + id);
+            logService.log(MenuName.QUOTATION, AccessActionType.DELETE, "견적서 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true, "message", "견적서가 삭제되었습니다."));
         } catch (Exception e) {
             log.error("견적서 삭제 실패", e);
@@ -413,7 +415,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             ProductPattern saved = quotationService.savePattern(pattern);
-            logService.log("견적서", "패턴등록", "품명 패턴 등록: " + pattern.getProductName());
+            logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "품명 패턴 등록: " + pattern.getProductName());
             return ResponseEntity.ok(Map.of("success", true, "patternId", saved.getPatternId()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -428,7 +430,7 @@ public class QuotationController {
         try {
             pattern.setPatternId(id);
             quotationService.savePattern(pattern);
-            logService.log("견적서", "패턴수정", "품명 패턴 수정: " + pattern.getProductName());
+            logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "품명 패턴 수정: " + pattern.getProductName());
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -442,7 +444,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             quotationService.deletePattern(id);
-            logService.log("견적서", "패턴삭제", "품명 패턴 삭제: ID " + id);
+            logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "품명 패턴 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -458,7 +460,7 @@ public class QuotationController {
         }
         try {
             long count = quotationService.deleteAllPatterns();
-            logService.log("견적서", "패턴초기화", "전체 패턴 초기화: " + count + "건 삭제");
+            logService.log(MenuName.QUOTATION, AccessActionType.BATCH, "전체 패턴 초기화: " + count + "건 삭제");
             return ResponseEntity.ok(Map.of("success", true, "deleted", count));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -478,7 +480,7 @@ public class QuotationController {
                 return ResponseEntity.badRequest().body(Map.of("success", false, "error", "패턴 ID와 대상 분류를 지정해주세요."));
             }
             int copied = quotationService.copyPatterns(ids.stream().map(Number::longValue).toList(), targetCategory);
-            logService.log("견적서", "패턴복사", copied + "건 패턴을 '" + targetCategory + "' 분류로 복사");
+            logService.log(MenuName.QUOTATION, AccessActionType.BATCH, copied + "건 패턴을 '" + targetCategory + "' 분류로 복사");
             return ResponseEntity.ok(Map.of("success", true, "copied", copied));
         } catch (Exception e) {
             log.error("패턴 복사 실패", e);
@@ -539,7 +541,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             com.swmanager.system.quotation.domain.RemarksPattern saved = quotationService.saveRemarksPattern(pattern);
-            logService.log("견적서", "비고패턴등록", "비고 패턴 등록: " + pattern.getPatternName());
+            logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "비고 패턴 등록: " + pattern.getPatternName());
             return ResponseEntity.ok(Map.of("success", true, "patternId", saved.getPatternId()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -556,7 +558,7 @@ public class QuotationController {
         try {
             pattern.setPatternId(id);
             quotationService.saveRemarksPattern(pattern);
-            logService.log("견적서", "비고패턴수정", "비고 패턴 수정: " + pattern.getPatternName());
+            logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "비고 패턴 수정: " + pattern.getPatternName());
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -570,7 +572,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             quotationService.deleteRemarksPattern(id);
-            logService.log("견적서", "비고패턴삭제", "비고 패턴 삭제: ID " + id);
+            logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "비고 패턴 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -604,7 +606,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             com.swmanager.system.quotation.domain.WageRate saved = quotationService.saveWageRate(wageRate);
-            logService.log("견적서", "노임단가등록", wageRate.getYear() + "년 " + wageRate.getGradeName() + " 노임단가 등록");
+            logService.log(MenuName.QUOTATION, AccessActionType.WAGE_CRUD, wageRate.getYear() + "년 " + wageRate.getGradeName() + " 노임단가 등록");
             return ResponseEntity.ok(Map.of("success", true, "wageId", saved.getWageId()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -620,7 +622,7 @@ public class QuotationController {
         try {
             wageRate.setWageId(id);
             quotationService.saveWageRate(wageRate);
-            logService.log("견적서", "노임단가수정", wageRate.getYear() + "년 " + wageRate.getGradeName() + " 노임단가 수정");
+            logService.log(MenuName.QUOTATION, AccessActionType.WAGE_CRUD, wageRate.getYear() + "년 " + wageRate.getGradeName() + " 노임단가 수정");
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -634,7 +636,7 @@ public class QuotationController {
         checkEditAuth();
         try {
             quotationService.deleteWageRate(id);
-            logService.log("견적서", "노임단가삭제", "노임단가 삭제: ID " + id);
+            logService.log(MenuName.QUOTATION, AccessActionType.WAGE_CRUD, "노임단가 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));

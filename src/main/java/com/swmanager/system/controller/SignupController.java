@@ -1,5 +1,7 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.service.LogService;
@@ -29,7 +31,7 @@ public class SignupController {
         
         userRepository.save(user);
 
-        logService.log("회원가입", "신청", user.getUserid() + "(" + user.getUsername() + ") 가입신청");
+        logService.log(MenuName.SIGNUP, AccessActionType.CREATE, user.getUserid() + "(" + user.getUsername() + ") 가입신청");
         
         return "redirect:/login?msg=pending";
     }

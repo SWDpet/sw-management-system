@@ -1,5 +1,7 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.config.CustomUserDetails;
@@ -134,7 +136,7 @@ public class PersonController {
         model.addAttribute("userAuth", auth);
         addCommonAttributes(model);
         
-        logService.log("담당자관리", "조회", "담당자 상세 조회: " + person.getUserNm());
+        logService.log(MenuName.PERSON, AccessActionType.VIEW, "담당자 상세 조회: " + person.getUserNm());
         
         return "person-form"; 
     }
@@ -182,10 +184,10 @@ public class PersonController {
             boolean isNew = (person.getId() == null);
             personInfoRepository.save(person);
             
-            String action = isNew ? "등록" : "수정";
-            log.info("담당자 정보 {} 성공 - ID: {}", action, person.getId());
-            
-            logService.log("담당자관리", action, "담당자 정보 저장: " + person.getUserNm());
+            AccessActionType action = isNew ? AccessActionType.CREATE : AccessActionType.UPDATE;
+            log.info("담당자 정보 {} 성공 - ID: {}", action.getLabel(), person.getId());
+
+            logService.log(MenuName.PERSON, action, "담당자 정보 저장: " + person.getUserNm());
             
             return ResponseEntity.ok("저장되었습니다.");
         } catch (Exception e) {
@@ -212,7 +214,7 @@ public class PersonController {
         PersonInfo person = personInfoRepository.findById(id).orElse(null);
         if (person != null) {
             log.info("담당자 삭제 - 이름: {}", person.getUserNm());
-            logService.log("담당자관리", "삭제", "담당자 삭제: " + person.getUserNm());
+            logService.log(MenuName.PERSON, AccessActionType.DELETE, "담당자 삭제: " + person.getUserNm());
             personInfoRepository.deleteById(id);
         }
         

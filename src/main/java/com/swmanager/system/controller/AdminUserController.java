@@ -1,5 +1,7 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.repository.UserRepository;
@@ -245,7 +247,7 @@ public class AdminUserController {
                  user.getUserid(), authDashboard, authProject, authPerson, authInfra, authLicense, authQuotation,
                  authWorkPlan, authDocument, authContract, authPerformance);
         
-        logService.log("회원관리", "승인", user.getUserid() + " 가입 승인 완료");
+        logService.log(MenuName.USER, AccessActionType.APPROVE, user.getUserid() + " 가입 승인 완료");
         
         return "redirect:/admin/users";
     }
@@ -314,7 +316,7 @@ public class AdminUserController {
 
         log.info("회원 정보 수정 완료 - userid: {}", user.getUserid());
 
-        logService.log("회원관리", "수정", "관리자가 사용자 정보 수정: " + user.getUserid());
+        logService.log(MenuName.USER, AccessActionType.UPDATE, "관리자가 사용자 정보 수정: " + user.getUserid());
 
         // [스프린트 6] 펼침 상태·페이지 유지 — 안전한 쿼리 조립
         java.util.List<String> parts = new java.util.ArrayList<>();
@@ -361,7 +363,7 @@ public class AdminUserController {
         }
         CustomUserDetails cu = getCurrentUser();
         String actor = (cu != null && cu.getUser() != null) ? cu.getUser().getUsername() : "unknown";
-        logService.log("회원관리", "민감정보조회",
+        logService.log(MenuName.USER, AccessActionType.SENSITIVE_VIEW,
                 "관리자 " + actor + " → userSeq=" + userSeq + " field=" + field);
         java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("field", field);
@@ -387,7 +389,7 @@ public class AdminUserController {
         
         log.info("회원 삭제 완료 - {}", userInfo);
         
-        logService.log("회원관리", "삭제", "사용자 삭제 완료: " + userInfo);
+        logService.log(MenuName.USER, AccessActionType.DELETE, "사용자 삭제 완료: " + userInfo);
 
         return "redirect:/admin/users";
     }

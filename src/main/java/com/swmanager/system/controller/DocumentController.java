@@ -1,8 +1,10 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.constant.enums.DocumentType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.Document;
@@ -137,7 +139,7 @@ public class DocumentController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("userAuth", auth);
 
-        logService.log("문서관리", "조회", "문서 목록 조회");
+        logService.log(MenuName.DOCUMENT, AccessActionType.VIEW, "문서 목록 조회");
         return "document/document-list";
     }
 
@@ -168,7 +170,7 @@ public class DocumentController {
         model.addAttribute("userAuth", auth);
         model.addAttribute("users", userRepository.findByEnabledTrue());
 
-        logService.log("문서관리", "조회", "문서 상세 조회 (ID: " + id + ")");
+        logService.log(MenuName.DOCUMENT, AccessActionType.VIEW, "문서 상세 조회 (ID: " + id + ")");
         return "document/document-detail";
     }
 
@@ -399,7 +401,7 @@ public class DocumentController {
                 }
             }
 
-            logService.log("문서관리", docId != null ? "수정" : "등록",
+            logService.log(MenuName.DOCUMENT, docId != null ? AccessActionType.UPDATE : AccessActionType.CREATE,
                     DocumentDTO.getDocTypeLabel(docType) + " " + (docId != null ? "수정" : "등록") + " (ID: " + doc.getDocId() + ")");
             // Note: DocumentDTO.getDocTypeLabel(DocumentType) 은 Enum 직접 전달
 
@@ -431,7 +433,7 @@ public class DocumentController {
         User actor = cu != null ? cu.getUser() : null;
 
         Document doc = documentService.changeStatus(id, status, actor, comment);
-        logService.log("문서관리", "상태변경", "문서 상태변경 (ID: " + id + " → " + status.name() + ")");
+        logService.log(MenuName.DOCUMENT, AccessActionType.UPDATE, "문서 상태변경 (ID: " + id + " → " + status.name() + ")");
 
         return ResponseEntity.ok(Map.of("success", true, "status", doc.getStatus()));
     }
@@ -446,7 +448,7 @@ public class DocumentController {
         }
 
         documentService.deleteDocument(id);
-        logService.log("문서관리", "삭제", "문서 삭제 (ID: " + id + ")");
+        logService.log(MenuName.DOCUMENT, AccessActionType.DELETE, "문서 삭제 (ID: " + id + ")");
         rttr.addFlashAttribute("successMessage", "문서가 삭제되었습니다.");
         return "redirect:/document/list";
     }
@@ -617,7 +619,7 @@ public class DocumentController {
             String signatureImage = (String) data.get("signatureImage"); // Base64 data URL
 
             documentService.saveSignature(docId, signerType, signerName, signerOrg, signatureImage);
-            logService.log("문서관리", "서명", "전자서명 저장 (문서ID: " + docId + ", " + signerType + ")");
+            logService.log(MenuName.DOCUMENT, AccessActionType.SIGN, "전자서명 저장 (문서ID: " + docId + ", " + signerType + ")");
 
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
@@ -1125,7 +1127,7 @@ public class DocumentController {
                 }
             }
 
-            logService.log("문서관리", "일괄생성",
+            logService.log(MenuName.DOCUMENT, AccessActionType.BATCH,
                     docType.name() + " 일괄생성 (성공: " + successCount + ", 실패: " + failCount + ")");
 
             return ResponseEntity.ok(Map.of(

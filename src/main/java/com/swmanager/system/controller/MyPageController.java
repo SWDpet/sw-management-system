@@ -1,6 +1,8 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.config.CustomUserDetails;  // ✅ config 패키지!
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.service.LogService;
@@ -167,7 +169,7 @@ public class MyPageController {
             userRepository.save(user);
 
             log.info("관리자 정보 수정 완료 - userid: {}", user.getUserid());
-            logService.log("마이페이지", "정보수정", "관리자(" + user.getUserid() + ") 정보 수정 완료");
+            logService.log(MenuName.MYPAGE, AccessActionType.UPDATE, "관리자(" + user.getUserid() + ") 정보 수정 완료");
 
             rttr.addFlashAttribute("successMessage", "정보가 수정되었습니다.");
             return "redirect:/";
@@ -176,7 +178,7 @@ public class MyPageController {
             userRepository.save(user);
 
             log.info("일반 사용자 정보 수정 및 재승인 요청 - userid: {}", user.getUserid());
-            logService.log("마이페이지", "승인요청", user.getUserid() + " 정보 수정 및 권한 요청");
+            logService.log(MenuName.MYPAGE, AccessActionType.APPROVE, user.getUserid() + " 정보 수정 및 권한 요청");
 
             rttr.addFlashAttribute("infoMessage", "정보가 수정되었습니다. 관리자 승인 후 다시 로그인해주세요.");
             return "redirect:/logout";
@@ -224,7 +226,7 @@ public class MyPageController {
         userRepository.save(user);
 
         log.info("비밀번호 변경 성공 - userid: {}", user.getUserid());
-        logService.log("마이페이지", "비번변경", "사용자(" + user.getUserid() + ") 비밀번호 변경 완료");
+        logService.log(MenuName.MYPAGE, AccessActionType.UPDATE, "사용자(" + user.getUserid() + ") 비밀번호 변경 완료");
         
         rttr.addFlashAttribute("successMessage", "비밀번호가 성공적으로 변경되었습니다.");
 

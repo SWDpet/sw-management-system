@@ -1,6 +1,8 @@
 package com.swmanager.system.qrcode.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.qrcode.domain.QrLicense;
 import com.swmanager.system.qrcode.service.QrLicenseService;
 import com.swmanager.system.service.LogService;
@@ -118,7 +120,7 @@ public class QrLicenseController {
         try {
             qr.setIssuedBy(getCurrentUserName());
             QrLicense saved = qrLicenseService.issue(qr);
-            logService.log("QR라이선스", "발급", "QR 발급: " + saved.getEndUserName() + " - " + saved.getProducts());
+            logService.log(MenuName.QR_LICENSE, AccessActionType.CREATE, "QR 발급: " + saved.getEndUserName() + " - " + saved.getProducts());
             return ResponseEntity.ok(Map.of("success", true, "qrId", saved.getQrId()));
         } catch (Exception e) {
             log.error("QR 발급 실패", e);
@@ -135,7 +137,7 @@ public class QrLicenseController {
             qr.setQrId(id);
             qr.setIssuedBy(getCurrentUserName());
             QrLicense saved = qrLicenseService.update(qr);
-            logService.log("QR라이선스", "수정", "QR 수정: " + saved.getEndUserName());
+            logService.log(MenuName.QR_LICENSE, AccessActionType.UPDATE, "QR 수정: " + saved.getEndUserName());
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
@@ -149,7 +151,7 @@ public class QrLicenseController {
         checkEditAuth();
         try {
             qrLicenseService.delete(id);
-            logService.log("QR라이선스", "삭제", "QR 삭제: ID " + id);
+            logService.log(MenuName.QR_LICENSE, AccessActionType.DELETE, "QR 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));

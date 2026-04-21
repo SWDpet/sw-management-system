@@ -1,6 +1,8 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.PerformanceSummary;
 import com.swmanager.system.repository.UserRepository;
@@ -115,7 +117,7 @@ public class PerformanceController {
         model.addAttribute("users", userRepository.findByEnabledTrue());
         model.addAttribute("userAuth", auth);
 
-        logService.log("성과통계", "조회", "개인 성과 대시보드 조회 (사용자ID: " + userId + ", " + year + "년)");
+        logService.log(MenuName.PERFORMANCE, AccessActionType.VIEW, "개인 성과 대시보드 조회 (사용자ID: " + userId + ", " + year + "년)");
         return "performance/personal-dashboard";
     }
 
@@ -154,7 +156,7 @@ public class PerformanceController {
         model.addAttribute("totalCounts", totalCounts);
         model.addAttribute("userAuth", auth);
 
-        logService.log("성과통계", "조회", "부서 성과 대시보드 조회 (" + year + "년 " + month + "월)");
+        logService.log(MenuName.PERFORMANCE, AccessActionType.VIEW, "부서 성과 대시보드 조회 (" + year + "년 " + month + "월)");
         return "performance/dept-dashboard";
     }
 
@@ -210,7 +212,7 @@ public class PerformanceController {
         }
 
         int count = performanceService.calculateAllUsersMonthlyPerformance(year, month);
-        logService.log("성과통계", "집계", year + "년 " + month + "월 성과 집계 (" + count + "명)");
+        logService.log(MenuName.PERFORMANCE, AccessActionType.BATCH, year + "년 " + month + "월 성과 집계 (" + count + "명)");
         return ResponseEntity.ok(Map.of("success", true, "count", count));
     }
 
@@ -245,7 +247,7 @@ public class PerformanceController {
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("attachment", fileName);
 
-            logService.log("성과통계", "다운로드", "엑셀 다운로드 (" + userName + ", " + fromYear + "." + fromMonth + "~" + toYear + "." + toMonth + ")");
+            logService.log(MenuName.PERFORMANCE, AccessActionType.DOWNLOAD, "엑셀 다운로드 (" + userName + ", " + fromYear + "." + fromMonth + "~" + toYear + "." + toMonth + ")");
 
             return ResponseEntity.ok().headers(headers).body(excelBytes);
         } catch (Exception e) {

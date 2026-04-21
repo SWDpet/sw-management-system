@@ -82,6 +82,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- S9: ArchUnit for CI gate on deprecated LogService.log(String,String,String) -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.2.1</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- QR Code Generation (ZXing) -->
         <dependency>
             <groupId>com.google.zxing</groupId>

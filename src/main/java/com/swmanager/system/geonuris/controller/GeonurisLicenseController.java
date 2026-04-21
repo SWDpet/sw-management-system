@@ -1,6 +1,8 @@
 package com.swmanager.system.geonuris.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.geonuris.domain.GeonurisLicense;
 import com.swmanager.system.geonuris.service.GeonurisLicenseService;
 import com.swmanager.system.service.LogService;
@@ -77,7 +79,7 @@ public class GeonurisLicenseController {
             m.addAttribute("message", "접근 권한이 없습니다. (VIEW 이상 필요)");
             return "geonuris/geonuris-list";
         }
-        logService.log("GeoNURIS라이선스", "목록조회",
+        logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.VIEW,
             u.getUsername() + (keyword != null && !keyword.isBlank() ? " [검색:" + keyword + "]" : "")
             + (type != null && !type.isBlank() ? " [타입:" + type + "]" : ""));
         List<GeonurisLicense> list;
@@ -111,7 +113,7 @@ public class GeonurisLicenseController {
             m.addAttribute("message", "발급 권한이 없습니다. (EDIT 권한 필요)");
             return "geonuris/geonuris-list";
         }
-        logService.log("GeoNURIS라이선스", "발급폼접근", u.getUsername());
+        logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.VIEW, u.getUsername());
         m.addAttribute("license",      new GeonurisLicense());
         m.addAttribute("defaultIssuer", u.getUser().getUsername());
         m.addAttribute("today",        LocalDate.now().format(DATE_FMT));
@@ -171,7 +173,7 @@ public class GeonurisLicenseController {
 
             GeonurisLicense saved = licenseService.issue(lic);
 
-            logService.log("GeoNURIS라이선스", "발급",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.CREATE,
                     u.getUsername() + " → " + saved.getLicenseTypeLabel() + " [" + saved.getUserName() + "]");
 
             ra.addFlashAttribute("success", true);
@@ -202,7 +204,7 @@ public class GeonurisLicenseController {
         }
         try {
             GeonurisLicense lic = licenseService.getById(id);
-            logService.log("GeoNURIS라이선스", "상세조회",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.VIEW,
                 u.getUsername() + " → ID:" + id + " [" + lic.getLicenseType() + "]");
             m.addAttribute("license", lic);
             m.addAttribute("isAdmin", isAdmin(u));
@@ -230,7 +232,7 @@ public class GeonurisLicenseController {
         }
         try {
             GeonurisLicense lic = licenseService.getById(id);
-            logService.log("GeoNURIS라이선스", "수정폼접근",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.VIEW,
                 u.getUsername() + " → ID:" + id + " [" + lic.getLicenseType() + "]");
             m.addAttribute("license", lic);
             addPermModel(m, u);
@@ -296,7 +298,7 @@ public class GeonurisLicenseController {
 
             GeonurisLicense saved = licenseService.update(lic);
 
-            logService.log("GeoNURIS라이선스", "수정",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.UPDATE,
                     u.getUsername() + " → ID:" + saved.getId() + " " + saved.getLicenseTypeLabel()
                     + " [" + saved.getUserName() + "]");
 
@@ -333,7 +335,7 @@ public class GeonurisLicenseController {
 
             licenseService.delete(id);
 
-            logService.log("GeoNURIS라이선스", "삭제",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.DELETE,
                     u.getUsername() + " → ID:" + id + " " + info);
 
             ra.addFlashAttribute("success", true);
@@ -392,7 +394,7 @@ public class GeonurisLicenseController {
                 "GeoNURIS라이선스_" + label + "_" + java.time.LocalDate.now() + ".csv",
                 java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
 
-            logService.log("GeoNURIS라이선스", "CSV다운로드",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.DOWNLOAD,
                 u.getUsername() + " (" + label + " " + list.size() + "건)");
 
             return ResponseEntity.ok()
@@ -474,7 +476,7 @@ public class GeonurisLicenseController {
             String contentDisposition = "attachment; filename=\"" + encodedName + "\"; "
                                       + "filename*=UTF-8''" + encodedName;
 
-            logService.log("GeoNURIS라이선스", "다운로드",
+            logService.log(MenuName.GEONURIS_LICENSE, AccessActionType.DOWNLOAD,
                     u.getUsername() + " → ID:" + id + " [" + lic.getUserName() + "]");
 
             return ResponseEntity.ok()
