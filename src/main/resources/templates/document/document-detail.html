@@ -80,21 +80,21 @@
                 </th:block>
 
                 <!-- HWPX 한글 다운로드 (문서유형별) -->
-                <th:block th:if="${doc.docType == 'COMMENCE' || doc.docType == 'INTERIM' || doc.docType == 'COMPLETION'}">
+                <th:block th:if="${doc.docType?.name() == 'COMMENCE' || doc.docType?.name() == 'INTERIM' || doc.docType?.name() == 'COMPLETION'}">
                     <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=letter'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#2e86de; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 공문(HWP)</a>
                 </th:block>
-                <th:block th:if="${doc.docType == 'COMMENCE'}">
+                <th:block th:if="${doc.docType?.name() == 'COMMENCE'}">
                     <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=commence_body'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#0abde3; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 착수계(HWP)</a>
                     <a th:href="@{'/document/api/excel/' + ${doc.docId}}" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#1cc88a; color:white; margin-left:8px;"><i class="fas fa-file-excel"></i> 설계내역서(Excel)</a>
                 </th:block>
-                <th:block th:if="${doc.docType == 'INTERIM'}">
+                <th:block th:if="${doc.docType?.name() == 'INTERIM'}">
                     <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=inspector'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#0abde3; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 검사원(HWP)</a>
                     <a th:href="@{'/document/api/excel/' + ${doc.docId}}" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#1cc88a; color:white; margin-left:8px;"><i class="fas fa-file-excel"></i> 기성내역서(Excel)</a>
                 </th:block>
-                <th:block th:if="${doc.docType == 'COMPLETION'}">
+                <th:block th:if="${doc.docType?.name() == 'COMPLETION'}">
                     <a th:href="@{'/document/api/hwpx/' + ${doc.docId} + '?type=completion_full'}" class="btn-hwpx" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#0abde3; color:white; margin-left:8px;"><i class="fas fa-file-alt"></i> 준공계(HWP)</a>
                 </th:block>
-                <th:block th:if="${doc.docType == 'COMMENCE' || doc.docType == 'INTERIM' || doc.docType == 'COMPLETION'}">
+                <th:block th:if="${doc.docType?.name() == 'COMMENCE' || doc.docType?.name() == 'INTERIM' || doc.docType?.name() == 'COMPLETION'}">
                     <a th:href="@{'/document/api/zip/' + ${doc.docId}}" style="padding:8px 16px; border-radius:5px; text-decoration:none; font-size:0.85em; font-weight:600; background:#6c5ce7; color:white; margin-left:8px;"><i class="fas fa-file-archive"></i> 일괄 다운로드(ZIP)</a>
                 </th:block>
 

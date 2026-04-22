@@ -149,16 +149,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="d, stat : ${documents}" th:attr="onclick=${d.docType == 'INSPECT' and d.docNo != null and d.docNo.startsWith('INSP-')} ? 'location.href=\'/document/inspect-detail/' + ${d.docNo.substring(5)} + '\'' : 'location.href=\'/document/detail/' + ${d.docId} + '\''">
+                    <tr th:each="d, stat : ${documents}" th:attr="onclick=${d.docType?.name() == 'INSPECT' and d.docNo != null and d.docNo.startsWith('INSP-')} ? 'location.href=\'/document/inspect-detail/' + ${d.docNo.substring(5)} + '\'' : 'location.href=\'/document/detail/' + ${d.docId} + '\''">
                         <td th:text="${documents.totalElements - (documents.number * documents.size) - stat.index}">1</td>
                         <td th:text="${d.docNo}">-</td>
                         <td><span class="badge type-badge" th:text="${T(com.swmanager.system.dto.DocumentDTO).getDocTypeLabel(d.docType)}">유형</span></td>
                         <td>
                             <!-- [스프린트 5 FR-2-F] 업무지원 INTERNAL 시 조직 표시, 그 외 지자체 fallback -->
-                            <span th:if="${d.docType == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
+                            <span th:if="${d.docType?.name() == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
                                   style="color:#00897b; font-weight:600;"
                                   th:text="${'[내부] ' + (d.orgUnitPath != null ? d.orgUnitPath : (d.orgUnitName != null ? d.orgUnitName : '-'))}">-</span>
-                            <span th:unless="${d.docType == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
+                            <span th:unless="${d.docType?.name() == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
                                   th:text="${d.targetDisplay != null and !d.targetDisplay.isEmpty() ? d.targetDisplay : '-'}">-</span>
                         </td>
                         <td>
