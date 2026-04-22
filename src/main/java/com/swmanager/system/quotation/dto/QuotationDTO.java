@@ -1,5 +1,6 @@
 package com.swmanager.system.quotation.dto;
 
+import com.swmanager.system.constant.enums.QuoteTemplateType;
 import com.swmanager.system.quotation.domain.Quotation;
 import com.swmanager.system.quotation.domain.QuotationItem;
 import lombok.*;
@@ -128,7 +129,8 @@ public class QuotationDTO {
         q.setVatIncluded(this.vatIncluded != null ? this.vatIncluded : true);
         q.setRounddownUnit(this.rounddownUnit != null ? this.rounddownUnit : 1);
         q.setShowSeal(this.showSeal != null ? this.showSeal : true);
-        q.setTemplateType(this.templateType != null ? this.templateType : 1);
+        // S8-C: 매직넘버 → QuoteTemplateType.BASIC
+        q.setTemplateType(this.templateType != null ? this.templateType : QuoteTemplateType.BASIC.getCode());
         q.setRemarks(this.remarks);
         q.setStatus(this.status != null ? this.status : "작성중");
         q.setCreatedBy(this.createdBy);

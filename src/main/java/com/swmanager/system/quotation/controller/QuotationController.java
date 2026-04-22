@@ -2,6 +2,7 @@ package com.swmanager.system.quotation.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constant.enums.QuoteTemplateType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
@@ -222,11 +223,14 @@ public class QuotationController {
         // 도장: URL 파라미터(seal)로 오버라이드 가능, 없으면 견적서 저장값 사용
         boolean showSealValue = seal != null ? seal : (dto.getShowSeal() != null ? dto.getShowSeal() : true);
         model.addAttribute("showSeal", showSealValue);
-        model.addAttribute("templateType", dto.getTemplateType() != null ? dto.getTemplateType() : 1);
+        // S8-C qt-quotation-template-type-enum (2026-04-22): 매직넘버 → QuoteTemplateType
+        model.addAttribute("templateType", dto.getTemplateType() != null ? dto.getTemplateType() : QuoteTemplateType.BASIC.getCode());
 
         logService.log(MenuName.QUOTATION, AccessActionType.PREVIEW, "견적서 미리보기: " + dto.getQuoteNumber());
-        int tplType = dto.getTemplateType() != null ? dto.getTemplateType() : 1;
-        return tplType == 2 ? "quotation/quotation-preview2" : "quotation/quotation-preview";
+        int tplType = dto.getTemplateType() != null ? dto.getTemplateType() : QuoteTemplateType.BASIC.getCode();
+        return tplType == QuoteTemplateType.LABOR_COST_INTEGRATED.getCode()
+                ? "quotation/quotation-preview2"
+                : "quotation/quotation-preview";
     }
 
     /** 견적서 수정 폼 */

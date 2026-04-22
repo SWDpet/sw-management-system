@@ -169,7 +169,7 @@ created: "2026-04-20"
   - `QtCategory` Enum 신설 (S9 AccessActionType 패턴 재사용)
 - **범위 외 (후속 스프린트로 분리)**:
   - `qt_quotation.status` — 전부 "발행완료" 단일값, 정규화 의미 낮음 → **별도 스프린트 S8-B (보류)**
-  - `qt_quotation.template_type` 매직 넘버 1/2 → **별도 스프린트 S8-C (후속)**
+  - `qt_quotation.template_type` 매직 넘버 1/2 → **S8-C 완료 (2026-04-22)** — `QuoteTemplateType` Enum 도입
 - **의존성**: 없음 (사용자 결정 완료)
 - **예상 기간**: 1~2일
 

@@ -843,6 +843,9 @@
                         <span style="color:#ddd;">|</span>
                         <label style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
                             출력양식
+                            <!-- S8-C (2026-04-22): value 는 QuoteTemplateType Enum code 와 대응
+                                 1 = BASIC (기본양식), 2 = LABOR_COST_INTEGRATED (인건비 통합양식)
+                                 Enum 동적 주입은 향후 양식 추가 시 분리 스프린트로 처리 -->
                             <select id="templateType" style="font-size:0.8rem;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:#fff;font-family:inherit;">
                                 <option value="1">기본양식</option>
                                 <option value="2">인건비 통합양식</option>

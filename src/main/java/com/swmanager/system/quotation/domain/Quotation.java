@@ -1,5 +1,6 @@
 package com.swmanager.system.quotation.domain;
 
+import com.swmanager.system.constant.enums.QuoteTemplateType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -72,7 +73,8 @@ public class Quotation {
 
     /** 출력 양식 (1=기본양식, 2=인건비통합양식) */
     @Column(name = "template_type")
-    private Integer templateType = 1;
+    // S8-C qt-quotation-template-type-enum (2026-04-22): 매직넘버 → QuoteTemplateType
+    private Integer templateType = QuoteTemplateType.BASIC.getCode();
 
     /** 비고 */
     @Column(name = "remarks", length = 2000)
