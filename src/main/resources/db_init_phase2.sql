@@ -271,12 +271,12 @@ ON CONFLICT DO NOTHING;
 -- item_name에 점검 내용, item_method는 빈값 (프론트에서 대상+내용만 표시)
 -- ============================================================
 INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
-('KRAS', 'GIS', 'GeoNURIS Spatial Server(GSS)', 'GSS 구동확인', 'ps –ef | grep –i geo 실행 확인', 1),
-('KRAS', 'GIS', 'GeoNURIS Spatial Server(GSS)', 'GSS 상태확인', 'GSS -I aliveness | GSS -I connections', 2),
-('KRAS', 'GIS', 'GeoNURIS Spatial Server(GSS)', 'GSS 로그확인', '/kras_home/geonuris/GeoNURIS_Spatail_Server3.6/logs 최신 로그일자 파일 확인 tail –f catalina.out', 3),
-('KRAS', 'GIS', 'GeoNURIS GeoWeb Server(GWS)', 'GWS로그확인', '/kras_home/app/MapStudio/log 최신 로그일자 파일 확인', 4),
-('KRAS', 'GIS', 'GeoNURIS GeoWeb Server(GWS)', 'GWS로그확인', '/kras_home/app/MapStudio/log 최신 로그일자 파일 확인', 5),
-('KRAS', 'GIS', 'GeoNURIS GeoWeb Server(GWS)', 'GWS서비스 확인', 'http://웹서버 IP:9080/msp 로 관리자페이지 접속 | 로그인 > Spatial > 공간데이터 정상표출 확인 | wms, wfs, wfs transaction 정상표출 확인', 6),
+('KRAS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 구동확인', 'ps –ef | grep –i geo 실행 확인', 1),
+('KRAS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 상태확인', 'GSS -I aliveness | GSS -I connections', 2),
+('KRAS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 로그확인', '/kras_home/geonuris/GeoNURIS_Spatail_Server3.6/logs 최신 로그일자 파일 확인 tail –f catalina.out', 3),
+('KRAS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS로그확인', '/kras_home/app/MapStudio/log 최신 로그일자 파일 확인', 4),
+('KRAS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS로그확인', '/kras_home/app/MapStudio/log 최신 로그일자 파일 확인', 5),
+('KRAS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS서비스 확인', 'http://웹서버 IP:9080/msp 로 관리자페이지 접속 | 로그인 > Spatial > 공간데이터 정상표출 확인 | wms, wfs, wfs transaction 정상표출 확인', 6),
 ('KRAS', 'GIS', '측량성과 프로그램', '부동산종합공부시스템 실행', 'C/S 실행 확인', 7),
 ('KRAS', 'GIS', 'GeoNURIS Desktop Pro', 'Desktop Pro 구동확인', '바탕화면의 Desktop Pro 실행', 8),
 ('KRAS', 'GIS', 'GeoNURIS Desktop Pro', 'Map Display 확인', '데이터저장소를 통해 데이터 목록 갱신 | 공간 데이터 표출 확인', 9)

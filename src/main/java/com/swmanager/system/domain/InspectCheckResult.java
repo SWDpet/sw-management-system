@@ -22,6 +22,8 @@ public class InspectCheckResult {
     @Column(name = "section", nullable = false, length = 20)
     private String section;
 
+    // S10 inspect-check-result-category-master (2026-04-22):
+    //  - NULL 허용 (작성 중 임시 저장), 비-NULL 값은 check_category_mst FK 제약으로 검증
     @Column(name = "category", length = 50)
     private String category;
 

@@ -22,7 +22,10 @@ public class InspectTemplate {
     @Column(name = "section", nullable = false, length = 20)
     private String section;
 
-    @Column(name = "category", length = 50)
+    // S10 inspect-check-result-category-master (2026-04-22):
+    //  - NOT NULL 강제 (V023 Phase 5) + check_category_mst FK (V023 Phase 4)
+    //  - 값 집합은 check_category_mst.(section_code, category_code) 로 제한
+    @Column(name = "category", nullable = false, length = 50)
     private String category;
 
     @Column(name = "item_name", nullable = false, length = 200)

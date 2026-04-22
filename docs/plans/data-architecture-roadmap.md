@@ -177,11 +177,12 @@ created: "2026-04-20"
 - **의존성**: 없음
 - **실제 소요**: 0.5일 (예상 2일보다 단축)
 
-#### S10. `inspect-check-result-category-master`
-- **배경**: `inspect_check_result.category` 35종 자유 텍스트 (공백 차이 등 오염 포함). S1 후속
-- **조치**: `check_category_mst` 마스터 신설 + FK 연결
-- **의존성**: S1(inspect-comprehensive-redesign) 완료 후
-- **예상 기간**: 2~3일
+#### S10. `inspect-check-result-category-master` ✅ **완료 (2026-04-22)**
+- **배경**: `inspect_check_result.category` 자유 텍스트 (공백 차이 등 오염 포함). S1 후속
+- **조치**: `check_category_mst` 16행 마스터 신설 + FK 2개 (`fk_it_category`, `fk_icr_category`) + `inspect_template.category` NOT NULL
+- **의존성**: S1 완료 ✅
+- **실제 소요**: 0.5일
+- **실행 결과**: V023 Phase 0~6 PASS. mst=16, FK×2, NOT NULL 적용. NFR-4 (공백 X 2쌍) 양 테이블 0 hits
 
 #### S11. `license-registry-type-enum` (P2 상향)
 - **배경**: `license_registry.license_type` 2종 (License Text / Floating License Text) 하드코딩
