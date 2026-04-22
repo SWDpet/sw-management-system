@@ -1076,19 +1076,9 @@
             document.getElementById('estHwTable').querySelector('tbody').innerHTML = '';
             document.getElementById('estSwTable').querySelector('tbody').innerHTML = '';
 
-            fetch('/projects/api/equip/' + projId)
-            .then(function(r) { return r.json(); })
-            .then(function(list) {
-                list.forEach(function(item) {
-                    var tableId = item.equipType === 'HW' ? 'estHwTable' : 'estSwTable';
-                    addEstEquipRow(tableId, item.equipType, {
-                        equipName: item.equipName,
-                        unitPrice: item.unitPrice,
-                        remark: item.remark
-                    });
-                });
-                calcEstPreview();
-            });
+            // S15 pjt-equip-decision (2026-04-22): 장비 fetch 제거 (pjt_equip DROP)
+            // /projects/api/equip/{projId} 호출 제거 — 엔드포인트 자체가 삭제됨
+            calcEstPreview();
         }
 
         function calcEstPreview() {

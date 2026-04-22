@@ -209,22 +209,11 @@
         }
 
         function loadInterimEquipFromProject(projId) {
+            // S15 pjt-equip-decision (2026-04-22): pjt_equip DROP 으로 장비 fetch 제거.
+            // 호출 자체는 유지 (다른 곳에서 참조) — no-op.
             if (!projId) return;
             document.getElementById('interimItemBody').innerHTML = '';
-            fetch('/projects/api/equip/' + projId)
-            .then(function(r) { return r.json(); })
-            .then(function(list) {
-                list.forEach(function(item) {
-                    if (item.equipType === 'SW') {
-                        addInterimItemRow({
-                            equipName: item.equipName,
-                            unitPrice: item.unitPrice,
-                            rate: 12
-                        });
-                    }
-                });
-                calcInterimPreview();
-            });
+            calcInterimPreview();
         }
 
         function calcInterimPreview() {
