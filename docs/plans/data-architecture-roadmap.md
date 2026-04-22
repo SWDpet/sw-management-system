@@ -229,7 +229,7 @@ created: "2026-04-20"
 - **의존성**: 사용자 의사결정
 - **예상 기간**: 0.5일
 
-#### S16. `tb-work-plan-decision`
+#### S16. `tb-work-plan-decision` ✅ **완료 (2026-04-22)**
 - **배경**: `tb_work_plan` 1건 (미사용 근접). Service/Controller/DTO 코드는 완비
 - **조치**: 사용자 판단 — (a) 기능 제거 or (b) `work_plan_type_mst` + `work_plan_status_mst` 마스터 신설 후 재활성화
 - **decision deadline**: Wave 3 종료일 (로드맵 시작 후 6주차 금요일)

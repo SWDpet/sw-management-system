@@ -1,6 +1,7 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
@@ -118,7 +119,7 @@ public class WorkPlanController {
         stepLabels.put(6, "기성/준공");
         stepLabels.put(7, "대금신청");
 
-        List<String> excludeStatuses = List.of("CANCELLED");
+        List<String> excludeStatuses = List.of(WorkPlanStatus.CANCELLED.name());
         int totalCount = 0;
 
         for (int step = 1; step <= 7; step++) {

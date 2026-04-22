@@ -1,5 +1,6 @@
 package com.swmanager.system.domain.workplan;
 
+import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
 import jakarta.persistence.*;
@@ -60,8 +61,9 @@ public class WorkPlan {
     @OneToMany(mappedBy = "parentPlan")
     private List<WorkPlan> childPlans = new ArrayList<>();
 
+    // S16 tb-work-plan-decision (2026-04-22): WorkPlanStatus Enum FK + 기본값
     @Column(name = "status", nullable = false, length = 20)
-    private String status = "PLANNED"; // PLANNED, CONTACTED, CONFIRMED, IN_PROGRESS, COMPLETED, POSTPONED, CANCELLED
+    private String status = WorkPlanStatus.PLANNED.name(); // 허용값: WorkPlanStatus 7 values
 
     @Column(name = "status_reason", length = 500)
     private String statusReason;
@@ -85,7 +87,7 @@ public class WorkPlan {
         if (this.createdAt == null) this.createdAt = LocalDateTime.now();
         if (this.updatedAt == null) this.updatedAt = LocalDateTime.now();
         if (this.repeatType == null) this.repeatType = "NONE";
-        if (this.status == null) this.status = "PLANNED";
+        if (this.status == null) this.status = WorkPlanStatus.PLANNED.name();
     }
 
     @PreUpdate

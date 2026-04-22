@@ -1,5 +1,6 @@
 package com.swmanager.system.service;
 
+import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
@@ -146,7 +147,7 @@ public class WorkPlanService {
         plan.setEndDate(parseDate(dto.getEndDate()));
         plan.setLocation(dto.getLocation());
         plan.setRepeatType(dto.getRepeatType() != null ? dto.getRepeatType() : "NONE");
-        plan.setStatus(dto.getStatus() != null ? dto.getStatus() : "PLANNED");
+        plan.setStatus(dto.getStatus() != null ? dto.getStatus() : WorkPlanStatus.PLANNED.name());
         plan.setStatusReason(dto.getStatusReason());
 
         return workPlanRepository.save(plan);

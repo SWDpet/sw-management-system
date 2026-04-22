@@ -543,3 +543,31 @@ INSERT INTO qt_category_mst (category_code, category_label, display_order) VALUE
   ('용역',     '용역',     2),
   ('제품',     '제품',     3)
 ON CONFLICT (category_code) DO NOTHING;
+
+
+-- ============================================================
+-- S16 tb-work-plan-decision (2026-04-22):
+--   work_plan_type_mst 10행 + work_plan_status_mst 7행 초기 시드
+-- ============================================================
+INSERT INTO work_plan_type_mst (type_code, type_label, color, display_order) VALUES
+  ('CONTRACT',   '계약',     '#1565c0', 1),
+  ('INSTALL',    '설치',     '#2e7d32', 2),
+  ('PATCH',      '패치',     '#00897b', 3),
+  ('INSPECT',    '점검',     '#ff9800', 4),
+  ('PRE_CONTACT','사전연락', '#9e9e9e', 5),
+  ('FAULT',      '장애처리', '#e74a3b', 6),
+  ('SUPPORT',    '업무지원', '#6a1b9a', 7),
+  ('SETTLE',     '기성/준공','#5c6bc0', 8),
+  ('COMPLETE',   '준공',     '#37474f', 9),
+  ('ETC',        '기타',     '#795548',10)
+ON CONFLICT (type_code) DO NOTHING;
+
+INSERT INTO work_plan_status_mst (status_code, status_label, display_order) VALUES
+  ('PLANNED',     '예정',     1),
+  ('CONTACTED',   '연락완료', 2),
+  ('CONFIRMED',   '확정',     3),
+  ('IN_PROGRESS', '진행중',   4),
+  ('COMPLETED',   '완료',     5),
+  ('POSTPONED',   '연기',     6),
+  ('CANCELLED',   '취소',     7)
+ON CONFLICT (status_code) DO NOTHING;

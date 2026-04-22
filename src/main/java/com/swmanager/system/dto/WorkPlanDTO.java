@@ -1,5 +1,7 @@
 package com.swmanager.system.dto;
 
+import com.swmanager.system.constant.enums.WorkPlanStatus;
+import com.swmanager.system.constant.enums.WorkPlanType;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import lombok.Data;
 import lombok.Builder;
@@ -71,60 +73,25 @@ public class WorkPlanDTO {
     }
 
     /**
-     * 업무유형별 캘린더 색상
+     * S16 tb-work-plan-decision (2026-04-22): switch 제거 + Enum 위임.
+     *  - 업무유형별 캘린더 색상 → WorkPlanType.colorOf(code)
      */
     public static String getTypeColor(String planType) {
-        if (planType == null) return "#858796";
-        switch (planType) {
-            case "CONTRACT": return "#1565c0";    // 파랑
-            case "INSTALL": return "#2e7d32";      // 초록
-            case "PATCH": return "#00897b";         // 틸
-            case "INSPECT": return "#ff9800";       // 주황
-            case "PRE_CONTACT": return "#9e9e9e";   // 회색
-            case "FAULT": return "#e74a3b";         // 빨강
-            case "SUPPORT": return "#6a1b9a";       // 보라
-            case "SETTLE": return "#5c6bc0";        // 인디고
-            case "COMPLETE": return "#37474f";       // 다크
-            case "ETC": return "#795548";            // 브라운
-            default: return "#858796";
-        }
+        return WorkPlanType.colorOf(planType);
     }
 
     /**
-     * 업무유형 한글명
+     * 업무유형 한글명 → WorkPlanType.labelOf(code)
      */
     public static String getTypeLabel(String planType) {
-        if (planType == null) return "";
-        switch (planType) {
-            case "CONTRACT": return "계약";
-            case "INSTALL": return "설치";
-            case "PATCH": return "패치";
-            case "INSPECT": return "점검";
-            case "PRE_CONTACT": return "사전연락";
-            case "FAULT": return "장애처리";
-            case "SUPPORT": return "업무지원";
-            case "SETTLE": return "기성/준공";
-            case "COMPLETE": return "준공";
-            case "ETC": return "기타";
-            default: return planType;
-        }
+        return WorkPlanType.labelOf(planType);
     }
 
     /**
-     * 상태 한글명
+     * 상태 한글명 → WorkPlanStatus.labelOf(code)
      */
     public static String getStatusLabel(String status) {
-        if (status == null) return "";
-        switch (status) {
-            case "PLANNED": return "예정";
-            case "CONTACTED": return "연락완료";
-            case "CONFIRMED": return "확정";
-            case "IN_PROGRESS": return "진행중";
-            case "COMPLETED": return "완료";
-            case "POSTPONED": return "연기";
-            case "CANCELLED": return "취소";
-            default: return status;
-        }
+        return WorkPlanStatus.labelOf(status);
     }
 
     /**

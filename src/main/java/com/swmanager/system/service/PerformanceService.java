@@ -1,6 +1,8 @@
 package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.DocumentType;
+import com.swmanager.system.constant.enums.WorkPlanStatus;
+import com.swmanager.system.constant.enums.WorkPlanType;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.PerformanceSummary;
 import com.swmanager.system.repository.UserRepository;
@@ -59,8 +61,9 @@ public class PerformanceService {
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.plusMonths(1).minusDays(1);
         var allInspects = workPlanRepository.findByAssigneeAndDateRange(userId, startDate, endDate);
-        int inspectPlan = (int) allInspects.stream().filter(p -> "INSPECT".equals(p.getPlanType())).count();
-        int inspectDone = (int) allInspects.stream().filter(p -> "INSPECT".equals(p.getPlanType()) && "COMPLETED".equals(p.getStatus())).count();
+        // S16: Enum 위임 (리터럴 제거)
+        int inspectPlan = (int) allInspects.stream().filter(p -> WorkPlanType.INSPECT.name().equals(p.getPlanType())).count();
+        int inspectDone = (int) allInspects.stream().filter(p -> WorkPlanType.INSPECT.name().equals(p.getPlanType()) && WorkPlanStatus.COMPLETED.name().equals(p.getStatus())).count();
         summary.setInspectPlanCount(inspectPlan);
         summary.setInspectDoneCount(inspectDone);
 
@@ -68,7 +71,7 @@ public class PerformanceService {
         var allPlans = workPlanRepository.findByAssigneeAndDateRange(userId, startDate, endDate);
         int planTotal = allPlans.size();
         int planOntime = (int) allPlans.stream()
-                .filter(p -> "COMPLETED".equals(p.getStatus()))
+                .filter(p -> WorkPlanStatus.COMPLETED.name().equals(p.getStatus()))
                 .filter(p -> p.getEndDate() == null || !p.getUpdatedAt().toLocalDate().isAfter(p.getEndDate()))
                 .count();
         summary.setPlanTotalCount(planTotal);
