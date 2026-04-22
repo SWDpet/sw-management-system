@@ -78,17 +78,15 @@
                     <tr><th>IP 주소</th> <td th:text="${server.ipAddr}"></td> <th>OS</th> <td th:text="${server.osNm}"></td></tr>
                     <tr><th>계정 (ID)</th> <td th:text="${server.accId}"></td> <th>MAC Address</th> <td th:text="${server.macAddr}"></td></tr>
                 </table>
-                <!-- H/W 스펙 정보 (I-01) -->
-                <th:block th:if="${server.serverModel != null or server.cpuSpec != null or server.diskSpec != null or server.rackLocation != null}">
-                    <div class="sub-title" style="border-left-color: #00897b; color: #00897b;"><i class="fas fa-microchip"></i> H/W 스펙</div>
-                    <table class="hw-spec-table">
-                        <tr><th>서버 모델</th> <td th:text="${server.serverModel}"></td> <th>시리얼 번호</th> <td th:text="${server.serialNo}"></td></tr>
-                        <tr><th>CPU</th> <td th:text="${server.cpuSpec}"></td> <th>메모리</th> <td th:text="${server.memorySpec}"></td></tr>
-                        <tr><th>디스크</th> <td th:text="${server.diskSpec}"></td> <th>네트워크</th> <td th:text="${server.networkSpec}"></td></tr>
-                        <tr><th>전원</th> <td th:text="${server.powerSpec}"></td> <th>OS 상세</th> <td th:text="${server.osDetail}"></td></tr>
-                        <tr><th>랙 위치</th> <td th:text="${server.rackLocation}"></td> <th>비고</th> <td th:text="${server.note}"></td></tr>
-                    </table>
-                </th:block>
+                <!-- H/W 스펙 정보 (I-01): 항상 표시, 빈 값은 '-' fallback -->
+                <div class="sub-title" style="border-left-color: #00897b; color: #00897b;"><i class="fas fa-microchip"></i> H/W 스펙</div>
+                <table class="hw-spec-table">
+                    <tr><th>서버 모델</th> <td th:text="${server.serverModel} ?: '-'"></td> <th>시리얼 번호</th> <td th:text="${server.serialNo} ?: '-'"></td></tr>
+                    <tr><th>CPU</th> <td th:text="${server.cpuSpec} ?: '-'"></td> <th>메모리</th> <td th:text="${server.memorySpec} ?: '-'"></td></tr>
+                    <tr><th>디스크</th> <td th:text="${server.diskSpec} ?: '-'"></td> <th>네트워크</th> <td th:text="${server.networkSpec} ?: '-'"></td></tr>
+                    <tr><th>전원</th> <td th:text="${server.powerSpec} ?: '-'"></td> <th>OS 상세</th> <td th:text="${server.osDetail} ?: '-'"></td></tr>
+                    <tr><th>랙 위치</th> <td th:text="${server.rackLocation} ?: '-'"></td> <th>비고</th> <td th:text="${server.note} ?: '-'"></td></tr>
+                </table>
                 <div class="sub-title">설치된 소프트웨어</div>
                 <table class="inner-table">
                     <thead><tr><th>구분</th> <th>제품명</th> <th>버전</th> <th>Port</th> <th>계정</th> <th>비밀번호</th> <th>SID</th> <th>설치경로</th></tr></thead>
@@ -109,17 +107,15 @@
                     <tr><th>IP 주소</th> <td th:text="${server.ipAddr}"></td> <th>OS</th> <td th:text="${server.osNm}"></td></tr>
                     <tr><th>계정 (ID)</th> <td th:text="${server.accId}"></td> <th>MAC Address</th> <td th:text="${server.macAddr}"></td></tr>
                 </table>
-                <!-- H/W 스펙 정보 (I-01) -->
-                <th:block th:if="${server.serverModel != null or server.cpuSpec != null or server.diskSpec != null or server.rackLocation != null}">
-                    <div class="sub-title" style="border-left-color: #00897b; color: #00897b;"><i class="fas fa-microchip"></i> H/W 스펙</div>
-                    <table class="hw-spec-table">
-                        <tr><th>서버 모델</th> <td th:text="${server.serverModel}"></td> <th>시리얼 번호</th> <td th:text="${server.serialNo}"></td></tr>
-                        <tr><th>CPU</th> <td th:text="${server.cpuSpec}"></td> <th>메모리</th> <td th:text="${server.memorySpec}"></td></tr>
-                        <tr><th>디스크</th> <td th:text="${server.diskSpec}"></td> <th>네트워크</th> <td th:text="${server.networkSpec}"></td></tr>
-                        <tr><th>전원</th> <td th:text="${server.powerSpec}"></td> <th>OS 상세</th> <td th:text="${server.osDetail}"></td></tr>
-                        <tr><th>랙 위치</th> <td th:text="${server.rackLocation}"></td> <th>비고</th> <td th:text="${server.note}"></td></tr>
-                    </table>
-                </th:block>
+                <!-- H/W 스펙 정보 (I-01): 항상 표시, 빈 값은 '-' fallback -->
+                <div class="sub-title" style="border-left-color: #00897b; color: #00897b;"><i class="fas fa-microchip"></i> H/W 스펙</div>
+                <table class="hw-spec-table">
+                    <tr><th>서버 모델</th> <td th:text="${server.serverModel} ?: '-'"></td> <th>시리얼 번호</th> <td th:text="${server.serialNo} ?: '-'"></td></tr>
+                    <tr><th>CPU</th> <td th:text="${server.cpuSpec} ?: '-'"></td> <th>메모리</th> <td th:text="${server.memorySpec} ?: '-'"></td></tr>
+                    <tr><th>디스크</th> <td th:text="${server.diskSpec} ?: '-'"></td> <th>네트워크</th> <td th:text="${server.networkSpec} ?: '-'"></td></tr>
+                    <tr><th>전원</th> <td th:text="${server.powerSpec} ?: '-'"></td> <th>OS 상세</th> <td th:text="${server.osDetail} ?: '-'"></td></tr>
+                    <tr><th>랙 위치</th> <td th:text="${server.rackLocation} ?: '-'"></td> <th>비고</th> <td th:text="${server.note} ?: '-'"></td></tr>
+                </table>
                 <div class="sub-title">설치된 소프트웨어</div>
                 <table class="inner-table">
                     <thead><tr><th>구분</th> <th>제품명</th> <th>버전</th> <th>Port</th> <th>계정</th> <th>비밀번호</th> <th>SID</th> <th>설치경로</th></tr></thead>

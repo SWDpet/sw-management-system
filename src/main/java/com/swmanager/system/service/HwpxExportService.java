@@ -397,12 +397,17 @@ public class HwpxExportService {
                 }
             }
             map.put("{{공정명}}", processName);
-            // 공정명 2줄 분할: 첫 ')' 다음 공백 기준
+            // 공정명 2줄 분할: ')' 기준 (공백 유무 무관).
+            //   예: "부동산종합공부시스템(KRAS)용 GIS SW 유지관리"
+            //        → 1줄: "부동산종합공부시스템(KRAS)"
+            //        → 2줄: "용 GIS SW 유지관리"
+            //   괄호 없으면 {{공정명1}}=전체, {{공정명2}}=빈 문자열
             String pn1 = processName, pn2 = "";
-            int splitIdx = processName.indexOf(") ");
-            if (splitIdx > 0) {
-                pn1 = processName.substring(0, splitIdx + 1);
-                pn2 = processName.substring(splitIdx + 2);
+            int closeIdx = processName.indexOf(")");
+            if (closeIdx > 0 && closeIdx < processName.length() - 1) {
+                pn1 = processName.substring(0, closeIdx + 1);
+                // ')' 바로 뒤 공백이 있으면 제거 (양 끝 trim)
+                pn2 = processName.substring(closeIdx + 1).trim();
             }
             map.put("{{공정명1}}", pn1);
             map.put("{{공정명2}}", pn2);
