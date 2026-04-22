@@ -161,13 +161,17 @@ created: "2026-04-20"
 
 ### 🟡 P2 — 구조 개선 (6건)
 
-#### S8. `qt-quotation-domain-normalize` (결합 스프린트)
-- **포함**:
-  - `qt_quotation.category` 한글(유지보수/용역/제품)과 `prj_types` 영문코드(GISSW/PKSW/TS) **값셋 통일** — 어느 쪽을 표준으로 할지 사용자 결정 필요
-  - `qt_quotation.status` 한글 "발행완료"(59건) → 상태 마스터 또는 Enum 신설
-  - `qt_quotation.template_type` 매직 넘버 1/2 → Enum
-- **의존성**: 사용자 정책 결정 선행 (prj_types 통일 여부)
-- **예상 기간**: 3~4일
+#### S8. `qt-quotation-domain-normalize` ✅ **완료 (2026-04-22)** (v2 범위 축소 — category 만)
+- **사용자 결정 (2026-04-22)**: 견적서는 유지보수/용역/제품 별도 도메인이며 prj_types 와 다름. **옵션 B 채택** (별도 마스터).
+- **본 스프린트 범위 (category 만)**:
+  - `qt_category_mst` 3행 마스터 신설 (한글 유지: 유지보수/용역/제품)
+  - `qt_quotation.category` FK 추가 (기존 61건 값 변경 0)
+  - `QtCategory` Enum 신설 (S9 AccessActionType 패턴 재사용)
+- **범위 외 (후속 스프린트로 분리)**:
+  - `qt_quotation.status` — 전부 "발행완료" 단일값, 정규화 의미 낮음 → **별도 스프린트 S8-B (보류)**
+  - `qt_quotation.template_type` 매직 넘버 1/2 → **별도 스프린트 S8-C (후속)**
+- **의존성**: 없음 (사용자 결정 완료)
+- **예상 기간**: 1~2일
 
 #### S9. `access-log-action-and-menu-sync` ✅ **완료 (2026-04-21)**
 - **포함**:

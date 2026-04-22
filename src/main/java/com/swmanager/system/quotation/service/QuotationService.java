@@ -1,5 +1,6 @@
 package com.swmanager.system.quotation.service;
 
+import com.swmanager.system.constant.enums.QtCategory;
 import com.swmanager.system.quotation.domain.*;
 import com.swmanager.system.quotation.dto.QuotationDTO;
 import com.swmanager.system.quotation.dto.RemarksPatternDto;
@@ -55,7 +56,11 @@ public class QuotationService {
 
     @Transactional
     public String generateQuoteNumber(String category, int year) {
-        Map<String, String> codeMap = Map.of("용역", "SQ", "제품", "PQ", "유지보수", "MQ");
+        // S8: Enum 기반 견적번호 prefix 매핑 (리터럴 제거)
+        Map<String, String> codeMap = Map.of(
+                QtCategory.SERVICE.getLabel(), "SQ",
+                QtCategory.PRODUCT.getLabel(), "PQ",
+                QtCategory.MAINTENANCE.getLabel(), "MQ");
         String code = codeMap.getOrDefault(category, "EQ");
 
         QuoteNumberSeq seq = seqRepository.findByYearAndCategory(year, category)
@@ -75,7 +80,11 @@ public class QuotationService {
 
     /** 다음 번호 미리보기 (실제 증가 없이) */
     public String previewNextNumber(String category, int year) {
-        Map<String, String> codeMap = Map.of("용역", "SQ", "제품", "PQ", "유지보수", "MQ");
+        // S8: Enum 기반 견적번호 prefix 매핑 (리터럴 제거)
+        Map<String, String> codeMap = Map.of(
+                QtCategory.SERVICE.getLabel(), "SQ",
+                QtCategory.PRODUCT.getLabel(), "PQ",
+                QtCategory.MAINTENANCE.getLabel(), "MQ");
         String code = codeMap.getOrDefault(category, "EQ");
         int nextSeq = seqRepository.findByYearAndCategory(year, category)
                 .map(s -> s.getLastSeq() + 1)
@@ -382,12 +391,13 @@ public class QuotationService {
         long total = quotationRepository.count();
         return Map.of(
                 "total", total,
-                "용역_count", quotationRepository.countByCategory("용역"),
-                "용역_amount", quotationRepository.sumAmountByCategory("용역"),
-                "제품_count", quotationRepository.countByCategory("제품"),
-                "제품_amount", quotationRepository.sumAmountByCategory("제품"),
-                "유지보수_count", quotationRepository.countByCategory("유지보수"),
-                "유지보수_amount", quotationRepository.sumAmountByCategory("유지보수")
+                // S8: Enum 기반 리터럴 제거 (통계 map key 는 기존 호환 유지)
+                QtCategory.SERVICE.getLabel() + "_count",       quotationRepository.countByCategory(QtCategory.SERVICE.getLabel()),
+                QtCategory.SERVICE.getLabel() + "_amount",      quotationRepository.sumAmountByCategory(QtCategory.SERVICE.getLabel()),
+                QtCategory.PRODUCT.getLabel() + "_count",       quotationRepository.countByCategory(QtCategory.PRODUCT.getLabel()),
+                QtCategory.PRODUCT.getLabel() + "_amount",      quotationRepository.sumAmountByCategory(QtCategory.PRODUCT.getLabel()),
+                QtCategory.MAINTENANCE.getLabel() + "_count",   quotationRepository.countByCategory(QtCategory.MAINTENANCE.getLabel()),
+                QtCategory.MAINTENANCE.getLabel() + "_amount",  quotationRepository.sumAmountByCategory(QtCategory.MAINTENANCE.getLabel())
         );
     }
 }

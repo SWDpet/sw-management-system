@@ -532,3 +532,14 @@ BEGIN
             FOREIGN KEY (region_code) REFERENCES sigungu_code(adm_sect_c);
     END IF;
 END $$;
+
+
+-- ============================================================
+-- S8 qt-quotation-domain-normalize (2026-04-22):
+--   qt_category_mst 초기 시드 3행 (유지보수/용역/제품)
+-- ============================================================
+INSERT INTO qt_category_mst (category_code, category_label, display_order) VALUES
+  ('유지보수', '유지보수', 1),
+  ('용역',     '용역',     2),
+  ('제품',     '제품',     3)
+ON CONFLICT (category_code) DO NOTHING;
