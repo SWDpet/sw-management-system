@@ -1,180 +1,58 @@
-# SW Manager 프로젝트 협업 가이드
+# CLAUDE.md — Claude Code 프로젝트 컨텍스트
 
-이 문서는 Claude Code가 swmanager 프로젝트에서 작업할 때 따라야 하는 팀 구조, 보고 라인, 자동화 규칙을 정의합니다.
-
----
-
-## 💡 워크플로우 스코프 자동 제안 (사용자 합의, 2026-04-20)
-
-작업 요청을 받으면 **정식 워크플로우(기획서·개발계획서·codex 검토)** 가 과한 경우 **명시적으로 단축 옵션을 제안**할 것:
-
-| 작업 성격 | 권장 |
-|----------|------|
-| 기능 추가, 데이터 변경, 스키마 변경 | 정식 워크플로우 |
-| 버그 수정, 명확한 회귀 fix | 정식 워크플로우 (간소화 가능) |
-| **단순 텍스트 변경, doc-only 수정, 정책 표기 정정** | **워크플로우 생략** + 단일 commit |
-| 디자인 톤 조정 (색상·여백 등) | 워크플로우 생략 + 즉시 적용 |
-| 명령형 작업 ("이거 바꿔줘", "이름 바꿔줘") | 즉시 적용 |
-
-**판단 기준**: 영향 범위 (코드/데이터/스키마/문서), 회귀 가능성, codex 검토로 얻는 가치.
-
-→ 두 옵션 (A/B) 으로 제안하고 사용자가 결정. Claude의 추천은 명시할 것 ("제안: A — 사유").
+> ⚠ Claude Code 플랫폼 전용 자동 로드 문서. **모든 에이전트 공통 진입점은 `@AGENTS.md`** 를 읽으세요.
 
 ---
 
-## 🚫 라이선스 관련 스프린트 영구 패스
+## 프로젝트 요약
 
-**사용자 결정 (2026-04-20)**: 다음 라이선스 데이터 정제/Enum 도입 스프린트는 **수동 한글화 작업 정책상** 영구 제외. 데이터 아키텍처 로드맵 작업 시 **Claude는 절대 추천 X**:
-
-- **S4** `license-country-cleanup-and-csv-fix` (license_registry.country)
-- **S11** `license-registry-type-enum`
-- **S12** `geonuris-license-type-enum`
-- **S13** (S4 병합)
-- **S14** `qr-license-decision`
-
-사용자가 명시적으로 다시 요청할 때만 진행. 자세한 내용은 [`docs/plans/data-architecture-roadmap.md`](./docs/plans/data-architecture-roadmap.md) §🚫 영구 패스 섹션 참조.
+- **SW Manager** — Spring Boot 3.2.1 / Java 17 / PostgreSQL / Thymeleaf
+- **서버 포트**: 9090
+- **DB**: PostgreSQL @ 211.104.137.55:5881/SW_Dept
+- **빌드**: `./mvnw spring-boot:run` 또는 `bash server-restart.sh`
 
 ---
 
-## 🎨 디자인 관련 작업 시 필수 체크
+## 핵심 워크플로우
 
-**사용자가 디자인·UI·스타일 관련 이야기를 꺼내면, 반드시 먼저 상기시킬 것:**
-
-> 📌 **Phase 4 대기 중**: 완전 다크모드는 **전체 CSS 변수 리팩터가 선행**되어야 합니다.
-> (50+ 템플릿의 인라인 `style="color:#..."` → `var(--...)` 전환)
-> 자세한 내용은 [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) 참조.
-> 사용자가 "이제 Phase 4 해줘" 또는 "다크모드 제대로 해줘" 라고 명시 요청할 때 진행.
-
-전체 디자인 시스템 정의는 **[docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md)** 참조.
-
----
-
-## 1. 가상 팀 구조
-
-본 프로젝트는 다음 4개의 가상 팀과 1개의 검증자(codex) 체계로 운영됩니다.
-
-| 팀 | 역할 | 산출물 |
-|----|------|--------|
-| 🧭 **기획팀** | 사용자의 요구사항을 받아 1차 기획서를 작성 | 기획서 (요건/UI/플로우) |
-| 🗄️ **데이터베이스팀** | DB 설계·최적화 전담. 기획 단계에서 자문 | 스키마 영향, 인덱스, 마이그레이션 의견 |
-| 🛠️ **개발팀** | 승인된 기획서를 바탕으로 개발계획 작성 후 구현 | 개발계획서, 실제 코드 |
-| 🧪 **테스트 및 검증팀** | 테스트·검증 (Claude는 직접 실행하지 않음) | 검증 결과 → codex로만 수행 |
-| 🤖 **codex (검증자)** | 모든 산출물의 게이트웨이/검증자 | 검토 결과를 사용자에게 전달 |
-
----
-
-## 2. 작업 흐름 (보고 라인)
+본 프로젝트는 **가상 팀 체계** (기획/DB/개발/테스트 + codex 검증) 를 따릅니다.
 
 ```
-사용자 요청
-    ↓
-[기획팀] 1차 기획서 작성
-    ↓ (Claude → codex)
-[codex] 기획서 검토
-    ↓ (codex → 사용자)
-사용자 피드백
-    ├─ "반영" → 기획팀이 의견 반영해 재보고
-    └─ "최종승인" → 다음 단계 진행
-        ↓
-[개발팀] 개발계획서 작성
-    ↓ (Claude → codex)
-[codex] 개발계획 검토
-    ↓ (codex → 사용자)
-사용자 최종승인
-    ↓
-[개발팀] 실제 코드 작성
-    ↓
-[테스트팀=codex] 테스트·검증
-    ↓
-사용자 확인 → "작업완료"
-    ↓
-자동 git commit + push
+요청 → 기획서 → codex 검토 → 사용자 최종승인
+     → 개발계획 → codex 검토 → 사용자 최종승인
+     → 구현 → codex 검증 → "작업완료" → 자동 commit+push
 ```
 
-### 핵심 규칙
-
-- **"최종승인" 이전에는 실제 파일을 수정하지 않는다.**
-- 기획팀/개발팀의 모든 산출물은 **반드시 codex CLI를 호출해 검토받은 뒤** 사용자에게 전달한다.
-- 테스트는 Claude가 직접 돌리지 않고 codex에게 위임한다.
-- 단순한 버그 수정·소소한 텍스트 변경 등은 위 절차를 생략할 수 있다 (사용자 판단).
+**자세한 규칙은 `@AGENTS.md` 참조**:
+- §3 팀 구조·워크플로우
+- §4 codex 연결 방법
+- §5 자동화 규칙 (서버 재시작, 작업완료 커밋)
+- §6 영구 패스 (라이선스 스프린트 추천 금지)
+- §7 디자인 작업 체크
 
 ---
 
-## 3. codex 연결 (CLI 호출 방식)
+## 도구 우선순위 (Claude Code 전용)
 
-Claude는 산출물을 codex CLI로 전달해 검토 결과를 받는다.
-
-### 호출 예시
-
-```bash
-# 기획서 검토 — 파일 경로를 프롬프트에 명시해 review 호출
-codex review "파일 docs/plans/feature-xxx.md 를 검토해줘. 평가 항목: 1) 요건 완전성 2) 설계 타당성 3) DB 영향 4) 리스크 누락 5) 개선 권고"
-
-# 개발계획 검토
-codex review "파일 docs/dev-plans/feature-xxx.md 를 검토해줘. 평가 항목: 1) 기획서 요구사항 모두 반영 2) 작업 순서 논리성 3) 회귀 테스트 커버리지 4) 롤백 전략"
-
-# 구현 후 검증 (Specs 충족 중심)
-codex review "구현 결과가 기획서(docs/plans/feature-xxx.md)와 개발계획서(docs/dev-plans/feature-xxx.md)의 모든 요구사항(FR/NFR/T#)을 충족하는지 항목별로 대조·확인해줘"
-```
-
-### codex 검증 원칙 (⚠ 반드시 준수)
-
-구현 완료 후 codex 검증 단계에서는 **최초 기획서 및 개발계획서의 요구사항(Specs) 을 모두 충족했는가** 를 **중점적으로** 검증한다.
-
-1. codex 프롬프트에 **기획서 파일 경로와 개발계획서 파일 경로를 반드시 명시**한다.
-2. codex 는 구현 결과(변경된 파일)를 읽고 **FR-1 ~ FR-n, NFR-1 ~ NFR-n, T1 ~ Tn 각 항목에 대해 "충족/미충족/부분충족" 을 판정**한다.
-3. 일부라도 미충족이면 평가는 `⚠ 수정필요` 또는 `❌ 반려`.
-4. 스타일·네이밍 등 부가 개선 의견은 주 검증 이후 별도 섹션으로 덧붙인다 (Specs 충족 판정과 혼동 금지).
-
-### 보고 형식
-
-codex 응답은 사용자에게 다음 형식으로 전달:
-
-```
-[codex 검토 결과]
-- 평가: ✅ 승인 / ⚠ 수정필요 / ❌ 반려
-- 주요 의견: ...
-- 권장 수정사항: ...
-```
+- 검색 → **Grep** (NOT `grep`/`rg`)
+- 파일 찾기 → **Glob** (NOT `find`/`ls`)
+- 읽기 → **Read** (NOT `cat`/`head`/`tail`)
+- 수정 → **Edit** (NOT `sed`/`awk`)
+- 쓰기 → **Write** (신규만. 기존 파일은 Edit)
 
 ---
 
-## 4. 자동화 규칙
+## 주요 문서 링크
 
-### 4-1. 서버 재시작 자동화
-서버(Spring Boot) 재시작이 필요한 변경 후에는 사용자 승인 없이 즉시 재시작한다.
-
-```bash
-bash server-restart.sh
-```
-
-**이유:** 매번 승인 요청이 작업 흐름을 방해하므로.
-
-### 4-2. "작업완료" → 자동 커밋+푸시
-사용자가 "작업완료"라고 말하면 즉시 다음을 수행:
-1. `git add` (관련 파일만 명시적으로 추가)
-2. `git commit -m "..."` (변경 의도 중심의 커밋 메시지)
-3. `git push`
-
-**금지 사항:**
-- `.env`, credential, 대용량 바이너리 등 민감/불필요 파일은 절대 커밋하지 않는다.
-- `git add -A` / `git add .` 대신 파일을 명시적으로 지정한다.
-
-### 4-3. 작업 도구 우선순위
-- 검색: `Grep` (NOT `grep`/`rg`)
-- 파일 찾기: `Glob` (NOT `find`/`ls`)
-- 파일 읽기: `Read` (NOT `cat`/`head`/`tail`)
-- 파일 수정: `Edit` (NOT `sed`/`awk`)
+- `@AGENTS.md` — 에이전트 진입점 (필독)
+- `@ARCHITECTURE.md` — 시스템 아키텍처
+- `@docs/design-docs/data-architecture-roadmap.md` — 데이터 아키텍처 로드맵
+- `@docs/generated/erd.md` — ERD
+- `@docs/product-specs/ai-search.md` — AI 검색 기획서
+- `@docs/DESIGN.md` — 디자인 시스템
+- `@docs/SECURITY.md` / `@docs/RELIABILITY.md` — 보안·안정성
+- `@docs/exec-plans/archive/quotation-deploy.md` — 견적서 배포 가이드
 
 ---
 
-## 5. 프로젝트 정보
-
-- **서버 포트:** 9090
-- **DB:** PostgreSQL @ 211.104.137.55:5881/SW_Dept
-- **빌드/실행:** `./mvnw spring-boot:run` 또는 `bash server-restart.sh`
-- **주요 문서:**
-  - [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) — 배포 가이드
-  - [DEVELOPMENT_GUIDELINES.md](./DEVELOPMENT_GUIDELINES.md) — 개발 가이드라인
-  - [docs/ERD.md](./docs/ERD.md) — ERD 문서
-  - [docs/AI_SEARCH_PLAN.md](./docs/AI_SEARCH_PLAN.md) — AI 검색 기획서
+*Last updated: 2026-04-24 · docs-renewal-01 P3 축약 (기존 180줄 → ~50줄)*
