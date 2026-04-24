@@ -3,113 +3,167 @@ tags: [plan, docs, restructure]
 sprint: "docs-renewal-01"
 status: draft
 created: "2026-04-24"
+updated: "2026-04-24"
 ---
 
 # [기획서] 문서 구조 전면 리뉴얼 (AGENTS/ARCHITECTURE 중심 SSoT 체계)
 
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-24
-- **선행**: `HEAD` (현재 브랜치 기준)
-- **상태**: 초안 (codex 검토 대기)
+- **상태**: v2 (codex v1 ❌ 반려 12건 반영)
+- **v1→v2 변경점**:
+  1. 실측 인벤토리 전면 갱신 (33 / 37 / 16 / 96 / 106)
+  2. "전수" 범위 명문화 (root + docs, 제외 디렉터리 명시)
+  3. `*-decision.md` 실측 5개 재산정 (plans 2, dev-plans 3)
+  4. design-docs 선별을 속성 기반 규칙표로 전환
+  5. 링크 수정 범위를 Java/resources/JS/SQL 주석까지 확장 + 실측 근거
+  6. `application.properties`/`@Value` 경로 화이트리스트 표 추가
+  7. 커밋 전략 단일화: **단일 브랜치 + Phase별 원자 commit** (NFR-7 문구 재작성)
+  8. 링크 검증 강화: Markdown + HTML `href/src` + 파일 존재 + 앵커
+  9. acceptance 에서 "codex 승인" 을 보조지표로 강등, 객관 스크립트 게이트를 주로 승격
+  10. redirect README 유지 기간/삭제 시점 acceptance 포함
+  11. Before/After 인벤토리 표 필수 산출물 추가
 
 ---
 
 ## 1. 배경 / 목표
 
-### 배경
-- 현재 프로젝트 문서는 **90+개 .md 파일**이 루트/`docs/`/`docs/plans/`/`docs/dev-plans/`/`docs/audit/` 등에 분산되어 있어 **에이전트(Claude/codex)가 맥락을 찾기 어렵다**.
-- 루트에 `CLAUDE.md`, `DEPLOYMENT_GUIDE.md`, `DEVELOPMENT_GUIDELINES.md`, `HELP.md`, `README.md`가 섞여 있고, **단일 진입점(Entry)이 없어** 어느 문서부터 읽어야 하는지 불명확.
-- 에이전트 지향 레이아웃(AGENTS.md 진입점 + ARCHITECTURE.md 최상위 맵 + `docs/` SSoT)으로 전환하면 **맥락 탐색 비용이 감소**하고, **자동 생성 문서(generated/)와 수동 문서(design-docs/product-specs)가 분리**되어 유지보수성이 향상된다.
+### 1-1. 배경 (2026-04-24 실측)
 
-### 재검증 결과 (2026-04-24)
-- `ls docs/` → 17개 (.md 8개 + 폴더 4개 + 기타)
-- `ls docs/plans/` → 27개 (기획서)
-- `ls docs/dev-plans/` → 31개 (개발계획서)
-- `ls docs/audit/` → 16개 (감사 결과)
-- 루트 .md → 5개 (`CLAUDE.md`, `DEPLOYMENT_GUIDE.md`, `DEVELOPMENT_GUIDELINES.md`, `HELP.md`, `README.md`)
+| 항목 | 수량 |
+|------|-----:|
+| `docs/plans/*.md` | **33** |
+| `docs/dev-plans/*.md` | **37** |
+| `docs/audit/*.md` | **16** |
+| `docs/**/*.md` (전체) | **96** |
+| 리포지토리 전체 `.md` | **106** |
+| 루트 `.md` | **5** (`CLAUDE.md`, `DEPLOYMENT_GUIDE.md`, `DEVELOPMENT_GUIDELINES.md`, `HELP.md`, `README.md`) |
+| `*-decision.md` (docs/ 전체) | **5** — plans 2 (pjt-equip / tb-work-plan), dev-plans 3 (pjt-equip / s8-hwpx-literal / tb-work-plan) |
 
-### 목표
-- **G1**: 에이전트가 `AGENTS.md`만 읽으면 전체 문서 맵을 이해할 수 있다 (진입점 단일화).
-- **G2**: 모든 문서가 목표 구조(스크린샷 기준)에 정확히 매핑되어 "이 문서는 어디에 있는가" 질문이 1분 내에 해결된다.
-- **G3**: 내부 참조 링크(`[text](path)`, `href`, `rel=`) 깨짐 **0건**.
-- **G4**: git 히스토리 보존 (모든 이동은 `git mv` 사용).
-- **G5**: 신규 문서 6종(`ARCHITECTURE`, `FRONTEND`, `PRODUCT_SENSE`, `QUALITY_SCORE`, `RELIABILITY`, `SECURITY`)은 **코드 스캔 기반 자동 채움** 초안으로 생성된다.
+### 1-2. 범위 정의 ("전수"의 명문화)
+
+| 구분 | 포함 여부 |
+|------|----------|
+| `/` (repo root .md) | ✅ 포함 |
+| `docs/**` | ✅ 포함 |
+| `src/**`, `swdept/**`, `server-restart.sh` 등 비-.md | ❌ 제외 (링크 수정 대상만 별도 §2-5) |
+| `.git`, `target`, `node_modules`, `.idea`, `.vscode`, `docs/.obsidian` | ❌ 제외 (무시) |
+| `docs/templates/` | ✅ 포함 (유지 대상) |
+
+### 1-3. 목표
+
+- **G1**: `AGENTS.md` 단일 진입점 → 전체 문서 맵 이해 가능
+- **G2**: 모든 문서가 목표 구조에 정확히 매핑 + Before/After 표 제공
+- **G3**: 내부 참조 링크(Markdown inline/reference + HTML `href/src` + 앵커) 깨짐 **0건** (자동 검증)
+- **G4**: git 히스토리 보존 (`git mv` 강제)
+- **G5**: 신규 문서 6종 (`ARCHITECTURE`, `FRONTEND`, `PRODUCT_SENSE`, `QUALITY_SCORE`, `RELIABILITY`, `SECURITY`) 은 코드 스캔 + 기존 문서 통합으로 초안 생성. "자동 생성 초안 — 검증 필요" 배너 포함
 
 ---
 
 ## 2. 기능 요건 (FR)
 
 ### 2-1. 최상위 구조 (루트)
+
 | ID | 내용 |
 |----|------|
-| FR-1 | 루트에 `AGENTS.md` 신규 생성. `DEVELOPMENT_GUIDELINES.md` 내용 + `CLAUDE.md` 워크플로우 요약 통합. ~100줄 목차/진입점 역할. |
-| FR-2 | 루트에 `ARCHITECTURE.md` 신규 생성. `pom.xml`, `src/main/java/com/swmanager/` 패키지 트리, `ERD.md` 요약 기반 자동 생성. |
-| FR-3 | 기존 `CLAUDE.md`는 유지하되 **AGENTS.md를 참조하도록 축약** (2차 소스). Claude Code의 `@CLAUDE.md` 관행 유지. |
-| FR-4 | `README.md`, `HELP.md`는 현재 위치 유지 (Spring Initializr 기본). |
-| FR-5 | `DEVELOPMENT_GUIDELINES.md`는 AGENTS.md로 통합 후 **파일 삭제**. |
-| FR-6 | `DEPLOYMENT_GUIDE.md`는 **견적서 모듈 배포 가이드**(1회성)이므로 `docs/exec-plans/archive/quotation-deploy.md`로 이관 후 원본 삭제. 일반 배포 가이드가 필요해지면 별도 작성. |
+| FR-1 | 루트에 `AGENTS.md` 신규. `DEVELOPMENT_GUIDELINES.md` 내용 + `CLAUDE.md` 워크플로우 요약 통합 |
+| FR-2 | 루트에 `ARCHITECTURE.md` 신규. pom.xml + 패키지 트리 + ERD 요약 자동 |
+| FR-3 | `CLAUDE.md` 유지하되 AGENTS.md 참조로 축약 (Claude Code 자동 로드 기능 보존) |
+| FR-4 | `README.md`, `HELP.md` 유지 |
+| FR-5 | `DEVELOPMENT_GUIDELINES.md` → AGENTS.md 통합 후 삭제 |
+| FR-6 | `DEPLOYMENT_GUIDE.md` → `docs/exec-plans/archive/quotation-deploy.md` 이관 (git mv + rename) |
 
 ### 2-2. `docs/` 루트 파일
+
 | ID | 내용 |
 |----|------|
-| FR-7 | `docs/DESIGN_SYSTEM.md` → `docs/DESIGN.md` rename (`git mv`). |
-| FR-8 | `docs/FRONTEND.md` 신규. `src/main/resources/templates/` 구조 + Thymeleaf 컴포넌트 규칙 + 인라인 스타일 현황 기반 자동 생성. |
-| FR-9 | `docs/PLANS.md` 신규. 로드맵 요약(기존 `docs/plans/data-architecture-roadmap.md` + 미완료 기획서 목록 집계). |
-| FR-10 | `docs/PRODUCT_SENSE.md` 신규. 팀 구성(CLAUDE.md 가상팀) + 제품 비전(README/HOME) + 의사결정 히스토리(CLAUDE.md §🚫 영구패스 등) 통합. |
-| FR-11 | `docs/QUALITY_SCORE.md` 신규. 패키지별(admin/quotation/inspect/process 등) 품질 등급 테이블. 기존 `docs/audit/` 결과 요약. |
-| FR-12 | `docs/RELIABILITY.md` 신규. `server-restart.sh` 타임아웃/재시도 로직, Spring Boot `server.servlet.session.timeout`, `SecurityLoginProperties` 잠금 정책 기반 자동 생성. |
-| FR-13 | `docs/SECURITY.md` 신규. `SecurityConfig.java` + `application.properties` 보안 설정 + 감사 보안 조치(P1-1 등) 기반 자동 생성. |
-| FR-14 | `docs/ERD.md`, `docs/AI_SEARCH_PLAN.md`, `docs/HOME.md`, `docs/OBSIDIAN_SETUP.md`, `docs/SETUP_GUIDE.md`, `docs/TEAM_WORKFLOW.md`, `docs/견적서_VAT_표시기준.md` 는 **적절한 하위 폴더로 재배치** (§2-4 매핑표 참조). |
+| FR-7 | `docs/DESIGN_SYSTEM.md` → `docs/DESIGN.md` rename |
+| FR-8 | `docs/FRONTEND.md` 신규 (templates 트리 + static + 인라인 스타일 통계) |
+| FR-9 | `docs/PLANS.md` 신규 (로드맵 요약) |
+| FR-10 | `docs/PRODUCT_SENSE.md` 신규 (팀 구성 + 비전 + 의사결정 히스토리) |
+| FR-11 | `docs/QUALITY_SCORE.md` 신규 (audit 요약 + 패키지별 등급) |
+| FR-12 | `docs/RELIABILITY.md` 신규 (기동/세션/락 정책) |
+| FR-13 | `docs/SECURITY.md` 신규 (SecurityConfig + 감사 P1 조치) |
+| FR-14 | 나머지 `docs/*.md` 재배치 (§2-4 매핑표) |
 
-### 2-3. `docs/` 하위 폴더
+### 2-3. `docs/` 하위 폴더 (§2-4 매핑표 참조)
+
 | ID | 내용 |
 |----|------|
-| FR-15 | `docs/design-docs/` 신규 생성. **검증 완료된 아키텍처 결정 문서** 카탈로그. 기존 `docs/plans/` 중 `*-decision.md` 및 `data-architecture-roadmap.md` 이관. |
-| FR-16 | `docs/exec-plans/` 신규 생성. 기존 `docs/dev-plans/` **전체 이관** (31개). `git mv docs/dev-plans docs/exec-plans`. |
-| FR-17 | `docs/exec-plans/archive/` 생성. `DEPLOYMENT_GUIDE.md` 이관. |
-| FR-18 | `docs/product-specs/` 신규 생성. 기존 `docs/plans/` **전체 이관** (27개, §FR-15에서 design-docs로 옮긴 것 제외). `git mv docs/plans docs/product-specs`. |
-| FR-19 | `docs/generated/` 신규 생성. |
-| FR-20 | `docs/generated/audit/` 신규 생성. 기존 `docs/audit/` **전체 이관** (16개). `git mv docs/audit docs/generated/audit`. |
-| FR-21 | `docs/references/` 신규 생성. 당장 이관 대상 없음 (빈 폴더 + README.md로 용도 설명). 향후 Spring Boot / Thymeleaf / PostgreSQL 외부 레퍼런스 재포맷 시 사용. |
-| FR-22 | `docs/templates/` 는 **그대로 유지** (sprint 템플릿들). 목표 구조 외지만 워크플로우에 필수. |
+| FR-15 | `docs/design-docs/` 신규 — 속성 기반 선별 이관 (§2-4-A 규칙) |
+| FR-16 | `docs/exec-plans/` 신규 — `docs/dev-plans/` 37개 전체 이관 (git mv) |
+| FR-17 | `docs/exec-plans/archive/` 신규 — `DEPLOYMENT_GUIDE.md` 이관 |
+| FR-18 | `docs/product-specs/` 신규 — `docs/plans/` 나머지(=31개) 이관 |
+| FR-19 | `docs/generated/` 신규 |
+| FR-20 | `docs/generated/audit/` 신규 — `docs/audit/` 16개 전체 이관 |
+| FR-21 | `docs/references/` 신규 + README 설명 (빈 폴더 방지) |
+| FR-22 | `docs/templates/` 그대로 유지 |
 
-### 2-4. 개별 파일 매핑표 (현재 → 목표)
+### 2-4-A. design-docs 선별 규칙 (속성 기반)
+
+**이관 대상 조건** (AND/OR):
+
+| 속성 | 판정 |
+|------|------|
+| 파일명 suffix `-decision.md` | **✅ 자동 대상** (plans 2개: `pjt-equip-decision`, `tb-work-plan-decision`) |
+| frontmatter `status: approved` or `status: final` | ✅ 대상 |
+| 본문에 "사용자 최종승인 완료" + "구현 완료" 동시 기재 | ✅ 대상 |
+| 로드맵 성격 (`data-architecture-roadmap.md`) | ✅ 대상 (아키텍처 결정 집약) |
+| `dev-plans/` 내 `-decision.md` (3개) | **❌ 제외** — 개발계획은 실행 문서이므로 `exec-plans/` 잔류 (선별 제외 규칙) |
+
+**예상 이관 목록** (개발계획 단계 Step 1 Precheck 에서 실측 재확정):
+1. `docs/plans/pjt-equip-decision.md`
+2. `docs/plans/tb-work-plan-decision.md`
+3. `docs/plans/data-architecture-roadmap.md`
+4. 기타 status/본문 조건으로 자동 감지 (개발계획에서 grep 스크립트로 확정)
+
+### 2-4-B. 개별 파일 매핑표 (Before → After)
 
 | 현재 경로 | 목표 경로 | 방식 |
 |-----------|-----------|------|
-| `CLAUDE.md` | `CLAUDE.md` (축약) + `AGENTS.md` (신규) | 축약 + 신규 |
-| `DEVELOPMENT_GUIDELINES.md` | `AGENTS.md` (통합) | 통합 후 삭제 |
+| `CLAUDE.md` | `CLAUDE.md` (축약) + `AGENTS.md` 신규 | 축약 + 신규 |
+| `DEVELOPMENT_GUIDELINES.md` | `AGENTS.md` 통합 | 삭제 (통합 후) |
 | `DEPLOYMENT_GUIDE.md` | `docs/exec-plans/archive/quotation-deploy.md` | git mv + rename |
-| `README.md` | `README.md` | 유지 |
-| `HELP.md` | `HELP.md` | 유지 |
+| `README.md`, `HELP.md` | 유지 | 유지 |
 | `docs/AI_SEARCH_PLAN.md` | `docs/product-specs/ai-search.md` | git mv + rename |
-| `docs/DESIGN_SYSTEM.md` | `docs/DESIGN.md` | git mv (rename) |
+| `docs/DESIGN_SYSTEM.md` | `docs/DESIGN.md` | git mv |
 | `docs/ERD.md` | `docs/generated/erd.md` | git mv |
-| `docs/HOME.md` | `docs/PRODUCT_SENSE.md`에 통합 + 삭제 | 통합 |
+| `docs/HOME.md` | `docs/PRODUCT_SENSE.md` 통합 | 삭제 |
 | `docs/OBSIDIAN_SETUP.md` | `docs/references/obsidian-setup.md` | git mv |
 | `docs/SETUP_GUIDE.md` | `docs/references/setup-guide.md` | git mv |
-| `docs/TEAM_WORKFLOW.md` | `AGENTS.md`에 통합 + 삭제 | 통합 |
-| `docs/견적서_VAT_표시기준.md` | `docs/product-specs/quotation-vat-rules.md` | git mv + rename (한글→영문) |
+| `docs/TEAM_WORKFLOW.md` | `AGENTS.md` 통합 | 삭제 |
+| `docs/견적서_VAT_표시기준.md` | `docs/product-specs/quotation-vat-rules.md` | git mv + rename (한→영) |
 | `docs/audit/*.md` (16개) | `docs/generated/audit/*.md` | git mv (폴더 이동) |
-| `docs/plans/*-decision.md` (5개) + `data-architecture-roadmap.md` | `docs/design-docs/` | git mv (선별) |
-| `docs/plans/*.md` (나머지 22개) | `docs/product-specs/*.md` | git mv (일괄) |
-| `docs/dev-plans/*.md` (31개) | `docs/exec-plans/*.md` | git mv (폴더 이동) |
-| `docs/templates/` | `docs/templates/` | 유지 |
+| `docs/plans/*` 중 design-docs 선별 대상 (≥3개) | `docs/design-docs/` | git mv (선별) |
+| `docs/plans/*` 나머지 (~30개) | `docs/product-specs/*.md` | git mv (일괄) |
+| `docs/dev-plans/*.md` (37개) | `docs/exec-plans/*.md` | git mv (폴더 이동) |
+| `docs/templates/` | 유지 | — |
 
-**선별 이관 대상 (design-docs)**:
-- `docs/plans/pjt-equip-decision.md`
-- `docs/plans/tb-work-plan-decision.md`
-- `docs/plans/s8-hwpx-literal-decision.md` — dev-plans에만 있음, 확인 필요
-- `docs/plans/data-architecture-roadmap.md`
-- (codex 검토 단계에서 `*-decision.md` 정규식 기반 재확정)
+### 2-5. 링크·참조 수정 범위 (v2 확장)
 
-### 2-5. 내부 링크 수정
+**코드 내 `docs/` 참조 실측 (2026-04-24 codex 스캔)**:
+
+| 파일 | 라인 | 참조 | 조치 |
+|------|-----:|------|------|
+| `src/main/resources/application.properties` | 26 | `app.erd.mmd-dir=docs` | ⚠ 키별 화이트리스트 표 §2-5-B 참조 |
+| `src/main/java/com/swmanager/system/service/ErdGraphService.java` | 33, 34 | `docs/ERD.md` 유사 경로 | ✅ 수정 필요 → `docs/generated/erd.md` |
+| `src/main/resources/db_init_phase2.sql` | 431 | docs 경로 주석 참조 | ✅ 주석 업데이트 |
+| `src/main/resources/static/js/admin-user.js` | 4 | docs 참조 | ✅ 수정 or 주석 제거 |
+
 | ID | 내용 |
 |----|------|
-| FR-23 | 모든 .md 파일 내부의 상대경로 링크(`(./xxx.md)`, `(../xxx.md)`)를 신규 경로로 일괄 수정. |
-| FR-24 | Java 소스의 문서 참조 문자열 (`"docs/plans/..."` 같은 하드코딩)도 검색/수정. 예: `application.properties` 의 `app.erd.mmd-dir=docs`, `app.erd.descriptions-file=docs/erd-descriptions.yml` 등은 **유지**(경로 변경 없음). |
-| FR-25 | `CLAUDE.md` §5 "주요 문서" 섹션의 링크 5개 (`DEPLOYMENT_GUIDE`, `DEVELOPMENT_GUIDELINES`, `docs/ERD.md`, `docs/AI_SEARCH_PLAN.md`) 신규 경로로 갱신. |
-| FR-26 | `.mmd` 파일 로드 경로 (`app.erd.mmd-dir=docs`)는 ERD가 `docs/generated/erd.md` 이동 후에도 `.mmd` 파일은 별도라 영향 없음을 확인. |
+| FR-23 | 모든 `.md` 파일 내 Markdown 링크(`[text](./path)`, `[text](path)`, reference style) 신규 경로로 일괄 수정 |
+| FR-24 | `src/main/java`, `src/main/resources`, `src/main/resources/static`, `swdept/sql` 내 `docs/` 문자열 참조 전수 스캔·수정 |
+| FR-25 | `CLAUDE.md` §5 "주요 문서" 링크 5개 갱신 |
+| FR-26 | `.mmd` 로드 경로 영향 확인 (`app.erd.mmd-dir` 은 mmd 파일용이라 ERD.md 이관과 별개) |
+
+### 2-5-B. application.properties / @Value 경로 화이트리스트
+
+| Key | 현재 값 | 조치 | 사유 |
+|-----|---------|------|------|
+| `app.erd.mmd-dir` | `docs` | **유지** | `.mmd` 파일 디렉터리이지 ERD.md 경로 아님 |
+| `app.erd.descriptions-file` | `docs/erd-descriptions.yml` | **유지** | yml 파일 경로, 이관 대상 아님 |
+| (기타 `@Value("docs/...")`) | Step 1 precheck 에서 `rg '@Value\("\$\{?docs' src/main/java` 전수 | 필요 시 갱신 or 유지 판단 | 개별 판정 |
 
 ---
 
@@ -117,60 +171,64 @@ created: "2026-04-24"
 
 | ID | 내용 |
 |----|------|
-| NFR-1 | Maven compile 성공 (문서 변경이 코드 빌드에 영향 없음 확인). |
-| NFR-2 | 서버 재기동 후 ERD 탭(`/system-graph` 등) 정상 동작. 경로 하드코딩 검증. |
-| NFR-3 | `git log --follow docs/exec-plans/audit-fix-p1.md` 수행 시 이관 전 `docs/dev-plans/audit-fix-p1.md` 히스토리 추적 가능 (git mv 사용 확인). |
-| NFR-4 | 내부 링크 깨짐 0건 — `find . -name "*.md" -exec grep -l "\]([\./].*\.md)" {} \;` 후 모든 링크 검증 스크립트 통과. |
-| NFR-5 | 신규 문서 6종 각 **최소 섹션 3개 + 200자 이상** 콘텐츠 채움 (빈 파일 금지). |
-| NFR-6 | AGENTS.md 100줄±20 (진입점 목적에 맞는 간결성). |
-| NFR-7 | 모든 이관 작업은 **단일 브랜치** 내 commit으로 묶어 rollback 시 revert 1회로 처리 가능. |
+| NFR-1 | Maven `./mvnw clean compile` 성공 |
+| NFR-2 | 서버 기동 후 ERD 탭/`/system-graph` 정상 동작 |
+| NFR-3 | `git log --follow docs/exec-plans/audit-fix-p1.md` 등으로 이관 전 히스토리 추적 가능 |
+| NFR-4 | **링크 검증 스크립트 PASS** — Markdown inline/reference + HTML `href/src` + 파일 존재 + `#anchor` 검증 |
+| NFR-5 | 신규 문서 6종 각 **최소 섹션 3개 + 200자 이상** (빈 파일 금지) |
+| NFR-6 | `AGENTS.md` 100줄±20 (진입점 간결성) |
+| NFR-7 | **단일 브랜치 + Phase별 원자 commit** — 각 commit 이 독립적으로 revert 가능. Phase 분리 기준: ①신규 스캐폴드 ②폴더 mv ③파일 rename ④링크 수정 ⑤레거시 삭제 (~5 commits). "revert 1회" 표현 삭제 |
+| NFR-8 | Before/After 인벤토리 표 최종 산출물로 제출 (파일수 + 경로 + 이동/삭제/신규 분류) |
 
 ---
 
-## 4. 의사결정 / 우려사항
+## 4. 의사결정
 
-### 4-1. `CLAUDE.md` 위치 — ✅ 루트 유지 + AGENTS.md와 공존
-- **근거**: Claude Code 플랫폼은 `CLAUDE.md`를 자동 탐색하여 프로젝트 컨텍스트로 로드함 (Anthropic 공식 관행). `AGENTS.md`는 모든 에이전트 공통 진입점, `CLAUDE.md`는 Claude Code 고유 동작 규칙(hooks, slash commands 포함 가능)을 담아 역할 분리.
-- **대안 기각**: `CLAUDE.md` 내용을 모두 AGENTS.md로 이관하면 Claude Code가 프로젝트 지침을 자동 인식 못 할 수 있음.
+### 4-1. `CLAUDE.md` 루트 유지 ✅
+- Claude Code 자동 로드 기능 보존. `AGENTS.md` 는 모든 에이전트 공통 진입점.
 
-### 4-2. `docs/plans/` 내 *-decision.md 선별 이관 — ⚠ codex 검토 필요
-- 현재 5개 후보 식별하였으나, 파일명이 `-decision`이 아니어도 "검증 완료 아키텍처 결정" 성격인 문서가 있을 수 있음. (예: `legacy-contract-tables-drop.md`, `process-master-dedup.md`)
-- **codex 검토 시 각 파일을 열어 성격 판정 요청**.
+### 4-2. 한글 파일명 → 영문 ✅
+- `견적서_VAT_표시기준.md` → `quotation-vat-rules.md`.
 
-### 4-3. 신규 문서 자동 생성 범위 — ✅ 코드 스캔 + 기존 문서 통합
-- **ARCHITECTURE.md**: `pom.xml` dependencies + `src/main/java/com/swmanager/` 패키지 트리 + `docs/ERD.md` 요약 링크.
-- **FRONTEND.md**: `src/main/resources/templates/` 트리 + `static/` 자산 구조 + 인라인 스타일 통계 (`grep -rn 'style="' templates/ | wc -l`).
-- **PRODUCT_SENSE.md**: `CLAUDE.md` §가상팀 + `README.md` + `docs/HOME.md` + `docs/plans/data-architecture-roadmap.md` §🚫 영구패스 의사결정 통합.
-- **QUALITY_SCORE.md**: `docs/audit/dashboard.md` 결과 요약 + 패키지별 테이블.
-- **RELIABILITY.md**: `server-restart.sh` 기동 타임아웃, `application.properties` session/login lock 설정, JPA DDL 정책(`ddl-auto=none`) + `DEPLOYMENT_GUIDE.md`의 DB 점검 체크리스트 발췌.
-- **SECURITY.md**: `SecurityConfig.java` filter chain + `@PreAuthorize` 사용 현황 + CLAUDE.md §감사 P1-1 조치.
+### 4-3. `docs/references/` 빈 폴더 방지 ✅
+- `docs/references/README.md` 로 용도 명시.
 
-### 4-4. 한글 파일명 — ✅ 영문으로 통일
-- `docs/견적서_VAT_표시기준.md` → `docs/product-specs/quotation-vat-rules.md`.
-- **근거**: 일부 CI 도구(Windows Git, URL 인코딩) 한글 파일명 호환 이슈. 에이전트 탐색도 영문이 일관됨.
+### 4-4. 이관 순서 (커밋 전략 단일화, v2 변경) ✅
+**Phase별 원자 commit** — 단일 브랜치, 각 Phase 가 독립 revert 가능:
 
-### 4-5. `docs/references/` 현재 비어있는 폴더 생성 여부 — ✅ README.md만 두고 생성
-- **근거**: 향후 LLM 소비용 외부 레퍼런스 재포맷 시 사용. 빈 폴더는 git이 추적하지 않으므로 `docs/references/README.md`에 용도 설명 1~2줄 추가.
+| Phase | 커밋 단위 | 혼란 최소화 전략 |
+|-------|-----------|------------------|
+| P1 | 신규 파일 스캐폴드 (AGENTS/ARCHITECTURE/docs 신규 6종 + references/README) | 레거시 유지, 신규만 추가 → revert 안전 |
+| P2 | 폴더 git mv (audit/dev-plans/plans 이동) | 이 시점엔 링크 깨짐 발생. **단, P3 와 하루 이내 순차** |
+| P3 | 내부 링크 수정 (Markdown + HTML + 코드 문자열) | 링크 검증 스크립트 PASS 조건 |
+| P4 | 파일 rename (DESIGN_SYSTEM, 한글→영문 등) + CLAUDE.md 축약 | rename 영향 범위 작음 |
+| P5 | 레거시 삭제 (DEVELOPMENT_GUIDELINES, HOME, TEAM_WORKFLOW, DEPLOYMENT_GUIDE 원본) | 통합 완료 확인 후 |
+| P6 | redirect README 배치 (`docs/plans/README.md` = "→ product-specs/") **+ 유지 기간 명시 (2주)** | acceptance NFR-8 |
 
-### 4-6. 이관 순서 — ⚠ 링크 수정 타이밍이 핵심
-- 파일 이동 전에 링크 수정하면 깨지고, 이동 후 수정 지연 시 intermediate commit 상태에서 링크 깨진 채로 머뭇.
-- **결정**: **하나의 commit에서 git mv + 링크 수정 동시 처리**. 개발계획서에서 세부 순서 명시.
+### 4-5. redirect README 정책 (v2 신규)
+- `docs/plans/README.md`, `docs/dev-plans/README.md`, `docs/audit/README.md` 에 "이 폴더는 X로 이동했습니다" 안내
+- **유지 기간**: 리뉴얼 commit 이후 **2주** (2026-05-08)
+- 이후 **자동 삭제 예약** → acceptance 에 포함
 
 ---
 
-## 5. 영향 범위
+## 5. 영향 범위 (Before/After 인벤토리 요약)
 
-| 계층 | 파일 | 유형 |
-|------|------|------|
-| Docs (신규) | `AGENTS.md`, `ARCHITECTURE.md`, `docs/FRONTEND.md`, `docs/PLANS.md`, `docs/PRODUCT_SENSE.md`, `docs/QUALITY_SCORE.md`, `docs/RELIABILITY.md`, `docs/SECURITY.md`, `docs/references/README.md` | 신규 9개 |
-| Docs (이동) | `docs/plans/**` (27) + `docs/dev-plans/**` (31) + `docs/audit/**` (16) + 기타 .md 7개 | git mv 81개 |
-| Docs (삭제) | `DEVELOPMENT_GUIDELINES.md`, `DEPLOYMENT_GUIDE.md`, `docs/HOME.md`, `docs/TEAM_WORKFLOW.md` | 삭제 4개 (내용은 통합) |
-| Docs (rename) | `docs/DESIGN_SYSTEM.md` → `docs/DESIGN.md` | 1개 |
-| Docs (축약) | `CLAUDE.md` | 1개 |
-| 링크 수정 | 모든 .md 파일 내 상대경로 링크 | 추정 100+ 링크 |
-| Java 소스 | `application.properties`, `SystemGraphController.java` 등 경로 참조 | 검색 후 결정 (영향 없을 가능성 높음) |
+| 분류 | Before | After | 변화 |
+|------|-------:|------:|------|
+| 루트 .md | 5 | 4 (AGENTS 신규, DEVELOPMENT_GUIDELINES/DEPLOYMENT_GUIDE 제거) + ARCHITECTURE 신규 | +1 신규 / -2 |
+| docs/ 직속 .md | 8 | 8 (DESIGN rename, FRONTEND/PLANS/PRODUCT_SENSE/QUALITY_SCORE/RELIABILITY/SECURITY 신규, ERD/HOME/AI_SEARCH/OBSIDIAN/SETUP/TEAM_WORKFLOW/견적서_VAT 이관) | 순 증감 0, 대거 재편 |
+| `docs/plans/` | 33 | 0 (전부 이관) | -33 |
+| `docs/dev-plans/` | 37 | 0 (전부 이관) | -37 |
+| `docs/audit/` | 16 | 0 (전부 이관) | -16 |
+| `docs/design-docs/` | (없음) | ≥3 (선별 이관) | +3~ |
+| `docs/exec-plans/` | (없음) | 37 + 1(archive) | +38 |
+| `docs/product-specs/` | (없음) | ~30 (plans 잔여 + quotation-vat-rules + ai-search) | +30~ |
+| `docs/generated/` | (없음) | 1 (erd.md) + 16 (audit/) | +17 |
+| `docs/references/` | (없음) | 3 (README + obsidian-setup + setup-guide) | +3 |
+| 링크 수정 | — | ~100+ 링크 일괄 갱신 | (스크립트 처리) |
 
-**수정 ~100 파일. 신규 9. 삭제 4. DB/API 계약 변경 없음.**
+**최종 산출물**: Before/After 인벤토리 표를 `docs/generated/docs-renewal-inventory.md` 에 저장 (NFR-8 필수).
 
 ---
 
@@ -178,40 +236,44 @@ created: "2026-04-24"
 
 | 리스크 | 수준 | 완화책 |
 |--------|------|--------|
-| 내부 링크 대량 깨짐 → 에이전트 혼란 | 높음 | 개발계획서에서 링크 정규식 목록 고정, 스크립트로 일괄 치환 후 검증 스크립트 (모든 `.md` 링크 targets 존재 확인) 통과 필수 |
-| git 히스토리 유실 (git mv 대신 rm+add) | 중간 | 반드시 `git mv` 사용. `git log --follow` 검증 NFR-3. |
-| Java 소스 하드코딩 경로 (`app.erd.mmd-dir`) 누락 | 중간 | `grep -rn "docs/" src/main/java/ src/main/resources/` 사전 스캔 + 필요시 config 갱신 |
-| Claude Code의 `CLAUDE.md` 자동 로드 기능 손상 | 낮음 | CLAUDE.md를 루트에 유지 (§4-1). |
-| 팀원이 기존 경로로 문서 찾음 → 일시적 혼란 | 중간 | 이관 후 README.md에 "문서 구조 리뉴얼 공지" 추가 + 주요 폴더에 한시적 redirect README (e.g., `docs/plans/README.md` = "이 폴더는 `product-specs/`로 이동했습니다") |
-| 신규 문서 자동생성 시 부정확한 정보 | 중간 | **모든 신규 문서에 "자동 생성 초안 — 검증 필요" 배너** + 생성 근거 명시. codex 검토 단계에서 사실 검증. |
-| 커밋이 비대해져 리뷰/revert 어려움 | 중간 | **개발계획서에서 Phase 단위 commit 분리**: ① 신규파일 스캐폴드 ② 폴더 이동 ③ 파일 rename ④ 링크 수정 ⑤ 레거시 삭제. |
-| 한글 파일명 변환 시 인용 누락 | 낮음 | `grep -rn "견적서_VAT" .` 사전 스캔 |
+| 링크 대량 깨짐 | 높음 | NFR-4 검증 스크립트 통과 필수. Markdown + HTML + 파일 존재 + 앵커 전부 |
+| git 히스토리 유실 | 중간 | `git mv` 강제. NFR-3 `git log --follow` 테스트 |
+| Java 하드코딩 경로 누락 | 중간 | §2-5-B 화이트리스트 + precheck grep (`rg 'docs/' src/main`) |
+| Claude Code 자동 로드 손상 | 낮음 | CLAUDE.md 루트 유지 (§4-1) |
+| 사용자 일시적 혼란 | 중간 | redirect README 2주 유지 (§4-5) |
+| 신규 문서 자동생성 부정확 | 중간 | "자동 생성 초안 — 검증 필요" 배너 + codex 사실 검증 |
+| Phase 분리 commit 리뷰 부담 | 낮음 | 각 Phase 당 ≤ 30 파일. revert 용이 |
+| 한글 파일명 인용 누락 | 낮음 | `rg '견적서_VAT|HOME|TEAM_WORKFLOW' .` 사전 스캔 |
 
 ---
 
-## 7. 수락 기준 (Acceptance)
+## 7. 수락 기준 (v2 객관화)
 
-스프린트 종료 시 다음이 모두 참이어야 한다:
+**주 게이트 (스크립트 통과 필수)**:
+- [ ] `AGENTS.md`, `ARCHITECTURE.md` 루트 존재, 100±20줄 / 300+ 줄 적정
+- [ ] `docs/` 하위 5개 신규 폴더 (`design-docs`, `exec-plans`, `generated`, `product-specs`, `references`) 존재
+- [ ] `docs/` 루트 7개 신규 .md (`DESIGN`, `FRONTEND`, `PLANS`, `PRODUCT_SENSE`, `QUALITY_SCORE`, `RELIABILITY`, `SECURITY`) 존재
+- [ ] `docs/plans/`, `docs/dev-plans/`, `docs/audit/` 폴더 비어 있음 or redirect README 만
+- [ ] `git log --follow` 로 이관 파일 히스토리 추적 성공 (샘플 3건)
+- [ ] **링크 검증 스크립트 통과**: Markdown `(./path.md)` + `(path.md)` + HTML `href=`, `src=` + `#anchor` 전수 존재 확인
+- [ ] Maven `./mvnw clean compile` 성공
+- [ ] 서버 기동 후 `/system-graph` 200
+- [ ] `CLAUDE.md` 주요 문서 링크 5개 갱신
+- [ ] Before/After 인벤토리 `docs/generated/docs-renewal-inventory.md` 제출
 
-- [ ] `AGENTS.md`, `ARCHITECTURE.md` 루트에 존재, 100±20줄/적절 길이.
-- [ ] `docs/` 하위에 목표 구조의 5개 폴더(`design-docs`, `exec-plans`, `generated`, `product-specs`, `references`) 존재.
-- [ ] `docs/` 루트에 목표 구조의 7개 .md(`DESIGN`, `FRONTEND`, `PLANS`, `PRODUCT_SENSE`, `QUALITY_SCORE`, `RELIABILITY`, `SECURITY`) 존재.
-- [ ] 모든 이관 파일은 `git log --follow` 로 이전 히스토리 추적 가능.
-- [ ] `find . -name "*.md" -print0 | xargs -0 grep -E "\]\([./]"` 결과의 모든 링크가 유효한 파일 대상 (자동 검증 스크립트 통과).
-- [ ] Maven `./mvnw clean compile` 성공.
-- [ ] 서버 재기동 후 ERD 탭/`/system-graph` 정상.
-- [ ] `CLAUDE.md` 링크 5개 갱신 확인.
-- [ ] codex 최종 검증에서 "✅ 승인" 평가.
+**보조 게이트**:
+- [ ] codex 최종 검증 ✅ 승인 (주관 판정 — 주 게이트 보조)
+- [ ] redirect README 2주 유지 후 삭제 자동화 schedule 등록
 
 ---
 
 ## 8. 승인 요청
 
-본 기획서에 대한 codex 검토 및 사용자 최종승인을 요청합니다.
+본 기획서 v2 에 대한 codex 재검토 및 사용자 최종승인 요청.
 
-**검토 중점 항목** (codex에게 전달):
-1. 현재 매핑표에 누락된 파일 없는지 (전체 90+개 vs 매핑 커버리지)
-2. `*-decision.md` 선별 이관 기준이 타당한지 / 추가 후보 있는지
-3. 신규 문서 6종 자동 생성 방식이 충분한 정보량을 담을 수 있는지
-4. 리스크 평가에 누락 시나리오 있는지
-5. 수락 기준이 완결적인지 (false positive/negative 방지)
+**재검토 중점**:
+1. 실측 인벤토리 반영 충실성
+2. 커밋 전략 (Phase 분리 vs 단일 brunch) 일관성
+3. design-docs 속성 기반 선별 규칙 타당성
+4. NFR-4 링크 검증 스크립트 설계 충분성
+5. Before/After 인벤토리 산출물 범위
