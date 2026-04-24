@@ -1,8 +1,8 @@
 -- ============================================================
 -- V025: DROP pjt_equip (S15)
 -- Sprint: pjt-equip-decision (2026-04-22)
--- 근거: docs/plans/pjt-equip-decision.md v2.2 (사용자 최종승인)
---       docs/dev-plans/pjt-equip-decision.md v2 (사용자 최종승인)
+-- 근거: docs/design-docs/pjt-equip-decision.md v2.2 (사용자 최종승인)
+--       docs/exec-plans/pjt-equip-decision.md v2 (사용자 최종승인)
 -- 실측 (2026-04-22): row=0, 외부 FK 0
 -- ============================================================
 

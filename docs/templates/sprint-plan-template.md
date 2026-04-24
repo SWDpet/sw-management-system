@@ -60,7 +60,7 @@ created: "{{date:YYYY-MM-DD}}"
 | 계층 | 파일 | 유형 |
 |------|------|------|
 | {{Controller/Service/DB/Config}} | `{{경로}}` | {{수정/신규/삭제}} |
-| Docs (수정) | `docs/audit/2026-04-18-system-audit.md` | 해당 체크박스 ☑ |
+| Docs (수정) | `docs/generated/audit/2026-04-18-system-audit.md` | 해당 체크박스 ☑ |
 
 **수정 N 파일. 신규 M. DB/API 계약 변경 여부 {{있음/없음}}.**
 

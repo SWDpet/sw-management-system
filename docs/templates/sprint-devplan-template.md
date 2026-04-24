@@ -26,7 +26,7 @@ created: "{{date:YYYY-MM-DD}}"
 ### Step 3 — {{작업명}}
 
 ### Step N — 감사 보고서 갱신
-- `docs/audit/2026-04-18-system-audit.md` {{항목}} ☑ 조치함 + 요약 한 줄.
+- `docs/generated/audit/2026-04-18-system-audit.md` {{항목}} ☑ 조치함 + 요약 한 줄.
 
 ### Step (마지막) — 빌드 / 재기동 / 스모크
 - `./mvnw -q compile` → BUILD SUCCESS

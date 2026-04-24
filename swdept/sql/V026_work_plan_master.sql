@@ -1,8 +1,8 @@
 -- ============================================================
 -- V026: tb_work_plan 마스터 2개 + FK (S16 옵션 B)
 -- Sprint: tb-work-plan-decision (2026-04-22)
--- 근거: docs/plans/tb-work-plan-decision.md v2.1
---       docs/dev-plans/tb-work-plan-decision.md v2
+-- 근거: docs/design-docs/tb-work-plan-decision.md v2.1
+--       docs/exec-plans/tb-work-plan-decision.md v2
 -- 멱등성: CREATE IF NOT EXISTS / ON CONFLICT / FK 존재검사
 -- drift 방어: Phase 4 seed label+color VALUES 비교
 -- ============================================================

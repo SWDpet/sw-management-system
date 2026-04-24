@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
  * 시스템 관계도 C 탭 — ERD 인터랙티브용 .mmd 파서 + 병합 + 캐시.
  *
  * Specs:
- *   docs/plans/system-graph-erd.md (v2)
- *   docs/dev-plans/system-graph-erd.md (v2)
+ *   docs/product-specs/system-graph-erd.md (v2)
+ *   docs/exec-plans/system-graph-erd.md (v2)
  *
  * 파일 위치는 FileSystemResource(설정값) 우선 → ClassPathResource(fallback) 순.
  * 서버 기동 시 1회 파싱 후 in-memory 캐시. 재파싱은 서버 재기동 필요.

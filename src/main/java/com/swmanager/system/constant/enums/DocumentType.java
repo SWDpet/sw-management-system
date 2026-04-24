@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 문서 유형 Enum — tb_document.doc_type 매핑.
  *
- * 기획서: docs/plans/hardcoding-improvement.md (v6)
+ * 기획서: docs/product-specs/hardcoding-improvement.md (v6)
  * 개발계획서 §0-2에 따라 명명: `WorkPlanType` → `DocumentType`으로 변경
  *   (Document.docType 필드에 대응, WorkPlan.planType과 의미 충돌 방지).
  *

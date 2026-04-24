@@ -1,9 +1,9 @@
 -- ============================================================
 -- V019: access_logs.userid 오염 정제
 -- Sprint: access-log-userid-fix (2026-04-20)
--- 근거 기획서: docs/plans/access-log-userid-fix.md (v2)
--- 근거 개발계획: docs/dev-plans/access-log-userid-fix.md (v2)
--- 사전검증 결과: docs/dev-plans/access-log-userid-precheck-result.md
+-- 근거 기획서: docs/product-specs/access-log-userid-fix.md (v2)
+-- 근거 개발계획: docs/exec-plans/access-log-userid-fix.md (v2)
+-- 사전검증 결과: docs/exec-plans/access-log-userid-precheck-result.md
 --
 -- 매핑 (사전검증 1:1 자동 매칭, 사용자 승인):
 --   '관리자' (11건) → 'admin'

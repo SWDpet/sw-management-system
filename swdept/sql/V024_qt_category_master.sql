@@ -1,8 +1,8 @@
 -- ============================================================
 -- V024: qt_quotation category 마스터 신설 (S8 옵션 B)
 -- Sprint: qt-quotation-domain-normalize (2026-04-22)
--- 근거: docs/plans/qt-quotation-domain-normalize.md v2.1
---       docs/dev-plans/qt-quotation-domain-normalize.md v2.1
+-- 근거: docs/product-specs/qt-quotation-domain-normalize.md v2.1
+--       docs/exec-plans/qt-quotation-domain-normalize.md v2.1
 -- 멱등성: CREATE IF NOT EXISTS / ON CONFLICT / FK 존재검사
 -- ============================================================
 

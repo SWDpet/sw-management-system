@@ -1,0 +1,321 @@
+
+================================================================================
+=== 점검내역서_UPIS_SW샘플.docx ===
+================================================================================
+
+--- Table 1 ---
+  Row 0: 2026년 양양군 도시계획정보체계(UPIS) 유지보수 용역 |  | 점검내역서
+
+--- Table 2 ---
+  Row 0: 사  업  명 || 2026년 양양군 도시계획정보체계(UPIS) 유지보수 용역
+  Row 1: 사 업 기 간 || 2026.01.01 ~ 2026.12.31
+  Row 2: 점 검 일 || 2026년   월   일 || 보 고 일 || 2026년   월   일
+  Row 3: 점 검 자 || (인) || 확 인 자 || (인)
+
+--- Table 3 ---
+  Row 0: 1 || 월별 점검 및 장애조치 이력 요약
+
+--- Table 4 ---
+  Row 0: 년도 || 월 || 일 || 업무 || 증상 || 조치내용
+  Row 1: 2026 || 
+  Row 2: 2026 || 
+  Row 3: 2026 || 
+  Row 4: 2026 || 
+  Row 5: 2026 || 
+  Row 6: 2026 || 
+  Row 7: 2026 || 
+  Row 8: 2026 || 
+  Row 9: 2026 || 
+  Row 10: 2026 || 
+  Row 11: 2026 || 
+  Row 12: 2026 || 
+
+--- Table 5 ---
+  Row 0: 2 || 점검 대상
+
+--- Table 6 ---
+  Row 0: 제품명 || 버전 || 수량 || 용도 || 설치일
+  Row 1: GeoNURIS Spatial Server || 3.0 || 1식 || 공간자료 저장 및 관리 || 2012-09-12
+  Row 2: GeoNURIS GeoWeb Server || 3.0 || 1식 || 웹 기반의 공간자료 서비스 || 2012-09-12
+  Row 3: GeoNURIS Desktop Pro || 3.0 || 1식 || GIS 데이터 관리 및 모니터링 || 2012-09-12
+
+--- Table 7 ---
+  Row 0: 1 || GIS 엔진 점검결과
+
+--- Table 8 ---
+  Row 0: 대상 || 점검 항목 || 점검 내용 및 방법 || 결과
+  Row 1: GeoNURIS | Spatial Server | (GSS) || GSS 구동확인 || ps -ef | grep GSS 실행 확인 || 정상 / 점검
+  Row 2: GeoNURIS | Spatial Server | (GSS) || GSS 로그파일 삭제 || /GeoNURIS_Spatial_Server/log 경로의 로그 중 1달 전 파일 삭제 || 정상 / 점검
+  Row 3: GeoNURIS | Spatial Server | (GSS) || Desktop Pro 데이터저장소 구동확인 || Desktop Pro 실행 후 데이터저장소에서 GSS 데이터 불러오기 || 정상 / 점검
+  Row 4: GeoNURIS | GeoWeb Server | (GWS) || GWS 구동확인 || 윈도우 서비스 "GeoNURIS GeoWeb Server 64bit" 구동 상태 확인 || 정상 / 점검
+  Row 5: GeoNURIS | GeoWeb Server | (GWS) || GWS 로그파일 삭제 || C:\Program Files\GeoNURIS_GeoWeb_Server_64\webapps\uwes\store (DEM/SLOP 제외) || 정상 / 점검
+  Row 6: GeoNURIS | GeoWeb Server | (GWS) || GWS 서비스 확인 || http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출 || 정상 / 점검
+
+--- Table 9 ---
+  Row 0: 2 || 표준시스템 점검결과
+
+--- Table 10 ---
+  Row 0: 대분류 || 중분류 || 점검 내용 || 결과
+  Row 1: 도시계획 || 조회/검색 || 필지/고시/조서/이력/재해취약성 상세정보 조회·검색 || 정상 / 점검
+  Row 2: 도시계획 || KRAS 연계 || 부동산토지공부 토지정보(지목/소유구분/면적) 표출 여부 || 정상 / 점검
+  Row 3: 도시계획 || KRAS 연계 || 토지이용계획확인서 표출 (해당 필지 확인) || 정상 / 점검
+  Row 4: 도시계획 || KRAS 연계 || 건축물대장 표출 여부 || 정상 / 점검
+  Row 5: 통계조회 || 시스템통계 || 도시계획 통계 데이터 표출 여부 || 정상 / 점검
+  Row 6: 전자심의 || 메뉴활성화 || 전자심의 메뉴 존재 확인 || 정상 / 점검
+  Row 7: 지구단위계획 || 조회/검색 || 계획정보/규제정보/정보관리 상세정보 조회·검색 || 정상 / 점검
+  Row 8: 비정형자료실 || 메뉴활성화 || 비정형자료실 메뉴 존재 확인 || 정상 / 점검
+  Row 9: 관리자 || 사용자관리 || 사용자승인/사용자관리/메뉴권한관리 정상 여부 || 정상 / 점검
+  Row 10: GIS엔진 || 지도 요청 || 현황도/주제도/도시계획시설 등 표출 여부 || 정상 / 점검
+  Row 11: GIS엔진 || 필지 이동 || 주소 검색 시 필지 이동 || 정상 / 점검
+  Row 12: GIS엔진 || 하일라이팅 || 검색 필지 하일라이팅 || 정상 / 점검
+  Row 13: GIS엔진 || 필지정보 || 시설정보/용도지역 등 정보 표출 || 정상 / 점검
+  Row 14: GIS엔진 || 이력정보 || 시설정보/용도지역 등 이력 표출 || 정상 / 점검
+
+--- Paragraphs ---
+  P5: [Normal] 2026년 4월
+  P9: [Normal] 양양군
+  P24: [Normal] ■ 시스템 구성도
+
+================================================================================
+=== 점검내역서_UPIS_SW_HW샘플.docx ===
+================================================================================
+
+--- Table 1 ---
+  Row 0: 2026년 양양군 도시계획정보체계(UPIS) 유지보수 용역 |  | 점검내역서
+
+--- Table 2 ---
+  Row 0: 사  업  명 || 2026년 양양군 도시계획정보체계(UPIS) 유지보수 용역
+  Row 1: 사 업 기 간 || 2026.01.01 ~ 2026.12.31
+  Row 2: 점 검 일 || 2026년   월   일 || 보 고 일 || 2026년   월   일
+  Row 3: 점 검 자 || (인) || 확 인 자 || (인)
+
+--- Table 3 ---
+  Row 0: 1 || 월별 점검 및 장애조치 이력 요약
+
+--- Table 4 ---
+  Row 0: 년도 || 월 || 일 || 업무 || 증상 || 조치내용
+  Row 1: 2026 || 
+  Row 2: 2026 || 
+  Row 3: 2026 || 
+  Row 4: 2026 || 
+  Row 5: 2026 || 
+  Row 6: 2026 || 
+  Row 7: 2026 || 
+  Row 8: 2026 || 
+  Row 9: 2026 || 
+  Row 10: 2026 || 
+  Row 11: 2026 || 
+  Row 12: 2026 || 
+
+--- Table 5 ---
+  Row 0: 2 || 점검 대상
+
+--- Table 6 ---
+  Row 0: 제품명(M/T, S/N) || IBM P720
+  Row 1: CPU || POWER7  3.0GHz  4Core
+  Row 2: 메모리 || 16GB
+  Row 3: 디스크 || 146GB SAS 10Krpm × 4개 (RAID-5 아닌 미러링 구성)
+  Row 4: 네트워크 || Onboard 10/100/1000-TX × 4Port
+  Row 5: 전원 || 이중화 전원
+  Row 6: 운영체제 || IBM AIX 7100-02
+
+--- Table 7 ---
+  Row 0: 제품명(M/T, S/N) || IBM X3650 M5
+  Row 1: CPU || Intel Xeon E5-2690
+  Row 2: 메모리 || 16GB
+  Row 3: 디스크 || 146GB SAS 10Krpm × 4개
+  Row 4: 네트워크 || 10/100/1000-TX × 4Port
+  Row 5: 전원 || 이중화 전원
+  Row 6: 운영체제 || Windows Server 2012 R2
+
+--- Table 8 ---
+  Row 0: DBMS || Oracle Standard Edition Two
+  Row 1: GIS 엔진 || GeoNURIS GeoSpatial Server | GeoNURIS GeoWeb Server
+
+--- Table 9 ---
+  Row 0: 3 || UPIS DB 서버 점검결과
+
+--- Table 10 ---
+  Row 0: 장비명 || IBM P720 || 운영체제 || AIX 7100-02
+  Row 1: 호스트명 || UPIS-DB || 사용용도 || UPIS DB 서버
+
+--- Table 11 ---
+  Row 0: 구분 || 점검 항목 || 수행 명령/방법 || 결과
+  Row 1: 육안점검 || H/W LED 상태 점검 || 육안 확인 || 정상 / 점검
+  Row 2: 육안점검 || 디스크 LED 상태 점검 || 육안 확인 || 정상 / 점검
+  Row 3: 육안점검 || FAN LED 상태 점검 || 육안 확인 || 정상 / 점검
+  Row 4: 육안점검 || 전원 LED 상태 점검 || 육안 확인 || 정상 / 점검
+  Row 5: 육안점검 || 케이블 연결상태 점검 || 육안 확인 || 정상 / 점검
+  Row 6: 구성 점검 || CPU 점검 || lsdev -Cc processor || 3.0GHz 4Core
+  Row 7: 구성 점검 || MEMORY 점검 || lsdev -Cc memory || 16GB
+  Row 8: 구성 점검 || Adapter 점검 || lsdev -Cc adapter || 정상 / 점검
+  Row 9: 구성 점검 || DISK 점검 || lsdev -Cc disk, lspv || 정상 / 점검
+  Row 10: 구성 점검 || Network 점검 || netstat -a || 정상 / 점검
+  Row 11: 성능 점검 || CPU 사용률 || topas, nmon || 정상 / 점검
+  Row 12: 성능 점검 || MEMORY 사용률 || topas, nmon || 정상 / 점검
+  Row 13: 성능 점검 || SWAP 사용률 || lsps -a || 정상 / 점검
+  Row 14: 성능 점검 || I/O 사용률 || iostat 1 10 || 정상 / 점검
+  Row 15: 성능 점검 || 네트워크 사용률 || topas, netstat -ni || 정상 / 점검
+  Row 16: DATA 점검 || 디스크 사용량 || df -gH || 정상 / 점검
+  Row 17: DATA 점검 || I-node 사용량 || df -h || 정상 / 점검
+  Row 18: DATA 점검 || 미러 상태 || lsvg -l rootvg || 정상 / 점검
+  Row 19: 네트워크 || Link 상태 || netstat -na || 정상 / 점검
+  Row 20: 네트워크 || Ping 상태 || ping gateway || 정상 / 점검
+  Row 21: 네트워크 || Collisions || netstat -ni || 정상 / 점검
+  Row 22: 프로세서 || 각 프로세서 상태 || topas, nmon || 정상 / 점검
+  Row 23: 로그 || 시스템 로그 || errpt || 정상 / 점검
+  Row 24: 로그 || 접속 로그 || who, lastlog || 정상 / 점검
+  Row 25: 사용율
+  Row 26: CPU ||  || Memory ||  || / || 
+  Row 27: /backup ||  || oracle ||  || Oradata || 
+  Row 28: archive || 
+
+--- Table 12 ---
+  Row 0: 4 || UPIS AP 서버 점검결과
+
+--- Table 13 ---
+  Row 0: 장비명 || IBM X3650 M5 || 운영체제 || Windows Server 2012 R2
+  Row 1: CPU || Intel Xeon E5-2690 || Memory || 16GB
+  Row 2: Disk || 146GB × 4EA || 사용용도 || UPIS AP 서버
+
+--- Table 14 ---
+  Row 0: 종류 || 점검 항목 || 점검 내용 || 점검 기준 || 결과
+  Row 1: H/W || 시스템 LED || Front panel LED 육안 확인 || 적색등 유무 || 정상 / 점검
+  Row 2: H/W || Power Supply || Power Supply 육안 확인 || 적색등 유무 || 정상 / 점검
+  Row 3: H/W || Disk || LED 육안 확인 || 적색등 유무 || 정상 / 점검
+  Row 4: H/W || CPU || CPU 상태 확인 || 정상용량 확인 || 정상 / 점검
+  Row 5: H/W || Memory || Memory 상태 확인 || 정상용량 확인 || 정상 / 점검
+  Row 6: H/W || Adapter || LED 및 Cable 연결상태 확인 || 적색등 유무 || 정상 / 점검
+  Row 7: OS || 로그 점검 || eventlog || error 유무 || 정상 / 점검
+  Row 8: OS || Security log || Security log 확인 || error 유무 || 정상 / 점검
+  Row 9: OS || Disk 여유공간 || 내컴퓨터 || 디스크 용량 확인 || 정상 / 점검
+  Row 10: OS || Network 점검 || netstat -r, netstat -e || 라우팅/네트워크 에러 || 정상 / 점검
+  Row 11: OS || IP 정보 || ipconfig /all || IP/링크 상태 확인 || 정상 / 점검
+  Row 12: 보안 || 사용자 계정 || 사용자 계정 확인 || 특이계정 유무 || 정상 / 점검
+  Row 13: 성능 || CPU || 관리도구-성능 (processor%) || CPU 사용량 || 정상 / 점검
+  Row 14: 성능 || Memory || 관리도구-성능 (Memory%) || Memory 사용량 || 정상 / 점검
+  Row 15: 사용율
+  Row 16: CPU ||  || Disk C: || 
+  Row 17: Memory ||  || Disk D: || 
+
+--- Table 15 ---
+  Row 0: 5 || DBMS (Oracle) 점검결과
+
+--- Table 16 ---
+  Row 0: 점검대상 || UPIS DB || 운영체제 || AIX 7100-02
+  Row 1: 소프트웨어 || Oracle || 서버 IP || 
+
+--- Table 17 ---
+  Row 0: 종류 || 점검 항목 || 수행 명령/쿼리 || 결과
+  Row 1: 오라클 || 호스트네임 || #hostname || 정상 / 점검
+  Row 2: 오라클 || O/S 정보 || #oslevel -s || 정상 / 점검
+  Row 3: 오라클 || DB 버전 || #sqlplus || 정상 / 점검
+  Row 4: 오라클 || SID 확인 || #echo $ORACLE_SID || 정상 / 점검
+  Row 5: 오라클 || 오라클 로그 || #vi alert_ort.log || 정상 / 점검
+  Row 6: 오라클 || Archive Mode || >archive log list; || 정상 / 점검
+  Row 7: 오라클 || 리두 로그 || >select * from v$logfile; || 정상 / 점검
+  Row 8: 오라클 || 컨트롤 파일 || >select * from v$controlfile; || 정상 / 점검
+  Row 9: 오라클 || SGA || >show sga; || 정상 / 점검
+  Row 10: 오라클 || Tablespace 상태 || >select status from dba_tablespaces; || 정상 / 점검
+  Row 11: 오라클 || Tablespace 용량 || >select a.tablespace_name … || 정상 / 점검
+  Row 12: 오라클 || Datafile 상태 || >select d.status, v.status … || 정상 / 점검
+  Row 13: 오라클 || Datafile 용량 || >select sum from dba_data_files; || 정상 / 점검
+  Row 14: 오라클 || Export 백업 || #crontab -l, ls || 정상 / 점검
+  Row 15: 오라클 || Home size || #df -gP || 정상 / 점검
+  Row 16: 오라클 || Oradata Size || #df -gP || 정상 / 점검
+  Row 17: 오라클 || Backup Size || #df -gP || 정상 / 점검
+  Row 18: 기타
+  Row 19: 
+
+--- Table 18 ---
+  Row 0: 6 || GIS 엔진 점검결과
+
+--- Table 19 ---
+  Row 0: 대상 || 점검 항목 || 점검 내용 및 방법 || 결과
+  Row 1: GeoNURIS | Spatial Server | (GSS) || GSS 구동확인 || ps -ef | grep GSS 실행 확인 || 정상 / 점검
+  Row 2: GeoNURIS | Spatial Server | (GSS) || GSS 로그파일 삭제 || /GeoNURIS_Spatial_Server/log 경로의 로그 중 1달 전 파일 삭제 || 정상 / 점검
+  Row 3: GeoNURIS | Spatial Server | (GSS) || Desktop Pro 데이터저장소 구동확인 || Desktop Pro 실행 후 데이터저장소에서 GSS 데이터 불러오기 || 정상 / 점검
+  Row 4: GeoNURIS | GeoWeb Server | (GWS) || GWS 구동확인 || 윈도우 서비스 "GeoNURIS GeoWeb Server 64bit" 구동 상태 확인 || 정상 / 점검
+  Row 5: GeoNURIS | GeoWeb Server | (GWS) || GWS 로그파일 삭제 || C:\Program Files\GeoNURIS_GeoWeb_Server_64\webapps\uwes\store (DEM/SLOP 제외) || 정상 / 점검
+  Row 6: GeoNURIS | GeoWeb Server | (GWS) || GWS 서비스 확인 || http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출 || 정상 / 점검
+
+--- Table 20 ---
+  Row 0: 7 || 표준시스템 점검결과
+
+--- Table 21 ---
+  Row 0: 대분류 || 중분류 || 점검 내용 || 결과
+  Row 1: 도시계획 || 조회/검색 || 필지/고시/조서/이력/재해취약성 상세정보 조회·검색 || 정상 / 점검
+  Row 2: 도시계획 || KRAS 연계 || 부동산토지공부 토지정보(지목/소유구분/면적) 표출 여부 || 정상 / 점검
+  Row 3: 도시계획 || KRAS 연계 || 토지이용계획확인서 표출 (해당 필지 확인) || 정상 / 점검
+  Row 4: 도시계획 || KRAS 연계 || 건축물대장 표출 여부 || 정상 / 점검
+  Row 5: 통계조회 || 시스템통계 || 도시계획 통계 데이터 표출 여부 || 정상 / 점검
+  Row 6: 전자심의 || 메뉴활성화 || 전자심의 메뉴 존재 확인 || 정상 / 점검
+  Row 7: 지구단위계획 || 조회/검색 || 계획정보/규제정보/정보관리 상세정보 조회·검색 || 정상 / 점검
+  Row 8: 비정형자료실 || 메뉴활성화 || 비정형자료실 메뉴 존재 확인 || 정상 / 점검
+  Row 9: 관리자 || 사용자관리 || 사용자승인/사용자관리/메뉴권한관리 정상 여부 || 정상 / 점검
+  Row 10: GIS엔진 || 지도 요청 || 현황도/주제도/도시계획시설 등 표출 여부 || 정상 / 점검
+  Row 11: GIS엔진 || 필지 이동 || 주소 검색 시 필지 이동 || 정상 / 점검
+  Row 12: GIS엔진 || 하일라이팅 || 검색 필지 하일라이팅 || 정상 / 점검
+  Row 13: GIS엔진 || 필지정보 || 시설정보/용도지역 등 정보 표출 || 정상 / 점검
+  Row 14: GIS엔진 || 이력정보 || 시설정보/용도지역 등 이력 표출 || 정상 / 점검
+
+--- Paragraphs ---
+  P5: [Normal] 2026년 4월
+  P9: [Normal] 양양군
+  P23: [Normal] ■ DB 서버
+  P25: [Normal] ■ AP 서버
+  P27: [Normal] ■ 소프트웨어
+  P29: [Normal] ■ 시스템 구성도
+  P34: [Normal] ◆ 점검 항목별 결과
+  P37: [Normal] ◆ 점검 항목별 결과
+
+================================================================================
+=== 점검내역서_KRAS샘플.docx ===
+================================================================================
+
+--- Table 1 ---
+  Row 0: 2026년 양양군 도시계획정보체계(UPIS) 유지보수 용역 |  | 점검내역서
+
+--- Table 2 ---
+  Row 0: 사  업  명 || 2026년 양양군 도시계획정보체계(UPIS) 유지보수 용역
+  Row 1: 사 업 기 간 || 2026.01.01 ~ 2026.12.31
+  Row 2: 점 검 일 || 2026년   월   일 || 보 고 일 || 2026년   월   일
+  Row 3: 점 검 자 || (인) || 확 인 자 || (인)
+
+--- Table 3 ---
+  Row 0: 1 || 월별 점검 및 장애조치 이력 요약
+
+--- Table 4 ---
+  Row 0: 년도 || 월 || 일 || 업무 || 증상 || 조치내용
+  Row 1: 2026 || 
+  Row 2: 2026 || 
+
+--- Table 5 ---
+  Row 0: 2 || 점검 대상
+
+--- Table 6 ---
+  Row 0: 제품명 || 수량 || 용도 || 설치일
+  Row 1: GeoNURIS Spatial Server || 1식 || 공간자료 저장 및 관리 || 2021-03-27
+  Row 2: GeoNURIS GeoWeb Server || 1식 || 웹 기반의 공간자료 서비스 || 2021-03-27
+  Row 3: GeoNURIS Desktop Pro || 1식 || GIS 데이터 관리 및 모니터링 || 2021-03-27
+  Row 4: KRAS 공용인터페이스 || 1식 || 측량성과프로그램 || 2021-03-27
+
+--- Table 7 ---
+  Row 0: 1 || GIS 엔진 점검결과
+
+--- Table 8 ---
+  Row 0: 대상 || 점검 내용 및 방법 || 결과
+  Row 1: GeoNURIS | Spatial Server(GSS) || GSS 구동확인 | ps –ef | grep –i geo 실행 확인 || 정상 / 점검
+  Row 2: GeoNURIS | Spatial Server(GSS) || GSS 상태확인 | GSS -I aliveness | GSS -I connections || 정상 / 점검
+  Row 3: GeoNURIS | Spatial Server(GSS) || GSS 로그확인 | /kras_home/geonuris/GeoNURIS_Spatail_Server3.6/logs | 최신 로그일자 파일 확인 tail –f catalina.out || 정상 / 점검
+  Row 4: GeoNURIS | GeoWeb Server(GWS) || GWS로그확인 | /kras_home/app/MapStudio/log | 최신 로그일자 파일 확인 || 정상 / 점검
+  Row 5: GeoNURIS | GeoWeb Server(GWS) || GWS로그확인 | /kras_home/app/MapStudio/log | 최신 로그일자 파일 확인 || 정상 / 점검
+  Row 6: GeoNURIS | GeoWeb Server(GWS) || GWS서비스 확인 | http://웹서버 IP:9080/msp 로 관리자페이지 접속 | 로그인 > Spatial > 공간데이터 정상표출 확인 | wms, wfs, wfs transaction 정상표출 확인 || 정상 / 점검
+  Row 7: 측량성과 프로그램 || 부동산종합공부시스템 실행 | C/S 실행 확인 || 정상 / 점검
+  Row 8: GeoNURIS | Desktop Pro || Desktop Pro 구동확인 | 바탕화면의 Desktop Pro 실행 || 정상 / 점검
+  Row 9: GeoNURIS | Desktop Pro || Map Display 확인 | 데이터저장소를 통해 데이터 목록 갱신 | 공간 데이터 표출 확인 || 정상 / 점검
+
+--- Paragraphs ---
+  P5: [Normal] 2026년 4월
+  P9: [Normal] 양양군
+  P24: [Normal] ■ 시스템 구성도

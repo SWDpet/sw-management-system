@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * 시스템 관계도 C 탭(ERD 인터랙티브) 응답 DTO.
- * docs/plans/system-graph-erd.md v2 FR-2 참조.
+ * docs/product-specs/system-graph-erd.md v2 FR-2 참조.
  */
 public final class ErdGraphDTO {
 

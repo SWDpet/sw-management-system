@@ -1,8 +1,8 @@
 -- ============================================================
 -- V021: users user_id=6 (박욱진) 마스킹 회귀 데이터 정정
 -- Sprint: users-masking-regression-fix (S3-B, 2026-04-20)
--- 근거 기획서: docs/plans/users-masking-regression-fix.md (v4 승인)
--- 근거 개발계획: docs/dev-plans/users-masking-regression-fix.md (v2 승인)
+-- 근거 기획서: docs/product-specs/users-masking-regression-fix.md (v4 승인)
+-- 근거 개발계획: docs/exec-plans/users-masking-regression-fix.md (v2 승인)
 --
 -- 정정 매핑 (사용자 확정):
 --   user_id=6 (ukjin914 박욱진)

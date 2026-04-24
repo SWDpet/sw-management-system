@@ -6,7 +6,7 @@
 #   - desc 에 <, >, &, ", ' 같은 특수문자도 허용됩니다 (Frontend 에서 escape 처리).
 #   - 서버 재기동 시 반영됩니다.
 #
-# 관련 문서: docs/plans/system-graph-erd-descriptions.md, docs/dev-plans/system-graph-erd-descriptions.md
+# 관련 문서: docs/product-specs/system-graph-erd-descriptions.md, docs/exec-plans/system-graph-erd-descriptions.md
 
 tables:
 

@@ -428,7 +428,7 @@ CREATE INDEX IF NOT EXISTS idx_tb_work_plan_start    ON tb_work_plan(start_date)
 
 -- ============================================================
 -- 스프린트 5 (2026-04-19): 조직도 + 문서 선택 UI 통일 + 운영/테스트 구분
--- 기획서: docs/plans/doc-selector-org-env.md
+-- 기획서: docs/product-specs/doc-selector-org-env.md
 -- ============================================================
 
 -- 조직도 마스터 (self-FK 로 가변 계층)

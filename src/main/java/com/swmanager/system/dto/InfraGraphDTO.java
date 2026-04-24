@@ -7,8 +7,8 @@ import java.util.Map;
  * 시스템 관계도 A 탭(인프라 구성도) 응답 DTO.
  *
  * Specs:
- *   docs/plans/system-graph-infra.md (v2)
- *   docs/dev-plans/system-graph-infra.md (v2)
+ *   docs/product-specs/system-graph-infra.md (v2)
+ *   docs/exec-plans/system-graph-infra.md (v2)
  *
  * 민감 필드(acc_id/acc_pw/mac_addr/sw_acc_id/sw_acc_pw) 는
  * projection view records 에서 아예 제외하여 SELECT 단계부터 배제.
