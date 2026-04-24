@@ -9,7 +9,7 @@ created: "2026-04-20"
 
 > ⚠️ **이 스프린트는 [`data-architecture-audit`](./data-architecture-audit.md) 로 흡수됨 (2026-04-20).**
 > 사유: 기획 단계에서 `sys_mst` 마스터 테이블(37건 등록) 존재를 미확인 상태에서 Enum 전환 방향을 권고. 전수 감사 결과 반영 후 재편성 필요. 본 기획서는 **역사적 추적용으로만 보존**.
-> Pre-flight 결과([hardcoding-preflight-result.md](../dev-plans/hardcoding-preflight-result.md))는 감사 입력으로 재사용됨.
+> Pre-flight 결과([hardcoding-preflight-result.md](../exec-plans/hardcoding-preflight-result.md))는 감사 입력으로 재사용됨.
 
 
 - **작성팀**: 기획팀

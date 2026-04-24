@@ -3,8 +3,8 @@
 - **실행일**: 2026-04-18
 - **감사 도구**: codex (프롬프트 기반)
 - **범위**: C1 보안 / C2 엔티티-DB 정합성 / C3 문서-구현 일치 / C4 Dead code / C5 민감 로그
-- **관련 기획서**: [docs/product-specs/system-audit.md](../plans/system-audit.md) v2
-- **개발계획서**: [docs/exec-plans/system-audit.md](../dev-plans/system-audit.md) v2
+- **관련 기획서**: [docs/product-specs/system-audit.md](../../product-specs/system-audit.md) v2
+- **개발계획서**: [docs/exec-plans/system-audit.md](../../exec-plans/system-audit.md) v2
 
 > ⚠️ 민감값 마스킹 적용본. 실제 비밀번호/키/토큰은 `***` 로 표기됨.
 
@@ -235,9 +235,9 @@
 
 감사 범위에는 없었지만 사용자 요청(2026-04-20)으로 진행된 "소스 하드코딩 개선" 스프린트.
 
-- **기획서**: [docs/product-specs/hardcoding-improvement.md](../plans/hardcoding-improvement.md) v6
-- **개발계획서**: [docs/exec-plans/hardcoding-improvement.md](../dev-plans/hardcoding-improvement.md) v2
-- **Pre-flight 결과**: [docs/exec-plans/hardcoding-preflight-result.md](../dev-plans/hardcoding-preflight-result.md)
+- **기획서**: [docs/product-specs/hardcoding-improvement.md](../../product-specs/hardcoding-improvement.md) v6
+- **개발계획서**: [docs/exec-plans/hardcoding-improvement.md](../../exec-plans/hardcoding-improvement.md) v2
+- **Pre-flight 결과**: [docs/exec-plans/hardcoding-preflight-result.md](../../exec-plans/hardcoding-preflight-result.md)
 
 ### #1-A Enum 전환 — ☑ 조치함 (2026-04-20)
 - `DocumentStatus` (DRAFT/COMPLETED), `DocumentType` (8종) Enum 신규
@@ -252,10 +252,10 @@
 
 ## 📦 추가 감사 스프린트 — `data-architecture-audit` ✅ 완료 (2026-04-20)
 
-- **기획서**: [docs/product-specs/data-architecture-audit.md](../plans/data-architecture-audit.md) v2
-- **개발계획서**: [docs/exec-plans/data-architecture-audit.md](../dev-plans/data-architecture-audit.md) v2
+- **기획서**: [docs/product-specs/data-architecture-audit.md](../../product-specs/data-architecture-audit.md) v2
+- **개발계획서**: [docs/exec-plans/data-architecture-audit.md](../../exec-plans/data-architecture-audit.md) v2
 - **감사 결과**: [docs/generated/audit/data-architecture-utilization-audit.md](./data-architecture-utilization-audit.md)
-- **최종 로드맵**: [docs/design-docs/data-architecture-roadmap.md](../plans/data-architecture-roadmap.md) v2
+- **최종 로드맵**: [docs/design-docs/data-architecture-roadmap.md](../../design-docs/data-architecture-roadmap.md) v2
 
 ### 배경
 - 사용자가 초기 설계한 **9개 마스터 테이블**(`prj_types`, `sys_mst`, `cont_frm_mst`, `maint_tp_mst`, `cont_stat_mst`, `sigungu_code`, `sw_pjt`, `ps_info`, `users`)을 후속 agent 기반 개발에서 **활용하지 않고 재조합** 사례가 있다는 지적

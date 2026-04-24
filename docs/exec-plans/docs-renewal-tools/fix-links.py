@@ -39,6 +39,20 @@ REPLACE_RULES = [
     ("docs/dev-plans/", "docs/exec-plans/"),
     ("docs/audit/",     "docs/generated/audit/"),
     ("docs/plans/",     "docs/product-specs/"),
+
+    # 상대경로 (`../plans/...` 같은 링크 — docs/ 하위에서 자주 쓰임)
+    ("../plans/pjt-equip-decision.md",       "../design-docs/pjt-equip-decision.md"),
+    ("../plans/tb-work-plan-decision.md",    "../design-docs/tb-work-plan-decision.md"),
+    ("../plans/data-architecture-roadmap.md","../design-docs/data-architecture-roadmap.md"),
+    ("../plans/qt-remarks-users-link.md",    "../design-docs/qt-remarks-users-link.md"),
+    ("../plans/doc-structure-renewal.md",    "../design-docs/doc-structure-renewal.md"),
+    ("../plans/",                            "../product-specs/"),
+    ("../dev-plans/",                        "../exec-plans/"),
+    ("../audit/",                            "../generated/audit/"),
+    ("../TEAM_WORKFLOW.md",                  "../AGENTS.md"),
+    ("../ERD.md",                            "../generated/erd.md"),
+    ("../HOME.md",                           "../PRODUCT_SENSE.md"),
+    ("../DESIGN_SYSTEM.md",                  "../DESIGN.md"),
 ]
 
 TARGET_GLOBS = [

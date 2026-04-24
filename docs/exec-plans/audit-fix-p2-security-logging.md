@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [docs/product-specs/audit-fix-p2-security-logging.md](../plans/audit-fix-p2-security-logging.md) (v1, 승인)
+- **근거 기획서**: [docs/product-specs/audit-fix-p2-security-logging.md](../product-specs/audit-fix-p2-security-logging.md) (v1, 승인)
 - **상태**: 초안 (codex 검토 대기)
 
 ---

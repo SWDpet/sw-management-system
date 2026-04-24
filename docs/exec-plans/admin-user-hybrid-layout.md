@@ -9,7 +9,7 @@ created: "2026-04-19"
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [[../plans/admin-user-hybrid-layout|기획서 v2]] (승인)
+- **근거 기획서**: [[../product-specs/admin-user-hybrid-layout|기획서 v2]] (승인)
 - **상태**: 초안 (codex 검토 대기)
 
 ---

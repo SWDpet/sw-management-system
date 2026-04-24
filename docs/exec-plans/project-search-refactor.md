@@ -2,7 +2,7 @@
 
 - 작성일: 2026-04-19 (r2)
 - 작성팀: 개발팀 (Claude)
-- 연관 기획서: [../plans/project-search-refactor.md](../plans/project-search-refactor.md)
+- 연관 기획서: [../product-specs/project-search-refactor.md](../product-specs/project-search-refactor.md)
 - 예상 작업 시간: 약 3~4시간 (코딩 2h + 테스트 1h + 문서)
 - 개정: r1 codex 검토 반영 — year 바인딩 String화, AJAX fallback 옵션 보존, API 경로 통일, 자동화 테스트 세트 추가, 롤백 전략 명확화, 리스크 보강
 

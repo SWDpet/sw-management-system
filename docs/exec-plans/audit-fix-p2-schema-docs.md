@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **기획서**: [docs/product-specs/audit-fix-p2-schema-docs.md](../plans/audit-fix-p2-schema-docs.md) (승인됨)
+- **기획서**: [docs/product-specs/audit-fix-p2-schema-docs.md](../product-specs/audit-fix-p2-schema-docs.md) (승인됨)
 - **상태**: v2 (codex 재검토 대기) — 1차 3건 반영
 
 ### 개정 이력

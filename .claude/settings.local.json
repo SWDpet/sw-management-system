@@ -557,7 +557,9 @@
       "Bash(git commit *)",
       "Bash(rg -n 'docs/|DEPLOYMENT_GUIDE|DEVELOPMENT_GUIDELINES|AGENTS' *.md)",
       "Bash(git mv *)",
-      "Bash(rg -n 'docs/plans/|docs/dev-plans/|docs/audit/' docs/exec-plans/*.java docs/generated/audit/*.java docs/erd-descriptions.yml)"
+      "Bash(rg -n 'docs/plans/|docs/dev-plans/|docs/audit/' docs/exec-plans/*.java docs/generated/audit/*.java docs/erd-descriptions.yml)",
+      "Bash(curl -s -o /dev/null -w \"system-graph HTTP %{http_code}\\\\n\" http://localhost:9090/system-graph)",
+      "Bash(curl -s -o /dev/null -w \"/ HTTP %{http_code}\\\\n\" http://localhost:9090/)"
     ]
   }
 }

@@ -256,7 +256,7 @@ button:active:not(:disabled) { transform: scale(0.97); transition: transform 0.0
    - 2차: 컬럼별 정규식 (tel: `^\d{2,4}-\*{4}-\d{4}$` 등)
 3. **MyPageController 가드** — 감지 시 DB 기존값 유지 + 사용자 토스트 + WARN 로그(값 미포함)
 
-**관련 문서**: [`docs/product-specs/users-masking-regression-fix.md`](plans/users-masking-regression-fix.md), [`docs/exec-plans/users-masking-regression-fix.md`](dev-plans/users-masking-regression-fix.md)
+**관련 문서**: [`docs/product-specs/users-masking-regression-fix.md`](product-specs/users-masking-regression-fix.md), [`docs/exec-plans/users-masking-regression-fix.md`](exec-plans/users-masking-regression-fix.md)
 
 ---
 

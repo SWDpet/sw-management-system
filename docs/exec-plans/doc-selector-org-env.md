@@ -9,8 +9,8 @@ created: "2026-04-19"
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [[../plans/doc-selector-org-env|기획서 v2]] (승인)
-- **참고**: [[../plans/doc-selector-org-env.seed|조직도 seed]]
+- **근거 기획서**: [[../product-specs/doc-selector-org-env|기획서 v2]] (승인)
+- **참고**: [[../product-specs/doc-selector-org-env.seed|조직도 seed]]
 - **상태**: v2 — 구현 완료 후 사용자 피드백 반영
 
 ### 개정 이력

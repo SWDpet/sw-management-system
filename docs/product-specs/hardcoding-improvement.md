@@ -12,7 +12,7 @@ revised: "2026-04-20"
 - **작성일**: 2026-04-20 (v6: Pre-flight 결과 반영 범위 재조정)
 - **선행 커밋**: `5560c18` (feat(projects): 사업현황 검색 개편)
 - **상태**: 초안 v6 (codex 재검토 대기)
-- **Pre-flight 결과 첨부**: [`hardcoding-preflight-result.md`](../dev-plans/hardcoding-preflight-result.md)
+- **Pre-flight 결과 첨부**: [`hardcoding-preflight-result.md`](../exec-plans/hardcoding-preflight-result.md)
 
 ### v6 주요 변경 (Pre-flight 실측 결과 반영 — **범위 축소**)
 Pre-flight SQL 실행 결과 기획서 v5의 Enum 범위 중 2종이 **실데이터 문제로 전환 불가**임이 확인됨. 개발팀이 이를 기획팀에 피드백하여 범위를 재조정함.

@@ -3,7 +3,7 @@
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-14
 - **상태**: v2 (codex 재검토 대기) — 1차 검토 지적사항 5건 반영
-- **관련 문서**: [TEAM_WORKFLOW.md](../TEAM_WORKFLOW.md), [ERD.md](../ERD.md)
+- **관련 문서**: [AGENTS.md](../../AGENTS.md), [ERD.md](../generated/erd.md)
 
 ### 개정 이력
 

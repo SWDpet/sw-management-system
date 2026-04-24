@@ -8,7 +8,7 @@ created: "2026-04-20"
 # [개발계획서] qt_remarks_pattern × users 연결
 
 - **작성팀**: 개발팀
-- **연관 기획서**: [../plans/qt-remarks-users-link.md](../plans/qt-remarks-users-link.md) (codex 승인 v3)
+- **연관 기획서**: [../design-docs/qt-remarks-users-link.md](../design-docs/qt-remarks-users-link.md) (codex 승인 v3)
 - **선행 커밋**: `6b8c4a1` (S5 access-log-userid-fix 완료)
 - **상태**: 초안 v1 (codex 검토 대기)
 - **예상 작업 시간**: 2~3시간

@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-18
-- **기획서**: [docs/product-specs/audit-fix-p1.md](../plans/audit-fix-p1.md) (승인됨)
+- **기획서**: [docs/product-specs/audit-fix-p1.md](../product-specs/audit-fix-p1.md) (승인됨)
 - **상태**: v2 (codex 재검토 대기) — 구현 중 프론트 사용처 확인 후 Option C 반영
 
 ### 개정 이력

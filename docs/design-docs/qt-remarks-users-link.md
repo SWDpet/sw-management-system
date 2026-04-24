@@ -10,7 +10,7 @@ created: "2026-04-20"
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-20
 - **선행**: S5 access-log-userid-fix 완료 (commit `6b8c4a1`)
-- **근거**: [data-architecture-roadmap.md §S3](../plans/data-architecture-roadmap.md)
+- **근거**: [data-architecture-roadmap.md §S3](../design-docs/data-architecture-roadmap.md)
 - **상태**: v3 (codex 승인 — 사용자 최종승인 대기)
 
 ---

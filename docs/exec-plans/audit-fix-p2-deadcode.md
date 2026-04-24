@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [docs/product-specs/audit-fix-p2-deadcode.md](../plans/audit-fix-p2-deadcode.md) (v1, 사용자 승인)
+- **근거 기획서**: [docs/product-specs/audit-fix-p2-deadcode.md](../product-specs/audit-fix-p2-deadcode.md) (v1, 사용자 승인)
 - **상태**: 초안 (codex 검토 대기)
 
 ---

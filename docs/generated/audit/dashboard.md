@@ -65,7 +65,7 @@ SORT file.name ASC
 
 - [[2026-04-18-system-audit|📋 감사 원본 보고서]]
 - [[../ERD|📐 ERD 문서]]
-- [[../plans/system-graph-infra-perf|🖼 A 탭 인프라 구성도 (v3)]]
+- [[../product-specs/system-graph-infra-perf|🖼 A 탭 인프라 구성도 (v3)]]
 
 ---
 

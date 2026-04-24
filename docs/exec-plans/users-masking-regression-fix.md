@@ -9,7 +9,7 @@ created: "2026-04-20"
 # [개발계획서] users 마스킹 회귀 정정 + 가드
 
 - **작성팀**: 개발팀
-- **연관 기획서**: [../plans/users-masking-regression-fix.md](../plans/users-masking-regression-fix.md) (codex 승인 v4)
+- **연관 기획서**: [../product-specs/users-masking-regression-fix.md](../product-specs/users-masking-regression-fix.md) (codex 승인 v4)
 - **선행 커밋**: `acbfa3c` (S3 완료)
 - **상태**: v2 (codex 재검토 — 5건 보강 완료)
 - **예상 작업 시간**: 1~2시간

@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-14
-- **기획서**: [docs/product-specs/inspect-report-app-etc.md](../plans/inspect-report-app-etc.md) (v2 승인됨)
+- **기획서**: [docs/product-specs/inspect-report-app-etc.md](../product-specs/inspect-report-app-etc.md) (v2 승인됨)
 - **상태**: v2 (codex 재검토 대기) — 1차 검토 지적사항 4건 반영
 
 ### 개정 이력
