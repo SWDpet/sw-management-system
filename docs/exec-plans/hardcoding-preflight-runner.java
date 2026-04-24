@@ -17,7 +17,7 @@ public class HardcodingPreflight {
         }
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(url, user, pw);
-             PrintWriter out = new PrintWriter(new FileWriter("docs/dev-plans/hardcoding-preflight-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/exec-plans/hardcoding-preflight-result.md"))) {
 
             out.println("# Pre-flight SQL 실행 결과 (스프린트 #1 착수 전)");
             out.println();
@@ -87,7 +87,7 @@ public class HardcodingPreflight {
             out.println("- 값이 Enum 후보와 1:1 정렬되면 `@Enumerated(STRING)` 가능");
             out.println("- 대소문자/공백 불일치만 있으면 `AttributeConverter` 정규화로 해결");
             out.println("- 별칭/레거시 값(한글 등)이 있으면 **Pre-flight 데이터 정제 스크립트** 선행 필요");
-            System.out.println("OK: docs/dev-plans/hardcoding-preflight-result.md 생성 완료");
+            System.out.println("OK: docs/exec-plans/hardcoding-preflight-result.md 생성 완료");
         }
     }
 }

@@ -6,7 +6,7 @@ public class InspectorConfirmerCheck {
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(
                 "jdbc:postgresql://211.104.137.55:5881/SW_Dept", "postgres", System.getenv("DB_PASSWORD"));
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/inspector-confirmer-check-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/inspector-confirmer-check-result.md"))) {
             c.setReadOnly(true);
             out.println("# 점검자/확인자 저장 방식 확인\n\n- 점검자 = 내부 직원(users)\n- 확인자 = 고객 담당자(ps_info)\n\n");
             String[][] qs = {

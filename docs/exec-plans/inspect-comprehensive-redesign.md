@@ -54,9 +54,9 @@ BASE_SHA=$(git rev-parse HEAD) && echo "롤백 기준 SHA: $BASE_SHA"
 
 ### Step 1 — 사전검증 (FR-0, NFR-1)
 
-**1-1. 러너**: `docs/dev-plans/inspect-redesign-precheck.java`
+**1-1. 러너**: `docs/exec-plans/inspect-redesign-precheck.java`
 
-Read-only 트랜잭션 + `statement_timeout 10s` + 결과를 `docs/dev-plans/inspect-redesign-precheck-result.md` 에 markdown 테이블로 출력.
+Read-only 트랜잭션 + `statement_timeout 10s` + 결과를 `docs/exec-plans/inspect-redesign-precheck-result.md` 에 markdown 테이블로 출력.
 
 쿼리:
 ```sql
@@ -328,7 +328,7 @@ rg -n 'UPIS_SW' src/main/java src/main/resources | grep -v '\.md'
 
 ### Step 12 — 로드맵 정정 (T-LINK)
 
-`docs/plans/data-architecture-roadmap.md` §S1 완료 표기 + `docs/audit/data-architecture-utilization-audit.md` S1/S7/S17 ✅ 완료
+`docs/design-docs/data-architecture-roadmap.md` §S1 완료 표기 + `docs/generated/audit/data-architecture-utilization-audit.md` S1/S7/S17 ✅ 완료
 
 ### Step 13 — 커밋 / 푸시
 
@@ -407,7 +407,7 @@ Step별 atomic commit 권장 (V022 migration / Enum / Entity / Thymeleaf / Step 
 ### 신규
 - `swdept/sql/V022_inspect_comprehensive_redesign.sql`
 - `swdept/sql/V022_rollback.sql` (보관)
-- `docs/dev-plans/inspect-redesign-precheck.java`, `-precheck-result.md`
+- `docs/exec-plans/inspect-redesign-precheck.java`, `-precheck-result.md`
 - `src/main/java/com/swmanager/system/constant/enums/InspectResultCode.java`
 - `src/test/java/com/swmanager/system/constant/enums/InspectResultCodeTest.java`
 - `src/test/java/com/swmanager/system/arch/InspectLegacyDropArchTest.java`

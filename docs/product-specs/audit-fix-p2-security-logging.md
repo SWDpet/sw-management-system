@@ -108,7 +108,7 @@
 | Config (신규) | `src/main/resources/application-local.properties.example` | 로컬 SQL 디버그 활성 예시 (복사본 용도) |
 | Service (수정) | `src/main/java/com/swmanager/system/geonuris/service/GeonurisLicenseService.java` | debug 로그 3곳 값 제거 |
 | Exception (수정) | `src/main/java/com/swmanager/system/exception/GlobalExceptionHandler.java` | `handleValidationException` 로그 수정 |
-| Docs (수정) | `docs/audit/2026-04-18-system-audit.md` | 1-4, 5-1, 5-2, 5-3 체크박스 ☑ 조치함 |
+| Docs (수정) | `docs/generated/audit/2026-04-18-system-audit.md` | 1-4, 5-1, 5-2, 5-3 체크박스 ☑ 조치함 |
 
 **수정 6 파일 + 신규 1 파일 (`application-local.properties.example`). DB/Entity/API 계약 변경은 `macAddr` 응답 키 제거 1건 (프런트 미사용 확인됨).**
 

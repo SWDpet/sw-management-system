@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [docs/plans/audit-fix-p2-deadcode.md](../plans/audit-fix-p2-deadcode.md) (v1, 사용자 승인)
+- **근거 기획서**: [docs/product-specs/audit-fix-p2-deadcode.md](../plans/audit-fix-p2-deadcode.md) (v1, 사용자 승인)
 - **상태**: 초안 (codex 검토 대기)
 
 ---
@@ -61,7 +61,7 @@
 4-4. `mvn compile` → **컴파일 성공** 확인. 실패 시 stderr 를 보고 추가 import/필드만 보정 (로직 변경 금지).
 
 ### Step 5 — 감사 보고서 갱신
-- `docs/audit/2026-04-18-system-audit.md` 의 4-1, 4-2, 4-3 체크박스 `☑ 조치함` + 커밋 요약 한 줄씩.
+- `docs/generated/audit/2026-04-18-system-audit.md` 의 4-1, 4-2, 4-3 체크박스 `☑ 조치함` + 커밋 요약 한 줄씩.
 
 ### Step 6 — 서버 재기동 + 스모크
 - `bash server-restart.sh`
@@ -85,7 +85,7 @@
 | T6 | Maven compile | `./mvnw -q -pl . compile` (또는 `./mvnw -q clean compile`) | BUILD SUCCESS |
 | T7 | 서버 기동 성공 | `bash server-restart.sh` 후 `server.log` tail | `Started SwmanagerApplication` 포함, ERROR/Exception 0건 |
 | T8 | 스모크 경로 | 기획서 NFR-2 의 5 URL 에 대한 HTTP 상태 확인 (codex 위임) | 200 / 302(리디렉션) / 401(인증 요구) 중 하나. 500 및 여타 5xx 금지. (Step 6 과 기준 일치) |
-| T9 | 감사 체크박스 | `grep "☑ 조치함" docs/audit/2026-04-18-system-audit.md` 의 4-1/4-2/4-3 라인 확인 | 3 lines hit |
+| T9 | 감사 체크박스 | `grep "☑ 조치함" docs/generated/audit/2026-04-18-system-audit.md` 의 4-1/4-2/4-3 라인 확인 | 3 lines hit |
 
 ---
 

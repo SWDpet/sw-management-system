@@ -76,7 +76,7 @@ public String updateMyInfo(
 
 1. **데이터 정정**: `user_id=6` 의 tel/mobile/email 컬럼을 unmasked 원본으로 복원 (1건)
 2. **재발 방지 가드**: `MyPageController` 에 마스킹 패턴 감지 시 DB 기존값 유지 로직 추가
-3. **정책 문서화**: 마스킹 정책을 `docs/DESIGN_SYSTEM.md` + `SensitiveMask.java` javadoc 강화
+3. **정책 문서화**: 마스킹 정책을 `docs/DESIGN.md` + `SensitiveMask.java` javadoc 강화
 4. **회귀 테스트**: 가드 단위 테스트 작성
 
 ---
@@ -92,7 +92,7 @@ public String updateMyInfo(
 | FR-3 | 가드 동작: 입력값에 마스킹 패턴 감지 시 → **해당 필드는 DB 기존값 유지** + **WARN 로그(값 미포함, 필드명/userid만 기록)** + 사용자에게 **토스트 알림** | 필수 |
 | FR-4 | 마스킹 패턴: 컬럼별 분리 규칙 — §3-3 표 참조 (단순 `\\*{3,}` 통합 X, 오탐 최소화) | 필수 |
 | FR-5 | tel·mobile·email·ssn·address 5개 컬럼에 가드 적용 | 필수 |
-| FR-6 | 정책 문서화: `docs/DESIGN_SYSTEM.md` + `SensitiveMask.java` javadoc | 필수 |
+| FR-6 | 정책 문서화: `docs/DESIGN.md` + `SensitiveMask.java` javadoc | 필수 |
 | FR-7 | 견적서/문서관리 영역에서 이미 unmasked 사용 확인 (회귀 검증, 변경 없음) | 필수 |
 | FR-8 | **추가 안전판**: 입력값이 `현재 DB값과 정확히 일치하는 마스킹 패턴`이면 더 강력하게 차단 (SensitiveMask.tel(currentDb).equals(input) → 100% 회귀로 판정) | 권장 |
 

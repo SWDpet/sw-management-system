@@ -32,12 +32,12 @@ updated: "2026-04-24"
 
 | 항목 | 수량 |
 |------|-----:|
-| `docs/plans/*.md` | **33** |
-| `docs/dev-plans/*.md` | **37** |
-| `docs/audit/*.md` | **16** |
+| `docs/product-specs/*.md` | **33** |
+| `docs/exec-plans/*.md` | **37** |
+| `docs/generated/audit/*.md` | **16** |
 | `docs/**/*.md` (전체) | **96** |
 | 리포지토리 전체 `.md` | **106** |
-| 루트 `.md` | **5** (`CLAUDE.md`, `DEPLOYMENT_GUIDE.md`, `DEVELOPMENT_GUIDELINES.md`, `HELP.md`, `README.md`) |
+| 루트 `.md` | **5** (`CLAUDE.md`, `docs/exec-plans/archive/quotation-deploy.md`, `AGENTS.md`, `HELP.md`, `README.md`) |
 | `*-decision.md` (docs/ 전체) | **5** — plans 2 (pjt-equip / tb-work-plan), dev-plans 3 (pjt-equip / s8-hwpx-literal / tb-work-plan) |
 
 ### 1-2. 범위 정의 ("전수"의 명문화)
@@ -66,18 +66,18 @@ updated: "2026-04-24"
 
 | ID | 내용 |
 |----|------|
-| FR-1 | 루트에 `AGENTS.md` 신규. `DEVELOPMENT_GUIDELINES.md` 내용 + `CLAUDE.md` 워크플로우 요약 통합 |
+| FR-1 | 루트에 `AGENTS.md` 신규. `AGENTS.md` 내용 + `CLAUDE.md` 워크플로우 요약 통합 |
 | FR-2 | 루트에 `ARCHITECTURE.md` 신규. pom.xml + 패키지 트리 + ERD 요약 자동 |
 | FR-3 | `CLAUDE.md` 유지하되 AGENTS.md 참조로 축약 (Claude Code 자동 로드 기능 보존) |
 | FR-4 | `README.md`, `HELP.md` 유지 |
-| FR-5 | `DEVELOPMENT_GUIDELINES.md` → AGENTS.md 통합 후 삭제 |
-| FR-6 | `DEPLOYMENT_GUIDE.md` → `docs/exec-plans/archive/quotation-deploy.md` 이관 (git mv + rename) |
+| FR-5 | `AGENTS.md` → AGENTS.md 통합 후 삭제 |
+| FR-6 | `docs/exec-plans/archive/quotation-deploy.md` → `docs/exec-plans/archive/quotation-deploy.md` 이관 (git mv + rename) |
 
 ### 2-2. `docs/` 루트 파일
 
 | ID | 내용 |
 |----|------|
-| FR-7 | `docs/DESIGN_SYSTEM.md` → `docs/DESIGN.md` rename |
+| FR-7 | `docs/DESIGN.md` → `docs/DESIGN.md` rename |
 | FR-8 | `docs/FRONTEND.md` 신규 (templates 트리 + static + 인라인 스타일 통계) |
 | FR-9 | `docs/PLANS.md` 신규 (로드맵 요약) |
 | FR-10 | `docs/PRODUCT_SENSE.md` 신규 (팀 구성 + 비전 + 의사결정 히스토리) |
@@ -91,11 +91,11 @@ updated: "2026-04-24"
 | ID | 내용 |
 |----|------|
 | FR-15 | `docs/design-docs/` 신규 — 속성 기반 선별 이관 (§2-4-A 규칙) |
-| FR-16 | `docs/exec-plans/` 신규 — `docs/dev-plans/` 37개 전체 이관 (git mv) |
-| FR-17 | `docs/exec-plans/archive/` 신규 — `DEPLOYMENT_GUIDE.md` 이관 |
-| FR-18 | `docs/product-specs/` 신규 — `docs/plans/` 나머지(=31개) 이관 |
+| FR-16 | `docs/exec-plans/` 신규 — `docs/exec-plans/` 37개 전체 이관 (git mv) |
+| FR-17 | `docs/exec-plans/archive/` 신규 — `docs/exec-plans/archive/quotation-deploy.md` 이관 |
+| FR-18 | `docs/product-specs/` 신규 — `docs/product-specs/` 나머지(=31개) 이관 |
 | FR-19 | `docs/generated/` 신규 |
-| FR-20 | `docs/generated/audit/` 신규 — `docs/audit/` 16개 전체 이관 |
+| FR-20 | `docs/generated/audit/` 신규 — `docs/generated/audit/` 16개 전체 이관 |
 | FR-21 | `docs/references/` 신규 + README 설명 (빈 폴더 방지) |
 | FR-22 | `docs/templates/` 그대로 유지 |
 
@@ -112,9 +112,9 @@ updated: "2026-04-24"
 | `dev-plans/` 내 `-decision.md` (3개) | **❌ 제외** — 개발계획은 실행 문서이므로 `exec-plans/` 잔류 (선별 제외 규칙) |
 
 **예상 이관 목록** (개발계획 단계 Step 1 Precheck 에서 실측 재확정):
-1. `docs/plans/pjt-equip-decision.md`
-2. `docs/plans/tb-work-plan-decision.md`
-3. `docs/plans/data-architecture-roadmap.md`
+1. `docs/design-docs/pjt-equip-decision.md`
+2. `docs/design-docs/tb-work-plan-decision.md`
+3. `docs/design-docs/data-architecture-roadmap.md`
 4. 기타 status/본문 조건으로 자동 감지 (개발계획에서 grep 스크립트로 확정)
 
 ### 2-4-B. 개별 파일 매핑표 (Before → After)
@@ -122,21 +122,21 @@ updated: "2026-04-24"
 | 현재 경로 | 목표 경로 | 방식 |
 |-----------|-----------|------|
 | `CLAUDE.md` | `CLAUDE.md` (축약) + `AGENTS.md` 신규 | 축약 + 신규 |
-| `DEVELOPMENT_GUIDELINES.md` | `AGENTS.md` 통합 | 삭제 (통합 후) |
-| `DEPLOYMENT_GUIDE.md` | `docs/exec-plans/archive/quotation-deploy.md` | git mv + rename |
+| `AGENTS.md` | `AGENTS.md` 통합 | 삭제 (통합 후) |
+| `docs/exec-plans/archive/quotation-deploy.md` | `docs/exec-plans/archive/quotation-deploy.md` | git mv + rename |
 | `README.md`, `HELP.md` | 유지 | 유지 |
-| `docs/AI_SEARCH_PLAN.md` | `docs/product-specs/ai-search.md` | git mv + rename |
-| `docs/DESIGN_SYSTEM.md` | `docs/DESIGN.md` | git mv |
-| `docs/ERD.md` | `docs/generated/erd.md` | git mv |
-| `docs/HOME.md` | `docs/PRODUCT_SENSE.md` 통합 | 삭제 |
-| `docs/OBSIDIAN_SETUP.md` | `docs/references/obsidian-setup.md` | git mv |
-| `docs/SETUP_GUIDE.md` | `docs/references/setup-guide.md` | git mv |
-| `docs/TEAM_WORKFLOW.md` | `AGENTS.md` 통합 | 삭제 |
-| `docs/견적서_VAT_표시기준.md` | `docs/product-specs/quotation-vat-rules.md` | git mv + rename (한→영) |
-| `docs/audit/*.md` (16개) | `docs/generated/audit/*.md` | git mv (폴더 이동) |
-| `docs/plans/*` 중 design-docs 선별 대상 (≥3개) | `docs/design-docs/` | git mv (선별) |
-| `docs/plans/*` 나머지 (~30개) | `docs/product-specs/*.md` | git mv (일괄) |
-| `docs/dev-plans/*.md` (37개) | `docs/exec-plans/*.md` | git mv (폴더 이동) |
+| `docs/product-specs/ai-search.md` | `docs/product-specs/ai-search.md` | git mv + rename |
+| `docs/DESIGN.md` | `docs/DESIGN.md` | git mv |
+| `docs/generated/erd.md` | `docs/generated/erd.md` | git mv |
+| `docs/PRODUCT_SENSE.md` | `docs/PRODUCT_SENSE.md` 통합 | 삭제 |
+| `docs/references/obsidian-setup.md` | `docs/references/obsidian-setup.md` | git mv |
+| `docs/references/setup-guide.md` | `docs/references/setup-guide.md` | git mv |
+| `AGENTS.md` | `AGENTS.md` 통합 | 삭제 |
+| `docs/product-specs/quotation-vat-rules.md` | `docs/product-specs/quotation-vat-rules.md` | git mv + rename (한→영) |
+| `docs/generated/audit/*.md` (16개) | `docs/generated/audit/*.md` | git mv (폴더 이동) |
+| `docs/product-specs/*` 중 design-docs 선별 대상 (≥3개) | `docs/design-docs/` | git mv (선별) |
+| `docs/product-specs/*` 나머지 (~30개) | `docs/product-specs/*.md` | git mv (일괄) |
+| `docs/exec-plans/*.md` (37개) | `docs/exec-plans/*.md` | git mv (폴더 이동) |
 | `docs/templates/` | 유지 | — |
 
 ### 2-5. 링크·참조 수정 범위 (v2 확장)
@@ -146,7 +146,7 @@ updated: "2026-04-24"
 | 파일 | 라인 | 참조 | 조치 |
 |------|-----:|------|------|
 | `src/main/resources/application.properties` | 26 | `app.erd.mmd-dir=docs` | ⚠ 키별 화이트리스트 표 §2-5-B 참조 |
-| `src/main/java/com/swmanager/system/service/ErdGraphService.java` | 33, 34 | `docs/ERD.md` 유사 경로 | ✅ 수정 필요 → `docs/generated/erd.md` |
+| `src/main/java/com/swmanager/system/service/ErdGraphService.java` | 33, 34 | `docs/generated/erd.md` 유사 경로 | ✅ 수정 필요 → `docs/generated/erd.md` |
 | `src/main/resources/db_init_phase2.sql` | 431 | docs 경로 주석 참조 | ✅ 주석 업데이트 |
 | `src/main/resources/static/js/admin-user.js` | 4 | docs 참조 | ✅ 수정 or 주석 제거 |
 
@@ -203,10 +203,10 @@ updated: "2026-04-24"
 | P3 | 내부 링크 수정 (Markdown + HTML + 코드 문자열) | 링크 검증 스크립트 PASS 조건 |
 | P4 | 파일 rename (DESIGN_SYSTEM, 한글→영문 등) + CLAUDE.md 축약 | rename 영향 범위 작음 |
 | P5 | 레거시 삭제 (DEVELOPMENT_GUIDELINES, HOME, TEAM_WORKFLOW, DEPLOYMENT_GUIDE 원본) | 통합 완료 확인 후 |
-| P6 | redirect README 배치 (`docs/plans/README.md` = "→ product-specs/") **+ 유지 기간 명시 (2주)** | acceptance NFR-8 |
+| P6 | redirect README 배치 (`docs/product-specs/README.md` = "→ product-specs/") **+ 유지 기간 명시 (2주)** | acceptance NFR-8 |
 
 ### 4-5. redirect README 정책 (v2 신규)
-- `docs/plans/README.md`, `docs/dev-plans/README.md`, `docs/audit/README.md` 에 "이 폴더는 X로 이동했습니다" 안내
+- `docs/product-specs/README.md`, `docs/exec-plans/README.md`, `docs/generated/audit/README.md` 에 "이 폴더는 X로 이동했습니다" 안내
 - **유지 기간**: 리뉴얼 commit 이후 **2주** (2026-05-08)
 - 이후 **자동 삭제 예약** → acceptance 에 포함
 
@@ -218,9 +218,9 @@ updated: "2026-04-24"
 |------|-------:|------:|------|
 | 루트 .md | 5 | 4 (AGENTS 신규, DEVELOPMENT_GUIDELINES/DEPLOYMENT_GUIDE 제거) + ARCHITECTURE 신규 | +1 신규 / -2 |
 | docs/ 직속 .md | 8 | 8 (DESIGN rename, FRONTEND/PLANS/PRODUCT_SENSE/QUALITY_SCORE/RELIABILITY/SECURITY 신규, ERD/HOME/AI_SEARCH/OBSIDIAN/SETUP/TEAM_WORKFLOW/견적서_VAT 이관) | 순 증감 0, 대거 재편 |
-| `docs/plans/` | 33 | 0 (전부 이관) | -33 |
-| `docs/dev-plans/` | 37 | 0 (전부 이관) | -37 |
-| `docs/audit/` | 16 | 0 (전부 이관) | -16 |
+| `docs/product-specs/` | 33 | 0 (전부 이관) | -33 |
+| `docs/exec-plans/` | 37 | 0 (전부 이관) | -37 |
+| `docs/generated/audit/` | 16 | 0 (전부 이관) | -16 |
 | `docs/design-docs/` | (없음) | ≥3 (선별 이관) | +3~ |
 | `docs/exec-plans/` | (없음) | 37 + 1(archive) | +38 |
 | `docs/product-specs/` | (없음) | ~30 (plans 잔여 + quotation-vat-rules + ai-search) | +30~ |
@@ -253,7 +253,7 @@ updated: "2026-04-24"
 - [ ] `AGENTS.md`, `ARCHITECTURE.md` 루트 존재, 100±20줄 / 300+ 줄 적정
 - [ ] `docs/` 하위 5개 신규 폴더 (`design-docs`, `exec-plans`, `generated`, `product-specs`, `references`) 존재
 - [ ] `docs/` 루트 7개 신규 .md (`DESIGN`, `FRONTEND`, `PLANS`, `PRODUCT_SENSE`, `QUALITY_SCORE`, `RELIABILITY`, `SECURITY`) 존재
-- [ ] `docs/plans/`, `docs/dev-plans/`, `docs/audit/` 폴더 비어 있음 or redirect README 만
+- [ ] `docs/product-specs/`, `docs/exec-plans/`, `docs/generated/audit/` 폴더 비어 있음 or redirect README 만
 - [ ] `git log --follow` 로 이관 파일 히스토리 추적 성공 (샘플 3건)
 - [ ] **링크 검증 스크립트 통과**: Markdown `(./path.md)` + `(path.md)` + HTML `href=`, `src=` + `#anchor` 전수 존재 확인
 - [ ] Maven `./mvnw clean compile` 성공

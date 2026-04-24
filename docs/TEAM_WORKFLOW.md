@@ -9,7 +9,7 @@
 
 ### 🧭 기획팀
 - **역할:** 사용자 요구사항을 수집·정리해 1차 기획서를 작성한다.
-- **산출물:** `docs/plans/{기능명}.md`
+- **산출물:** `docs/product-specs/{기능명}.md`
 - **포함 항목:**
   - 배경/목표
   - 사용자 시나리오
@@ -30,7 +30,7 @@
 
 ### 🛠️ 개발팀
 - **역할:** 승인된 기획서를 바탕으로 개발계획서를 작성하고, 사용자 최종승인 후 코드를 작성한다.
-- **산출물:** `docs/dev-plans/{기능명}.md` + 실제 코드 변경
+- **산출물:** `docs/exec-plans/{기능명}.md` + 실제 코드 변경
 - **포함 항목:**
   - 영향 범위 (Controller/Service/Repository/Entity/Template)
   - 변경 파일 목록과 변경 내용 요약
@@ -110,10 +110,10 @@ codex CLI는 사용자 환경에 이미 설치되어 있다고 가정한다.
 
 ```bash
 # 기획서 검토
-codex review --type plan --file docs/plans/feature-xxx.md
+codex review --type plan --file docs/product-specs/feature-xxx.md
 
 # 개발계획서 검토
-codex review --type dev-plan --file docs/dev-plans/feature-xxx.md
+codex review --type dev-plan --file docs/exec-plans/feature-xxx.md
 
 # 코드 검증 (특정 파일들)
 codex verify --files \

@@ -427,8 +427,8 @@ feat(projects): 검색 기능 개편 - 드롭다운 필터 + 핀 기능
 - 초기화 시 핀 켜진 필드는 유지
 - 힌트 태그 바 제거, 관련 CSS/JS 정리
 
-기획서: docs/plans/project-search-refactor.md
-개발계획: docs/dev-plans/project-search-refactor.md
+기획서: docs/product-specs/project-search-refactor.md
+개발계획: docs/exec-plans/project-search-refactor.md
 ```
 
 ---

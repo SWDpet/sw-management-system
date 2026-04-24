@@ -157,7 +157,7 @@ SELECT table_schema, table_name, column_name, data_type, character_maximum_lengt
  WHERE table_schema = current_schema()
  ORDER BY table_name, ordinal_position;
 ```
-→ `docs/audit/db-schema-full.md`
+→ `docs/generated/audit/db-schema-full.md`
 
 **1-2. 기초 4개 기능 소유 테이블 확정**
 §2-1 목록을 실제 엔티티/Repository와 대조. 추가 테이블 발견 시 기획서 보완.
@@ -169,7 +169,7 @@ SELECT table_schema, table_name, column_name, data_type, character_maximum_lengt
 - `users`, `org_unit`
 - 기타 발견 시
 
-→ `docs/audit/data-architecture-master-inventory.md` (v1 산출물)
+→ `docs/generated/audit/data-architecture-master-inventory.md` (v1 산출물)
 
 ### Phase 2: 감사 대상 기능 검증 (3~5일, v2 codex 권장 #3 반영)
 
@@ -191,7 +191,7 @@ SELECT table_schema, table_name, column_name, data_type, character_maximum_lengt
 - 상한 5일 (기능별 완전 심층 조사)
 - 3일 초과 시점에 중간 리뷰 → 사용자 판단으로 상한 조정
 
-**산출물**: `docs/audit/data-architecture-utilization-audit.md`
+**산출물**: `docs/generated/audit/data-architecture-utilization-audit.md`
 
 구조:
 ```markdown
@@ -214,7 +214,7 @@ Phase 2 결과를 우선순위별 스프린트로 분해.
 - **P2**: 코드 하드코딩 — 마스터 조회로 대체 (유형 ①)
 - **P3**: 마스터 신설 필요 (유형 ④), 레거시 제거 (유형 ⑤)
 
-**산출물**: `docs/plans/data-architecture-roadmap.md` — 후속 스프린트 목록 + 각 스프린트 우선순위·영향도·예상 범위
+**산출물**: `docs/design-docs/data-architecture-roadmap.md` — 후속 스프린트 목록 + 각 스프린트 우선순위·영향도·예상 범위
 
 ### Phase 4: 기존 `sys-type-normalization` 처리
 
@@ -228,10 +228,10 @@ Phase 2 결과를 우선순위별 스프린트로 분해.
 
 | ID | 내용 |
 |----|------|
-| FR-1 | `docs/audit/db-schema-full.md` — DB 전 테이블 스키마 덤프 (자동 생성 허용) |
-| FR-2 | `docs/audit/data-architecture-master-inventory.md` — 기초 4개 기능의 마스터 테이블 목록 + 각 테이블 스키마 + 실데이터 값 분포 |
-| FR-3 | `docs/audit/data-architecture-utilization-audit.md` — 감사 대상 11개 기능별 섹션, 컬럼별 마스터 매칭 표, 유형 분류, 구체 사례 |
-| FR-4 | `docs/plans/data-architecture-roadmap.md` — 우선순위별 후속 스프린트 목록, 각 스프린트 기획 개요 |
+| FR-1 | `docs/generated/audit/db-schema-full.md` — DB 전 테이블 스키마 덤프 (자동 생성 허용) |
+| FR-2 | `docs/generated/audit/data-architecture-master-inventory.md` — 기초 4개 기능의 마스터 테이블 목록 + 각 테이블 스키마 + 실데이터 값 분포 |
+| FR-3 | `docs/generated/audit/data-architecture-utilization-audit.md` — 감사 대상 11개 기능별 섹션, 컬럼별 마스터 매칭 표, 유형 분류, 구체 사례 |
+| FR-4 | `docs/design-docs/data-architecture-roadmap.md` — 우선순위별 후속 스프린트 목록, 각 스프린트 기획 개요 |
 | FR-5 | `#1-A` Enum 도입 결정 재평가 결과 — 유지/롤백/부분수정 중 1 권고안 + 근거 (유틸리제이션 감사 섹션 내) |
 | FR-6 | **수정 금지 준수** — 본 스프린트에서 코드·DB 변경은 **없음**. 감사 문서만 산출. |
 
@@ -253,7 +253,7 @@ Phase 2 결과를 우선순위별 스프린트로 분해.
 ## 7. 의사결정 / 우려사항
 
 ### 7-1. `sys-type-normalization` 보류 — ✅ 본 감사에 흡수
-- v2 기획서(`docs/plans/sys-type-normalization.md`) 상태를 `superseded-by-data-architecture-audit`로 변경
+- v2 기획서(`docs/product-specs/sys-type-normalization.md`) 상태를 `superseded-by-data-architecture-audit`로 변경
 - 단, Pre-flight 결과(`hardcoding-preflight-result.md`)는 귀중한 입력 데이터로 재사용
 
 ### 7-2. `#1-A` Enum 재평가 — 결정 매트릭스 (v2 codex 권장 #4 반영)
@@ -285,7 +285,7 @@ Phase 2 결과를 아래 매트릭스로 평가하여 **유지 / 선별 롤백 /
 - 단 실행은 **후속 스프린트에서 개별 기획·승인** 거쳐서 진행 (본 감사에서 직접 실행 금지)
 
 ### 7-4. 감사 문서 형식 — 마크다운 + Obsidian Dataview 호환
-- 기존 `docs/audit/` 패턴 따름
+- 기존 `docs/generated/audit/` 패턴 따름
 - 표 기반 정량 보고 + 링크로 기초 근거 파일 연결
 
 ### 7-5. 감사 SQL 안전통제 (v2 codex 권장 #5 + 추가확인 #3 반영)
@@ -304,7 +304,7 @@ SET LOCAL statement_timeout = '30s'; -- 장기 쿼리 차단
 - 락 대기 방지: `SET LOCAL lock_timeout = '5s'`.
 
 #### 7-5-3. SQL Allowlist
-- 모든 감사 SQL은 `docs/audit/data-architecture-scan.java` 내부 배열로 고정.
+- 모든 감사 SQL은 `docs/generated/audit/data-architecture-scan.java` 내부 배열로 고정.
 - 애드혹 쿼리 금지. 필요 시 파일에 추가 후 재컴파일.
 - allowlist 파일은 Git 추적.
 
@@ -324,13 +324,13 @@ SET LOCAL statement_timeout = '30s'; -- 장기 쿼리 차단
 
 | 계층 | 파일 | 유형 |
 |------|------|------|
-| 감사 문서 | `docs/audit/db-schema-full.md` | 신규 |
-| 감사 문서 | `docs/audit/data-architecture-master-inventory.md` | 신규 |
-| 감사 문서 | `docs/audit/data-architecture-utilization-audit.md` | 신규 |
-| 로드맵 | `docs/plans/data-architecture-roadmap.md` | 신규 |
-| 상위 감사 | `docs/audit/2026-04-18-system-audit.md` | 수정 (참조 추가) |
-| 기존 기획 | `docs/plans/sys-type-normalization.md` | 수정 (superseded 표기) |
-| SQL 러너 | `docs/audit/data-architecture-scan.java` (1회용) | 신규 |
+| 감사 문서 | `docs/generated/audit/db-schema-full.md` | 신규 |
+| 감사 문서 | `docs/generated/audit/data-architecture-master-inventory.md` | 신규 |
+| 감사 문서 | `docs/generated/audit/data-architecture-utilization-audit.md` | 신규 |
+| 로드맵 | `docs/design-docs/data-architecture-roadmap.md` | 신규 |
+| 상위 감사 | `docs/generated/audit/2026-04-18-system-audit.md` | 수정 (참조 추가) |
+| 기존 기획 | `docs/product-specs/sys-type-normalization.md` | 수정 (superseded 표기) |
+| SQL 러너 | `docs/generated/audit/data-architecture-scan.java` (1회용) | 신규 |
 
 **합계**: 신규 4~5, 수정 2. **코드·DB 스키마 변경 0**. 라인 수 감사 대상 아님.
 
@@ -353,11 +353,11 @@ SET LOCAL statement_timeout = '30s'; -- 장기 쿼리 차단
 
 | # | 파일 | Phase | 목적 |
 |---|------|-------|------|
-| 1 | `docs/audit/db-schema-full.md` | 1 | 전 테이블 컬럼 목록 |
-| 2 | `docs/audit/data-architecture-master-inventory.md` | 1 | 기초 4개 기능 마스터 테이블 완전한 카탈로그 |
-| 3 | `docs/audit/data-architecture-utilization-audit.md` | 2 | 감사 대상 11개 기능 분석 리포트 |
-| 4 | `docs/plans/data-architecture-roadmap.md` | 3 | 후속 스프린트 우선순위 로드맵 |
-| 5 | `docs/audit/data-architecture-scan.java` | 1 | 감사용 SQL 러너 (1회용) |
+| 1 | `docs/generated/audit/db-schema-full.md` | 1 | 전 테이블 컬럼 목록 |
+| 2 | `docs/generated/audit/data-architecture-master-inventory.md` | 1 | 기초 4개 기능 마스터 테이블 완전한 카탈로그 |
+| 3 | `docs/generated/audit/data-architecture-utilization-audit.md` | 2 | 감사 대상 11개 기능 분석 리포트 |
+| 4 | `docs/design-docs/data-architecture-roadmap.md` | 3 | 후속 스프린트 우선순위 로드맵 |
+| 5 | `docs/generated/audit/data-architecture-scan.java` | 1 | 감사용 SQL 러너 (1회용) |
 
 ---
 
@@ -371,5 +371,5 @@ SET LOCAL statement_timeout = '30s'; -- 장기 쿼리 차단
 
 ### 다음 절차
 1. 사용자 "반영" → 기획서 v2 개정
-2. 사용자 "최종승인" → **[개발팀]** 개발계획서 작성 (`docs/dev-plans/data-architecture-audit.md`). 본 스프린트는 문서 산출만이라 개발계획서는 "작업 절차 · 검증 방법" 중심으로 간결히.
+2. 사용자 "최종승인" → **[개발팀]** 개발계획서 작성 (`docs/exec-plans/data-architecture-audit.md`). 본 스프린트는 문서 산출만이라 개발계획서는 "작업 절차 · 검증 방법" 중심으로 간결히.
 3. 개발계획서 codex 검토 → 사용자 최종승인 → Phase 1~3 순차 실행.

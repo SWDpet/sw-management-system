@@ -7,7 +7,7 @@ public class BatchAExtra {
         String pw = System.getenv("DB_PASSWORD");
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(url, "postgres", pw);
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/batch-a-extra-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/batch-a-extra-result.md"))) {
             try (Statement s = c.createStatement()) {
                 s.execute("SET SESSION statement_timeout = '30s'");
             }

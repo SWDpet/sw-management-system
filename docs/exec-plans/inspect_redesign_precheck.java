@@ -5,9 +5,9 @@ import java.util.*;
  * S1 inspect-comprehensive-redesign · Step 1 사전검증 러너 (READ ONLY)
  *
  * 실행:
- *   javac -encoding UTF-8 docs/dev-plans/inspect-redesign-precheck.java
+ *   javac -encoding UTF-8 docs/exec-plans/inspect-redesign-precheck.java
  *   DB_PASSWORD=... java -cp ".;<postgresql-jar>" -Dfile.encoding=UTF-8 \
- *     inspect_redesign_precheck > docs/dev-plans/inspect-redesign-precheck-result.md
+ *     inspect_redesign_precheck > docs/exec-plans/inspect-redesign-precheck-result.md
  *
  * 안전통제: READ ONLY + statement_timeout 10s
  *

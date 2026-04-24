@@ -7,7 +7,7 @@ public class UpisSwCheck {
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(
                 "jdbc:postgresql://211.104.137.55:5881/SW_Dept", "postgres", pw);
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/upis-sw-check-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/upis-sw-check-result.md"))) {
             try (Statement s = c.createStatement()) {
                 s.execute("SET SESSION statement_timeout = '30s'");
             }

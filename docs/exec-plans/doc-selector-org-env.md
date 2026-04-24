@@ -197,9 +197,9 @@ JS: radio 변경 시 표시 토글 + 선택 유닛 id 저장. 저장 payload 에
 
 ### Step 7 — ERD / 문서 갱신
 
-7-1. `docs/ERD.md`, `docs/erd-core.mmd` 또는 적절한 도메인 파일에 `tb_org_unit` 블록 + `tb_document.org_unit_id` FK 표시 추가.
-7-2. `docs/plans/doc-selector-org-env.md` 의 "개발계획서 단계 재확인" 섹션 값 확정 표기.
-7-3. Obsidian 대시보드(`docs/audit/dashboard.md`) 에 본 스프린트 완료 한 줄 기록.
+7-1. `docs/generated/erd.md`, `docs/erd-core.mmd` 또는 적절한 도메인 파일에 `tb_org_unit` 블록 + `tb_document.org_unit_id` FK 표시 추가.
+7-2. `docs/product-specs/doc-selector-org-env.md` 의 "개발계획서 단계 재확인" 섹션 값 확정 표기.
+7-3. Obsidian 대시보드(`docs/generated/audit/dashboard.md`) 에 본 스프린트 완료 한 줄 기록.
 
 ### Step 8 — 빌드 / 재기동 / 검증
 
@@ -240,7 +240,7 @@ JS: radio 변경 시 표시 토글 + 선택 유닛 id 저장. 저장 payload 에
 | T15 | 설치·패치 environment 누락 저장 | environment null 로 저장 시도 | HTTP 400 |
 | T16 | 업무지원 내부/외부 상반 필드 정합 | EXTERNAL 저장 시 org_unit_id null, INTERNAL 저장 시 proj_id null | DB 조회로 확인 |
 | T17 | 조직 삭제 시 하위 존재 시 차단 | 하위 있는 DIVISION 삭제 API 호출 | HTTP 400 |
-| T18 | ERD 문서 갱신 | `rg "tb_org_unit" docs/ERD.md` | ≥ 1 hit |
+| T18 | ERD 문서 갱신 | `rg "tb_org_unit" docs/generated/erd.md` | ≥ 1 hit |
 | T19 | 업무지원 목록 대상 표시 분기 (FR-2-F) | 업무지원 EXTERNAL/INTERNAL 각 1건 생성 후 목록 조회 | EXTERNAL 행: 지자체+시스템 텍스트. INTERNAL 행: 조직 경로 텍스트 (예: `AI GIS 연구본부 > AI GIS 연구부 > 연구1팀`) |
 | T20 | 설치·패치 목록 환경 뱃지 (FR-4-C) | PROD/TEST 각 1건 생성 후 목록 DOM 검사 | `.env-badge-prod` / `.env-badge-test` 클래스 출력, 라벨 "운영"/"테스트" 정확 |
 | T21 | 관리자 네비게이션에 조직도 메뉴 노출 (FR-3-B, v2) | `rg -n "/admin/org-units" src/main/resources/templates/main-dashboard.html` | ≥ 1 hit |

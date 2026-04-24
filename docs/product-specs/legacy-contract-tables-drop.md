@@ -107,7 +107,7 @@ SELECT 'tb_contract_target', COUNT(*) FROM tb_contract_target;
 | FR-1 | 마이그레이션 SQL `swdept/sql/V###_drop_legacy_contract_tables.sql` 신규. 순서: `DROP TABLE IF EXISTS tb_contract_target;` → `DROP TABLE IF EXISTS tb_contract;` (FK 의존 관계). 본문에 v2 사전검증 SQL 복사 + 실행 결과 로그 남기는 패턴. 트랜잭션(`BEGIN/COMMIT`) 적용 |
 | FR-2 | **`swdept/sql/V100_work_plan_performance_tables.sql:50-93`** 의 `tb_contract` 관련 블록 (CREATE TABLE + 3개 INDEX + COMMENT) **전체 주석 처리** (향후 V100 재실행 시 재생성 방지). `tb_contract_participant`(V100:97~) 등 다른 테이블 블록은 **절대 건드리지 않음** |
 | FR-2-NOTE | `src/main/resources/db_init_phase2.sql`은 `tb_contract` 관련 DDL **없음** (v2 재검증 완료, grep 0 hits) — 수정 대상 아님 |
-| FR-3 | `docs/ERD.md` 5번·7번 섹션의 "미구현" 표기에 "**삭제 완료 (2026-04-20 스프린트 `legacy-contract-tables-drop`)**" 추가. `docs/erd-diagram.html`·`docs/erd-descriptions.yml`·`docs/erd-document.mmd`에서 남은 `tb_contract`/`contract_id` 참조가 있으면 "(삭제됨)" 표기 추가 또는 제거 |
+| FR-3 | `docs/generated/erd.md` 5번·7번 섹션의 "미구현" 표기에 "**삭제 완료 (2026-04-20 스프린트 `legacy-contract-tables-drop`)**" 추가. `docs/erd-diagram.html`·`docs/erd-descriptions.yml`·`docs/erd-document.mmd`에서 남은 `tb_contract`/`contract_id` 참조가 있으면 "(삭제됨)" 표기 추가 또는 제거 |
 | FR-4 | `DbInitRunner` 코드 재검토 — `V100_work_plan_performance_tables.sql` 자동 실행 여부 확인. 실행된다면 FR-2 주석 처리로 재생성 방지 보장 |
 | FR-5 (v2 추가) | `tb_document.contract_id` 컬럼 처리 방향 **판단**. FR-0 사전검증에서 FK가 없고 코드 참조도 없으면 **별도 스프린트로 이관** (본 스프린트 범위 외). FK가 있으면 FK 제거만 본 스프린트에서 병행 처리 가능 (컬럼 DROP은 범위 외) |
 
@@ -182,11 +182,11 @@ Batch C 스캔에서 `tb_document` 컬럼 목록에 `contract_id integer` 확인
 |------|------|------|
 | 마이그레이션 SQL | `swdept/sql/V###_drop_legacy_contract_tables.sql` | 신규 |
 | 레거시 DDL 소스 | `swdept/sql/V100_work_plan_performance_tables.sql:50-93` | 수정 (`tb_contract` 블록 주석 처리, 다른 테이블은 미변경) |
-| ERD 문서 | `docs/ERD.md` | 수정 (상태 표기 갱신) |
+| ERD 문서 | `docs/generated/erd.md` | 수정 (상태 표기 갱신) |
 | ERD 보조 | `docs/erd-diagram.html`, `docs/erd-descriptions.yml`, `docs/erd-document.mmd` | 수정 (잔존 참조 정리) |
-| 상위 감사 | `docs/audit/2026-04-18-system-audit.md` | 수정 (완료 기록) |
-| 감사 리포트 | `docs/audit/data-architecture-utilization-audit.md` | 수정 (S6 완료 체크) |
-| 로드맵 | `docs/plans/data-architecture-roadmap.md` | 수정 (S6 완료 표기) |
+| 상위 감사 | `docs/generated/audit/2026-04-18-system-audit.md` | 수정 (완료 기록) |
+| 감사 리포트 | `docs/generated/audit/data-architecture-utilization-audit.md` | 수정 (S6 완료 체크) |
+| 로드맵 | `docs/design-docs/data-architecture-roadmap.md` | 수정 (S6 완료 표기) |
 
 **합계**: 신규 1파일, 수정 7파일. **Java 코드 변경 0**. **DB 변경 2 테이블 DROP**. `db_init_phase2.sql` 변경 없음(이미 해당 DDL 없음).
 
@@ -217,5 +217,5 @@ Batch C 스캔에서 `tb_document` 컬럼 목록에 `contract_id integer` 확인
 
 ### 다음 절차
 1. 사용자 "반영" 시 v2 개정
-2. 사용자 "최종승인" 시 → **[개발팀]** 개발계획서 작성 (`docs/dev-plans/legacy-contract-tables-drop.md`)
+2. 사용자 "최종승인" 시 → **[개발팀]** 개발계획서 작성 (`docs/exec-plans/legacy-contract-tables-drop.md`)
 3. 개발계획서 codex 검토 → 사용자 최종승인 → 실제 DROP 실행

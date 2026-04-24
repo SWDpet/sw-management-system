@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [docs/plans/audit-fix-p3-minor.md](../plans/audit-fix-p3-minor.md) (v1, 승인)
+- **근거 기획서**: [docs/product-specs/audit-fix-p3-minor.md](../plans/audit-fix-p3-minor.md) (v1, 승인)
 - **상태**: 초안 (codex 검토 대기)
 
 ---
@@ -45,7 +45,7 @@ log.debug("검색 수행 - 타입: {}, 키워드 길이: {}", searchType,
 4-3. `rg -n "log\.[a-z]+\([^)]*keyword" src/main/java/com/swmanager/system/controller/AdminUserController.java` → 0 hits 확인.
 
 ### Step 5 — 감사 보고서 체크박스
-- `docs/audit/2026-04-18-system-audit.md` 의 4-4, 4-5, 5-4 에 ☑ 조치함 + 요약 한 줄씩.
+- `docs/generated/audit/2026-04-18-system-audit.md` 의 4-4, 4-5, 5-4 에 ☑ 조치함 + 요약 한 줄씩.
 
 ### Step 6 — 빌드 / 재기동 / 런타임 검증
 6-1. `./mvnw -q compile` → BUILD SUCCESS.

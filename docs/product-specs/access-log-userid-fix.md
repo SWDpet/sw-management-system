@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS access_logs_cleanup_backup_20260420 AS
 
 ### FR-1-X. 실행 후 Diff 리포트
 ```sql
--- 실행 전/후 userid 집계 비교 (docs/dev-plans/access-log-userid-diff.md 로 기록)
+-- 실행 전/후 userid 집계 비교 (docs/exec-plans/access-log-userid-diff.md 로 기록)
 SELECT 'before' AS phase, userid, COUNT(*) FROM access_logs_cleanup_backup_20260420 GROUP BY userid
 UNION ALL
 SELECT 'after', al.userid, COUNT(*)
@@ -232,7 +232,7 @@ public class LogService {
 | NFR-2 | 서버 재기동 정상, ERROR 0 |
 | NFR-3 | **오염 정제 검증**: 실행 후<br>`SELECT userid, COUNT(*) FROM access_logs WHERE userid NOT IN (SELECT userid FROM users) AND userid <> 'anonymousUser' GROUP BY userid` → **0건** (또는 ambiguous로 보류된 건만 — 명시적 기록) |
 | NFR-4 | LogService 단위 테스트 **5+건** PASS (CustomUserDetails / null auth / anonymous auth / valid auth.getName / orphan guard + WARN assert) |
-| NFR-7 (v2 추가) | **실행 전 스냅샷** 생성 (`access_logs_cleanup_backup_20260420` 테이블) + **Diff 리포트** 생성 (`docs/dev-plans/access-log-userid-diff.md`) |
+| NFR-7 (v2 추가) | **실행 전 스냅샷** 생성 (`access_logs_cleanup_backup_20260420` 테이블) + **Diff 리포트** 생성 (`docs/exec-plans/access-log-userid-diff.md`) |
 | NFR-8 (v2 추가) | **멱등성 검증** — V019 재실행 시 updated_cnt = 0 (이미 정제 완료), HALT 아님, 정상 종료 |
 | NFR-9 (v2 추가) | **익명 식별자 상수 통일** — `rg 'anonymous(?!User)' src/main/java/com/swmanager/system/service/LogService.java` 0 hits |
 | NFR-5 | 회귀: 로그인 후 메뉴 접근 → access_logs 새 레코드 userid가 users.userid와 일치 |
@@ -273,12 +273,12 @@ public class LogService {
 | 계층 | 파일 | 유형 |
 |------|------|------|
 | 마이그레이션 SQL | `swdept/sql/V019_access_log_userid_cleanup.sql` | 신규 |
-| 사전검증 러너 | `docs/dev-plans/access-log-userid-precheck.java` | 신규 |
+| 사전검증 러너 | `docs/exec-plans/access-log-userid-precheck.java` | 신규 |
 | LogService | `src/main/java/com/swmanager/system/service/LogService.java` | 수정 (Guard 추가) |
 | UserRepository | `src/main/java/com/swmanager/system/repository/UserRepository.java` | 수정 (existsByUserid 추가 시) |
 | 단위 테스트 | `src/test/java/com/swmanager/system/service/LogServiceTest.java` | 신규 |
-| 감사 리포트 | `docs/audit/data-architecture-utilization-audit.md` | 수정 (S5 완료 체크) |
-| 로드맵 | `docs/plans/data-architecture-roadmap.md` | 수정 (S5 완료) |
+| 감사 리포트 | `docs/generated/audit/data-architecture-utilization-audit.md` | 수정 (S5 완료 체크) |
+| 로드맵 | `docs/design-docs/data-architecture-roadmap.md` | 수정 (S5 완료) |
 
 **합계**: 신규 3파일, 수정 4파일. Java 수정 2파일. **DB 변경**: 27건 UPDATE.
 

@@ -4,7 +4,7 @@
  *   연도 → 시도 → 시군구 → 시스템명(sys_nm_en) → 사업(proj_id)
  *
  * 기존 doc-commence.html / doc-inspect.html 의 인라인 로직을 추출·공통화.
- * 스프린트 5 (2026-04-19) — docs/plans/doc-selector-org-env.md FR-1-C
+ * 스프린트 5 (2026-04-19) — docs/product-specs/doc-selector-org-env.md FR-1-C
  *
  * API (전역):
  *   DocumentProjectSelector.init({

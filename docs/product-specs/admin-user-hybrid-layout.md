@@ -187,7 +187,7 @@ created: "2026-04-19"
 | Template (수정) | `src/main/resources/templates/admin-user-list.html` | 활성 사용자 테이블 7컬럼 재구성 + 행 확장 영역 추가 + 민감정보 마스킹 JS |
 | Controller (수정) | `AdminUserController.java` | `expand` 쿼리 파라미터 지원 (리스트 + 복원용, 쉼표 직렬화). update 처리 후 expand 유지 리다이렉트. **신규 엔드포인트**: `GET /admin/api/users/{userSeq}/sensitive?field=...` (ADMIN, 감사 로그, 1필드 반환) |
 | Controller (수정) | `AdminUserController.java` 의 `updateUser` 핸들러 | redirect 시 `expand` 파라미터 보존 |
-| Docs (수정) | `docs/audit/dashboard.md` | 스프린트 6 완료 기록 |
+| Docs (수정) | `docs/generated/audit/dashboard.md` | 스프린트 6 완료 기록 |
 
 **수정 2~3 파일. 신규 0. DB/Entity/API 계약 변경 0.**
 

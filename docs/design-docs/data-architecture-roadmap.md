@@ -176,7 +176,7 @@ created: "2026-04-20"
 #### S9. `access-log-action-and-menu-sync` ✅ **완료 (2026-04-21)**
 - **포함**:
   - `access_logs.action_type` 20+종 → `AccessActionType` Enum **13종** 신설 (동의어 매핑 + fromKoLabel 정규화)
-  - `MenuName` 상수 **5종 누락** (QR라이선스/라이선스대장/GeoNURIS라이선스/견적서/회원가입) 추가 — 로드맵 기록 "4종"에서 **실측 5종으로 정정** (S9 기획서 §1-2 참조: `docs/plans/access-log-action-and-menu-sync.md`)
+  - `MenuName` 상수 **5종 누락** (QR라이선스/라이선스대장/GeoNURIS라이선스/견적서/회원가입) 추가 — 로드맵 기록 "4종"에서 **실측 5종으로 정정** (S9 기획서 §1-2 참조: `docs/product-specs/access-log-action-and-menu-sync.md`)
   - ArchUnit CI 게이트 + fail-soft 정규화
 - **의존성**: 없음
 - **실제 소요**: 0.5일 (예상 2일보다 단축)
@@ -364,7 +364,7 @@ created: "2026-04-20"
 | S14 qr_license 결정 (DROP 택한 경우) | `SELECT COUNT(*) FROM information_schema.tables WHERE table_name='qr_license'` | = 0 (DROP) 또는 결정 보존 표시 |
 | S14 qr_license 결정 (유지 택한 경우) | `SELECT COUNT(*) FROM information_schema.columns WHERE table_name='qr_license' AND column_name LIKE '%_ko'` 감소 | 한영 이중 컬럼 재구성 후 `_ko` 컬럼 수 감소 확인 |
 | S15 pjt_equip 결정 (DROP 택한 경우) | `SELECT COUNT(*) FROM information_schema.tables WHERE table_name='pjt_equip'` | = 0 |
-| S15 pjt_equip 결정 (유지 택한 경우) | `SELECT COUNT(*) FROM pjt_equip` | > 0 또는 사용 계획 문서 존재 (`docs/plans/pjt-equip-activation.md`) |
+| S15 pjt_equip 결정 (유지 택한 경우) | `SELECT COUNT(*) FROM pjt_equip` | > 0 또는 사용 계획 문서 존재 (`docs/product-specs/pjt-equip-activation.md`) |
 | S16 tb_work_plan 결정 (제거 택한 경우) | `SELECT COUNT(*) FROM information_schema.tables WHERE table_name='tb_work_plan'` AND 관련 Service/Controller/DTO 파일 `ls`로 없음 | 모두 0/없음 |
 | S16 tb_work_plan 결정 (활성화 택한 경우) | `SELECT COUNT(*) FROM work_plan_type_mst` + `SELECT COUNT(*) FROM work_plan_status_mst` | 각 ≥ 1 (마스터 신설 확인) |
 | 전체 레거시 잔존 검증 | 아래 **T-FINAL** 블록 실행 | T-FINAL 기준 통과 |
@@ -389,7 +389,7 @@ SELECT t.tbl,
             ELSE '⚠ 유지 결정 시 이유 문서 필요' END AS status
   FROM target_tables t;
 ```
-**Pass 기준**: 모든 행이 `✅ DROP 완료` 또는 `유지 결정 + 이유 문서 존재` (의사결정 근거 `docs/plans/*-decision.md` 문서화).
+**Pass 기준**: 모든 행이 `✅ DROP 완료` 또는 `유지 결정 + 이유 문서 존재` (의사결정 근거 `docs/product-specs/*-decision.md` 문서화).
 
 ---
 

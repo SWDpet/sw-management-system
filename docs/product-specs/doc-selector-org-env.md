@@ -144,8 +144,8 @@ created: "2026-04-19"
 | Static (신규) | `static/js/document-project-selector.js` | 착수계·점검내역서용 5단 사업 선택 모듈 (미래 전환 대비) |
 | Static (신규) | `static/js/org-unit-selector.js` | 조직 연쇄 드롭다운 모듈 |
 | Template (수정) | `main-dashboard.html` | 관리자 네비게이션에 "조직도 관리" 링크 |
-| Docs (수정) | `docs/ERD.md`, `docs/erd-*.mmd` | `tb_org_unit` 추가 반영 |
-| Docs (수정) | `docs/audit/dashboard.md` (해당 시) | 이번 변경을 향후 개선 TODO 와 상충 없음 확인 |
+| Docs (수정) | `docs/generated/erd.md`, `docs/erd-*.mmd` | `tb_org_unit` 추가 반영 |
+| Docs (수정) | `docs/generated/audit/dashboard.md` (해당 시) | 이번 변경을 향후 개선 TODO 와 상충 없음 확인 |
 
 **대략 신규 7 + 수정 9 = 16 파일.** DB 스키마 변경 1 (신규 테이블). API 신규 2개.
 

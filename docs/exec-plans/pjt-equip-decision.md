@@ -45,20 +45,20 @@ BASE_SHA=$(git rev-parse HEAD)
 ```bash
 # 1-a. Java 리터럴 전수
 rg -n 'PjtEquip|pjtEquip|pjt_equip' src/main/java \
-  > docs/dev-plans/s15-precheck-java.txt
+  > docs/exec-plans/s15-precheck-java.txt
 
 # 1-b. Thymeleaf 리터럴 전수
 rg -n 'PjtEquip|pjtEquip|pjt_equip|/api/equip|equipType|equipName' src/main/resources/templates \
-  > docs/dev-plans/s15-precheck-template.txt
+  > docs/exec-plans/s15-precheck-template.txt
 
 # 1-c. SQL 리터럴
 rg -n 'pjt_equip' src/main/resources/*.sql swdept/sql/*.sql \
-  > docs/dev-plans/s15-precheck-sql.txt
+  > docs/exec-plans/s15-precheck-sql.txt
 
 # 1-d. DB 의존 객체 (psql 상태라면 V025 Phase 0 에서 수행)
 ```
 
-**Exit Gate 1**: 영향 범위 확정 + 제거/보존 판정표 작성 (`docs/dev-plans/s15-impact-decision.md`)
+**Exit Gate 1**: 영향 범위 확정 + 제거/보존 판정표 작성 (`docs/exec-plans/s15-impact-decision.md`)
 
 ### Step 2 — V025 마이그레이션 SQL
 
@@ -129,7 +129,7 @@ rg 'PjtEquip|pjt_equip|/api/equip' src/main --glob '!**/test/**'
 
 ### Step 8 — 로드맵 정정 (T-LINK)
 
-`docs/plans/data-architecture-roadmap.md` §S15 ✅ 완료 표기.
+`docs/design-docs/data-architecture-roadmap.md` §S15 ✅ 완료 표기.
 
 ### Step 9 — 사용자 `"작업완료"` 대기 후 커밋/푸시 (CLAUDE.md 준수)
 
@@ -171,8 +171,8 @@ rg 'PjtEquip|pjt_equip|/api/equip' src/main --glob '!**/test/**'
 ### 신규
 - `swdept/sql/V025_drop_pjt_equip.sql`
 - `swdept/sql/V025_rollback.sql`
-- `docs/dev-plans/s15-precheck-java.txt` / `-template.txt` / `-sql.txt`
-- `docs/dev-plans/s15-impact-decision.md`
+- `docs/exec-plans/s15-precheck-java.txt` / `-template.txt` / `-sql.txt`
+- `docs/exec-plans/s15-impact-decision.md`
 - `src/test/java/com/swmanager/system/arch/PjtEquipGoneArchTest.java`
 - `src/test/java/com/swmanager/system/sql/PjtEquipSchemaTest.java`
 - `src/test/java/com/swmanager/system/mvc/PjtEquipEndpointGoneTest.java`

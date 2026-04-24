@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-18
-- **기획서**: [docs/plans/audit-fix-p1.md](../plans/audit-fix-p1.md) (승인됨)
+- **기획서**: [docs/product-specs/audit-fix-p1.md](../plans/audit-fix-p1.md) (승인됨)
 - **상태**: v2 (codex 재검토 대기) — 구현 중 프론트 사용처 확인 후 Option C 반영
 
 ### 개정 이력
@@ -22,7 +22,7 @@
 | DB | `src/main/resources/db_init_phase2.sql` | `inspect_report` CREATE 에 `insp_sign TEXT`/`conf_sign TEXT` 추가 + 기존 DB 보정용 `ALTER ADD COLUMN IF NOT EXISTS` |
 | Backend | `src/main/java/com/swmanager/system/controller/DocumentController.java` | (a) 4 엔드포인트에 `getAuth()` EDIT 체크 추가, (b) 2 응답에서 민감 필드 제거, (c) 2 `/secure` 엔드포인트 신규 (EDIT 권한 + 민감필드 포함) |
 | Frontend | `src/main/resources/templates/document/doc-commence.html` | `/api/user/{userSeq}` 호출 3곳을 `/secure` 버전으로 변경 |
-| Docs | `docs/audit/2026-04-18-system-audit.md` | 1-1, 1-2, 1-3, 2-1 항목 체크박스 `☑ 조치함` |
+| Docs | `docs/generated/audit/2026-04-18-system-audit.md` | 1-1, 1-2, 1-3, 2-1 항목 체크박스 `☑ 조치함` |
 
 **수정 5개 파일. 신규 없음.**
 
@@ -178,7 +178,7 @@ public ResponseEntity<?> getUserInfoSecure(@PathVariable Long userSeq) {
 
 ### 2-6. 감사 보고서 체크박스 업데이트
 
-`docs/audit/2026-04-18-system-audit.md` 의 1-1, 1-2, 1-3, 2-1 항목의 `☐ 조치함` → `☑ 조치함` 으로 수정.
+`docs/generated/audit/2026-04-18-system-audit.md` 의 1-1, 1-2, 1-3, 2-1 항목의 `☐ 조치함` → `☑ 조치함` 으로 수정.
 
 ---
 

@@ -54,7 +54,7 @@ created: "2026-04-20"
 -- ============================================================
 -- V020: qt_remarks_pattern.user_id FK 추가 + 7건 매핑 + 템플릿화
 -- Sprint: qt-remarks-users-link (2026-04-20)
--- 근거: docs/plans/qt-remarks-users-link.md (v3 승인)
+-- 근거: docs/design-docs/qt-remarks-users-link.md (v3 승인)
 --
 -- 멱등성 (NFR-2): expected_cnt 동적 산정으로 재실행 시 0=0 PASS
 -- ============================================================

@@ -1,7 +1,7 @@
 # PRODUCT_SENSE.md — 제품 컨텍스트·팀·의사결정 히스토리
 
 > ⚠ **자동 생성 초안 — 검증 필요**
-> 근거: `CLAUDE.md` 가상팀 + `README.md` + 기존 `docs/HOME.md` + `docs/design-docs/data-architecture-roadmap.md` 영구패스 의사결정
+> 근거: `CLAUDE.md` 가상팀 + `README.md` + 기존 `docs/PRODUCT_SENSE.md` + `docs/design-docs/data-architecture-roadmap.md` 영구패스 의사결정
 
 ---
 
@@ -67,4 +67,4 @@ Claude / codex 모두 해당 스프린트 추천 금지.
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 P1 (docs/HOME.md 통합)*
+*Last updated: 2026-04-24 · docs-renewal-01 P1 (docs/PRODUCT_SENSE.md 통합)*

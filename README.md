@@ -22,7 +22,7 @@ Spring Boot 기반 SW 사업 통합 관리 시스템
 
 ## ⚠️ 신규 PC 설치 시 필수 확인사항
 
-> **`docs/SETUP_GUIDE.md` 를 반드시 먼저 읽어주세요!**
+> **`docs/references/setup-guide.md` 를 반드시 먼저 읽어주세요!**
 >
 > 특히 `GeoNURIS_License.jar` 파일은 Git에 포함되지 않아 수동 배치가 필요합니다.
 > 파일 누락 시 `mvn package` 실행 중 빌드가 중단되며 안내 메시지가 출력됩니다.

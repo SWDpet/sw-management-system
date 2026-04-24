@@ -67,7 +67,7 @@ public class ProcessMasterIdempotencyCheck {
             out.append("\n## 결과\n\n").append(fail ? "❌ FAIL" : "✅ PASS").append("\n");
         }
 
-        try (FileWriter fw = new FileWriter("docs/dev-plans/process-master-idempotency-result.md", true)) {
+        try (FileWriter fw = new FileWriter("docs/exec-plans/process-master-idempotency-result.md", true)) {
             fw.write(out.toString() + "\n---\n\n");
         }
         System.out.println("Round " + round + ": " + (fail ? "FAIL" : "PASS"));

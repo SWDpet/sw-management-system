@@ -291,12 +291,12 @@ bash server-restart.sh
 
 ### Step 8 — 로드맵 정정 (T-LINK)
 
-`docs/plans/data-architecture-roadmap.md` §2 S9 본문 `MenuName 상수 4종 누락` → `MenuName 상수 5종 누락 (S9 구현 후 정정, 2026-04-21)` + 본 기획서 링크.
+`docs/design-docs/data-architecture-roadmap.md` §2 S9 본문 `MenuName 상수 4종 누락` → `MenuName 상수 5종 누락 (S9 구현 후 정정, 2026-04-21)` + 본 기획서 링크.
 
 ### Step 9 — 문서 갱신 + 커밋 / 푸시
 
-- `docs/audit/data-architecture-utilization-audit.md` S9 완료 표기
-- `docs/plans/data-architecture-roadmap.md` Wave 3 S9 ✅ 완료
+- `docs/generated/audit/data-architecture-utilization-audit.md` S9 완료 표기
+- `docs/design-docs/data-architecture-roadmap.md` Wave 3 S9 ✅ 완료
 - git commit + push
 
 ---

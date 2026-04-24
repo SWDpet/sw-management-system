@@ -6,8 +6,8 @@ import java.util.*;
  * 데이터 아키텍처 감사 SQL 러너 (1회용).
  *
  * 근거:
- *  - 기획서: docs/plans/data-architecture-audit.md v2
- *  - 개발계획서: docs/dev-plans/data-architecture-audit.md v2 §1 Step 2-1
+ *  - 기획서: docs/product-specs/data-architecture-audit.md v2
+ *  - 개발계획서: docs/exec-plans/data-architecture-audit.md v2 §1 Step 2-1
  *
  * 안전통제 (기획서 §7-5 5개 하위통제):
  *  1) 권한: SELECT 전용. 본 파일 내 UPDATE/DELETE/INSERT/DROP/ALTER/TRUNCATE 키워드 0개.
@@ -18,7 +18,7 @@ import java.util.*;
  *
  * 실행:
  *   JAR=~/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar
- *   DB_PASSWORD=XXX java -cp "$JAR" docs/audit/data-architecture-scan.java <output_dir>
+ *   DB_PASSWORD=XXX java -cp "$JAR" docs/generated/audit/data-architecture-scan.java <output_dir>
  */
 public class DataArchitectureScan {
 
@@ -171,8 +171,8 @@ public class DataArchitectureScan {
 
         long elapsed = (System.currentTimeMillis() - tsStart) / 1000;
         System.out.println("\n[DONE] Phase 1 scan complete in " + elapsed + "s");
-        System.out.println("       docs/audit/db-schema-full.md");
-        System.out.println("       docs/audit/data-architecture-master-inventory.md");
+        System.out.println("       docs/generated/audit/db-schema-full.md");
+        System.out.println("       docs/generated/audit/data-architecture-master-inventory.md");
     }
 
     private static List<String> listOne(Connection c, String sql) throws SQLException {

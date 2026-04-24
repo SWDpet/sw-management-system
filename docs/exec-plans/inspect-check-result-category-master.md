@@ -50,7 +50,7 @@ BASE_SHA=$(git rev-parse HEAD)
 
 ### Step 1 — 사전검증 (Phase 0 게이트)
 
-**1-1. 러너**: `docs/dev-plans/inspect-category-precheck.java` (S5/S1 패턴 복제)
+**1-1. 러너**: `docs/exec-plans/inspect-category-precheck.java` (S5/S1 패턴 복제)
 
 쿼리:
 ```sql
@@ -252,7 +252,7 @@ bash server-restart.sh
 
 ### Step 6 — 로드맵 정정 (T-LINK) + 커밋/푸시
 
-`docs/plans/data-architecture-roadmap.md` §S10 ✅ 완료 표기.
+`docs/design-docs/data-architecture-roadmap.md` §S10 ✅ 완료 표기.
 
 ---
 
@@ -292,7 +292,7 @@ bash server-restart.sh
 ### 신규
 - `swdept/sql/V023_inspect_category_master.sql`
 - `swdept/sql/V023_rollback.sql` (보관)
-- `docs/dev-plans/inspect-category-precheck.java`, `-precheck-result.md`
+- `docs/exec-plans/inspect-category-precheck.java`, `-precheck-result.md`
 - `src/test/java/com/swmanager/system/arch/CheckCategoryMstArchTest.java`
 - `src/test/java/com/swmanager/system/sql/InspectCategoryConstraintTest.java` (**v2 필수**)
 

@@ -5,10 +5,10 @@ import java.util.*;
  * S5 access-log-userid-fix · Step 1 사전검증 러너 (READ ONLY)
  *
  * 실행:
- *   javac -encoding UTF-8 docs/dev-plans/access-log-userid-precheck.java
+ *   javac -encoding UTF-8 docs/exec-plans/access-log-userid-precheck.java
  *   java -cp ".;<postgresql-jar>" -Dfile.encoding=UTF-8 access-log-userid-precheck > result.txt
  *
- * 출력: 마크다운 표 형식 → docs/dev-plans/access-log-userid-precheck-result.md 로 저장
+ * 출력: 마크다운 표 형식 → docs/exec-plans/access-log-userid-precheck-result.md 로 저장
  *
  * 안전통제:
  *  - SET TRANSACTION READ ONLY (UPDATE/DELETE 차단)

@@ -1,7 +1,7 @@
 /**
  * admin-user-list.html 전용 JS.
  *
- * 스프린트 6 (2026-04-19) — docs/plans/admin-user-hybrid-layout.md
+ * 스프린트 6 (2026-04-19) — docs/product-specs/admin-user-hybrid-layout.md
  *
  * 기능:
  *  - 행 펼치기/접기 (여러 행 동시 가능)

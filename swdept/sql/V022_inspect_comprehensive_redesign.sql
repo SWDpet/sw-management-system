@@ -1,9 +1,9 @@
 -- ============================================================
 -- V022: inspect-comprehensive-redesign (S1)
 -- Sprint: inspect-comprehensive-redesign (2026-04-21)
--- 근거: docs/plans/inspect-comprehensive-redesign.md v2.2 (사용자 최종승인)
---        docs/dev-plans/inspect-comprehensive-redesign.md v2.1 (사용자 최종승인)
--- Step 1 Precheck: docs/dev-plans/inspect-redesign-precheck-result.md (PASS)
+-- 근거: docs/product-specs/inspect-comprehensive-redesign.md v2.2 (사용자 최종승인)
+--        docs/exec-plans/inspect-comprehensive-redesign.md v2.1 (사용자 최종승인)
+-- Step 1 Precheck: docs/exec-plans/inspect-redesign-precheck-result.md (PASS)
 --
 -- 조치:
 --   A1  inspect_check_result.result → result_code + result_text

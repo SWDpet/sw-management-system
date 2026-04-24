@@ -3,7 +3,7 @@
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-18
 - **선행**: 커밋 `af2a1b0`(C 본체) → `a0941cd`(C 설명) → (A 인프라 구성도 구현 — 커밋 예정)
-- **선행 문서**: [docs/plans/system-graph-infra.md](./system-graph-infra.md) v2
+- **선행 문서**: [docs/product-specs/system-graph-infra.md](./system-graph-infra.md) v2
 - **상태**: v2 (codex 재검토 대기) — 1차 검토 4건 반영
 
 ### 개정 이력

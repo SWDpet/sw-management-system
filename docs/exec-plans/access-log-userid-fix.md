@@ -50,7 +50,7 @@ created: "2026-04-20"
 
 ### Step 1 — 사전검증 (FR-0)
 
-**1-1. 러너 작성**: `docs/dev-plans/access-log-userid-precheck.java`
+**1-1. 러너 작성**: `docs/exec-plans/access-log-userid-precheck.java`
 - 실행 안전통제: `SET TRANSACTION READ ONLY` + `statement_timeout 10s`
 - 쿼리 3종:
   ```sql
@@ -74,7 +74,7 @@ created: "2026-04-20"
    WHERE userid NOT IN (SELECT userid FROM users)
      AND userid NOT IN ('anonymousUser', 'anonymous');
   ```
-- 결과: `docs/dev-plans/access-log-userid-precheck-result.md`
+- 결과: `docs/exec-plans/access-log-userid-precheck-result.md`
 
 **1-2. Ambiguous 매칭 분석**
 
@@ -93,8 +93,8 @@ created: "2026-04-20"
 -- ============================================================
 -- V019: access_logs.userid 오염 정제
 -- Sprint: access-log-userid-fix (2026-04-20)
--- 근거: docs/plans/access-log-userid-fix.md v2
--- 매핑표: docs/dev-plans/access-log-userid-mapping.md (사전검증 후 확정)
+-- 근거: docs/product-specs/access-log-userid-fix.md v2
+-- 매핑표: docs/exec-plans/access-log-userid-mapping.md (사전검증 후 확정)
 --
 -- [v2 변경점]
 -- - 실행ID(타임스탬프) 기반 백업 테이블 — 매회 신규 생성
@@ -171,10 +171,10 @@ COMMIT;
 
 **주**: `anonymous → anonymousUser` 통일 및 기타 ambiguous 매핑이 있을 경우, Step 1-2 매핑표 확정 후 별도 `V019B_*.sql` 로 분리 실행 (한 트랜잭션에 섞지 않음).
 
-**2-2. Diff 리포트 러너**: `docs/dev-plans/access-log-userid-diff.java`
+**2-2. Diff 리포트 러너**: `docs/exec-plans/access-log-userid-diff.java`
 - 실행 후 호출
 - 쿼리: 백업 테이블 vs 현재 access_logs 집계 비교
-- 출력: `docs/dev-plans/access-log-userid-diff-result.md`
+- 출력: `docs/exec-plans/access-log-userid-diff-result.md`
 
 ### Step 3 — LogService 개조 (FR-2)
 
@@ -256,14 +256,14 @@ RUN_ID=$(date +%Y%m%d_%H%M%S)
 # :run_id 치환 후 실행 (동명 존재 시 (0) 게이트에서 즉시 실패)
 sed "s/:run_id/${RUN_ID}/g" swdept/sql/V019_access_log_userid_cleanup.sql \
   > /tmp/V019_applied_${RUN_ID}.sql
-DB_PASSWORD='***' java -cp "$JAR" docs/dev-plans/legacy-contract-apply.java \
+DB_PASSWORD='***' java -cp "$JAR" docs/exec-plans/legacy-contract-apply.java \
   /tmp/V019_applied_${RUN_ID}.sql
 # 기대 로그: [NOTICE] PASS: cleaned N rows (exact match, backup=access_logs_cleanup_backup_<RUN_ID>)
 # ★ RUN_ID 값을 본 문서 §Step 5 실행 로그 섹션에 기록 (롤백 근거)
 
 # Diff 리포트
 DB_PASSWORD='***' BACKUP_TABLE="access_logs_cleanup_backup_${RUN_ID}" \
-  java -cp "$JAR" docs/dev-plans/access-log-userid-diff.java
+  java -cp "$JAR" docs/exec-plans/access-log-userid-diff.java
 ```
 
 **실행 로그 (실행 후 채움)**:
@@ -282,8 +282,8 @@ DB_PASSWORD='***' BACKUP_TABLE="access_logs_cleanup_backup_${RUN_ID}" \
 
 ### Step 7 — 문서 갱신
 
-- `docs/audit/data-architecture-utilization-audit.md` S5 완료
-- `docs/plans/data-architecture-roadmap.md` S5 완료
+- `docs/generated/audit/data-architecture-utilization-audit.md` S5 완료
+- `docs/design-docs/data-architecture-roadmap.md` S5 완료
 
 ### Step 8 — 빌드 / 재기동 / 스모크
 
@@ -311,7 +311,7 @@ bash server-restart.sh
 | T3 | 매핑 대상 잔존 0건 (NFR-3) | `SELECT COUNT(*) FROM access_logs WHERE userid IN ('박욱진','관리자')` | 0 |
 | T4 | 스냅샷 백업 테이블 존재 (NFR-7) | `\d access_logs_cleanup_backup_<RUN_ID>` | 테이블 존재 + 행 수 = expected_cnt |
 | T4-B | 백업 중복 방지 (v2) | V019 동일 RUN_ID 재실행 | (0) 게이트에서 `HALT: backup table ... already exists` EXCEPTION |
-| T5 | Diff 리포트 생성 | `ls docs/dev-plans/access-log-userid-diff-result.md` | 파일 존재 |
+| T5 | Diff 리포트 생성 | `ls docs/exec-plans/access-log-userid-diff-result.md` | 파일 존재 |
 | T6 | 멱등성 (NFR-8) | V019 2회차 실행 | updated_cnt=0, 정상 종료 |
 | T7 | 익명 식별자 통일 (NFR-9) | `rg -P '"anonymous"(?!User)' src/main/java/com/swmanager/system/service/LogService.java` | 0 hits (모두 `ANONYMOUS_USERID` 상수 또는 `"anonymousUser"` 리터럴) |
 | T8 | LogService 단위 테스트 (NFR-4) | `./mvnw test -Dtest='LogServiceTest'` | 7+ 시나리오 PASS |

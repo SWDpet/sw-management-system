@@ -41,10 +41,10 @@ created: "2026-04-20"
 
 ### Step 1 — 사전검증 (FR-0)
 
-**1-1. 러너 작성**: `docs/dev-plans/process-master-precheck.java`
+**1-1. 러너 작성**: `docs/exec-plans/process-master-precheck.java`
 - 기획서 FR-0 (1)~(5) 쿼리 실행
 - 안전통제: `SET TRANSACTION READ ONLY` + `statement_timeout 10s`
-- 결과: `docs/dev-plans/process-master-precheck-result.md`
+- 결과: `docs/exec-plans/process-master-precheck-result.md`
 - **진행 게이트**: 아래 5가지 중 하나라도 실패 시 `HALT` + exit 1
   - (1) total=1450, distinct=5
   - (2) 각 5개 중복 그룹
@@ -67,7 +67,7 @@ rg -n 'ProcessMaster|ServicePurpose' src/main/java/com/swmanager/system/reposito
 -- ============================================================
 -- V018: tb_process_master / tb_service_purpose 중복 제거
 -- Sprint: process-master-dedup (2026-04-20)
--- 근거: docs/plans/process-master-dedup.md v2
+-- 근거: docs/product-specs/process-master-dedup.md v2
 -- 사전검증: FR-0 전체 PASS 후 실행 (precheck runner)
 -- ============================================================
 
@@ -178,7 +178,7 @@ COMMIT;
 **3-1. 러너 실행** (기존 `legacy-contract-apply.java` 재사용)
 ```bash
 JAR=~/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar
-DB_PASSWORD='***' java -cp "$JAR" docs/dev-plans/legacy-contract-apply.java \
+DB_PASSWORD='***' java -cp "$JAR" docs/exec-plans/legacy-contract-apply.java \
   swdept/sql/V018_process_master_dedup.sql
 # 기대 출력: [NOTICE] PASS: dedup + constraints + NOT NULL applied
 ```
@@ -210,19 +210,19 @@ for i in 1 2 3; do
   echo "=== 재시작 #$i ==="
   bash server-restart.sh
   sleep 5
-  # 5 체크 러너 실행: docs/dev-plans/process-master-idempotency-check.java
-  DB_PASSWORD='***' java -cp "$JAR" docs/dev-plans/process-master-idempotency-check.java
+  # 5 체크 러너 실행: docs/exec-plans/process-master-idempotency-check.java
+  DB_PASSWORD='***' java -cp "$JAR" docs/exec-plans/process-master-idempotency-check.java
 done
 ```
 
-**5-2. 멱등성 체크 러너 작성**: `docs/dev-plans/process-master-idempotency-check.java`
+**5-2. 멱등성 체크 러너 작성**: `docs/exec-plans/process-master-idempotency-check.java`
 - 각 테이블에 대해:
   - (a) COUNT(*) = 5
   - (b) COUNT(DISTINCT key) = 5
   - (c) 중복 그룹 = 0
   - (d) UNIQUE 제약/인덱스 존재
   - (e) 직전 재시작 로그에 관련 ERROR 0건 (`rg 'tb_process_master\|tb_service_purpose' server.log | rg ERROR`)
-- 결과: `docs/dev-plans/process-master-idempotency-result.md`
+- 결과: `docs/exec-plans/process-master-idempotency-result.md`
 
 **5-3. 수동 INSERT 중복 차단 테스트** (v2 codex 권장 #4)
 ```sql
@@ -242,8 +242,8 @@ ROLLBACK;  -- 안전상 ROLLBACK (COMMIT 해도 무해)
 
 ### Step 6 — 감사·로드맵 문서 갱신
 
-- `docs/audit/data-architecture-utilization-audit.md` — 기능 2-B 섹션 "✅ 완료 (2026-04-20)" 표기
-- `docs/plans/data-architecture-roadmap.md` — S2 완료 표기
+- `docs/generated/audit/data-architecture-utilization-audit.md` — 기능 2-B 섹션 "✅ 완료 (2026-04-20)" 표기
+- `docs/design-docs/data-architecture-roadmap.md` — S2 완료 표기
 
 ### Step 7 — 빌드/재기동/회귀 스모크 (NFR-6)
 
@@ -262,10 +262,10 @@ bash server-restart.sh                  # Started + ERROR 0
 ```bash
 git add swdept/sql/V018_process_master_dedup.sql \
         src/main/resources/db_init_phase2.sql \
-        docs/dev-plans/process-master-* \
-        docs/plans/process-master-dedup.md \
-        docs/audit/data-architecture-utilization-audit.md \
-        docs/plans/data-architecture-roadmap.md
+        docs/exec-plans/process-master-* \
+        docs/product-specs/process-master-dedup.md \
+        docs/generated/audit/data-architecture-utilization-audit.md \
+        docs/design-docs/data-architecture-roadmap.md
 git commit -m "refactor: process-master-dedup 완료 (Wave 1 S2)"
 git push
 ```

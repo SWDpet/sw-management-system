@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * 조직도 조회(/api) + 관리 화면(/admin).
  *
- * 스프린트 5 (2026-04-19) — docs/plans/doc-selector-org-env.md
+ * 스프린트 5 (2026-04-19) — docs/product-specs/doc-selector-org-env.md
  *
  * 접근 통제: SecurityConfig 에 의해 /admin/** 은 ADMIN, /api/org-units/** 는 인증 사용자.
  */

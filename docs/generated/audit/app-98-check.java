@@ -6,7 +6,7 @@ public class App98Check {
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(
                 "jdbc:postgresql://211.104.137.55:5881/SW_Dept", "postgres", System.getenv("DB_PASSWORD"));
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/app-98-check-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/app-98-check-result.md"))) {
             c.setReadOnly(true);
             out.println("# inspect_check_result.APP 98건 실저장 경로 조사\n");
 

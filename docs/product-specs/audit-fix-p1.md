@@ -2,7 +2,7 @@
 
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-18
-- **선행**: 감사 보고서 `docs/audit/2026-04-18-system-audit.md`
+- **선행**: 감사 보고서 `docs/generated/audit/2026-04-18-system-audit.md`
 - **상태**: 초안 (codex 검토 대기)
 
 ---
@@ -125,7 +125,7 @@ Phase 1 감사에서 **P1 (즉시 조치 필요)** 로 분류된 4건:
 | DB | `src/main/resources/db_init_phase2.sql` | `inspect_report` CREATE 에 컬럼 2개 + ALTER ADD COLUMN IF NOT EXISTS 2행 |
 | Backend | `src/main/java/com/swmanager/system/controller/DocumentController.java` | 권한 검사 4곳 추가, 민감 필드 제거 4곳 |
 | Frontend | (필요 시) 사용처 화면 | ssn/email/certificate 를 쓰던 페이지 있으면 조정 |
-| Docs | `docs/audit/2026-04-18-system-audit.md` | 해당 4개 항목 체크박스 `☑ 조치함` |
+| Docs | `docs/generated/audit/2026-04-18-system-audit.md` | 해당 4개 항목 체크박스 `☑ 조치함` |
 
 **신규 0개 + 수정 ~5개. DB 변경 있음 (ALTER — 기존 데이터 영향 없음).**
 

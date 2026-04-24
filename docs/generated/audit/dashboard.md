@@ -98,7 +98,7 @@ SORT file.name ASC
 - [ ] Shodan 에서 `211.104.137.55` 현황 1회 확인 — 5분, 이미 노출 중인지 파악
 
 **재개 시 시작 지점**:
-- `docs/plans/security-hardening-v2-draft.md` — codex 검토까지 완료된 초안
+- `docs/product-specs/security-hardening-v2-draft.md` — codex 검토까지 완료된 초안
 - codex 추천 TOP 3: 5881 외부 차단 / `postgres`→`swmanager_app` / Tailscale+SSL
 
 ### 인프라 / 운영

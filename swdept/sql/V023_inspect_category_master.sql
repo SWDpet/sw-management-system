@@ -1,9 +1,9 @@
 -- ============================================================
 -- V023: inspect-check-result-category-master (S10)
 -- Sprint: inspect-check-result-category-master (2026-04-22)
--- 근거: docs/plans/inspect-check-result-category-master.md v2.1 (사용자 최종승인)
---       docs/dev-plans/inspect-check-result-category-master.md v2.1 (사용자 최종승인)
--- Step 1 Precheck: docs/dev-plans/inspect-category-precheck-result.md (PASS, 16종 확정)
+-- 근거: docs/product-specs/inspect-check-result-category-master.md v2.1 (사용자 최종승인)
+--       docs/exec-plans/inspect-check-result-category-master.md v2.1 (사용자 최종승인)
+-- Step 1 Precheck: docs/exec-plans/inspect-category-precheck-result.md (PASS, 16종 확정)
 --
 -- 6 Phase 구조 + Exit Gate 2 + 멱등성 (IF NOT EXISTS / ON CONFLICT / IF [NOT] EXISTS)
 -- ============================================================

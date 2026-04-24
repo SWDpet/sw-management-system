@@ -90,7 +90,7 @@
 | Controller (수정) | `src/main/java/com/swmanager/system/controller/LoginController.java` | `loginModePage` 메서드 + import 제거 |
 | Repository (삭제) | `src/main/java/com/swmanager/system/repository/SwRepository.java` | 파일 전체 삭제 |
 | Controller (수정) | `src/main/java/com/swmanager/system/controller/AdminUserController.java` | log.info 2줄 수정 |
-| Docs (수정) | `docs/audit/2026-04-18-system-audit.md` | 4-4, 4-5, 5-4 체크박스 ☑ 조치함 |
+| Docs (수정) | `docs/generated/audit/2026-04-18-system-audit.md` | 4-4, 4-5, 5-4 체크박스 ☑ 조치함 |
 
 **수정 3 + 삭제 1 + 문서 수정 1. 신규 0. DB/API 계약 변경 0.**
 

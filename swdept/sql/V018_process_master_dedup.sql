@@ -1,7 +1,7 @@
 -- ============================================================
 -- V018: tb_process_master / tb_service_purpose 중복 제거
 -- Sprint: process-master-dedup (2026-04-20)
--- 근거: docs/plans/process-master-dedup.md v2 (사용자 최종승인)
+-- 근거: docs/product-specs/process-master-dedup.md v2 (사용자 최종승인)
 -- 사전검증: FR-0 전체 PASS (process-master-precheck)
 -- 절차:
 --   (1) 트랜잭션 내 사전검증 DO 블록
@@ -9,7 +9,7 @@
 --   (3) NOT NULL 전환 (키 5 컬럼)
 --   (4) UNIQUE 제약 / 표현식 UNIQUE INDEX 추가
 --   (5) 사후검증 DO 블록 (COUNT + UNIQUE + NOT NULL 5컬럼)
--- 롤백: docs/dev-plans/process-master-dedup.md §3 R-SQL
+-- 롤백: docs/exec-plans/process-master-dedup.md §3 R-SQL
 -- ============================================================
 
 BEGIN;

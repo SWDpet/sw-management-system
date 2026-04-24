@@ -55,7 +55,7 @@ BASE_SHA=$(git rev-parse HEAD)
 # 단독 영문 리터럴 (예외 없음 — NFR-4 "0 hits", T9 와 동일 검증식)
 rg -n '"(CONTRACT|INSTALL|PATCH|INSPECT|PRE_CONTACT|FAULT|SUPPORT|SETTLE|COMPLETE|ETC|PLANNED|CONTACTED|CONFIRMED|IN_PROGRESS|COMPLETED|POSTPONED|CANCELLED)"' \
   src/main/java --glob '!**/enums/**' --glob '!**/test/**' \
-  > docs/dev-plans/s16-literal-scan.txt
+  > docs/exec-plans/s16-literal-scan.txt
 ```
 
 **Exit Gate 1**: scan 결과를 판정표로 정리 (치환 대상 vs 주석·외 도메인)
@@ -288,7 +288,7 @@ bash server-restart.sh
 
 ### Step 8 — 로드맵 정정 (T-LINK)
 
-`docs/plans/data-architecture-roadmap.md` §S16 ✅ 완료 표기.
+`docs/design-docs/data-architecture-roadmap.md` §S16 ✅ 완료 표기.
 
 ### Step 9 — 사용자 `작업완료` 대기 후 커밋/푸시 (CLAUDE.md 준수)
 
@@ -338,7 +338,7 @@ bash server-restart.sh
 - `src/test/java/com/swmanager/system/constant/enums/WorkPlanStatusTest.java`
 - `src/test/java/com/swmanager/system/arch/WorkPlanMstSchemaTest.java`
 - `src/test/java/com/swmanager/system/arch/WorkPlanMstEnumSyncTest.java`
-- `docs/dev-plans/s16-literal-scan.txt`
+- `docs/exec-plans/s16-literal-scan.txt`
 
 ### 수정
 - `src/main/java/com/swmanager/system/dto/WorkPlanDTO.java` (switch 3개 제거 + Enum 위임)

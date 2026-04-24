@@ -3,7 +3,7 @@
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-18
 - **선행 커밋**: `af2a1b0` (C. ERD 인터랙티브 본체)
-- **선행 문서**: [docs/plans/system-graph-erd.md](./system-graph-erd.md) v2 (승인됨)
+- **선행 문서**: [docs/product-specs/system-graph-erd.md](./system-graph-erd.md) v2 (승인됨)
 - **상태**: v2 (codex 재검토 대기) — 1차 검토 2건 반영
 
 ### 개정 이력

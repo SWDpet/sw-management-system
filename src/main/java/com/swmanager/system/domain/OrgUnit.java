@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 조직도 단위 (본부/연구소/부서/팀).
  * self-FK {@code parent_id} 로 가변 계층(1~3단) 표현.
  *
- * 스프린트 5 (2026-04-19) 신설 — docs/plans/doc-selector-org-env.md
+ * 스프린트 5 (2026-04-19) 신설 — docs/product-specs/doc-selector-org-env.md
  */
 @Entity
 @Table(name = "tb_org_unit")

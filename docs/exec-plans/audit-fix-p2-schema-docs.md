@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **기획서**: [docs/plans/audit-fix-p2-schema-docs.md](../plans/audit-fix-p2-schema-docs.md) (승인됨)
+- **기획서**: [docs/product-specs/audit-fix-p2-schema-docs.md](../plans/audit-fix-p2-schema-docs.md) (승인됨)
 - **상태**: v2 (codex 재검토 대기) — 1차 3건 반영
 
 ### 개정 이력
@@ -20,9 +20,9 @@
 | DB | `src/main/resources/db_init_phase2.sql` | 상단 주석 블록 추가 + 8 CREATE TABLE IF NOT EXISTS (tb_document 계열 7 + tb_work_plan) |
 | ERD | `docs/erd-contract.mmd` | tb_contract 테이블 블록 + 관계선 제거, tb_contract_participant 의 FK contract_id → proj_id 로 교체, 제목 조정 |
 | ERD | `docs/erd-core.mmd` | tb_inspect_cycle 블록 + 관계선 제거 |
-| ERD | `docs/ERD.md` | tb_contract / tb_contract_target / tb_inspect_cycle 언급 "미구현" 표기 or 제거 |
-| Plans | `docs/plans/system-graph-infra-perf.md` | 유형 필터 → 시스템명 필터, vis-network hierarchical → 텍스트 트리+조직도, 관련 NFR 재정립, 개정 이력 추가 |
-| Docs | `docs/audit/2026-04-18-system-audit.md` | 2-2, 3-1, 3-2, 3-3, 3-4, 3-5 체크박스 ☑ 조치함 + 조치 요약 |
+| ERD | `docs/generated/erd.md` | tb_contract / tb_contract_target / tb_inspect_cycle 언급 "미구현" 표기 or 제거 |
+| Plans | `docs/product-specs/system-graph-infra-perf.md` | 유형 필터 → 시스템명 필터, vis-network hierarchical → 텍스트 트리+조직도, 관련 NFR 재정립, 개정 이력 추가 |
+| Docs | `docs/generated/audit/2026-04-18-system-audit.md` | 2-2, 3-1, 3-2, 3-3, 3-4, 3-5 체크박스 ☑ 조치함 + 조치 요약 |
 
 **수정 6 파일. 코드·Entity 변경 0.**
 
@@ -48,7 +48,7 @@
 --   tb_pjt_target, tb_pjt_manpower_plan, tb_pjt_schedule
 --
 -- Phase1 DDL 정비는 별도 스프린트에서 수행 예정. (감사 P2 2-2 조치 주석)
--- 감사 보고서: docs/audit/2026-04-18-system-audit.md
+-- 감사 보고서: docs/generated/audit/2026-04-18-system-audit.md
 -- ============================================================
 
 ```
@@ -123,7 +123,7 @@ sw_pjt {
 #### (B) 관계선 제거
 `users ||--o{ tb_inspect_cycle : "assigned"` (라인 66) 삭제.
 
-### 2-4. `docs/ERD.md` (3-1, 3-3)
+### 2-4. `docs/generated/erd.md` (3-1, 3-3)
 
 여러 언급 위치가 있음:
 - 다이어그램 헤더·블록도 속 `tb_contract`, `tb_inspect_cycle` 표기 → "미구현" 주석 추가 or 삭제
@@ -157,7 +157,7 @@ sw_pjt {
 #### (E) 시나리오·리스크 섹션의 vis-network 관련 언급 정리
 "hierarchical / dragNodes" 등 더 이상 유효하지 않은 문구 삭제 or 표시.
 
-### 2-6. `docs/audit/2026-04-18-system-audit.md`
+### 2-6. `docs/generated/audit/2026-04-18-system-audit.md`
 
 6 개 항목 (2-2, 3-1, 3-2, 3-3, 3-4, 3-5) 의 체크박스 `☐ 조치함` → `☑ 조치함` + 각 항목 끝에 조치 요약 한 줄 추가.
 
@@ -170,7 +170,7 @@ sw_pjt {
 | 1 | `db_init_phase2.sql` 상단 주석 + 8 CREATE 추가 | `grep "^CREATE TABLE" db_init_phase2.sql | wc -l` → 15 |
 | 2 | `erd-contract.mmd` 수정 (2-2) | 파일 diff + C 탭 테스트에서 33 노드 유지 |
 | 3 | `erd-core.mmd` 수정 (2-3) | 동일 |
-| 4 | `docs/ERD.md` 수정 (2-4) | diff |
+| 4 | `docs/generated/erd.md` 수정 (2-4) | diff |
 | 5 | `system-graph-infra-perf.md` 수정 (2-5) | diff + 개정 이력 확인 |
 | 6 | `2026-04-18-system-audit.md` 체크박스 업데이트 (2-6) | 6건 모두 ☑ |
 | 7 | 서버 재기동 | `Started SwManagerApplication`, C 탭 ERD 파싱 오류 없음 |

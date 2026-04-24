@@ -13,8 +13,8 @@
 
 ## 현재 보관 중인 문서
 
-- `obsidian-setup.md` — Obsidian 편집 환경 설정 가이드 (docs/OBSIDIAN_SETUP.md 에서 이관 예정)
-- `setup-guide.md` — 개발 환경 초기 설정 (docs/SETUP_GUIDE.md 에서 이관 예정)
+- `obsidian-setup.md` — Obsidian 편집 환경 설정 가이드 (docs/references/obsidian-setup.md 에서 이관 예정)
+- `setup-guide.md` — 개발 환경 초기 설정 (docs/references/setup-guide.md 에서 이관 예정)
 
 ---
 

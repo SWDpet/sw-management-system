@@ -6,7 +6,7 @@ public class BatchBWageCheck {
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(
                 "jdbc:postgresql://211.104.137.55:5881/SW_Dept", "postgres", System.getenv("DB_PASSWORD"));
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/batch-b-wage-check-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/batch-b-wage-check-result.md"))) {
             c.setReadOnly(true);
             out.println("# qt_wage_rate ↔ users.tech_grade 연관 확인\n");
             String[][] qs = {

@@ -1,8 +1,8 @@
 -- ============================================================
 -- V020: qt_remarks_pattern.user_id FK 추가 + 7건 매핑 + 템플릿화
 -- Sprint: qt-remarks-users-link (2026-04-20)
--- 근거: docs/plans/qt-remarks-users-link.md (v3 승인)
---       docs/dev-plans/qt-remarks-users-link.md (v2 승인)
+-- 근거: docs/design-docs/qt-remarks-users-link.md (v3 승인)
+--       docs/exec-plans/qt-remarks-users-link.md (v2 승인)
 -- 매핑:
 --   1,4,5,6,7 → user_id=6 (ukjin914 박욱진)
 --   2 → user_id=17 (leeds 이동수)

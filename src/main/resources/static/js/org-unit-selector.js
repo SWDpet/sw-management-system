@@ -2,7 +2,7 @@
  * 조직도(본부/부서/팀) 연쇄 드롭다운 공통 모듈.
  * 가변 계층 지원 (1~3단).
  *
- * 스프린트 5 (2026-04-19) — docs/plans/doc-selector-org-env.md FR-2-C / FR-3-D
+ * 스프린트 5 (2026-04-19) — docs/product-specs/doc-selector-org-env.md FR-2-C / FR-3-D
  *
  * 사용:
  *   var sel = OrgUnitSelector.init({

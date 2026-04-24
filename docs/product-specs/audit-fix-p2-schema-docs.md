@@ -39,7 +39,7 @@
 | ID | 내용 |
 |----|------|
 | FR-3-1 | `docs/erd-contract.mmd` 에서 `tb_contract` 테이블 블록 제거. 관계선도 함께 정리. 파일명도 실제 내용 반영하기 위해 유지 (제목만 "Participants & Work Plan" 등으로 조정 가능). |
-| FR-3-2 | `docs/ERD.md` 에서 tb_contract 언급 있으면 제거 or "미구현" 표기. |
+| FR-3-2 | `docs/generated/erd.md` 에서 tb_contract 언급 있으면 제거 or "미구현" 표기. |
 | FR-3-3 | ERD 에 남는 contract 관련 테이블: `tb_contract_participant` (실제 proj_id FK) 만. 자세한 구조는 3-2 참조. |
 
 ### 3-2. ContractParticipant FK ERD 갱신
@@ -62,7 +62,7 @@
 
 | ID | 내용 |
 |----|------|
-| FR-6-1 | `docs/plans/system-graph-infra-perf.md` FR-2 의 **"인프라 유형 드롭다운 (전체/UPIS/KRAS/기타)"** 를 현 구현과 일치시킴: **"시스템명(sys_nm_en) 드롭다운"** 으로 변경. |
+| FR-6-1 | `docs/product-specs/system-graph-infra-perf.md` FR-2 의 **"인프라 유형 드롭다운 (전체/UPIS/KRAS/기타)"** 를 현 구현과 일치시킴: **"시스템명(sys_nm_en) 드롭다운"** 으로 변경. |
 | FR-6-2 | 개정 이력 테이블에 "2026-04-19: 사용자 피드백 반영으로 유형 필터 → 시스템명 필터로 전환 (실구현 준수)" 한 줄 추가. |
 | FR-6-3 | FR-5, 관련 UI 스펙도 시스템명 기반으로 정렬. |
 
@@ -70,7 +70,7 @@
 
 | ID | 내용 |
 |----|------|
-| FR-7-1 | `docs/plans/system-graph-infra-perf.md` FR-1 / NFR 를 **"텍스트 트리 (CLI tree 스타일) 기본 + 조직도(≤80 노드) 토글"** 로 재정의. vis-network hierarchical 요구 삭제. |
+| FR-7-1 | `docs/product-specs/system-graph-infra-perf.md` FR-1 / NFR 를 **"텍스트 트리 (CLI tree 스타일) 기본 + 조직도(≤80 노드) 토글"** 로 재정의. vis-network hierarchical 요구 삭제. |
 | FR-7-2 | FR-4 DataSet 배치 업데이트 요구는 더 이상 해당 없음 — "HTML innerHTML 한 번에 replace" 로 대체됨. 이에 맞는 성능 기준 재정립 (초기 렌더 ≤ 1.5s 는 유지 가능). |
 | FR-7-3 | 개정 이력에 "2026-04-19: 렌더러 방향 전환 반영 (force/hierarchical 실험 후 텍스트 트리로 확정)" 기록. |
 
@@ -109,9 +109,9 @@
 | DB (수정) | `src/main/resources/db_init_phase2.sql` | 상단 주석 + 8 CREATE TABLE 추가 (IF NOT EXISTS) |
 | Docs (수정) | `docs/erd-contract.mmd` | tb_contract 제거 + tb_contract_participant FK 교체 |
 | Docs (수정) | `docs/erd-core.mmd` | tb_inspect_cycle 제거 |
-| Docs (수정) | `docs/ERD.md` | tb_contract 언급 정리 (있으면) |
-| Docs (수정) | `docs/plans/system-graph-infra-perf.md` | 유형 필터 / 렌더러 스펙 갱신 + 개정 이력 |
-| Docs (수정) | `docs/audit/2026-04-18-system-audit.md` | 2-2, 3-1, 3-2, 3-3, 3-4, 3-5 체크박스 ☑ 조치함 |
+| Docs (수정) | `docs/generated/erd.md` | tb_contract 언급 정리 (있으면) |
+| Docs (수정) | `docs/product-specs/system-graph-infra-perf.md` | 유형 필터 / 렌더러 스펙 갱신 + 개정 이력 |
+| Docs (수정) | `docs/generated/audit/2026-04-18-system-audit.md` | 2-2, 3-1, 3-2, 3-3, 3-4, 3-5 체크박스 ☑ 조치함 |
 
 **수정 6 파일 (DB 초기화 1 + ERD 3: erd-contract.mmd, erd-core.mmd, ERD.md + plans 1 + 감사 보고서 1). 신규 0. Entity/Java 코드 변경 0.**
 

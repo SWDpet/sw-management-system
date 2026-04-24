@@ -37,7 +37,7 @@ public class SystemGraphController {
         return erdGraphService.getGraph();
     }
 
-    /** Phase 1 A — 인프라 구성도 데이터 (Specs: docs/plans/system-graph-infra.md v2 FR-1). */
+    /** Phase 1 A — 인프라 구성도 데이터 (Specs: docs/product-specs/system-graph-infra.md v2 FR-1). */
     @GetMapping("/api/infra")
     @ResponseBody
     public InfraGraphDTO getInfraGraph() {

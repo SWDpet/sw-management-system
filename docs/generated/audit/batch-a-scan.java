@@ -11,7 +11,7 @@ public class BatchAScan {
         String pw = System.getenv("DB_PASSWORD");
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(url, "postgres", pw);
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/batch-a-scan-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/batch-a-scan-result.md"))) {
             try (Statement s = c.createStatement()) {
                 s.execute("SET SESSION statement_timeout = '30s'");
                 s.execute("SET SESSION lock_timeout = '5s'");
@@ -79,6 +79,6 @@ public class BatchAScan {
                 }
             }
         }
-        System.out.println("OK: docs/audit/batch-a-scan-result.md");
+        System.out.println("OK: docs/generated/audit/batch-a-scan-result.md");
     }
 }

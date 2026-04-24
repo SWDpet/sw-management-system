@@ -4,9 +4,9 @@ import java.sql.*;
  * S10 inspect-category-master · Step 1 사전검증 러너 (READ ONLY)
  *
  * 실행:
- *   javac -encoding UTF-8 docs/dev-plans/inspect_category_precheck.java
+ *   javac -encoding UTF-8 docs/exec-plans/inspect_category_precheck.java
  *   DB_PASSWORD=... java -cp ".;<postgresql-jar>" -Dfile.encoding=UTF-8 \
- *     inspect_category_precheck > docs/dev-plans/inspect-category-precheck-result.md
+ *     inspect_category_precheck > docs/exec-plans/inspect-category-precheck-result.md
  *
  * 검증:
  *  (a) inspect_template.category distinct (특히 AP 4종 정확 label)

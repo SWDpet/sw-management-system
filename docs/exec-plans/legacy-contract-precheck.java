@@ -87,11 +87,11 @@ public class LegacyContractPrecheck {
             }
         }
 
-        try (FileWriter fw = new FileWriter("docs/dev-plans/legacy-contract-precheck-result.md")) {
+        try (FileWriter fw = new FileWriter("docs/exec-plans/legacy-contract-precheck-result.md")) {
             fw.write(result.toString());
         }
         System.out.println(halt ? "FAIL (HALT)" : "PASS");
-        System.out.println("결과: docs/dev-plans/legacy-contract-precheck-result.md");
+        System.out.println("결과: docs/exec-plans/legacy-contract-precheck-result.md");
         if (halt) System.exit(1);
     }
 

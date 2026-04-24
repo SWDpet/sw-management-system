@@ -70,7 +70,7 @@ created: "2026-04-20"
 -- ============================================================
 -- V021: users user_seq=6 (박욱진) 마스킹 회귀 데이터 정정
 -- Sprint: users-masking-regression-fix (S3-B, 2026-04-20)
--- 근거: docs/plans/users-masking-regression-fix.md (v4 승인)
+-- 근거: docs/product-specs/users-masking-regression-fix.md (v4 승인)
 --
 -- 정정 매핑:
 --   user_seq=6
@@ -275,7 +275,7 @@ if (!blockedFields.isEmpty()) {
 
 ### Step 5 — DESIGN_SYSTEM.md 마스킹 정책 절 추가
 
-**파일**: `docs/DESIGN_SYSTEM.md`
+**파일**: `docs/DESIGN.md`
 
 기획서 §1-1 정책 표 + 가드 메커니즘 설명 추가.
 
@@ -332,7 +332,7 @@ if (!blockedFields.isEmpty()) {
 
 ### Step 7 — V021 실행 + 검증
 
-**러너**: `docs/dev-plans/access-log-userid-apply.java` 재사용 (S5 작성). 인자: SQL 파일 경로 + RUN_ID.
+**러너**: `docs/exec-plans/access-log-userid-apply.java` 재사용 (S5 작성). 인자: SQL 파일 경로 + RUN_ID.
 > 위치: `C:\Users\ukjin\sw-management-system\docs\dev-plans\access-log-userid-apply.java`
 
 ```bash

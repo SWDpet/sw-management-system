@@ -223,7 +223,7 @@ public class AuthSummary {
 
 ### Step 9 — 감사 보고서 / 문서
 
-- `docs/audit/dashboard.md` 에 스프린트 6 완료 한 줄 기록.
+- `docs/generated/audit/dashboard.md` 에 스프린트 6 완료 한 줄 기록.
 - ERD 변경 없음.
 
 ### Step 10 — 빌드 / 재기동 / 검증 / codex

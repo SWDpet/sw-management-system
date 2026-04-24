@@ -50,20 +50,20 @@ BASE_SHA=$(git rev-parse HEAD)
 **1-1. 정확 일치 스캔** (category Enum 치환 대상):
 ```bash
 rg -n '"(유지보수|용역|제품)"(?![가-힣])' src/main/java \
-  > docs/dev-plans/s8-literal-scan-exact.txt
+  > docs/exec-plans/s8-literal-scan-exact.txt
 ```
 → QuotationService 8건 + HwpxExportService 가능성
 
 **1-2. 포함 문자열 스캔** (복합 문자열, 치환 **금지** 영역 판정) — **3 카테고리 전부**:
 ```bash
 rg -n '(유지보수|용역|제품)([가-힣\w])' src/main/java \
-  > docs/dev-plans/s8-literal-scan-partial.txt
+  > docs/exec-plans/s8-literal-scan-partial.txt
 ```
 → 예: `유지보수책임기술자` (HwpxExportService:704), `용역업체` / `제품명` 같은 도메인 별개 복합어는 **치환 제외**
 
 **1-3. HwpxExportService 판정표 작성**:
 
-`docs/dev-plans/s8-hwpx-literal-decision.md`:
+`docs/exec-plans/s8-hwpx-literal-decision.md`:
 
 | line | 리터럴 | 판정 | 사유 |
 |------|--------|------|------|
@@ -221,7 +221,7 @@ bash server-restart.sh
 **CLAUDE.md 준수**: 사용자가 `"작업완료"` 발화 후에만 자동 커밋·푸시 수행 (임의 커밋 금지).
 
 작업:
-1. `docs/plans/data-architecture-roadmap.md` §S8 ✅ 완료 표기
+1. `docs/design-docs/data-architecture-roadmap.md` §S8 ✅ 완료 표기
 2. 사용자 `"작업완료"` 발화 대기
 3. 발화 시 `git add <명시 파일들>` + `git commit` + `git push`
 
@@ -269,9 +269,9 @@ bash server-restart.sh
 - `src/test/java/com/swmanager/system/constant/enums/QtCategoryTest.java`
 - `src/test/java/com/swmanager/system/arch/QtCategoryMstSchemaTest.java`
 - (선택) `src/test/java/com/swmanager/system/arch/QuotationLiteralArchTest.java`
-- `docs/dev-plans/s8-literal-scan-exact.txt`
-- `docs/dev-plans/s8-literal-scan-partial.txt`
-- `docs/dev-plans/s8-hwpx-literal-decision.md`
+- `docs/exec-plans/s8-literal-scan-exact.txt`
+- `docs/exec-plans/s8-literal-scan-partial.txt`
+- `docs/exec-plans/s8-hwpx-literal-decision.md`
 
 ### 수정
 - `src/main/java/com/swmanager/system/quotation/service/QuotationService.java` (리터럴 치환 8+건)

@@ -30,9 +30,9 @@ created: "2026-04-20"
 - git diff 검사 시 `src/main/java`, `src/main/resources` 변경 0 확인 (§NFR-4)
 
 ### 0-2. 작업 도구
-- **감사 SQL 러너**: `docs/audit/data-architecture-scan.java` (신규, JDBC 직접 접속, 기획서 §7-5 안전통제 준수)
+- **감사 SQL 러너**: `docs/generated/audit/data-architecture-scan.java` (신규, JDBC 직접 접속, 기획서 §7-5 안전통제 준수)
 - **코드 스캔**: `rg` + `Grep` + `Glob`
-- **문서 작성**: 마크다운 + Obsidian Dataview 호환 (기존 `docs/audit/`, `docs/plans/` 패턴)
+- **문서 작성**: 마크다운 + Obsidian Dataview 호환 (기존 `docs/generated/audit/`, `docs/product-specs/` 패턴)
 
 ### 0-3. 일정 타임박스 (기획서 §4 승인분)
 | Phase | 하한 | 상한 | 중간 체크포인트 |
@@ -43,7 +43,7 @@ created: "2026-04-20"
 | **합계** | **4일** | **6.5일** | |
 
 ### 0-4. 기존 `sys-type-normalization` 스프린트 처리
-- Phase 0에서 `docs/plans/sys-type-normalization.md` 상단에 `status: superseded-by-data-architecture-audit` 표기 + 참조 링크 추가
+- Phase 0에서 `docs/product-specs/sys-type-normalization.md` 상단에 `status: superseded-by-data-architecture-audit` 표기 + 참조 링크 추가
 - 실제 삭제 아님 (추적 기록 유지)
 
 ---
@@ -59,21 +59,21 @@ java --version  # 21+ 확인
 ```
 
 **1-2. `sys-type-normalization` superseded 표기**
-`docs/plans/sys-type-normalization.md` 상단 메타데이터 + 본문 상단 공지 박스:
+`docs/product-specs/sys-type-normalization.md` 상단 메타데이터 + 본문 상단 공지 박스:
 ```markdown
 > ⚠️ **이 스프린트는 `data-architecture-audit`로 흡수됨 (2026-04-20).**
 > 사유: `sys_mst` 마스터 존재 미확인 상태에서 기획. 전수 감사 결과 반영 후 재편성.
 ```
 
 **1-3. 감사 문서 뼈대 생성**
-- `docs/audit/db-schema-full.md` (빈 파일)
-- `docs/audit/data-architecture-master-inventory.md` (섹션 뼈대)
-- `docs/audit/data-architecture-utilization-audit.md` (11개 기능 섹션 뼈대)
-- `docs/plans/data-architecture-roadmap.md` (섹션 뼈대)
+- `docs/generated/audit/db-schema-full.md` (빈 파일)
+- `docs/generated/audit/data-architecture-master-inventory.md` (섹션 뼈대)
+- `docs/generated/audit/data-architecture-utilization-audit.md` (11개 기능 섹션 뼈대)
+- `docs/design-docs/data-architecture-roadmap.md` (섹션 뼈대)
 
 ### Step 2 — Phase 1: 기초 마스터 인벤토리 (0.5~1일)
 
-**2-1. SQL 러너 작성** — `docs/audit/data-architecture-scan.java` (기획서 §7-5 전체 5개 하위통제 반영)
+**2-1. SQL 러너 작성** — `docs/generated/audit/data-architecture-scan.java` (기획서 §7-5 전체 5개 하위통제 반영)
 
 **§7-5-1 권한 통제**:
 - 실행 전 `SELECT CURRENT_USER;` 로그 + 권한 확인 쿼리 실행:
@@ -81,7 +81,7 @@ java --version  # 21+ 확인
   SELECT privilege_type FROM information_schema.table_privileges
    WHERE grantee = CURRENT_USER AND table_schema = current_schema() LIMIT 10;
   ```
-- `UPDATE/DELETE/INSERT/DROP/ALTER` 문자열이 러너 소스에 포함되지 않음을 `rg -n '(UPDATE|DELETE|INSERT|DROP|ALTER|TRUNCATE)' docs/audit/data-architecture-scan.java` 로 상시 확인 가능. `SELECT` 외 키워드 출현 0건.
+- `UPDATE/DELETE/INSERT/DROP/ALTER` 문자열이 러너 소스에 포함되지 않음을 `rg -n '(UPDATE|DELETE|INSERT|DROP|ALTER|TRUNCATE)' docs/generated/audit/data-architecture-scan.java` 로 상시 확인 가능. `SELECT` 외 키워드 출현 0건.
 
 **§7-5-2 런타임 통제**:
 - 세션 초기화 명령 3종 (첫 트랜잭션):
@@ -107,7 +107,7 @@ java --version  # 21+ 확인
     FROM users LIMIT 3;
   ```
 - 감사 산출물 파일에 실제 PII 값 포함 금지 — 러너가 자동 마스킹 출력.
-- **반출 금지**: 러너 출력은 로컬 `docs/audit/` 파일에만 저장. 이메일·메신저 등 외부 공유 금지 (문서화).
+- **반출 금지**: 러너 출력은 로컬 `docs/generated/audit/` 파일에만 저장. 이메일·메신저 등 외부 공유 금지 (문서화).
 
 **§7-5-5 실행 환경**:
 - 로컬 Java JDBC (기존 `preflight-runner.java` 패턴 재사용).
@@ -268,7 +268,7 @@ Phase 2 결과를 유형별·우선순위별로 집계:
 **4-3. `#1-A` 재평가 결과 반영**
 Phase 2 §3-5 결과를 별도 스프린트(`refactor-02-a1-mastermigration` 등)로 편성. `git revert` 단일안 금지, 선별 롤백/후속 패치 옵션 명시.
 
-**4-4. 최종 로드맵 작성** — `docs/plans/data-architecture-roadmap.md`
+**4-4. 최종 로드맵 작성** — `docs/design-docs/data-architecture-roadmap.md`
 - 스프린트 실행 순서 (dependency graph)
 - 각 스프린트 1줄 요약 + 기획서 초안 링크(후속 작성 대상)
 
@@ -282,7 +282,7 @@ Phase 2 §3-5 결과를 별도 스프린트(`refactor-02-a1-mastermigration` 등
 - `data-architecture-scan.java` — Git 추적 (Phase 1)
 
 **5-2. 상위 감사 문서 갱신**
-`docs/audit/2026-04-18-system-audit.md` 에 "감사 외 후속 스프린트" 섹션에 `data-architecture-audit` 추가 + 산출물 링크.
+`docs/generated/audit/2026-04-18-system-audit.md` 에 "감사 외 후속 스프린트" 섹션에 `data-architecture-audit` 추가 + 산출물 링크.
 
 **5-3. 코드/DB 무변경 확인**
 ```bash
@@ -301,7 +301,7 @@ git diff swdept/sql/  # DB 마이그 무변경 기대
 |----|------|----------|-----------|
 | T1 | 코드·DB 무변경 | `git status src/ && git diff swdept/sql/` | 변경 0 |
 | T2 | 감사 SQL 러너 안전통제 | `data-architecture-scan.java` 파일 grep: `TRANSACTION READ ONLY`, `statement_timeout`, `lock_timeout` | 3 패턴 모두 존재 |
-| T3 | 산출물 5개 존재 | `ls docs/audit/db-schema-full.md docs/audit/data-architecture-master-inventory.md docs/audit/data-architecture-utilization-audit.md docs/plans/data-architecture-roadmap.md docs/audit/data-architecture-scan.java` | 5 파일 모두 존재 |
+| T3 | 산출물 5개 존재 | `ls docs/generated/audit/db-schema-full.md docs/generated/audit/data-architecture-master-inventory.md docs/generated/audit/data-architecture-utilization-audit.md docs/design-docs/data-architecture-roadmap.md docs/generated/audit/data-architecture-scan.java` | 5 파일 모두 존재 |
 | T4 | Phase 2 섹션 개수 | `utilization-audit.md` H2/H3 카운트 | 11개 기능 섹션 이상 |
 | T5 | 기능별 최소 산출 기준 | 각 Phase 2 섹션 내 "### 컬럼 매칭" 표 + "### 코드 근거" 블록 존재 | 각 기능에 둘 다 존재 |
 | T6 | `#1-A` 재평가 결론 | `utilization-audit.md` 내 "## #1-A Enum 재평가" 섹션 | 존재 + 4가지 기준 매트릭스 + 결론(유지/선별/패치/전체) |

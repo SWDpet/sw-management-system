@@ -78,7 +78,7 @@ public class ProcessMasterPrecheck {
             out.append(halt ? "❌ **HALT**\n" : "✅ **PASS**\n");
         }
 
-        try (FileWriter fw = new FileWriter("docs/dev-plans/process-master-precheck-result.md")) {
+        try (FileWriter fw = new FileWriter("docs/exec-plans/process-master-precheck-result.md")) {
             fw.write(out.toString());
         }
         System.out.println(halt ? "FAIL (HALT)" : "PASS");

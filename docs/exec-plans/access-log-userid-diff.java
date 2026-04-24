@@ -9,7 +9,7 @@ import java.sql.*;
  *   javac -encoding UTF-8 access_log_userid_diff.java
  *   java -cp ".;<jar>" -Dfile.encoding=UTF-8 access_log_userid_diff <run_id>
  *
- * 출력: docs/dev-plans/access-log-userid-diff-result.md (수동 저장)
+ * 출력: docs/exec-plans/access-log-userid-diff-result.md (수동 저장)
  */
 public class access_log_userid_diff {
 

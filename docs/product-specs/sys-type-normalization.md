@@ -263,7 +263,7 @@ COMMIT;
 | Service 리터럴 치환 | `HwpxExportService.java` (템플릿 매핑) | 수정 |
 | Service 검증 | `SwService` (필요 시) | 수정 |
 | 테스트 | `SystemTypeTest.java` 신규 | 신규 |
-| 문서 | `docs/audit/2026-04-18-system-audit.md` | 수정 |
+| 문서 | `docs/generated/audit/2026-04-18-system-audit.md` | 수정 |
 
 **합계**: 신규 3~4, 수정 3~4. **총 7~8파일**.
 
@@ -312,4 +312,4 @@ COMMIT;
 
 ### 다음 절차
 1. 사용자 "반영" → v2 개정
-2. 사용자 "최종승인" → **[개발팀]** 개발계획서 작성 (`docs/dev-plans/sys-type-normalization.md`)
+2. 사용자 "최종승인" → **[개발팀]** 개발계획서 작성 (`docs/exec-plans/sys-type-normalization.md`)

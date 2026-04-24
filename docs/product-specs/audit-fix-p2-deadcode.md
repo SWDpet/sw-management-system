@@ -90,7 +90,7 @@
 | Service (수정) | `src/main/java/com/swmanager/system/service/SwService.java` | 메서드 11개 + 관련 import/필드 제거 |
 | Template (삭제) | `src/main/resources/templates/customer-list.html` | 파일 삭제 |
 | Template (삭제) | `src/main/resources/templates/license/registry-new-list.html` | 파일 삭제 |
-| Docs (수정) | `docs/audit/2026-04-18-system-audit.md` | 4-1, 4-2, 4-3 체크박스 ☑ 조치함 |
+| Docs (수정) | `docs/generated/audit/2026-04-18-system-audit.md` | 4-1, 4-2, 4-3 체크박스 ☑ 조치함 |
 
 **삭제 3 파일 + 수정 2 파일. 엔티티/DB/API 계약 변경 0.**
 

@@ -49,7 +49,7 @@ created: "2026-04-20"
 # 러너 실행 (기존 감사용 data-architecture-scan.java 패턴 재사용)
 cd C:/Users/PUJ/eclipse-workspace/swmanager
 JAR=~/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar
-DB_PASSWORD='***' java -cp "$JAR" docs/dev-plans/legacy-contract-precheck.java
+DB_PASSWORD='***' java -cp "$JAR" docs/exec-plans/legacy-contract-precheck.java
 ```
 
 **1-2. `legacy-contract-precheck.java` 신규 러너 작성**:
@@ -57,7 +57,7 @@ DB_PASSWORD='***' java -cp "$JAR" docs/dev-plans/legacy-contract-precheck.java
 - 실행 쿼리 (기획서 §FR-0):
   1. 외부 FK 조회 SQL
   2. 레코드 수 재확인 SQL
-- 출력: `docs/dev-plans/legacy-contract-precheck-result.md`
+- 출력: `docs/exec-plans/legacy-contract-precheck-result.md`
 - **진행 게이트**: 외부 FK 건수 > 0 또는 레코드 수 > 0 이면 콘솔에 `HALT` 출력 + exit code 1
 
 **1-3. 재검증 grep (NFR-5 일부)**
@@ -76,7 +76,7 @@ rg -n '\btb_contract\b' src/main/java | rg -v 'ContractParticipant'
 -- ============================================================
 -- V010: 레거시 계약 테이블 DROP
 -- Sprint: legacy-contract-tables-drop (2026-04-20)
--- 근거: docs/plans/legacy-contract-tables-drop.md v2
+-- 근거: docs/product-specs/legacy-contract-tables-drop.md v2
 -- 사전검증: FR-0 통과 (외부 FK 0건 + 레코드 0건)
 -- 롤백: 8d79f82:swdept/sql/V100_work_plan_performance_tables.sql:50-93 에서 원본 DDL 추출
 -- ============================================================
@@ -235,9 +235,9 @@ rg -n 'tb_contract\b' src/main/resources/db_init_phase2.sql
 
 **4-1. 마이그레이션 SQL 실행** (psql 부재 환경 고려 — JDBC 러너 사용 권장)
 ```bash
-# 러너: docs/dev-plans/legacy-contract-apply.java (Step 2 SQL 파일을 JDBC로 실행)
+# 러너: docs/exec-plans/legacy-contract-apply.java (Step 2 SQL 파일을 JDBC로 실행)
 JAR=~/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar
-DB_PASSWORD='***' java -cp "$JAR" docs/dev-plans/legacy-contract-apply.java \
+DB_PASSWORD='***' java -cp "$JAR" docs/exec-plans/legacy-contract-apply.java \
   swdept/sql/V010_drop_legacy_contract_tables.sql
 # 예상 출력: "DROP TABLE" x 2 + 사전검증 통과 로그
 ```
@@ -254,7 +254,7 @@ SELECT COUNT(*) FROM information_schema.tables
 
 ### Step 5 — ERD / 감사 문서 갱신 (v2: DROP 성공 후에만 수행)
 
-**5-1. `docs/ERD.md` 5번·7번 섹션**
+**5-1. `docs/generated/erd.md` 5번·7번 섹션**
 - "미구현" 뒤에 " (삭제 완료 2026-04-20, 스프린트 `legacy-contract-tables-drop`)" 추가
 
 **5-2. 잔존 참조 정리**:
@@ -264,13 +264,13 @@ SELECT COUNT(*) FROM information_schema.tables
 
 ### Step 6 — 감사 문서 완료 체크 (Step 5 후)
 
-**6-1. `docs/audit/data-architecture-utilization-audit.md`**
+**6-1. `docs/generated/audit/data-architecture-utilization-audit.md`**
 - 기능 8 섹션의 `tb_contract` / `tb_contract_target` 행에 "✅ DROP 완료 (2026-04-20)" 표기
 
-**6-2. `docs/audit/2026-04-18-system-audit.md`**
+**6-2. `docs/generated/audit/2026-04-18-system-audit.md`**
 - "추가 감사 스프린트 — data-architecture-audit" 섹션에 S6 완료 기록
 
-**6-3. `docs/plans/data-architecture-roadmap.md`**
+**6-3. `docs/design-docs/data-architecture-roadmap.md`**
 - S6 상태를 "✅ 완료 (2026-04-20)"로 변경
 - Wave 1 진행률 업데이트
 
@@ -292,14 +292,14 @@ bash server-restart.sh                # 서버 부팅 정상
 ```bash
 git add swdept/sql/V010_drop_legacy_contract_tables.sql
 git add swdept/sql/V100_work_plan_performance_tables.sql
-git add docs/dev-plans/legacy-contract-precheck.java
-git add docs/dev-plans/legacy-contract-precheck-result.md
-git add docs/dev-plans/legacy-contract-tables-drop.md
-git add docs/plans/legacy-contract-tables-drop.md
-git add docs/plans/data-architecture-roadmap.md
-git add docs/audit/data-architecture-utilization-audit.md
-git add docs/audit/2026-04-18-system-audit.md
-git add docs/ERD.md docs/erd-diagram.html docs/erd-descriptions.yml docs/erd-document.mmd
+git add docs/exec-plans/legacy-contract-precheck.java
+git add docs/exec-plans/legacy-contract-precheck-result.md
+git add docs/exec-plans/legacy-contract-tables-drop.md
+git add docs/product-specs/legacy-contract-tables-drop.md
+git add docs/design-docs/data-architecture-roadmap.md
+git add docs/generated/audit/data-architecture-utilization-audit.md
+git add docs/generated/audit/2026-04-18-system-audit.md
+git add docs/generated/erd.md docs/erd-diagram.html docs/erd-descriptions.yml docs/erd-document.mmd
 
 git commit -m "refactor: tb_contract/tb_contract_target DROP (legacy-contract-tables-drop 완료)"
 git push

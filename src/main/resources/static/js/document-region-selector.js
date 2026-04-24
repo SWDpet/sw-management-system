@@ -5,7 +5,7 @@
  * 이 문서들은 사업·인프라와 독립된 성과·히스토리 관리용이므로
  * **sigungu_code 마스터 + sys_mst 마스터** 에서 선택지를 가져옴.
  *
- * 스프린트 5 v2 (2026-04-19) — docs/plans/doc-selector-org-env.md
+ * 스프린트 5 v2 (2026-04-19) — docs/product-specs/doc-selector-org-env.md
  *
  * API:
  *   DocumentRegionSelector.init({

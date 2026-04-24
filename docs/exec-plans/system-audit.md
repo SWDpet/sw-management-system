@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-18
-- **기획서**: [docs/plans/system-audit.md](../plans/system-audit.md) (v2 승인됨)
+- **기획서**: [docs/product-specs/system-audit.md](../plans/system-audit.md) (v2 승인됨)
 - **상태**: v2 (codex 재검토 대기) — 1차 5건 반영
 
 ### 개정 이력
@@ -17,7 +17,7 @@
 
 | 계층 | 파일 | 유형 |
 |------|------|------|
-| Docs (신규) | `docs/audit/{YYYY-MM-DD}-system-audit.md` | 최종 감사 보고서 (마스킹 적용본) |
+| Docs (신규) | `docs/generated/audit/{YYYY-MM-DD}-system-audit.md` | 최종 감사 보고서 (마스킹 적용본) |
 | Code | **없음** | 읽기 전용 감사 |
 | DB | **없음** | — |
 
@@ -102,8 +102,8 @@ codex review "우리 codebase 를 **보안** 관점에서 감사해줘.
 ### 3-3. C3 — 문서-구현 일치
 
 **대상 경로**:
-- `docs/ERD.md`, `docs/erd-*.mmd`
-- `docs/plans/*.md`, `docs/dev-plans/*.md`
+- `docs/generated/erd.md`, `docs/erd-*.mmd`
+- `docs/product-specs/*.md`, `docs/exec-plans/*.md`
 - 비교 대상: 실제 `domain/`, `controller/`, `service/`, `repository/`
 
 **핵심 질문**:
@@ -164,7 +164,7 @@ PRIVATE KEY   : -----BEGIN [A-Z ]*KEY-----[\s\S]+?-----END [A-Z ]*KEY-----
 
 ```bash
 # 실제 값(마스킹 안 된) 이 남아있는지 최종 확인
-grep -iEn "(password[=:] *[\"']?[^*\"'\s]{4,}|sk-[A-Za-z0-9_-]{20,}|Bearer +[A-Za-z0-9._-]{20,}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|-----BEGIN [A-Z ]*KEY-----)" docs/audit/*-system-audit.md
+grep -iEn "(password[=:] *[\"']?[^*\"'\s]{4,}|sk-[A-Za-z0-9_-]{20,}|Bearer +[A-Za-z0-9._-]{20,}|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|-----BEGIN [A-Z ]*KEY-----)" docs/generated/audit/*-system-audit.md
 ```
 
 - `***` 로 마스킹된 형태는 매치 안 됨 (`[^*\"'\s]{4,}` 가 `*` 제외)
@@ -254,7 +254,7 @@ grep -iEn "(password[=:] *[\"']?[^*\"'\s]{4,}|sk-[A-Za-z0-9_-]{20,}|Bearer +[A-Z
 
 | # | 검증 항목 | Pass 기준 |
 |---|---------|-----------|
-| V1 | 보고서 파일 생성 | `docs/audit/{YYYY-MM-DD}-system-audit.md` 존재 |
+| V1 | 보고서 파일 생성 | `docs/generated/audit/{YYYY-MM-DD}-system-audit.md` 존재 |
 | V2 | 5 카테고리 모두 섹션 존재 | `grep -c "^## " = 7+ ` (요약 + C1~5 + 메타) |
 | V3 | 마스킹 검증 — **4-3 의 명령어 정확히 실행** → **0 hits** (단, 보고서 자체에 인용된 패턴 예시는 `***` 마스킹 돼 있으므로 문제없음). JWT/Bearer/PRIVATE KEY/password 값/OpenAI 키 전부 확인. | 매치 0 |
 | V4 | 요약 표 집계 일치 | 합계 행의 숫자가 각 카테고리 합과 일치 |
@@ -297,7 +297,7 @@ git push
 
 ## 11. 체크리스트
 
-- [ ] `docs/audit/` 디렉토리 존재 확인
+- [ ] `docs/generated/audit/` 디렉토리 존재 확인
 - [ ] 보고서 파일 경로 확정 (실행일 반영)
 - [ ] C1 codex 호출 + 마스킹 + 섹션 추가
 - [ ] C2 codex 호출 + 마스킹 + 섹션 추가

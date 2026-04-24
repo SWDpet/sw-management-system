@@ -2,7 +2,7 @@
 
 - **작성팀**: 개발팀
 - **작성일**: 2026-04-19
-- **근거 기획서**: [docs/plans/audit-fix-p2-security-logging.md](../plans/audit-fix-p2-security-logging.md) (v1, 승인)
+- **근거 기획서**: [docs/product-specs/audit-fix-p2-security-logging.md](../plans/audit-fix-p2-security-logging.md) (v1, 승인)
 - **상태**: 초안 (codex 검토 대기)
 
 ---
@@ -114,7 +114,7 @@ spring.jpa.properties.hibernate.format_sql=true
 | T9 | Maven compile | `./mvnw -q compile` | BUILD SUCCESS |
 | T10 | 서버 재기동 | `bash server-restart.sh` | `Started SwmanagerApplication` + ERROR 0 |
 | T11 | SQL DEBUG 로그 0 | `grep -c "org.hibernate.SQL.*DEBUG" server.log` | 0 |
-| T12 | 감사 체크박스 | `grep "☑ 조치함" docs/audit/2026-04-18-system-audit.md` 에 1-4/5-1/5-2/5-3 포함 | 4 추가 |
+| T12 | 감사 체크박스 | `grep "☑ 조치함" docs/generated/audit/2026-04-18-system-audit.md` 에 1-4/5-1/5-2/5-3 포함 | 4 추가 |
 
 ---
 

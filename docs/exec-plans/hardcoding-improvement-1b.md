@@ -237,7 +237,7 @@ DB_PASSWORD='***' ./mvnw -q test -Dtest='MessageResolverTest,MessageResolverFall
 ```
 
 ### Step 6 — 감사 문서 갱신
-- `docs/audit/2026-04-18-system-audit.md` 의 `refactor-01-hardcoding` 섹션에 **`#1-B ☑ 조치함`** 추가.
+- `docs/generated/audit/2026-04-18-system-audit.md` 의 `refactor-01-hardcoding` 섹션에 **`#1-B ☑ 조치함`** 추가.
 
 ### Step 7 — 빌드 / 재기동 / 스모크
 

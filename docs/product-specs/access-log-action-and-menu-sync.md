@@ -40,7 +40,7 @@ created: "2026-04-21"
 로드맵 §S9는 "누락 4종" 으로 기록되었으나 본 스프린트 착수 시 실측 결과 **5종** 확인. 기획서에서 정정.
 
 **정정 이력 (추적성)**:
-- 로드맵 근거 문서: `docs/plans/data-architecture-roadmap.md` §2 S9 (line ~173) — `MenuName 누락 4종`
+- 로드맵 근거 문서: `docs/design-docs/data-architecture-roadmap.md` §2 S9 (line ~173) — `MenuName 누락 4종`
 - 본 기획서 실측: §1-1, §4-2 — `MenuName 누락 5종 (QR_LICENSE/LICENSE_REGISTRY/GEONURIS_LICENSE/QUOTATION/SIGNUP)`
 - **조치**: 개발계획서 Step 최종 단계에서 로드맵 §2 S9 본문을 "4종 → 5종" 으로 정정 + 본 기획서 링크 추가 (T-LINK)
 

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
  * 회귀 방지: 마스킹된 값이 폼 submit 으로 DB 저장되는 회귀를
  *   {@link MaskingDetector} + MyPageController 가드 로 차단 (S3-B).
  *
- * 자세한 정책: docs/DESIGN_SYSTEM.md §마스킹 정책 + docs/plans/users-masking-regression-fix.md
+ * 자세한 정책: docs/DESIGN.md §마스킹 정책 + docs/product-specs/users-masking-regression-fix.md
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  *
  * 정책 (마스킹 동작):

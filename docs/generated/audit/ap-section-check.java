@@ -6,7 +6,7 @@ public class ApSectionCheck {
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(
                 "jdbc:postgresql://211.104.137.55:5881/SW_Dept", "postgres", System.getenv("DB_PASSWORD"));
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/ap-section-check-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/ap-section-check-result.md"))) {
             c.setReadOnly(true);
             out.println("# AP / APP 섹션 상세 확인\n");
             String[][] qs = {

@@ -1,7 +1,7 @@
 -- ============================================================
 -- V017: 레거시 계약 테이블 DROP (옵션 B 확장)
 -- Sprint: legacy-contract-tables-drop (2026-04-20)
--- 근거: docs/plans/legacy-contract-tables-drop.md v2 + 사용자 확정 옵션 B
+-- 근거: docs/product-specs/legacy-contract-tables-drop.md v2 + 사용자 확정 옵션 B
 -- 범위:
 --   1) tb_document.contract_id FK 제거 + 컬럼 DROP
 --   2) tb_contract_participant.contract_id FK 제거 + 컬럼 DROP

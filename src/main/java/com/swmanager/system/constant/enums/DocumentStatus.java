@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 문서 상태 Enum — tb_document.status, inspect_report.status 공용.
  *
- * 기획서: docs/plans/hardcoding-improvement.md (v6)
+ * 기획서: docs/product-specs/hardcoding-improvement.md (v6)
  * 매핑 정책 (§5-6-1): @Enumerated(EnumType.STRING) 기본 선택.
  *   Pre-flight 결과 공백·별칭 이슈 0건이라 AttributeConverter 불필요.
  * 별칭 정책 (§5-7-2): JSON body 전용. ALIASES 맵은 Enum 내부 단일 소스.

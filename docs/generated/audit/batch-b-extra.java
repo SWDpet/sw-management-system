@@ -6,7 +6,7 @@ public class BatchBExtra {
         Class.forName("org.postgresql.Driver");
         try (Connection c = DriverManager.getConnection(
                 "jdbc:postgresql://211.104.137.55:5881/SW_Dept", "postgres", System.getenv("DB_PASSWORD"));
-             PrintWriter out = new PrintWriter(new FileWriter("docs/audit/batch-b-extra-result.md"))) {
+             PrintWriter out = new PrintWriter(new FileWriter("docs/generated/audit/batch-b-extra-result.md"))) {
             c.setReadOnly(true);
             out.println("# 배치 B 추가 검증\n");
             String[][] qs = {
