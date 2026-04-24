@@ -397,6 +397,10 @@ public class DocumentController {
                     String sectionKey = (String) sec.get("sectionKey");
                     @SuppressWarnings("unchecked")
                     Map<String, Object> sectionData = (Map<String, Object>) sec.get("sectionData");
+                    // [설계내역서 FR-5' 서버측 정규화] design_estimate.rounddownUnit 허용값 검증 + 1000 fallback
+                    if ("design_estimate".equals(sectionKey) && sectionData != null) {
+                        normalizeDesignEstimateRounddownUnit(sectionData, doc.getDocId());
+                    }
                     documentService.saveSection(doc.getDocId(), sectionKey, sectionData, i);
                 }
             }
@@ -1798,6 +1802,39 @@ public class DocumentController {
             log.error("점검내역서 미리보기 실패: {}", e.getMessage(), e);
             model.addAttribute("errorMessage", "점검내역서를 찾을 수 없습니다.");
             return "redirect:/document/list";
+        }
+    }
+
+    /** 설계내역서 rounddownUnit 허용값 (FR-5' 서버 정규화). */
+    private static final Set<Integer> DESIGN_ESTIMATE_ALLOWED_ROUNDDOWN_UNITS = Set.of(1, 10, 100, 1000, 10000);
+
+    /**
+     * 설계내역서 sectionData 의 {@code rounddownUnit} 이 허용값이 아니면 {@code 1000} 으로 치환
+     * + WARN 로그. 예외 throw 하지 않아 사용자가 입력한 다른 필드(낙찰율, 항목 등)는 보존된다.
+     *
+     * 기획서 FR-5', §4-9 (4개 진입점 방어 중 "서버 저장" 진입점).
+     */
+    // package-private for unit tests
+    void normalizeDesignEstimateRounddownUnit(Map<String, Object> sectionData, Integer docId) {
+        Object raw = sectionData.get("rounddownUnit");
+        Integer v = null;
+        try {
+            if (raw instanceof Number) {
+                v = ((Number) raw).intValue();
+            } else if (raw != null) {
+                v = Integer.parseInt(String.valueOf(raw).trim());
+            }
+        } catch (NumberFormatException ignored) {
+            // v stays null → fallback 경로로
+        }
+        if (v == null || !DESIGN_ESTIMATE_ALLOWED_ROUNDDOWN_UNITS.contains(v)) {
+            log.warn("design_estimate.rounddownUnit invalid value '{}' → normalized to 1000 (docId={})",
+                     raw, docId);
+            sectionData.put("rounddownUnit", 1000);
+        } else {
+            // valid 값이지만 원본 타입이 String/Double 일 수 있음 → Integer 로 canonical 저장
+            // (downstream ExcelExportService.normalizeRounddownUnit 도 동일 타입 가정 가능)
+            sectionData.put("rounddownUnit", v);
         }
     }
 }

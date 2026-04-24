@@ -264,6 +264,18 @@
                 <tr><th>낙찰율(%)</th><td><input type="number" id="est_bidRate" step="0.01" value="97" style="width:80px;"> %
                     <span class="help-text" id="est_bidRateCalc" style="margin-left:8px;"></span></td>
                     <th>부가세 별도</th><td><label style="font-weight:normal;"><input type="checkbox" id="est_vatSeparate"> 총괄표에 부가세 행 분리</label></td></tr>
+                <tr><th>절사 단위</th><td colspan="3">
+                    <select id="est_rounddownUnit" style="width:auto; min-width:160px;">
+                        <option value="1">절사 없음</option>
+                        <option value="10">십원단위 절사</option>
+                        <option value="100">백원단위 절사</option>
+                        <option value="1000" selected>천단위 절사</option>
+                        <option value="10000">만단위 절사</option>
+                    </select>
+                    <span id="estTypeCHint" hidden style="margin-left:10px; padding:3px 8px; background:#fff8e1; border:1px solid #ffcc80; border-radius:4px; font-size:0.85em; color:#b26a00;">
+                        ℹ TYPE_C 는 엑셀 수식이 템플릿 고정이라 절사 단위가 엑셀에 반영되지 않습니다 (화면 미리보기만 반영)
+                    </span>
+                </td></tr>
             </table>
 
             <!-- 안내 -->
@@ -741,6 +753,22 @@
             setVal('est_location', est.location);
             setVal('est_bidRate', est.bidRate);
             setVal('est_vatSeparate', est.vatSeparate);
+            // FR-6: 절사 단위 복원 (허용값 외 → 1000 fallback) + FR-6'' touched 초기화
+            (function restoreRounddownUnit() {
+                var loadedRaw = est.rounddownUnit;
+                var ALLOWED = [1, 10, 100, 1000, 10000];
+                var finalUnit = ALLOWED.indexOf(Number(loadedRaw)) >= 0 ? Number(loadedRaw) : 1000;
+                var dd = document.getElementById('est_rounddownUnit');
+                if (dd) dd.value = String(finalUnit);
+                // §4-6 규칙: 1000 이면 touched=false, 그 외 허용값이면 touched=true (기존 레코드 존중)
+                window._rounddownUnitTouched = (finalUnit !== 1000);
+            })();
+            // FR-4'' 초기 툴팁 상태 동기화
+            (function syncTypeCHint() {
+                var type = (document.getElementById('estimateType') || {}).value;
+                var hint = document.getElementById('estTypeCHint');
+                if (hint) hint.hidden = (type !== 'TYPE_C');
+            })();
             // 설계내역서 항목 채우기
             if (Array.isArray(est.items) && typeof fillEstimateItems === 'function') {
                 fillEstimateItems(est.items);
@@ -1027,9 +1055,24 @@
         // ── ⑧ 설계내역서 함수 ──
         function toggleEstimateType() {
             var type = document.getElementById('estimateType').value;
-// TYPE_D: SW전용 → HW 테이블 숨김 (낙찰율은 수정 가능)
+            // TYPE_D: SW전용 → HW 테이블 숨김 (낙찰율은 수정 가능)
             document.getElementById('estHwSection').style.display = (type === 'TYPE_D') ? 'none' : 'block';
             document.getElementById('est_bidRate').disabled = false;
+
+            // FR-4'' TYPE_C 안내 툴팁 표시/숨김
+            var hint = document.getElementById('estTypeCHint');
+            if (hint) hint.hidden = (type !== 'TYPE_C');
+
+            // FR-6' TYPE_D 자동 제안 — 세 조건 모두 참일 때만 (§4-6)
+            //  ① docId === null (신규 문서)   ② touched === false   ③ TYPE_D
+            var isNew = !(window.__existingDoc && window.__existingDoc.docId);
+            var touched = (window._rounddownUnitTouched === true);
+            if (isNew && !touched && type === 'TYPE_D') {
+                var dd = document.getElementById('est_rounddownUnit');
+                if (dd) dd.value = '10';
+                // 프로그램 주도 변경이므로 touched 세팅 금지 (dispatchEvent 사용 안 함)
+            }
+
             calcEstPreview();
         }
 
@@ -1081,10 +1124,47 @@
             calcEstPreview();
         }
 
+        // ===== 설계내역서 공통 유틸 (기획서 FR-16/17, quotation-vat-rules.md §43-51 과 글자단위 일치) =====
+
+        /** rounddownUnit → 한글 라벨 (Java ExcelExportService.rounddownLabel 과 일치). */
+        function rounddownLabel(unit) {
+            switch (Number(unit)) {
+                case 1:     return '';
+                case 10:    return '십원단위 절사';
+                case 100:   return '백원단위 절사';
+                case 1000:  return '천단위 절사';
+                case 10000: return '만단위 절사';
+                default:    return ''; // invalid → 표시 안함 (FR-6''' 로드 fallback 은 별도)
+            }
+        }
+
+        /**
+         * 낙찰율(비율) 적용 + 절사 단위 적용 공통 함수 (FR-3, FR-3').
+         *
+         * @param {number} v       - 원 금액
+         * @param {number} bidRatio - 비율 형식 (예: 0.91 = 91%)
+         * @param {number} unit     - 절사 단위 (1/10/100/1000/10000)
+         */
+        function applyBidAndRound(v, bidRatio, unit) {
+            var afterBid = (bidRatio > 0 && bidRatio < 1.0) ? v * bidRatio : v;
+            return unit === 1 ? afterBid : Math.floor(afterBid / unit) * unit;
+        }
+
+        /**
+         * {@code #est_rounddownUnit} 값을 허용값 집합으로 정규화.
+         * FR-5' 클라이언트 + FR-6 로드 fallback 공통으로 사용.
+         */
+        function readRounddownUnit() {
+            var raw = parseInt((document.getElementById('est_rounddownUnit') || {}).value, 10);
+            var ALLOWED = [1, 10, 100, 1000, 10000];
+            return ALLOWED.indexOf(raw) >= 0 ? raw : 1000;
+        }
+
         function calcEstPreview() {
-            var bidRateInput = parseFloat(document.getElementById('est_bidRate').value) || 0;
-            var vatSep = document.getElementById('est_vatSeparate').checked;
-            var bidRate = bidRateInput / 100.0;
+            var bidRatePct = parseFloat(document.getElementById('est_bidRate').value) || 0;
+            var bidRatio   = bidRatePct / 100.0;
+            var vatSep     = document.getElementById('est_vatSeparate').checked;
+            var unit       = readRounddownUnit();
 
             // 도입가는 부가세 포함 금액
             var hwTotal = 0, swTotal = 0;
@@ -1109,19 +1189,29 @@
 
             var grandTotal;
             if (vatSep) {
-                // 부가세 별도: 공급가액 분리 → 낙찰율 적용 → 부가세 별도 표시
-                var supply = Math.floor(subTotal / 1.1);       // 공급가액
-                var vat = Math.floor(supply * 0.1);             // 부가세
-                var supplyAfterBid = Math.floor(supply * bidRate);
+                // 부가세 별도: 공급가액 분리 → 낙찰율 + 절사 적용 → 부가세 재계산
+                var supply = Math.floor(subTotal / 1.1);                         // 공급가액
+                var vat = Math.floor(supply * 0.1);                              // 부가세
+                var supplyAfterBid = Math.floor(supply * (bidRatio > 0 && bidRatio < 1.0 ? bidRatio : 1));
                 var vatAfterBid = Math.floor(supplyAfterBid * 0.1);
-                grandTotal = Math.floor((supplyAfterBid + vatAfterBid) / 1000) * 1000;
+                var rawGrand = supplyAfterBid + vatAfterBid;
+                grandTotal = unit === 1 ? rawGrand : Math.floor(rawGrand / unit) * unit;
                 previewHtml +=
                     '공급가액: <b>' + supply.toLocaleString() + '</b>원 | 부가세: <b>' + vat.toLocaleString() + '</b>원<br>' +
-                    '총계(낙찰율 ' + bidRateInput + '%, 부가세별도): 공급 <b>' + supplyAfterBid.toLocaleString() + '</b> + 부가세 <b>' + vatAfterBid.toLocaleString() + '</b> = <b>' + grandTotal.toLocaleString() + '</b>원';
+                    '총계(낙찰율 ' + bidRatePct + '%, 부가세별도): 공급 <b>' + supplyAfterBid.toLocaleString() + '</b> + 부가세 <b>' + vatAfterBid.toLocaleString() + '</b> = <b>' + grandTotal.toLocaleString() + '</b>원';
             } else {
-                // 부가세 포함: 도입가가 이미 부가세 포함이므로 그대로 낙찰율만 적용
-                grandTotal = Math.floor(subTotal * bidRate / 1000) * 1000;
-                previewHtml += '총계(낙찰율 ' + bidRateInput + '% 적용): <b>' + grandTotal.toLocaleString() + '</b>원';
+                // 부가세 포함: 도입가가 이미 부가세 포함이므로 그대로 낙찰율 + 절사 적용
+                grandTotal = applyBidAndRound(subTotal, bidRatio, unit);
+                previewHtml += '총계(낙찰율 ' + bidRatePct + '% 적용): <b>' + grandTotal.toLocaleString() + '</b>원';
+            }
+
+            // 비고 라벨 (FR-4): 낙찰율 적용 여부 + 절사 단위 표기
+            var parts = [];
+            if (bidRatio > 0 && bidRatio < 1.0) parts.push('낙찰율 ' + Math.round(bidRatePct) + '% 적용');
+            var label = rounddownLabel(unit);
+            if (label) parts.push(label);
+            if (parts.length) {
+                previewHtml += '<div style="color:#6b7280; margin-top:4px;">(' + parts.join(', ') + ')</div>';
             }
 
             document.getElementById('est_bidRateCalc').textContent = '';
@@ -1446,6 +1536,7 @@
                     location: document.getElementById('est_location').value,
                     bidRate: parseFloat(document.getElementById('est_bidRate').value) || 0,
                     vatSeparate: document.getElementById('est_vatSeparate').checked,
+                    rounddownUnit: readRounddownUnit(), // FR-5 + FR-5' 클라이언트 allow-list 정규화
                     items: collectEstimateData()
                 }}
             ];
@@ -1814,9 +1905,10 @@
         function previewEstimate() {
             var designDate = document.getElementById('est_designDate').value || '';
             var location = document.getElementById('est_location').value || '';
-            var bidRateInput = parseFloat(document.getElementById('est_bidRate').value) || 0;
+            var bidRatePct = parseFloat(document.getElementById('est_bidRate').value) || 0;
             var vatSep = document.getElementById('est_vatSeparate').checked;
-            var bidRate = bidRateInput / 100.0;
+            var bidRatio = bidRatePct / 100.0;
+            var unit = readRounddownUnit(); // FR-3'
             var projName = document.getElementById('comm_name').value || '';
             var estType = document.getElementById('estimateType').value;
             var typeName = document.getElementById('estimateType').options[document.getElementById('estimateType').selectedIndex].textContent;
@@ -1872,16 +1964,28 @@
             var grandTotal;
             if (vatSep) {
                 var supply = Math.floor(subTotal / 1.1);
-                var supplyAfterBid = Math.floor(supply * bidRate);
+                var supplyAfterBid = Math.floor(supply * (bidRatio > 0 && bidRatio < 1.0 ? bidRatio : 1));
                 var vatAfterBid = Math.floor(supplyAfterBid * 0.1);
-                grandTotal = Math.floor((supplyAfterBid + vatAfterBid) / 1000) * 1000;
-                html += '<tr><td colspan="2" style="text-align:center;">공급가액 (낙찰율 ' + bidRateInput + '%)</td><td style="text-align:right;">' + supplyAfterBid.toLocaleString() + '</td><td></td></tr>';
+                var rawGrand = supplyAfterBid + vatAfterBid;
+                grandTotal = unit === 1 ? rawGrand : Math.floor(rawGrand / unit) * unit;
+                html += '<tr><td colspan="2" style="text-align:center;">공급가액 (낙찰율 ' + bidRatePct + '%)</td><td style="text-align:right;">' + supplyAfterBid.toLocaleString() + '</td><td></td></tr>';
                 html += '<tr><td colspan="2" style="text-align:center;">부가가치세 (10%)</td><td style="text-align:right;">' + vatAfterBid.toLocaleString() + '</td><td></td></tr>';
             } else {
-                grandTotal = Math.floor(subTotal * bidRate / 1000) * 1000;
+                grandTotal = applyBidAndRound(subTotal, bidRatio, unit);
             }
-            html += '<tr style="font-weight:700; background:#e8f5e9;"><td colspan="2" style="text-align:center;">합 계 (낙찰율 ' + bidRateInput + '%)</td><td style="text-align:right;">' + grandTotal.toLocaleString() + '</td><td></td></tr>';
+            html += '<tr style="font-weight:700; background:#e8f5e9;"><td colspan="2" style="text-align:center;">합 계 (낙찰율 ' + bidRatePct + '%)</td><td style="text-align:right;">' + grandTotal.toLocaleString() + '</td><td></td></tr>';
             html += '</tbody></table>';
+
+            // 비고 라벨 (FR-3', FR-4 — calcEstPreview 와 동일 출력)
+            (function appendRemark() {
+                var parts = [];
+                if (bidRatio > 0 && bidRatio < 1.0) parts.push('낙찰율 ' + Math.round(bidRatePct) + '% 적용');
+                var label = rounddownLabel(unit);
+                if (label) parts.push(label);
+                if (parts.length) {
+                    html += '<div style="color:#6b7280; margin-top:4px; font-size:12px;">(' + parts.join(', ') + ')</div>';
+                }
+            })();
 
             // HW 상세
             if (estType !== 'TYPE_D' && hwItems.length > 0) {
@@ -1916,6 +2020,19 @@
 
             openPreview('⑧ 설계내역서', html);
         }
+
+        // ===== 설계내역서 절사 단위 드롭다운 onchange — FR-4', FR-6'' =====
+        (function attachRounddownUnitHandler() {
+            var dd = document.getElementById('est_rounddownUnit');
+            if (!dd) return;
+            dd.addEventListener('change', function(ev) {
+                // ev.isTrusted === false 이면 프로그램 주도 (예: toggleEstimateType 의 자동 제안은
+                // dispatchEvent 를 쓰지 않으므로 여기 진입 자체가 안 됨 — 아래 체크는 방어적)
+                if (ev && ev.isTrusted === false) return;
+                window._rounddownUnitTouched = true;
+                calcEstPreview();
+            });
+        })();
     </script>
 </body>
 </html>
