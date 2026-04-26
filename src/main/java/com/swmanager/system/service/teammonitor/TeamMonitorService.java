@@ -133,8 +133,22 @@ public class TeamMonitorService {
     private void handleOverflow() {
         String policy = props.getSse().getOverflowPolicy();
         if ("evict-oldest".equalsIgnoreCase(policy)) {
-            // 가장 오래된(=lastEventAt 오래된) emitter 1개 제거
-            RegisteredEmitter oldest = emitters.peekFirst();
+            // 진짜 LRU: lastEventAt 이 가장 오래된 emitter 선택 (codex 후속 개선 1).
+            // 삽입 순서(peekFirst)는 FIFO 라 활동량을 반영 못 함.
+            RegisteredEmitter oldest = null;
+            Instant oldestAt = null;
+            for (RegisteredEmitter re : emitters) {
+                Instant t = re.lastEventAt.get();
+                if (t == null) {           // 한 번도 송신 안 된 emitter — 가장 후보
+                    oldest = re;
+                    oldestAt = Instant.MIN;
+                    continue;
+                }
+                if (oldestAt == null || t.isBefore(oldestAt)) {
+                    oldest = re;
+                    oldestAt = t;
+                }
+            }
             if (oldest != null) {
                 try {
                     oldest.emitter.send(SseEmitter.event().name("evicted")
