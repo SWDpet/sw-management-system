@@ -3,12 +3,16 @@ package com.swmanager.system.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint;
 
 /**
  * Spring Security 설정
@@ -29,6 +33,57 @@ public class SecurityConfig {
     private final CustomAuthenticationFailureHandler authFailureHandler;
     private final CustomAuthenticationSuccessHandler authSuccessHandler;
 
+    /**
+     * /actuator/** 전용 시큐리티 체인 (sprint team-monitor-wildcard-watcher — R-12 / N10 / N13 / SEC-01).
+     *
+     * <p>main chain (filterChain) 의 anyRequest().authenticated() + formLogin 이 actuator path 도
+     * 잡으면서 302 redirect 가 발생하는 충돌 → 별도 chain @Order(HIGHEST_PRECEDENCE) + main chain 에서
+     * actuator path 명시 제외 (permitAll) 로 책임 분리.
+     *
+     * <p>적용 결과:
+     * <ul>
+     *   <li>/actuator/health: permitAll (모니터링 도구 익명 접근)
+     *   <li>/actuator/info: ROLE_ADMIN — 익명 = 401 (httpBasic + formLogin disable, 302 redirect 차단)
+     *   <li>비ADMIN = 403
+     * </ul>
+     */
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public SecurityFilterChain actuatorChain(HttpSecurity http) throws Exception {
+        // Custom entry point — 응답 즉시 commit (main chain 의 후속 filter 영향 차단)
+        org.springframework.security.web.AuthenticationEntryPoint actuatorEntryPoint =
+                (request, response, authException) -> {
+                    response.setHeader("WWW-Authenticate", "Basic realm=\"actuator\"");
+                    response.setStatus(401);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\"}");
+                    response.getWriter().flush();
+                };
+
+        http
+            .securityMatcher("/actuator/**")
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers("/actuator/info").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .httpBasic(b -> b.authenticationEntryPoint(actuatorEntryPoint))
+            .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(actuatorEntryPoint)
+                    .accessDeniedHandler((request, response, ex2) -> {
+                        // 비ADMIN — 403 명시 (302 차단)
+                        response.setStatus(403);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"status\":403,\"error\":\"Forbidden\"}");
+                        response.getWriter().flush();
+                    }))
+            .formLogin(form -> form.disable())
+            .logout(logout -> logout.disable())
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -46,12 +101,6 @@ public class SecurityConfig {
                 // 인증 없이 접근 가능한 경로
                 .requestMatchers("/login", "/signup", "/logout").permitAll()
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/favicon.png").permitAll()
-
-                // sprint team-monitor-wildcard-watcher (R-12 / N10 / N13):
-                // /actuator/health: 모니터링 도구 익명 접근, /actuator/info: ADMIN 만
-                // 익명 시 formLogin redirect (302→/login) 으로 익명 노출 차단.
-                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                .requestMatchers("/actuator/info").hasRole("ADMIN")
 
                 // 관리자 전용 경로
                 .requestMatchers("/admin/**").hasRole("ADMIN")
