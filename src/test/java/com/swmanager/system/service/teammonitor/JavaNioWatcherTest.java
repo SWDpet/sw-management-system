@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -182,6 +184,88 @@ class JavaNioWatcherTest {
 
         assertThat(waitFor(() -> notified.contains("alpha"), 5000)).isTrue();
         assertThat(watcher.isAlive()).isTrue();
+    }
+
+    @Test
+    void wildcardWatcher_fullRescanFallback_metaReloadFirst_noDuplicate() throws IOException {
+        // T-OVERFLOW-NIO: OVERFLOW 인위 재현 어려움 → fullRescanFallback 직접 호출.
+        // 검증: (1) listTeams 모든 팀 1회씩 notify (중복 없음), (2) lastEventAt 갱신,
+        //       (3) 메타 reload 후 listTeams 사용 (sort_order 적용 확인 우회 — sortOrder 정렬 결과로).
+        Path statusDir = workspaceDir.resolve("status");
+        Files.createDirectories(statusDir);
+        // 초기 teams.json — sort_order 적용 확인용
+        Files.writeString(workspaceDir.resolve("teams.json"),
+                "{\"schema_version\":1,\"teams\":{" +
+                "\"alpha\":{\"emoji\":\"A\",\"sort_order\":30,\"label\":\"ALPHA\"}," +
+                "\"beta\":{\"emoji\":\"B\",\"sort_order\":10,\"label\":\"BETA\"}," +
+                "\"gamma\":{\"emoji\":\"G\",\"sort_order\":20,\"label\":\"GAMMA\"}" +
+                "}}");
+        Files.writeString(statusDir.resolve("alpha.status"), "team=alpha\n");
+        Files.writeString(statusDir.resolve("beta.status"), "team=beta\n");
+        Files.writeString(statusDir.resolve("gamma.status"), "team=gamma\n");
+
+        startWatcher();
+        List<String> notified = new CopyOnWriteArrayList<>();
+        watcher.subscribe(notified::add);
+
+        java.time.Instant beforeCall = watcher.lastEventAt();   // null 또는 이전 값
+
+        // 직접 호출 — OVERFLOW 폴백 동작 검증
+        Set<String> dedup = new HashSet<>();
+        watcher.fullRescanFallback(dedup);
+
+        // (1) 모든 팀 1회씩 notify (중복 차단)
+        assertThat(notified).containsExactlyInAnyOrder("alpha", "beta", "gamma");
+        assertThat(notified).hasSize(3);   // 중복 없음 단정 (N18)
+
+        // (2) dedup Set 에 3개 모두 채워짐
+        assertThat(dedup).containsExactlyInAnyOrder("alpha", "beta", "gamma");
+
+        // (3) lastEventAt 갱신 — 이전 (null/오래됨) 와 다름
+        java.time.Instant afterCall = watcher.lastEventAt();
+        assertThat(afterCall).isNotNull();
+        if (beforeCall != null) {
+            assertThat(afterCall).isAfterOrEqualTo(beforeCall);
+        }
+
+        // (4) 두 번째 호출 — 동일 dedup Set 사용 시 중복 추가 X (idempotency)
+        watcher.fullRescanFallback(dedup);   // 이미 채워진 dedup
+        assertThat(notified).hasSize(3);     // 추가 notify 없음 (dedup 차단)
+    }
+
+    @Test
+    void wildcardWatcher_fullRescanFallback_metaReloadOrderBeforeListTeams() throws IOException {
+        // N11: OVERFLOW 시 메타 reload → listTeams 순서 검증.
+        // teams.json 초기에 alpha 만 → 추가 → fullRescanFallback 직접 호출 →
+        // listTeams 가 새 sort_order 적용된 결과 (메타 먼저 reload 됨)
+        Path statusDir = workspaceDir.resolve("status");
+        Files.createDirectories(statusDir);
+        Files.writeString(workspaceDir.resolve("teams.json"),
+                "{\"schema_version\":1,\"teams\":{" +
+                "\"alpha\":{\"emoji\":\"A\",\"sort_order\":50,\"label\":\"ALPHA\"}" +
+                "}}");
+        Files.writeString(statusDir.resolve("alpha.status"), "team=alpha\n");
+        Files.writeString(statusDir.resolve("beta.status"), "team=beta\n");
+
+        startWatcher();
+        List<String> notified = new CopyOnWriteArrayList<>();
+        watcher.subscribe(notified::add);
+
+        // teams.json 갱신 — beta sort_order 10 (alpha 50 보다 우선)
+        Files.writeString(workspaceDir.resolve("teams.json"),
+                "{\"schema_version\":1,\"teams\":{" +
+                "\"alpha\":{\"emoji\":\"A\",\"sort_order\":50,\"label\":\"ALPHA\"}," +
+                "\"beta\":{\"emoji\":\"B\",\"sort_order\":10,\"label\":\"BETA\"}" +
+                "}}");
+
+        // fullRescanFallback 호출 — 내부에서 metadata.reload() 먼저, 그 후 listTeams() 가 새 sort 적용
+        Set<String> dedup = new HashSet<>();
+        watcher.fullRescanFallback(dedup);
+
+        // 단정: 메타 reload 가 listTeams 전에 일어났으면, listTeams 결과는 새 sort_order 반영.
+        // notifySubscribers 호출 순서가 listTeams 순서와 동일 → beta(10) → alpha(50)
+        assertThat(notified).hasSize(2);
+        assertThat(notified).containsExactly("beta", "alpha");   // sort_order: beta=10, alpha=50
     }
 
     @Test

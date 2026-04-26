@@ -157,8 +157,11 @@ public class JavaNioWatcher implements TeamStatusWatcher {
         }
     }
 
-    /** FR-2-e + N11: OVERFLOW 시 메타 reload 먼저 → listTeams → notify (중복 차단). */
-    private void fullRescanFallback(Set<String> roundDedup) {
+    /**
+     * FR-2-e + N11: OVERFLOW 시 메타 reload 먼저 → listTeams → notify (중복 차단).
+     * package-private — 단위 테스트가 OVERFLOW 인위 재현 어려움 → 직접 호출하여 동작 검증 (T-OVERFLOW-NIO).
+     */
+    void fullRescanFallback(Set<String> roundDedup) {
         log.warn("WatchService OVERFLOW — 풀스캔 폴백");
         reader.invalidateCache();
         teamMetadata.reload();   // N11: 메타 먼저
