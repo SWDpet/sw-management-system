@@ -18,72 +18,10 @@
         </div>
     </header>
 
-    <section id="cards" class="tm-cards">
-        <article class="team-card" data-team="planner" id="card-planner">
-            <header class="card-head">
-                <span class="team-emoji">🧭</span>
-                <span class="team-label">PLANNER</span>
-                <span class="card-state" data-field="state">-</span>
-            </header>
-            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
-            <div class="card-meta">
-                <span class="progress-text" data-field="progress-text">-</span>
-                <span class="updated-text" data-field="updated">-</span>
-            </div>
-            <div class="card-task" data-field="task">-</div>
-        </article>
-        <article class="team-card" data-team="db" id="card-db">
-            <header class="card-head">
-                <span class="team-emoji">🗄️</span>
-                <span class="team-label">DB</span>
-                <span class="card-state" data-field="state">-</span>
-            </header>
-            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
-            <div class="card-meta">
-                <span class="progress-text" data-field="progress-text">-</span>
-                <span class="updated-text" data-field="updated">-</span>
-            </div>
-            <div class="card-task" data-field="task">-</div>
-        </article>
-        <article class="team-card" data-team="developer" id="card-developer">
-            <header class="card-head">
-                <span class="team-emoji">🛠️</span>
-                <span class="team-label">DEVELOPER</span>
-                <span class="card-state" data-field="state">-</span>
-            </header>
-            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
-            <div class="card-meta">
-                <span class="progress-text" data-field="progress-text">-</span>
-                <span class="updated-text" data-field="updated">-</span>
-            </div>
-            <div class="card-task" data-field="task">-</div>
-        </article>
-        <article class="team-card" data-team="codex" id="card-codex">
-            <header class="card-head">
-                <span class="team-emoji">🤖</span>
-                <span class="team-label">CODEX</span>
-                <span class="card-state" data-field="state">-</span>
-            </header>
-            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
-            <div class="card-meta">
-                <span class="progress-text" data-field="progress-text">-</span>
-                <span class="updated-text" data-field="updated">-</span>
-            </div>
-            <div class="card-task" data-field="task">-</div>
-        </article>
-        <article class="team-card" data-team="designer" id="card-designer">
-            <header class="card-head">
-                <span class="team-emoji">🎨</span>
-                <span class="team-label">DESIGNER</span>
-                <span class="card-state" data-field="state">-</span>
-            </header>
-            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
-            <div class="card-meta">
-                <span class="progress-text" data-field="progress-text">-</span>
-                <span class="updated-text" data-field="updated">-</span>
-            </div>
-            <div class="card-task" data-field="task">-</div>
-        </article>
+    <!-- sprint team-monitor-wildcard-watcher (FR-5-a / N6): 정적 카드 5개 → 빈 컨테이너.
+         JS 가 SSE snapshot 응답 받고 teamMeta 기반 동적 생성. -->
+    <section id="cards" class="tm-cards" role="region" aria-label="팀 진행율 카드">
+        <!-- 카드는 team-monitor.js 의 createCard() 가 동적 생성 -->
     </section>
 
     <section id="timeline" class="tm-timeline">

@@ -1,9 +1,9 @@
 /* team-monitor — EventSource 클라이언트 (sprint team-monitor-dashboard, Phase 6-2) */
+/* sprint team-monitor-wildcard-watcher: 정적 카드 → 동적 생성 (FR-5-b/d/e/f/g) */
 (function() {
     'use strict';
 
     const STREAM_URL = '/admin/team-monitor/stream';
-    const TEAMS = ['planner', 'db', 'developer', 'codex'];
 
     let es = null;
     let reconnectAttempt = 0;
@@ -12,6 +12,17 @@
 
     const seenTimelineIds = new Set();
     const MAX_TIMELINE_RENDER = 20;
+
+    /** SchemaVersion=1 (legacy) 호환 fallback 메타. */
+    // ALLOW_FIVE_TEAM_FALLBACK
+    const FALLBACK_META = {
+        planner:   { emoji: '🧭', label: 'PLANNER',   sort_order: 10 },
+        db:        { emoji: '🗄️', label: 'DB',        sort_order: 20 },
+        developer: { emoji: '🛠️', label: 'DEVELOPER', sort_order: 30 },
+        codex:     { emoji: '🤖', label: 'CODEX',     sort_order: 40 },
+        designer:  { emoji: '🎨', label: 'DESIGNER',  sort_order: 50 }
+    };
+    const DEFAULT_EMOJI = '📋';
 
     function init() {
         connect();
@@ -54,14 +65,25 @@
 
     function onSnapshot(e) {
         const data = JSON.parse(e.data);
-        // S1: serverTime null/빈값이면 skew 계산 스킵
         if (data.serverTime) {
             clockSkewMs = Date.now() - parseISO(data.serverTime);
             updateSkewBadge();
         }
-        if (Array.isArray(data.teams)) {
-            data.teams.forEach(renderCard);
-        }
+        const container = document.getElementById('cards');
+        if (!container) return;
+
+        // FR-5-f / N2: snapshot 처리 중 aria-busy 토글 (다중 announce 방지)
+        container.setAttribute('aria-busy', 'true');
+
+        const teams = Array.isArray(data.teams) ? data.teams : [];
+        const meta = data.teamMeta || FALLBACK_META;   // T-G-clarify: schemaVersion=1 fallback
+
+        renderTeamsAndEmpty(container, teams, meta);
+        teams.forEach(team => renderCard(team, false));   // 카드 데이터 갱신 (애니 X)
+
+        container.setAttribute('aria-busy', 'false');
+
+        // timeline
         const list = document.getElementById('timeline-list');
         if (list) list.innerHTML = '';
         seenTimelineIds.clear();
@@ -77,7 +99,18 @@
             clockSkewMs = clockSkewMs * 0.7 + skew * 0.3;
             updateSkewBadge();
         }
-        if (data.team) renderCard(data.team, true);
+        if (data.team) {
+            // 카드 미존재 (= 신규 팀 첫 등장) 시 createCard
+            const container = document.getElementById('cards');
+            if (container && !document.getElementById('card-' + data.team.team)) {
+                const teamMeta = (data.teamMeta && data.teamMeta[data.team.team]) || metaFor(data.team.team);
+                container.appendChild(createCard(data.team, teamMeta));
+                // empty placeholder 가 있으면 제거
+                const empty = container.querySelector('.tm-empty');
+                if (empty) empty.remove();
+            }
+            renderCard(data.team, true);
+        }
         if (data.timelineEntry) prependTimeline(data.timelineEntry);
     }
 
@@ -96,6 +129,140 @@
         stoppedByEvict = true;
         setConnStatus('다른 세션이 자리를 차지하여 종료. 새로고침 후 재연결', 'bad');
         if (es) { es.close(); es = null; }
+    }
+
+    /** team meta lookup — fallback 우선순위: meta → FALLBACK_META → default. */
+    function metaFor(teamName) {
+        return FALLBACK_META[teamName] || {
+            emoji: DEFAULT_EMOJI,
+            label: teamName.toUpperCase(),
+            sort_order: 99
+        };
+    }
+
+    /**
+     * FR-5-b + T-I-02-A: 노드 identity 유지 — 기존 카드 DOM 재사용 + 위치 재배치.
+     * 신규 팀은 createCard 후 append, 사라진 팀은 remove.
+     * empty placeholder 도 동시 관리.
+     */
+    function renderTeamsAndEmpty(container, teams, meta) {
+        // 0팀 → empty placeholder 1개만
+        if (teams.length === 0) {
+            container.querySelectorAll('.team-card').forEach(n => n.remove());
+            if (!container.querySelector('.tm-empty')) {
+                container.appendChild(createEmptyPlaceholder());
+            }
+            return;
+        }
+
+        // 1팀 이상 → empty placeholder 제거
+        const empty = container.querySelector('.tm-empty');
+        if (empty) empty.remove();
+
+        const presentTeams = new Set(teams.map(t => t.team));
+        const existing = new Map();
+        container.querySelectorAll('.team-card').forEach(card => {
+            existing.set(card.dataset.team, card);
+        });
+
+        // 응답에 없는 카드 제거
+        existing.forEach((card, name) => {
+            if (!presentTeams.has(name)) card.remove();
+        });
+
+        // 신규 / 재배치 (서버 정렬 순서대로 append — 동일 노드 append 시 이동, identity 유지)
+        const fragment = document.createDocumentFragment();
+        teams.forEach(team => {
+            let card = existing.get(team.team);
+            if (!card) {
+                const teamMeta = (meta && meta[team.team]) || metaFor(team.team);
+                card = createCard(team, teamMeta);
+            }
+            fragment.appendChild(card);
+        });
+        container.appendChild(fragment);
+    }
+
+    /** FR-5-b: 카드 DOM 동적 생성 (textContent 만 사용 — innerHTML 금지, NFR-5). */
+    function createCard(team, meta) {
+        meta = meta || metaFor(team.team);
+
+        const card = document.createElement('article');
+        card.className = 'team-card';
+        card.dataset.team = team.team;
+        card.id = 'card-' + team.team;
+        card.setAttribute('role', 'status');
+        card.setAttribute('aria-live', 'polite');
+        card.setAttribute('aria-atomic', 'true');     // N2
+        card.setAttribute('aria-label', meta.label || team.team.toUpperCase());
+
+        // Header
+        const header = document.createElement('header');
+        header.className = 'card-head';
+        const emoji = document.createElement('span');
+        emoji.className = 'team-emoji';
+        emoji.textContent = meta.emoji || DEFAULT_EMOJI;
+        const labelEl = document.createElement('span');
+        labelEl.className = 'team-label';
+        labelEl.textContent = meta.label || team.team.toUpperCase();
+        const stateEl = document.createElement('span');
+        stateEl.className = 'card-state';
+        stateEl.dataset.field = 'state';
+        stateEl.textContent = '-';
+        header.appendChild(emoji);
+        header.appendChild(labelEl);
+        header.appendChild(stateEl);
+
+        // Progress bar
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        const fill = document.createElement('div');
+        fill.className = 'fill';
+        fill.dataset.field = 'progress-fill';
+        fill.style.width = '0%';
+        progressBar.appendChild(fill);
+
+        // Card meta
+        const cardMeta = document.createElement('div');
+        cardMeta.className = 'card-meta';
+        const progressText = document.createElement('span');
+        progressText.className = 'progress-text';
+        progressText.dataset.field = 'progress-text';
+        progressText.textContent = '-';
+        const updatedText = document.createElement('span');
+        updatedText.className = 'updated-text';
+        updatedText.dataset.field = 'updated';
+        updatedText.textContent = '-';
+        cardMeta.appendChild(progressText);
+        cardMeta.appendChild(updatedText);
+
+        // Task
+        const cardTask = document.createElement('div');
+        cardTask.className = 'card-task';
+        cardTask.dataset.field = 'task';
+        cardTask.textContent = '-';
+
+        card.appendChild(header);
+        card.appendChild(progressBar);
+        card.appendChild(cardMeta);
+        card.appendChild(cardTask);
+
+        return card;
+    }
+
+    /** FR-5-g + N6: empty state placeholder (SR 안내 포함). */
+    function createEmptyPlaceholder() {
+        const div = document.createElement('div');
+        div.className = 'tm-empty';
+        div.setAttribute('role', 'status');
+        div.setAttribute('aria-live', 'polite');
+        div.setAttribute('aria-label', '활성 팀 없음');
+        div.appendChild(document.createTextNode('활성 팀이 없습니다. '));
+        const code = document.createElement('code');
+        code.textContent = 'bash .team-workspace/set-status.sh <팀명> ...';
+        div.appendChild(code);
+        div.appendChild(document.createTextNode(' 로 첫 팀을 추가하세요.'));
+        return div;
     }
 
     function renderCard(team, animate) {

@@ -194,6 +194,38 @@ body.team-monitor-page.fullscreen .tm-timeline.expanded {
     overflow-y: auto;
 }
 
+/* sprint team-monitor-wildcard-watcher (FR-5-g / N6): empty state placeholder */
+.tm-empty {
+    grid-column: 1 / -1;
+    background: var(--tm-card-bg);
+    border: 1px dashed var(--tm-border);
+    border-radius: 10px;
+    padding: 28px 24px;
+    color: var(--tm-text-muted);
+    text-align: center;
+    font-size: 0.9rem;
+}
+.tm-empty code {
+    background: var(--tm-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    color: var(--tm-text);
+}
+
+/* sprint team-monitor-wildcard-watcher (N15 / N5): prefers-reduced-motion 가드 */
+@media (prefers-reduced-motion: reduce) {
+    .team-card,
+    .team-card.state-changed,
+    .progress-bar > .fill {
+        animation: none !important;
+        transition: none !important;
+    }
+    @keyframes fade-in {
+        from, to { opacity: 1; }
+    }
+}
+
 /* skew 배지 — 우측 하단 작게 */
 .tm-skew-badge {
     position: fixed;
