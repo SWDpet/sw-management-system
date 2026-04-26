@@ -8,7 +8,7 @@ INTERVAL=5
 BAR_WIDTH=20
 
 # 팀 표시 순서
-TEAMS=(planner db developer codex)
+TEAMS=(planner db developer codex designer)
 
 # ANSI
 RESET=$'\e[0m'
@@ -75,6 +75,7 @@ render_team() {
     db)        label="🗄️  DB       " ;;
     developer) label="🛠️  DEVELOPER" ;;
     codex)     label="🤖 CODEX    " ;;
+    designer)  label="🎨 DESIGNER " ;;
     *)         label="$team" ;;
   esac
 

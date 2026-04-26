@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 팀 상태 갱신 헬퍼
 # 사용: bash set-status.sh <team> <state> <progress> [task...]
-#   team     : planner | db | developer | codex
+#   team     : planner | db | developer | codex | designer
 #   state    : 대기 | 진행중 | 완료 | 오류
 #   progress : 0-100
 #   task     : (선택) 현재 작업 설명
@@ -31,8 +31,8 @@ task="$*"
 
 # 팀 검증
 case "$team" in
-  planner|db|developer|codex) ;;
-  *) echo "❌ team 은 planner|db|developer|codex 중 하나여야 합니다."; exit 1 ;;
+  planner|db|developer|codex|designer) ;;
+  *) echo "❌ team 은 planner|db|developer|codex|designer 중 하나여야 합니다."; exit 1 ;;
 esac
 
 # state 검증
