@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "teams": {
+    "planner":   { "emoji": "🧭",  "label": "PLANNER",   "sort_order": 10 },
+    "db":        { "emoji": "🗄️",  "label": "DB",        "sort_order": 20 },
+    "developer": { "emoji": "🛠️",  "label": "DEVELOPER", "sort_order": 30 },
+    "codex":     { "emoji": "🤖",  "label": "CODEX",     "sort_order": 40 },
+    "designer":  { "emoji": "🎨",  "label": "DESIGNER",  "sort_order": 50 }
+  },
+  "default_emoji": "📋"
+}
