@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>팀 모니터</title>
+    <link rel="stylesheet" th:href="@{/css/team-monitor.css}">
+</head>
+<body th:classappend="${fullscreen} ? 'theme-dark team-monitor-page fullscreen' : 'theme-dark team-monitor-page'">
+
+<div th:if="${!fullscreen}" th:replace="~{fragments/top-nav :: nav}"></div>
+
+<main class="team-monitor-main">
+    <header class="tm-header" th:if="${!fullscreen}">
+        <h1>📡 가상 팀 진행율 모니터링</h1>
+        <div class="tm-actions">
+            <span id="conn-status" class="tm-badge tm-badge-conn">연결 중…</span>
+            <a th:href="@{/admin/team-monitor(fullscreen=1)}" class="tm-btn">🖥 풀스크린</a>
+        </div>
+    </header>
+
+    <section id="cards" class="tm-cards">
+        <article class="team-card" data-team="planner" id="card-planner">
+            <header class="card-head">
+                <span class="team-emoji">🧭</span>
+                <span class="team-label">PLANNER</span>
+                <span class="card-state" data-field="state">-</span>
+            </header>
+            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
+            <div class="card-meta">
+                <span class="progress-text" data-field="progress-text">-</span>
+                <span class="updated-text" data-field="updated">-</span>
+            </div>
+            <div class="card-task" data-field="task">-</div>
+        </article>
+        <article class="team-card" data-team="db" id="card-db">
+            <header class="card-head">
+                <span class="team-emoji">🗄️</span>
+                <span class="team-label">DB</span>
+                <span class="card-state" data-field="state">-</span>
+            </header>
+            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
+            <div class="card-meta">
+                <span class="progress-text" data-field="progress-text">-</span>
+                <span class="updated-text" data-field="updated">-</span>
+            </div>
+            <div class="card-task" data-field="task">-</div>
+        </article>
+        <article class="team-card" data-team="developer" id="card-developer">
+            <header class="card-head">
+                <span class="team-emoji">🛠️</span>
+                <span class="team-label">DEVELOPER</span>
+                <span class="card-state" data-field="state">-</span>
+            </header>
+            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
+            <div class="card-meta">
+                <span class="progress-text" data-field="progress-text">-</span>
+                <span class="updated-text" data-field="updated">-</span>
+            </div>
+            <div class="card-task" data-field="task">-</div>
+        </article>
+        <article class="team-card" data-team="codex" id="card-codex">
+            <header class="card-head">
+                <span class="team-emoji">🤖</span>
+                <span class="team-label">CODEX</span>
+                <span class="card-state" data-field="state">-</span>
+            </header>
+            <div class="progress-bar"><div class="fill" data-field="progress-fill" style="width:0%"></div></div>
+            <div class="card-meta">
+                <span class="progress-text" data-field="progress-text">-</span>
+                <span class="updated-text" data-field="updated">-</span>
+            </div>
+            <div class="card-task" data-field="task">-</div>
+        </article>
+    </section>
+
+    <section id="timeline" class="tm-timeline">
+        <h2 class="tm-section-title">변경 이력</h2>
+        <ul id="timeline-list"></ul>
+    </section>
+
+    <div id="skew-badge" class="tm-skew-badge" hidden>서버 시각과 5초 이상 차이</div>
+</main>
+
+<script th:src="@{/js/team-monitor.js}" defer></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+/* team-monitor — 가상 팀 진행율 모니터링 (sprint team-monitor-dashboard, Phase 6-3) */
+
+body.team-monitor-page {
+    margin: 0;
+    font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+}
+
+/* 다크모드 페이지 스코프 변수 (codex v1 보완 #5) */
+body.team-monitor-page.theme-dark {
+    --tm-bg: #0f1115;
+    --tm-card-bg: #1a1d24;
+    --tm-text: #e6e6e6;
+    --tm-text-muted: #9aa0a6;
+    --tm-border: #2a2e36;
+    --tm-state-wait: #6b7280;     /* 회색 — 대기 */
+    --tm-state-progress: #facc15; /* 노랑 — 진행중 */
+    --tm-state-done: #22c55e;     /* 초록 — 완료 */
+    --tm-state-error: #ef4444;    /* 빨강 — 오류 */
+    background: var(--tm-bg);
+    color: var(--tm-text);
+    min-height: 100vh;
+}
+
+.team-monitor-main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 32px;
+}
+
+.tm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.tm-header h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+
+.tm-actions { display: flex; align-items: center; gap: 12px; }
+
+.tm-badge {
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--tm-card-bg);
+    border: 1px solid var(--tm-border);
+    color: var(--tm-text-muted);
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+}
+.tm-badge-conn.ok { color: var(--tm-state-done); border-color: var(--tm-state-done); }
+.tm-badge-conn.bad { color: var(--tm-state-error); border-color: var(--tm-state-error); }
+
+.tm-btn {
+    background: transparent;
+    color: var(--tm-text);
+    border: 1px solid var(--tm-border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+.tm-btn:hover { background: var(--tm-border); }
+
+.tm-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-bottom: 32px;
+}
+
+.team-card {
+    background: var(--tm-card-bg);
+    border: 1px solid var(--tm-border);
+    border-radius: 10px;
+    padding: 20px;
+    /* codex v1 보완 #4: 전환 수치 명시 */
+    transition: opacity 0.3s ease, background-color 0.3s ease;
+}
+.team-card.state-changed {
+    animation: fade-in 0.3s ease;
+}
+@keyframes fade-in {
+    from { opacity: 0.4; }
+    to   { opacity: 1; }
+}
+
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.team-emoji { font-size: 1.4rem; }
+.team-label {
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+.card-state {
+    margin-left: auto;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--tm-state-wait);
+    color: #0f1115;
+}
+.card-state.state-진행중 { background: var(--tm-state-progress); }
+.card-state.state-완료   { background: var(--tm-state-done); color: #fff; }
+.card-state.state-오류   { background: var(--tm-state-error); color: #fff; }
+
+.progress-bar {
+    height: 8px;
+    background: var(--tm-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.progress-bar > .fill {
+    height: 100%;
+    background: var(--tm-state-progress);
+    /* codex v1 보완 #4: width 전환 0.5s */
+    transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.team-card[data-state="대기"] .progress-bar > .fill { background: var(--tm-state-wait); }
+.team-card[data-state="완료"] .progress-bar > .fill { background: var(--tm-state-done); }
+.team-card[data-state="오류"] .progress-bar > .fill { background: var(--tm-state-error); }
+
+.card-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--tm-text-muted);
+    margin-bottom: 6px;
+}
+
+.card-task {
+    color: var(--tm-text);
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 타임라인 — 데스크탑: 카드 그리드 하단 단일 섹션 (기획 §FR-5-b) */
+.tm-timeline {
+    background: var(--tm-card-bg);
+    border: 1px solid var(--tm-border);
+    border-radius: 10px;
+    padding: 18px 22px;
+}
+.tm-section-title { margin: 0 0 12px 0; font-size: 1rem; color: var(--tm-text-muted); }
+#timeline-list { list-style: none; margin: 0; padding: 0; }
+#timeline-list li {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--tm-border);
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 0.78rem;
+}
+#timeline-list li:last-child { border-bottom: none; }
+.tl-time { color: var(--tm-text-muted); flex: 0 0 auto; }
+.tl-team-chip {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--tm-border);
+    color: var(--tm-text);
+    flex: 0 0 auto;
+}
+.tl-msg { color: var(--tm-text); flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 풀스크린 모드 (기획 §FR-6) */
+body.team-monitor-page.fullscreen .team-monitor-main {
+    max-width: 100%;
+    padding: 12px 24px;
+}
+body.team-monitor-page.fullscreen .tm-cards {
+    grid-template-columns: repeat(2, 1fr);
+}
+body.team-monitor-page.fullscreen .tm-timeline {
+    position: sticky;
+    bottom: 0;
+    max-height: 4rem;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+body.team-monitor-page.fullscreen .tm-timeline.expanded {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+/* skew 배지 — 우측 하단 작게 */
+.tm-skew-badge {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    padding: 6px 12px;
+    background: var(--tm-card-bg);
+    border: 1px solid var(--tm-state-error);
+    border-radius: 4px;
+    color: var(--tm-state-error);
+    font-size: 0.75rem;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+}
