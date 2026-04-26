@@ -17,8 +17,10 @@
 server.port=9090
 
 # DB 연결 (비밀번호는 DB_PASSWORD 환경변수에서 읽음)
-spring.datasource.url=jdbc:postgresql://211.104.137.55:5881/SW_Dept
-spring.datasource.username=postgres
+# harness-hardening-v1 (2026-04-26): 좌표 dummy default — 실제 prod 좌표는
+# DB_URL 환경변수 또는 1Password 에서 조회. agent 가 실수로 prod 영향 X.
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/swdept_local}
+spring.datasource.username=${DB_USERNAME:postgres}
 spring.datasource.password=${DB_PASSWORD}
 
 # 로컬 SQL 디버그 (선택적)
