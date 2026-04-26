@@ -47,6 +47,12 @@ application-local.properties
 application-dev.properties
 application-prod.properties
 
+# === harness-hardening-v1: .env 시크릿 ===
+# .env.example 은 commit 가능, 실제 .env 는 절대 commit 금지
+.env
+.env.local
+.env.*.local
+
 # GeoNURIS 라이선스 발급용 바이너리는 Git에 포함됨 (Private 저장소)
 # - Maven Enforcer 플러그인이 빌드 전 파일 존재 검증
 !src/main/resources/geonuris/GeoNURIS_License.jar
