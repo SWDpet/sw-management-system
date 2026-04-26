@@ -6,7 +6,7 @@ REM Stop existing server first
 call server-stop.bat
 
 echo [START] Starting SW Manager on port 9090...
-start /b mvnw.cmd spring-boot:run > server.log 2>&1
+start /b mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local > server.log 2>&1
 
 REM Wait for startup
 echo [START] Waiting for server to start...

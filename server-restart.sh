@@ -39,7 +39,7 @@ fi
 
 echo "[RESTART] Starting server..."
 cd "$PROJECT_DIR"
-./mvnw.cmd spring-boot:run > "$LOG_FILE" 2>&1 &
+./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local > "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 echo "[RESTART] Maven PID: $SERVER_PID"
 
