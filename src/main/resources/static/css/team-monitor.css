@@ -63,7 +63,8 @@ body.team-monitor-page.theme-dark {
 
 .tm-cards {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    /* designer-team-onboarding (5팀): 화면 폭 자동 — 1920px≈5컬, 1280px≈3컬 */
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
     gap: 18px;
     margin-bottom: 32px;
 }
@@ -178,7 +179,8 @@ body.team-monitor-page.fullscreen .team-monitor-main {
     padding: 12px 24px;
 }
 body.team-monitor-page.fullscreen .tm-cards {
-    grid-template-columns: repeat(2, 1fr);
+    /* designer-team-onboarding (5팀): 풀스크린도 동일 자동 */
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
 }
 body.team-monitor-page.fullscreen .tm-timeline {
     position: sticky;
