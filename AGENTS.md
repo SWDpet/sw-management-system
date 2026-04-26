@@ -10,8 +10,17 @@
 - **목적**: SW Project Management System — 사업·점검·견적서·업무계획·문서 통합 관리
 - **스택**: Spring Boot 3.2.1 / Java 17 / PostgreSQL / Thymeleaf
 - **서버 포트**: 9090
-- **DB**: PostgreSQL @ 211.104.137.55:5881/SW_Dept
+- **DB**: PostgreSQL @ `${DB_HOST}:${DB_PORT}/${DB_NAME}` (실제 좌표는 `.env` 또는 1Password — `docs/AGENT_SAFETY.md` §4-5 참조)
 - **빌드**: `./mvnw spring-boot:run` 또는 `bash server-restart.sh`
+
+### 1-1. 로컬 실행 전 환경변수 (harness-hardening-v1)
+
+- `.env.example` 참고하여 `.env` 작성 (DB_URL/DB_USERNAME/DB_PASSWORD/OPENAI_API_KEY)
+- 또는 환경변수 직접 export. `server-restart.sh` 가 Windows User env 에서 DB_PASSWORD 자동 로드
+- `.env` 는 `.gitignore` — **절대 commit X**. 자세한 안전 규칙: `docs/AGENT_SAFETY.md`
+
+### 1-2. agent 안전 규칙
+모든 LLM agent (Claude Code, codex CLI 등) 작업은 `docs/AGENT_SAFETY.md` 의 6개 §를 따른다 — DB read-only 가드, 마이그레이션 2단계 confirm, ephemeral test DB, 시크릿 안전 채널.
 
 ---
 
@@ -116,10 +125,30 @@ codex review "파일 docs/exec-plans/feature-xxx.md 검토. 평가: 1)FR 반영 
 bash server-restart.sh
 ```
 
-### "작업완료" 발화 → 자동 commit+push
-1. `git add <명시 파일>` (절대 `-A` / `.` 금지)
-2. `git commit -m "의도 중심 메시지"` (Co-Authored-By Claude 포함)
-3. `git push`
+### "작업완료" 발화 → 자동 commit+push (트리거 안전 게이트 적용)
+
+**스프린트 `harness-hardening-v1` 부터 confirm 1회 추가** — 단발 발화로 즉시 진행 X:
+
+1. 사용자 첫 발화 ("작업완료") → Claude 가 변경 사항 echo:
+   ```bash
+   git status --porcelain                    # 변경 후보
+   git diff --name-only HEAD                 # 영향 파일
+   git log --oneline origin/master..HEAD     # push 될 commit 프리뷰
+   ```
+2. 위 결과 + push 대상 (master → origin/master) 을 사용자에게 보여주고 1회 더 confirm 요청
+3. 사용자 confirm 진행 신호 (동일 트리거 재발화 / "yes" / "y" / "응" / "ok") → 진행
+4. 다른 응답 (예: "잠깐만", "취소", 추가 질문) → cancel + 일반 대화 모드 복귀
+5. 진행 시:
+   - `git add <명시 파일>` (절대 `-A` / `.` 금지)
+   - `git commit -m "의도 중심 메시지"` (Co-Authored-By Claude 포함)
+   - `git push`
+
+**빠른모드 opt-in**: `TRIGGER_FAST_MODE=1` 환경변수 set 시 confirm 단계 skip (echo 는 유지).
+
+**저위험 트리거** (single-shot OK):
+- "집이야"/"사무실이야"/"출장중이야" — dev-environments push (private repo, 시크릿 마스킹 검증 fail 시 자동 cancel)
+
+**자세한 판별 룰**: project memory `~/.claude/projects/C--Users-ukjin-sw-management-system/memory/feedback_trigger_confirm.md`
 
 **금지**: `.env`, credential, 대용량 바이너리, 민감 파일 커밋.
 
