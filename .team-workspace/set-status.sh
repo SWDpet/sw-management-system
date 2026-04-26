@@ -48,12 +48,23 @@ if ! [[ "$progress" =~ ^[0-9]+$ ]] || (( progress < 0 )) || (( progress > 100 ))
 fi
 
 mkdir -p "$STATUS_DIR"
-cat > "$STATUS_DIR/$team.status" <<EOF
-team=$team
-state=$state
-progress=$progress
-task=$task
-updated=$(date +%s)
-EOF
+
+# === POSIX-호환 atomic write (sprint team-monitor-dashboard, 기획 §4-10) ===
+# - mktemp 으로 같은 디렉토리에 임시파일 생성 (cross-fs rename 회피).
+# - mv 는 같은 파일시스템 내에서 rename(2) 으로 atomic.
+# - trap 으로 임시파일 누수 방지 (mv 성공 시 trap 해제).
+# - heredoc 대신 printf 사용 — 변수 확장 시 줄바꿈/공백 이슈 방지.
+# - Windows Git Bash (msys) 의 mv 도 동일 디렉토리 rename 지원.
+tmp=$(mktemp "$STATUS_DIR/.${team}.status.XXXXXX") || { echo "❌ mktemp 실패"; exit 1; }
+trap 'rm -f "$tmp"' EXIT
+{
+  printf 'team=%s\n'     "$team"
+  printf 'state=%s\n'    "$state"
+  printf 'progress=%s\n' "$progress"
+  printf 'task=%s\n'     "$task"
+  printf 'updated=%s\n'  "$(date +%s)"
+} > "$tmp"
+mv -f "$tmp" "$STATUS_DIR/$team.status"
+trap - EXIT
 
 echo "✓ $team  →  [$state]  ${progress}%  ${task:-(작업 없음)}"
