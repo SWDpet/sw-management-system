@@ -12,6 +12,7 @@ import java.nio.file.Path;
 
 /**
  * TeamStatusWatcher 빈 팩토리 (sprint team-monitor-dashboard, 개발계획 Step 2-4).
+ * (sprint team-monitor-wildcard-watcher: 두 디렉토리 + TeamMetadata 주입)
  *
  * teammonitor.watcher.mode:
  *  - nio     : 직접 JavaNioWatcher.
@@ -24,16 +25,20 @@ public class TeamMonitorWatcherConfig {
     private static final Logger log = LoggerFactory.getLogger(TeamMonitorWatcherConfig.class);
 
     @Bean(destroyMethod = "stop")
-    public TeamStatusWatcher teamStatusWatcher(TeamMonitorProperties props) {
-        Path dir = Path.of(props.getStatusDir());
+    public TeamStatusWatcher teamStatusWatcher(TeamMonitorProperties props,
+                                               TeamStatusReader reader,
+                                               TeamMetadata teamMetadata) {
+        Path statusDir = props.getStatusPath();
+        Path workspaceDir = props.getWorkspacePath();
+        Path teamsJsonPath = props.getTeamsJsonPath();
         String mode = props.getWatcher().getMode();
         long pollMs = props.getWatcher().getPollingIntervalMs();
 
         TeamStatusWatcher watcher;
         switch (mode == null ? "auto" : mode.toLowerCase()) {
-            case "nio" -> watcher = new JavaNioWatcher(dir);
-            case "polling" -> watcher = new PollingWatcher(dir, pollMs);
-            default -> watcher = createAuto(dir, pollMs);
+            case "nio" -> watcher = new JavaNioWatcher(statusDir, workspaceDir, reader, teamMetadata);
+            case "polling" -> watcher = new PollingWatcher(statusDir, teamsJsonPath, pollMs, reader, teamMetadata);
+            default -> watcher = new JavaNioWatcher(statusDir, workspaceDir, reader, teamMetadata);
         }
         try {
             watcher.start();
@@ -41,25 +46,13 @@ public class TeamMonitorWatcherConfig {
             // NIO 실패 시 polling 으로 한 번 더 fallback
             if (watcher instanceof JavaNioWatcher) {
                 log.warn("NIO 실패 → polling fallback: {}", e.getMessage());
-                watcher = new PollingWatcher(dir, pollMs);
+                watcher = new PollingWatcher(statusDir, teamsJsonPath, pollMs, reader, teamMetadata);
                 watcher.start();
             } else {
                 throw e;
             }
         }
         return watcher;
-    }
-
-    private TeamStatusWatcher createAuto(Path dir, long pollMs) {
-        // auto 모드: NIO 가 사용 가능한지 가벼운 시도. WatchService 생성 자체가 실패하면 polling.
-        try {
-            JavaNioWatcher nio = new JavaNioWatcher(dir);
-            // start() 가 실패하면 createAuto 호출자에서 catch 하여 polling fallback.
-            return nio;
-        } catch (Throwable t) {
-            log.warn("NIO watcher 생성 실패 → polling fallback: {}", t.getMessage());
-            return new PollingWatcher(dir, pollMs);
-        }
     }
 
     /**
