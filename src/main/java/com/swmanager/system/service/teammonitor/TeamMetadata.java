@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swmanager.system.config.TeamMonitorProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -70,6 +71,7 @@ public class TeamMetadata {
     private final ObjectMapper mapper;
     private final AtomicReference<MetaSnapshot> snapshot = new AtomicReference<>(MetaSnapshot.empty());
 
+    @Autowired
     public TeamMetadata(TeamMonitorProperties props) {
         this.teamsJsonPath = props.getTeamsJsonPath();
         this.mapper = buildMapper();

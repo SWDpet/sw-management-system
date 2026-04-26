@@ -1,6 +1,9 @@
 package com.swmanager.system.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Map;
 
 /**
  * SSE 페이로드 (sprint team-monitor-dashboard, 기획 §FR-5-d / 개발계획 Step 1-3).
@@ -8,6 +11,8 @@ import java.util.List;
  * - Snapshot: 연결 직후 1회 (event: snapshot).
  * - Update:   단일 팀 상태 변경 시 (event: update).
  * - Heartbeat 는 별도 record 없이 컨트롤러에서 직접 직렬화.
+ *
+ * sprint team-monitor-wildcard-watcher: schemaVersion 1 → 2, teamMeta 필드 추가 (FR-5-c).
  */
 public sealed interface TeamStatusEvent {
 
@@ -19,7 +24,8 @@ public sealed interface TeamStatusEvent {
             int schemaVersion,
             String serverTime,
             List<TeamStatus> teams,
-            List<TimelineEntry> timeline
+            List<TimelineEntry> timeline,
+            Map<String, SnapshotTeamMeta> teamMeta   // sprint team-monitor-wildcard-watcher
     ) implements TeamStatusEvent {}
 
     record Update(
@@ -28,4 +34,15 @@ public sealed interface TeamStatusEvent {
             TeamStatus team,
             TimelineEntry timelineEntry
     ) implements TeamStatusEvent {}
+
+    /**
+     * 팀 메타데이터 — SSE snapshot 전용 DTO.
+     * S2-02: TeamMetadata.TeamMeta 와 명칭 충돌 회피 (SnapshotTeamMeta).
+     * S2-06: @JsonAlias 양방향 호환 (sort_order / sortOrder).
+     */
+    record SnapshotTeamMeta(
+            String emoji,
+            @JsonProperty("sort_order") @JsonAlias({"sort_order", "sortOrder"}) int sortOrder,
+            String label
+    ) {}
 }

@@ -234,11 +234,10 @@ class TeamStatusReaderTest {
 
     @Test
     void listTeams_nullMeta_alphabeticalFallback() throws IOException {
-        // S4-01-a-NPE: 1-인자 생성자 (deprecated) 사용 시 NPE 차단 + 알파벳 정렬
+        // S4-01-a-NPE: 안전망 — buildComparator() 가 null meta 시 알파벳 폴백
         TeamMonitorProperties props = new TeamMonitorProperties();
         props.setStatusDir(tmp.toString());
-        @SuppressWarnings("removal")
-        TeamStatusReader r = new TeamStatusReader(props);
+        TeamStatusReader r = new TeamStatusReader(props, null, System::currentTimeMillis);
 
         write("zebra.status", "team=zebra\n");
         write("apple.status", "team=apple\n");

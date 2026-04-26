@@ -3,9 +3,12 @@ package com.swmanager.system.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,6 +31,30 @@ public class SecurityConfig {
 
     private final CustomAuthenticationFailureHandler authFailureHandler;
     private final CustomAuthenticationSuccessHandler authSuccessHandler;
+
+    /**
+     * /actuator/** 전용 시큐리티 체인 (sprint team-monitor-wildcard-watcher — R-12 / N10 / N13).
+     * - /actuator/health: permitAll (모니터링 도구 익명 접근)
+     * - /actuator/info: ROLE_ADMIN (teamMetadataFallback 등 내부 상태 노출)
+     * - httpBasic 인증 + formLogin disable → 익명 = 401, 비ADMIN = 403 (302 리다이렉트 X)
+     * - SEC-01 / R-12-A: 401/403 보장.
+     */
+    @Bean
+    @Order(1)
+    public SecurityFilterChain actuatorChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/actuator/**")
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers("/actuator/info").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .httpBasic(Customizer.withDefaults())
+            .formLogin(form -> form.disable())
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

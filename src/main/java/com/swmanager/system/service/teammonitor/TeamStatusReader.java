@@ -4,6 +4,7 @@ import com.swmanager.system.config.TeamMonitorProperties;
 import com.swmanager.system.dto.TeamStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -39,15 +40,6 @@ public class TeamStatusReader {
     private static final Logger log = LoggerFactory.getLogger(TeamStatusReader.class);
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-    /**
-     * 코드 내장 5팀 상수 — sprint team-monitor-wildcard-watcher 임시 유지.
-     * commit 5 시점에 모든 호출자 listTeams() 전환 후 최종 제거 예정.
-     * T-H grep 회귀 차단 예외 (ALLOW_FIVE_TEAM_FALLBACK 센티넬).
-     */
-    // ALLOW_FIVE_TEAM_FALLBACK
-    @Deprecated(forRemoval = true, since = "team-monitor-wildcard-watcher commit 3")
-    public static final List<String> TEAMS = List.of("planner", "db", "developer", "codex", "designer");
-
     private static final long CACHE_TTL_MS = 1000L;
     private static final PathMatcher MATCHER =
             FileSystems.getDefault().getPathMatcher("glob:*.status");
@@ -63,18 +55,9 @@ public class TeamStatusReader {
     /**
      * Spring 프로덕션 생성자 — TeamMetadata 주입 (sort_order 정렬).
      */
+    @Autowired
     public TeamStatusReader(TeamMonitorProperties props, TeamMetadata meta) {
         this(props, meta, System::currentTimeMillis);
-    }
-
-    /**
-     * 후방 호환 생성자 (sprint team-monitor-wildcard-watcher commit 3 — S4-01-a).
-     * commit 5 에서 모든 호출자 2-인자 생성자로 전환 후 본 생성자 제거.
-     * teamMetadata == null 시 buildComparator() 가 알파벳 폴백 (NPE 차단 — S4-01-a-NPE).
-     */
-    @Deprecated(forRemoval = true, since = "team-monitor-wildcard-watcher commit 3")
-    public TeamStatusReader(TeamMonitorProperties props) {
-        this(props, null, System::currentTimeMillis);
     }
 
     /** 테스트 전용 — Clock 주입 (S6-04 — TTL 플래키 차단). */

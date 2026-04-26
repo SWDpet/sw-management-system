@@ -44,11 +44,13 @@ public class TeamMonitorService {
 
     private static final Logger log = LoggerFactory.getLogger(TeamMonitorService.class);
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final int SCHEMA_VERSION = 1;
+    /** sprint team-monitor-wildcard-watcher: 1 → 2 (teamMeta 필드 추가). */
+    private static final int SCHEMA_VERSION = 2;
 
     private final TeamMonitorProperties props;
     private final TeamStatusReader reader;
     private final TeamStatusWatcher watcher;
+    private final TeamMetadata teamMetadata;
     private final ObjectMapper mapper = new ObjectMapper();
 
     // emitter 관리 (LRU 위해 deque + lastEventAt 메타)
@@ -70,14 +72,26 @@ public class TeamMonitorService {
 
     public TeamMonitorService(TeamMonitorProperties props,
                               TeamStatusReader reader,
-                              TeamStatusWatcher watcher) {
+                              TeamStatusWatcher watcher,
+                              TeamMetadata teamMetadata) {
         this.props = props;
         this.reader = reader;
         this.watcher = watcher;
+        this.teamMetadata = teamMetadata;
     }
 
     @PostConstruct
     void init() {
+        // C3-01-A + R-11: 부팅 시 디렉토리 보장 + 절대경로 로그
+        try {
+            Files.createDirectories(props.getStatusPath());
+            Files.createDirectories(props.getWorkspacePath());
+            log.info("team-monitor workspaceDir: {}", props.getWorkspacePath().toAbsolutePath());
+            log.info("team-monitor statusDir:    {}", props.getStatusPath().toAbsolutePath());
+        } catch (IOException e) {
+            log.warn("team-monitor 디렉토리 보장 실패: {}", e.getMessage());
+        }
+
         // 초기 캐시 로드 (실패해도 부팅은 진행)
         try {
             Map<String, TeamStatus> all = reader.readAll();
@@ -86,6 +100,8 @@ public class TeamMonitorService {
             log.warn("초기 status 캐시 로드 실패: {}", e.getMessage());
         }
         watcher.subscribe(this::onTeamChanged);
+        watcher.subscribeMetaChange(this::onMetaChanged);            // FR-2-d
+        watcher.subscribeTeamDeleted(this::onTeamDeleted);           // C3-01-B
         log.info("TeamMonitorService 초기화 완료. emitters max={}", props.getSse().getMaxEmitters());
     }
 
@@ -166,20 +182,50 @@ public class TeamMonitorService {
 
     private void sendSnapshot(RegisteredEmitter re) {
         try {
+            // sprint team-monitor-wildcard-watcher: TEAMS 상수 → reader.listTeams() (FR-1)
+            List<String> teamNames = reader.listTeams();
             List<TeamStatus> teams = new ArrayList<>();
-            for (String t : TeamStatusReader.TEAMS) {
+            Map<String, TeamStatusEvent.SnapshotTeamMeta> teamMeta = new LinkedHashMap<>();
+            for (String t : teamNames) {
                 TeamStatus s = latestCache.get(t);
                 if (s != null) teams.add(s);
+                teamMeta.put(t, new TeamStatusEvent.SnapshotTeamMeta(
+                        teamMetadata.emoji(t),
+                        teamMetadata.sortOrder(t),
+                        teamMetadata.label(t)));
             }
             List<TimelineEntry> timeline = snapshotTimeline();
             TeamStatusEvent.Snapshot snap = new TeamStatusEvent.Snapshot(
-                    SCHEMA_VERSION, nowIso(), teams, timeline);
+                    SCHEMA_VERSION, nowIso(), teams, timeline, teamMeta);
             re.emitter.send(SseEmitter.event().name("snapshot").data(mapper.writeValueAsString(snap)));
             re.lastEventAt.set(Instant.now());
         } catch (IOException e) {
             log.warn("snapshot 전송 실패 — emitter 제거: {}", e.getMessage());
             re.emitter.complete();
             emitters.remove(re);
+        }
+    }
+
+    /**
+     * FR-2-d: teams.json 변경 시 모든 emitter 에 snapshot 재발행
+     * (라벨/이모지/정렬 즉시 반영).
+     */
+    void onMetaChanged() {
+        log.info("teams.json 변경 감지 — snapshot 재발행 ({} emitters)", emitters.size());
+        for (RegisteredEmitter re : emitters) {
+            sendSnapshot(re);
+        }
+    }
+
+    /**
+     * C3-01-B: status DELETE 시 latestCache 정리 + snapshot 재발행
+     * (UI 카드 즉시 제거).
+     */
+    void onTeamDeleted(String team) {
+        log.info("status 파일 삭제 감지 — latestCache 정리 + snapshot 재발행: team={}", team);
+        latestCache.remove(team);
+        for (RegisteredEmitter re : emitters) {
+            sendSnapshot(re);
         }
     }
 
