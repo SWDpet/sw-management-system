@@ -22,6 +22,35 @@ if [ -z "$DB_PASSWORD" ]; then
     echo "[RESTART]   application.properties 의 기본값이 제거된 상태면 서버 부팅이 실패합니다."
 fi
 
+# [Pre-flight] application-local.properties 존재 + dummy 좌표 검증
+# (harness-hardening-v1: prod 좌표 마스킹 이후 신규 PC 셋업 자동화)
+LOCAL_PROPS="$PROJECT_DIR/src/main/resources/application-local.properties"
+EXAMPLE_PROPS="${LOCAL_PROPS}.example"
+
+if [ ! -f "$LOCAL_PROPS" ]; then
+    if [ ! -f "$EXAMPLE_PROPS" ]; then
+        echo "[RESTART] ❌ application-local.properties + example 둘 다 없음. 셋업 가이드 확인."
+        echo "[RESTART]    docs/references/setup-guide.md §2"
+        exit 1
+    fi
+    cp "$EXAMPLE_PROPS" "$LOCAL_PROPS"
+    echo "[RESTART] ⚠ 첫 실행: application-local.properties 가 없어서 example 에서 자동 복사함."
+    echo "[RESTART]    → 1Password 에서 prod DB 좌표를 가져와 아래 파일 편집:"
+    echo "[RESTART]      $LOCAL_PROPS"
+    echo "[RESTART]    → spring.datasource.url 의 host:port/db 를 실제 값으로 교체"
+    echo "[RESTART]    → 안내: docs/references/setup-guide.md §2"
+    echo "[RESTART]    → 편집 후 './server-restart.sh' 다시 실행"
+    exit 1
+fi
+
+if grep -q "localhost:5432/swdept_local" "$LOCAL_PROPS" && [ -z "$DB_URL" ]; then
+    echo "[RESTART] ❌ application-local.properties 가 dummy 좌표 (localhost:5432/swdept_local) 그대로이고"
+    echo "[RESTART]    DB_URL 환경변수도 미설정 → prod DB 접근 불가."
+    echo "[RESTART]    → 1Password 에서 prod 좌표를 가져와 아래 파일 편집:"
+    echo "[RESTART]      $LOCAL_PROPS"
+    exit 1
+fi
+
 echo "[RESTART] Stopping existing server on port $PORT..."
 
 # Find and kill process on port using pure bash + Windows netstat

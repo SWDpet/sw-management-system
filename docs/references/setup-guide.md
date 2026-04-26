@@ -9,7 +9,12 @@ C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot
 - 환경변수 `JAVA_HOME` 설정 필수
 
 ### 2. PostgreSQL 접속 정보
-`src/main/resources/application-local.properties` 파일을 직접 생성 (Git에 포함되지 않음)
+`src/main/resources/application-local.properties` 파일이 필요합니다 (Git에 포함되지 않음).
+
+**자동 보정 (권장)**: `server-restart.sh` / `server-start.bat` 첫 실행 시
+`application-local.properties.example` 에서 자동 복사됨. 단, 그 직후 **prod DB 좌표를 직접 채우고** 재실행해야 함 (아래 형식 참고).
+
+> **수동으로 만들 때**도 동일 형식. 예시:
 
 ```properties
 server.port=9090
@@ -17,6 +22,9 @@ spring.datasource.url=jdbc:postgresql://호스트:포트/DB명
 spring.datasource.username=사용자명
 spring.datasource.password=비밀번호
 ```
+
+prod DB 실제 좌표는 **1Password** 또는 사내 운영팀 문의 (harness-hardening-v1 마스킹 이후).
+비밀번호는 환경변수 `DB_PASSWORD` 로도 주입 가능 (`server-restart.sh` 가 Windows User env 에서 자동 로드).
 
 ### 3. GeoNURIS_License.jar 파일 (Git에 포함됨)
 
