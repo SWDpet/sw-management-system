@@ -23,7 +23,7 @@ public class JavaNioWatcher implements TeamStatusWatcher {
 
     private static final Logger log = LoggerFactory.getLogger(JavaNioWatcher.class);
     private static final Set<String> TEAM_FILES = Set.of(
-            "planner.status", "db.status", "developer.status", "codex.status");
+            "planner.status", "db.status", "developer.status", "codex.status", "designer.status");
 
     private final Path statusDir;
     private final List<Consumer<String>> subscribers = new CopyOnWriteArrayList<>();

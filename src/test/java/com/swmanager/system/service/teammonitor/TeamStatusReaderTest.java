@@ -110,12 +110,25 @@ class TeamStatusReaderTest {
     }
 
     @Test
-    void readAll_returnsAllFourTeams_evenIfFilesMissing() throws IOException {
+    void readAll_returnsAllFiveTeams_evenIfFilesMissing() throws IOException {
         write("planner.status", "team=planner\nstate=완료\nprogress=100\ntask=done\nupdated=1777170000\n");
-        // db/developer/codex 파일 없음
+        // db/developer/codex/designer 파일 없음
         Map<String, TeamStatus> all = reader.readAll();
-        assertThat(all).containsOnlyKeys("planner", "db", "developer", "codex");
+        assertThat(all).containsOnlyKeys("planner", "db", "developer", "codex", "designer");
         assertThat(all.get("planner")).isNotNull();
+        assertThat(all.get("db")).isNull();
+        assertThat(all.get("developer")).isNull();
+        assertThat(all.get("codex")).isNull();
+        assertThat(all.get("designer")).isNull();
+    }
+
+    @Test
+    void readAll_designerOnlyPresent_otherFour_null() throws IOException {
+        write("designer.status", "team=designer\nstate=대기\nprogress=0\ntask=onboarding\nupdated=1777170000\n");
+        Map<String, TeamStatus> all = reader.readAll();
+        assertThat(all.get("designer")).isNotNull();
+        assertThat(all.get("designer").team()).isEqualTo("designer");
+        assertThat(all.get("planner")).isNull();
         assertThat(all.get("db")).isNull();
         assertThat(all.get("developer")).isNull();
         assertThat(all.get("codex")).isNull();

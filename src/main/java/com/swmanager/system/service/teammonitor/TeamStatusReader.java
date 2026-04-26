@@ -30,7 +30,7 @@ public class TeamStatusReader {
 
     private static final Logger log = LoggerFactory.getLogger(TeamStatusReader.class);
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    public static final List<String> TEAMS = List.of("planner", "db", "developer", "codex");
+    public static final List<String> TEAMS = List.of("planner", "db", "developer", "codex", "designer");
 
     private final Path statusDir;
 
