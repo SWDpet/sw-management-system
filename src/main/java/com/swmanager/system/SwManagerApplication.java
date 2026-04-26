@@ -1,14 +1,17 @@
 package com.swmanager.system; // ※ 패키지명은 기존 파일에 적힌 그대로 유지하세요.
 
 import com.swmanager.system.config.SecurityLoginProperties;
+import com.swmanager.system.config.TeamMonitorProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableConfigurationProperties(SecurityLoginProperties.class)
+@EnableScheduling
+@EnableConfigurationProperties({SecurityLoginProperties.class, TeamMonitorProperties.class})
 public class SwManagerApplication extends SpringBootServletInitializer {
 
     // [WAR 배포 핵심 설정]
