@@ -10,6 +10,12 @@
     let clockSkewMs = 0;
     let stoppedByEvict = false;
 
+    /**
+     * 마지막 snapshot 의 teamMeta 캐시 (FR-5-META-FALLBACK 보완).
+     * onUpdate 로 신규 팀이 들어올 때 메타 즉시 적용 — snapshot 재발행 지연 차단.
+     */
+    let lastTeamMeta = {};
+
     const seenTimelineIds = new Set();
     const MAX_TIMELINE_RENDER = 20;
 
@@ -78,6 +84,9 @@
         const teams = Array.isArray(data.teams) ? data.teams : [];
         const meta = data.teamMeta || FALLBACK_META;   // T-G-clarify: schemaVersion=1 fallback
 
+        // FR-5-META-FALLBACK: 마지막 snapshot teamMeta 캐시 (onUpdate 신규 팀에 즉시 적용)
+        lastTeamMeta = meta;
+
         renderTeamsAndEmpty(container, teams, meta);
         teams.forEach(team => renderCard(team, false));   // 카드 데이터 갱신 (애니 X)
 
@@ -103,7 +112,10 @@
             // 카드 미존재 (= 신규 팀 첫 등장) 시 createCard
             const container = document.getElementById('cards');
             if (container && !document.getElementById('card-' + data.team.team)) {
-                const teamMeta = (data.teamMeta && data.teamMeta[data.team.team]) || metaFor(data.team.team);
+                // FR-5-META-FALLBACK: 우선순위 — update payload teamMeta → 마지막 snapshot 캐시 → metaFor 폴백
+                const teamMeta = (data.teamMeta && data.teamMeta[data.team.team])
+                    || (lastTeamMeta && lastTeamMeta[data.team.team])
+                    || metaFor(data.team.team);
                 container.appendChild(createCard(data.team, teamMeta));
                 // empty placeholder 가 있으면 제거
                 const empty = container.querySelector('.tm-empty');

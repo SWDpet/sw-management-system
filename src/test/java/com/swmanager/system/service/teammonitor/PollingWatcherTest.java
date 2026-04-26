@@ -101,6 +101,25 @@ class PollingWatcherTest {
     }
 
     @Test
+    void pollingWatcher_deleteTriggersTeamDeletedCallback() throws IOException, InterruptedException {
+        // FR-3-DEL: 삭제 시 onTeamDeleted 콜백 발화 + lastMtime stale 정리
+        Path statusDir = workspaceDir.resolve("status");
+        Files.createDirectories(statusDir);
+        Files.writeString(statusDir.resolve("foo.status"), "team=foo\n");
+
+        startWatcher(200);
+
+        List<String> deletedCalls = new CopyOnWriteArrayList<>();
+        watcher.subscribeTeamDeleted(deletedCalls::add);
+
+        // foo 가 인식될 때까지 첫 tick 대기
+        Thread.sleep(300);
+        Files.delete(statusDir.resolve("foo.status"));
+
+        assertThat(waitFor(() -> deletedCalls.contains("foo"), 3000)).isTrue();
+    }
+
+    @Test
     void pollingWatcher_twoConsecutiveModifies_bothPicked() throws IOException, InterruptedException {
         // S5-03 / T-B-02: 1초 이상 간격으로 2회 modify → 모두 인지
         Path statusDir = workspaceDir.resolve("status");

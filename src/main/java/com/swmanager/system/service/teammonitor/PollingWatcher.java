@@ -109,8 +109,22 @@ public class PollingWatcher implements TeamStatusWatcher {
                 lastEventAt = Instant.now();
             }
 
-            // status 파일 폴링
-            for (String team : reader.listTeams()) {
+            // status 파일 폴링 — 변경 + 삭제 처리 (FR-3-DEL / CQ-MEM-POLL)
+            java.util.Set<String> currentTeams = new java.util.HashSet<>(reader.listTeams());
+
+            // 삭제 감지: lastMtime 에 있는데 현재 listTeams 에 없는 팀 → onTeamDeleted + lastMtime 정리
+            java.util.Iterator<String> it = lastMtime.keySet().iterator();
+            while (it.hasNext()) {
+                String prevTeam = it.next();
+                if (!currentTeams.contains(prevTeam)) {
+                    it.remove();   // CQ-MEM-POLL: stale 엔트리 정리
+                    lastEventAt = Instant.now();
+                    notifyTeamDeleted(prevTeam);
+                }
+            }
+
+            // 변경/신규 감지
+            for (String team : currentTeams) {
                 Path f = statusDir.resolve(team + ".status");
                 if (!Files.exists(f)) continue;
                 long mt = Files.getLastModifiedTime(f).toMillis();

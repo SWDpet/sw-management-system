@@ -21,8 +21,7 @@ log_skip() { echo "ℹ️  SKIP: $*" >&2; }
 
 # 공통 exclude (S6-02)
 EXCLUDE_OPTS="--exclude-dir=docs --exclude-dir=.git --exclude-dir=target --exclude-dir=build --exclude-dir=node_modules --exclude-dir=.idea"
-# 자기 자신 (검사 패턴 인자에 fixture 문자열을 사용) 결과에서 제외
-SELF_FILTER="grep -v check-no-n-team-assumptions.sh"
+# 자기 자신 (검사 패턴 인자에 fixture 문자열을 사용) 결과는 아래 filter_self() 로 제외
 
 # 1) 셸 case 고정 5팀 열거
 HITS_SH=$(grep -ErHn $EXCLUDE_OPTS --include='*.sh' \
