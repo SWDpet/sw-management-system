@@ -52,6 +52,61 @@ prod DB 실제 좌표는 **1Password** 또는 사내 운영팀 문의 (harness-h
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
+### 5. codex CLI + jq (검증 워크플로우용 — AGENTS.md §4)
+
+본 프로젝트 워크플로우는 모든 기획서/개발계획/구현 산출물을 **codex CLI** 로 검증합니다.
+또한 `harness-hardening-v1` 의 **codex-trace.sh** 가 호출 비용/토큰을 JSONL 로 기록하려면 **jq** 가 필요합니다.
+
+#### 5-1. Node.js 18+ 확인
+```bash
+node --version   # v18 이상 필요
+npm --version
+```
+없으면 https://nodejs.org/ 또는 `winget install OpenJS.NodeJS.LTS`.
+
+#### 5-2. codex CLI 설치 + 인증
+```bash
+# 설치 (전역)
+npm install -g @openai/codex
+
+# 인증 (둘 중 하나)
+codex login                                  # ChatGPT Plus/Pro OAuth (권장)
+# 또는
+[Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "sk-...", "User")  # API key
+```
+
+**확인**:
+```bash
+codex --version           # codex-cli x.y.z
+ls "$HOME/.codex/auth.json"   # 인증 파일 존재
+```
+
+#### 5-3. jq 설치 (codex-trace.sh 의존성)
+```bash
+# Windows
+winget install jqlang.jq --silent --accept-source-agreements --accept-package-agreements
+
+# macOS
+brew install jq
+```
+
+**확인**:
+```bash
+jq --version              # jq-1.x.x
+```
+> 신규 설치 직후 PATH 가 적용 안 되면 셸 재시작. `codex-trace.sh` 는 WinGet 설치 경로 자동 fallback 가능.
+
+#### 5-4. 검증 호출 예
+```bash
+# 기획서/개발계획서 검토
+echo "파일 docs/product-specs/feature-xxx.md 검토. 평가: 1)요건 2)설계 3)DB 4)리스크 5)권고" \
+  | bash .team-workspace/codex-trace.sh -m gpt-5
+
+# 트레이스 결과: ~/.claude/trace/codex-trace-YYYY-MM.jsonl
+```
+
+> codex CLI 미설치 환경에서는 단순 텍스트 변경 수준만 진행하고, 본격 검증은 다른 PC 에서.
+
 ---
 
 ## 자동 방지 장치 (이 저장소에 적용됨)
