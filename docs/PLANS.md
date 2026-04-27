@@ -32,6 +32,20 @@
 | 4 | S16 tb-work-plan-decision | work_plan_type/status_mst 신설 |
 | 4 | S8-C qt-template-type-enum | QuoteTemplateType Enum |
 
+### 2-a. 감사 후속 (2026-04-19, 5 스프린트, 총 20건 조치)
+
+근거: `docs/generated/audit/2026-04-18-system-audit.md` (codex Phase 1 감사)
+
+| ID | 스프린트 | 요약 | 커밋 |
+|----|---------|------|------|
+| 1 | audit-fix-p1 | P1 보안 4건 (DB 비밀번호 / 문서 API 권한 / 민감정보 평문 / inspect_report 스키마) | `2d0a9c1` |
+| 2a | audit-fix-p2-schema-docs | P2 스키마·문서 정합성 6건 (init SQL DDL / ERD 정리 / plans 동기화) | `b93e8bc` |
+| 2b | audit-fix-p2-deadcode | P2 Dead code 3건 (ProjectService / SwService 미호출 / orphan 템플릿) | `914fa5c` |
+| 2c | audit-fix-p2-security-logging | P2 보안·로깅 4건 (MAC 응답 / show-sql / debug 로그 / Validation 로그) | `d73dd12` |
+| 3 | audit-fix-p3-minor | P3 경미 3건 (LoginController / SwRepository / AdminUser keyword 로그) | `a27032c` |
+
+후속 백로그 (별도 스프린트 또는 운영): `docs/generated/audit/dashboard.md` 참조 — phase1 DDL 정식 정리, security-hardening-v2 (보류), 운영 작업 (DB password rotation, Shodan 점검 등).
+
 ---
 
 ## 3. 영구 패스 (추천 금지)
@@ -59,4 +73,4 @@
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 P1*
+*Last updated: 2026-04-27 · audit follow-up table backfill*

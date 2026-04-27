@@ -3,7 +3,7 @@
 - **작성팀**: 기획팀
 - **작성일**: 2026-04-18
 - **선행**: 감사 보고서 `docs/generated/audit/2026-04-18-system-audit.md`
-- **상태**: 초안 (codex 검토 대기)
+- **상태**: ✅ 완료 (commit `2d0a9c1`, 2026-04-19) — 4건 모두 ☑ 조치함. 후속 DB password rotation 은 `docs/generated/audit/dashboard.md` 운영 항목.
 
 ---
 
