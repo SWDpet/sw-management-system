@@ -970,9 +970,15 @@
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입인력(인)</label>
                         <input type="number" id="laborPeople" min="1" step="1" value="1" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
-                    <div style="flex:0.4;min-width:70px;">
-                        <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입기간(개월)</label>
-                        <input type="number" id="laborMonths" min="0.5" step="0.5" value="1" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                    <div style="flex:0.6;min-width:130px;">
+                        <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입기간</label>
+                        <div style="display:flex;gap:4px;">
+                            <input type="number" id="laborMonths" min="0.5" step="0.5" value="1" style="flex:1;min-width:50px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                            <select id="laborDurationUnit" onchange="onLaborDurationUnitChange()" style="width:60px;padding:8px 4px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;background:#fff;">
+                                <option value="MONTH">개월</option>
+                                <option value="DAY">일</option>
+                            </select>
+                        </div>
                     </div>
                     <div style="flex:0.5;min-width:70px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">비고</label>
@@ -992,7 +998,7 @@
                             <th style="padding:8px 10px;text-align:left;font-weight:700;">품명</th>
                             <th style="padding:8px 10px;text-align:right;font-weight:700;">노임단가</th>
                             <th style="padding:8px 6px;text-align:center;font-weight:700;width:60px;">투입인력<br><span style="font-weight:500;font-size:0.72rem;color:#888;">(인)</span></th>
-                            <th style="padding:8px 6px;text-align:center;font-weight:700;width:65px;">투입기간<br><span style="font-weight:500;font-size:0.72rem;color:#888;">(개월)</span></th>
+                            <th style="padding:8px 6px;text-align:center;font-weight:700;width:90px;">투입기간</th>
                             <th style="padding:8px 6px;text-align:center;font-weight:700;width:70px;">총투입기간<br><span style="font-weight:500;font-size:0.72rem;color:#888;">(개월)</span></th>
                             <th style="padding:8px 10px;text-align:right;font-weight:700;">금액(원)</th>
                             <th style="padding:8px 8px;text-align:center;font-weight:700;width:70px;">비고</th>
@@ -2083,6 +2089,9 @@
         document.getElementById('laborOhInput').value = ohRate;
         document.getElementById('laborTfInput').value = tfRate;
         document.getElementById('laborWorkDays').value = 20.3;
+        document.getElementById('laborDurationUnit').value = 'MONTH';
+        document.getElementById('laborMonths').value = '1';
+        onLaborDurationUnitChange();
 
         // Load wage rate years
         try {
@@ -2149,11 +2158,36 @@
 
     const MONTHLY_WORKING_DAYS = 20.3; // 월 근무일수 (표준)
 
+    // 입력값(개월/일) → 정규화된 개월 환산
+    function normalizeMonths(durationUnit, durationValue, workDays) {
+        if (durationUnit === 'DAY') {
+            return durationValue / (workDays || MONTHLY_WORKING_DAYS);
+        }
+        return durationValue;
+    }
+
+    function onLaborDurationUnitChange() {
+        const unit = document.getElementById('laborDurationUnit').value;
+        const input = document.getElementById('laborMonths');
+        if (unit === 'DAY') {
+            input.step = '1';
+            input.min = '1';
+            if (parseFloat(input.value) < 1) input.value = '1';
+        } else {
+            input.step = '0.5';
+            input.min = '0.5';
+        }
+    }
+
     function recalcAllLaborEntries() {
         const workDays = parseFloat(document.getElementById('laborWorkDays').value) || MONTHLY_WORKING_DAYS;
         laborEntries.forEach(e => {
             e.workingDays = workDays;
-            e.amount = Math.round(e.dailyRate * workDays * e.totalMonths);
+            // 일 단위 항목은 월근무일 변경 시 정규화된 개월 재계산
+            e.months = normalizeMonths(e.durationUnit, e.durationValue, workDays);
+            const totalMonthsRaw = e.people * e.months;
+            e.totalMonths = Math.round(totalMonthsRaw * 100) / 100;
+            e.amount = Math.round(e.dailyRate * workDays * totalMonthsRaw);
         });
         renderLaborEntries();
         updateLaborSummary();
@@ -2202,26 +2236,31 @@
         }
 
         const people = parseInt(document.getElementById('laborPeople').value) || 0;
-        const months = parseFloat(document.getElementById('laborMonths').value) || 0;
+        const durationUnit = document.getElementById('laborDurationUnit').value;
+        const durationValue = parseFloat(document.getElementById('laborMonths').value) || 0;
         const remarks = document.getElementById('laborRemarks').value.trim();
 
         if (people <= 0) {
             showAlert('투입인력을 입력해주세요', 'error');
             return;
         }
-        if (months <= 0) {
+        if (durationValue <= 0) {
             showAlert('투입기간을 입력해주세요', 'error');
             return;
         }
 
         const workingDays = parseFloat(document.getElementById('laborWorkDays').value) || MONTHLY_WORKING_DAYS;
-        const totalMonths = people * months;
-        const amount = Math.round(dailyRate * workingDays * totalMonths);
+        const months = normalizeMonths(durationUnit, durationValue, workingDays);
+        const totalMonthsRaw = people * months;
+        const totalMonths = Math.round(totalMonthsRaw * 100) / 100;
+        const amount = Math.round(dailyRate * workingDays * totalMonthsRaw);
 
         laborEntries.push({
             gradeName: gradeName,
             dailyRate: dailyRate,
             people: people,
+            durationUnit: durationUnit,
+            durationValue: durationValue,
             months: months,
             totalMonths: totalMonths,
             amount: amount,
@@ -2232,6 +2271,8 @@
         // 입력 초기화
         document.getElementById('laborPeople').value = '1';
         document.getElementById('laborMonths').value = '1';
+        document.getElementById('laborDurationUnit').value = 'MONTH';
+        onLaborDurationUnitChange();
         document.getElementById('laborRemarks').value = '';
         if (isManual) {
             document.getElementById('laborManualGrade').value = '';
@@ -2256,12 +2297,23 @@
         }
         let html = '';
         laborEntries.forEach((e, i) => {
+            const unit = e.durationUnit || 'MONTH';
+            const dvStep = (unit === 'DAY') ? '1' : '0.5';
+            const dvMin = (unit === 'DAY') ? '1' : '0.5';
             html += '<tr style="border-bottom:1px solid #f0f0f0;">' +
                 '<td style="padding:5px 6px;"><input type="text" value="' + escapeHtml(e.gradeName) + '" onchange="editLaborEntry(' + i + ',\'gradeName\',this.value)" style="width:100%;border:1px solid #e8e8e8;border-radius:4px;padding:4px 6px;font-size:0.85rem;font-weight:600;"></td>' +
                 '<td style="padding:5px 6px;"><input type="number" value="' + e.dailyRate + '" onchange="editLaborEntry(' + i + ',\'dailyRate\',this.value)" style="width:80px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 6px;font-size:0.85rem;text-align:right;"></td>' +
                 '<td style="padding:5px 4px;"><input type="number" value="' + e.people + '" min="1" onchange="editLaborEntry(' + i + ',\'people\',this.value)" style="width:50px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;"></td>' +
-                '<td style="padding:5px 4px;"><input type="number" value="' + e.months + '" min="1" onchange="editLaborEntry(' + i + ',\'months\',this.value)" style="width:50px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;"></td>' +
-                '<td style="padding:5px 6px;text-align:center;font-size:0.85rem;">' + e.totalMonths + '</td>' +
+                '<td style="padding:5px 4px;">' +
+                    '<div style="display:flex;gap:2px;">' +
+                        '<input type="number" value="' + e.durationValue + '" min="' + dvMin + '" step="' + dvStep + '" onchange="editLaborEntry(' + i + ',\'durationValue\',this.value)" style="width:46px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;">' +
+                        '<select onchange="editLaborEntry(' + i + ',\'durationUnit\',this.value)" style="width:48px;padding:4px 2px;border:1px solid #e8e8e8;border-radius:4px;font-size:0.78rem;background:#fff;">' +
+                            '<option value="MONTH"' + (unit === 'MONTH' ? ' selected' : '') + '>개월</option>' +
+                            '<option value="DAY"' + (unit === 'DAY' ? ' selected' : '') + '>일</option>' +
+                        '</select>' +
+                    '</div>' +
+                '</td>' +
+                '<td style="padding:5px 6px;text-align:center;font-size:0.85rem;">' + (Math.round(e.totalMonths * 100) / 100) + '</td>' +
                 '<td style="padding:5px 6px;text-align:right;font-weight:600;font-size:0.85rem;">' + formatCurrency(e.amount) + '</td>' +
                 '<td style="padding:5px 4px;"><input type="text" value="' + escapeHtml(e.remarks || '') + '" onchange="editLaborEntry(' + i + ',\'remarks\',this.value)" style="width:60px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.78rem;text-align:center;"></td>' +
                 '<td style="padding:5px 4px;text-align:center;"><button type="button" onclick="removeLaborEntry(' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:2px 4px;" title="삭제">&times;</button></td>' +
@@ -2276,13 +2328,23 @@
         if (field === 'gradeName') { e.gradeName = value; }
         else if (field === 'dailyRate') { e.dailyRate = parseInt(value) || 0; }
         else if (field === 'people') { e.people = parseInt(value) || 1; }
-        else if (field === 'months') { e.months = parseInt(value) || 1; }
+        else if (field === 'durationValue') {
+            var v = parseFloat(value);
+            if (!v || v <= 0) v = 1;
+            e.durationValue = v;
+        }
+        else if (field === 'durationUnit') {
+            // 단위 전환 시 입력값은 그대로 두고 정규화만 다시 (사용자가 의도한 숫자 보존)
+            e.durationUnit = (value === 'DAY') ? 'DAY' : 'MONTH';
+        }
         else if (field === 'remarks') { e.remarks = value; }
         // recalc
-        e.totalMonths = e.people * e.months;
         var workDays = parseFloat(document.getElementById('laborWorkDays').value) || 20.3;
         e.workingDays = workDays;
-        e.amount = Math.round(e.dailyRate * workDays * e.totalMonths);
+        e.months = normalizeMonths(e.durationUnit, e.durationValue, workDays);
+        var totalMonthsRaw = e.people * e.months;
+        e.totalMonths = Math.round(totalMonthsRaw * 100) / 100;
+        e.amount = Math.round(e.dailyRate * workDays * totalMonthsRaw);
         renderLaborEntries();
         updateLaborSummary();
     }
@@ -2324,18 +2386,19 @@
             '<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-weight:700;">품명</th>' +
             '<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-weight:700;width:80px;">노임단가</th>' +
             '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:55px;">투입인력<br><span style="font-weight:500;font-size:0.7rem;">(인)</span></th>' +
-            '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:55px;">투입기간<br><span style="font-weight:500;font-size:0.7rem;">(개월)</span></th>' +
+            '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:60px;">투입기간</th>' +
             '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:60px;">총투입기간<br><span style="font-weight:500;font-size:0.7rem;">(개월)</span></th>' +
             '<th style="border:1px solid #999;padding:6px 8px;text-align:right;font-weight:700;width:100px;">금액(원)</th>' +
             '<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-weight:700;width:70px;">비고</th>' +
             '</tr></thead><tbody>';
         laborEntries.forEach(e => {
+            const durLabel = (e.durationUnit === 'DAY') ? (e.durationValue + '일') : (e.durationValue + '개월');
             html += '<tr>' +
                 '<td style="border:1px solid #ccc;padding:4px 8px;">' + escapeHtml(e.gradeName) + '</td>' +
                 '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;">' + formatCurrency(e.dailyRate) + '</td>' +
                 '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + e.people + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + e.months + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + e.totalMonths + '</td>' +
+                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + durLabel + '</td>' +
+                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + (Math.round(e.totalMonths * 100) / 100) + '</td>' +
                 '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:600;">' + formatCurrency(e.amount) + '</td>' +
                 '<td style="border:1px solid #ccc;padding:4px 8px;text-align:center;font-size:0.78rem;">' + escapeHtml(e.remarks || '') + '</td></tr>';
         });
@@ -2396,7 +2459,8 @@
         const yearLabel = document.getElementById('laborYear').value + '년';
         let spec = '● 인건비 (' + yearLabel + ' 노임단가 기준)\n';
         laborEntries.forEach(e => {
-            spec += '  - ' + e.gradeName + ' : ' + formatCurrency(e.dailyRate) + '원/일 × ' + e.people + '인 × ' + e.months + '개월 (총 ' + e.totalMonths + 'M/M) = ' + formatCurrency(e.amount) + '원' + (e.remarks ? ' [' + e.remarks + ']' : '') + '\n';
+            const durLabel = (e.durationUnit === 'DAY') ? (e.durationValue + '일') : (e.durationValue + '개월');
+            spec += '  - ' + e.gradeName + ' : ' + formatCurrency(e.dailyRate) + '원/일 × ' + e.people + '인 × ' + durLabel + ' (총 ' + e.totalMonths + 'M/M) = ' + formatCurrency(e.amount) + '원' + (e.remarks ? ' [' + e.remarks + ']' : '') + '\n';
         });
         spec += '  소 계: ' + formatCurrency(subtotal) + '원\n';
         if (ohPct > 0) spec += '  제경비(소계의 ' + ohPct + '%): ' + formatCurrency(overhead) + '원\n';
@@ -2417,6 +2481,8 @@
                 gradeName: e.gradeName,
                 dailyRate: e.dailyRate,
                 people: e.people,
+                durationUnit: e.durationUnit || 'MONTH',
+                durationValue: e.durationValue,
                 months: e.months,
                 totalMonths: e.totalMonths,
                 amount: e.amount,
@@ -2707,18 +2773,43 @@
                 const yearMatch = lines[0].match(/\((\d+년)/);
                 if (yearMatch) yearLabel = yearMatch[1];
                 lines.forEach(line => {
-                    // 새 형식: - 특급기술자 : 326,774원/일 × 1인 × 1개월 (총 1M/M) = 6,633,512원 [비고]
+                    // 새 형식 (개월): - 특급기술자 : 326,774원/일 × 1인 × 1개월 (총 1M/M) = 6,633,512원 [비고]
                     const newMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)개월 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
                     if (newMatch) {
+                        const people = parseInt(newMatch[3]);
+                        const months = parseFloat(newMatch[4]);
                         entries.push({
                             gradeName: newMatch[1],
                             dailyRate: parseInt(newMatch[2].replace(/,/g, '')),
-                            people: parseInt(newMatch[3]),
-                            months: parseFloat(newMatch[4]),
+                            people: people,
+                            durationUnit: 'MONTH',
+                            durationValue: months,
+                            months: months,
                             totalMonths: parseFloat(newMatch[5]),
                             amount: parseInt(newMatch[6].replace(/,/g, '')),
                             remarks: newMatch[7] || ''
                         });
+                    }
+                    // 새 형식 (일): - 특급기술자 : 326,774원/일 × 1인 × 5일 (총 0.25M/M) = 408,468원 [비고]
+                    if (!newMatch) {
+                        const dayMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)일 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
+                        if (dayMatch) {
+                            const people = parseInt(dayMatch[3]);
+                            const days = parseFloat(dayMatch[4]);
+                            const totalM = parseFloat(dayMatch[5]);
+                            entries.push({
+                                gradeName: dayMatch[1],
+                                dailyRate: parseInt(dayMatch[2].replace(/,/g, '')),
+                                people: people,
+                                durationUnit: 'DAY',
+                                durationValue: days,
+                                months: people > 0 ? totalM / people : totalM,
+                                totalMonths: totalM,
+                                amount: parseInt(dayMatch[6].replace(/,/g, '')),
+                                remarks: dayMatch[7] || ''
+                            });
+                            return;
+                        }
                     }
                     // 이전 형식 호환: - 특급기술자 : 326,774원/일 × 20일 = 6,535,480원
                     if (!newMatch) {
@@ -2729,6 +2820,8 @@
                                 gradeName: oldMatch[1],
                                 dailyRate: parseInt(oldMatch[2].replace(/,/g, '')),
                                 people: 1,
+                                durationUnit: 'DAY',
+                                durationValue: days,
                                 months: Math.round(days / 20.3 * 10) / 10,
                                 totalMonths: Math.round(days / 20.3 * 10) / 10,
                                 amount: parseInt(oldMatch[4].replace(/,/g, '')),
@@ -2771,17 +2864,20 @@
                 '<th style="border:1px solid #999;padding:3px 4px;text-align:center;font-weight:700;">품명</th>' +
                 '<th style="border:1px solid #999;padding:3px 4px;text-align:center;font-weight:700;">노임단가</th>' +
                 '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">투입인력<br><span style="font-weight:500;font-size:6pt;">(인)</span></th>' +
-                '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">투입기간<br><span style="font-weight:500;font-size:6pt;">(개월)</span></th>' +
+                '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">투입기간</th>' +
                 '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">총투입<br><span style="font-weight:500;font-size:6pt;">(개월)</span></th>' +
                 '<th style="border:1px solid #999;padding:3px 4px;text-align:right;font-weight:700;">금액(원)</th>' +
                 '<th style="border:1px solid #999;padding:3px 3px;text-align:center;font-weight:700;">비고</th>' +
                 '</tr></thead><tbody>';
             ld.entries.forEach(e => {
+                const durLabel = (e.durationUnit === 'DAY')
+                    ? ((e.durationValue != null ? e.durationValue : 0) + '일')
+                    : ((e.durationValue != null ? e.durationValue : (e.months || 0)) + '개월');
                 html += '<tr>' +
                     '<td style="border:1px solid #ccc;padding:2px 4px;white-space:nowrap;">' + e.gradeName + '</td>' +
                     '<td style="border:1px solid #ccc;padding:2px 4px;text-align:right;white-space:nowrap;">' + formatNum(e.dailyRate || 0) + '</td>' +
                     '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + (e.people || 1) + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + (e.months || 0) + '</td>' +
+                    '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + durLabel + '</td>' +
                     '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + (e.totalMonths || 0) + '</td>' +
                     '<td style="border:1px solid #ccc;padding:2px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(e.amount || e.directCost || 0) + '</td>' +
                     '<td style="border:1px solid #ccc;padding:2px 3px;text-align:center;font-size:6.5pt;">' + (e.remarks || '') + '</td></tr>';
@@ -2864,11 +2960,14 @@
                         '<td style="text-align:right;' + cs + 'font-weight:700;">' + formatNum(item.amount || 0) + '</td>' +
                         '<td style="' + cs + '">' + (item.remarks || '') + '</td></tr>';
                     laborData.entries.forEach(e => {
+                        const durLabel = (e.durationUnit === 'DAY')
+                            ? ((e.durationValue != null ? e.durationValue : 0) + '일')
+                            : ((e.durationValue != null ? e.durationValue : (e.months || 0)) + '개월');
                         rows += '<tr>' +
                             '<td style="' + cs + 'padding-left:14px;">' + e.gradeName + '</td>' +
                             '<td style="text-align:right;' + cs + '">' + formatNum(e.dailyRate || 0) + '</td>' +
                             '<td style="text-align:center;' + cs + '">' + (e.people || 1) + '</td>' +
-                            '<td style="text-align:center;' + cs + '">' + (e.months || 0) + '</td>' +
+                            '<td style="text-align:center;' + cs + '">' + durLabel + '</td>' +
                             '<td style="text-align:center;' + cs + '">' + (e.totalMonths || 0) + '</td>' +
                             '<td style="text-align:right;' + cs + 'font-weight:600;">' + formatNum(e.amount || 0) + '</td>' +
                             '<td style="' + cs + 'font-size:7pt;">' + (e.remarks || '') + '</td></tr>';
@@ -3030,7 +3129,7 @@
             '<div class="abar"><div class="albl">견적금액</div><div class="hsep">:</div><div class="atxt">' + amountToKorean(grandTotal) + '  ( ￦ ' + formatNum(grandTotal) + ' )</div><div class="avat">(VAT 포함)</div></div>' +
             '<table class="items"><thead><tr>' +
             (tplType === 2 ?
-                '<th style="width:30px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th><th style="width:72px;">노임단가</th><th style="width:42px;">투입인력<br><span style="font-weight:500;font-size:6.5pt;">(인)</span></th><th style="width:42px;">투입기간<br><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th><th style="width:48px;">총투입기간<br><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th><th style="width:96px;">금　액<br><span style="font-weight:500;font-size:7pt;color:#666;">(원)</span></th><th style="width:72px;">비고<br><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>'
+                '<th style="width:30px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th><th style="width:72px;">노임단가</th><th style="width:42px;">투입인력<br><span style="font-weight:500;font-size:6.5pt;">(인)</span></th><th style="width:50px;">투입기간</th><th style="width:48px;">총투입기간<br><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th><th style="width:96px;">금　액<br><span style="font-weight:500;font-size:7pt;color:#666;">(원)</span></th><th style="width:72px;">비고<br><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>'
                 :
                 '<th style="width:32px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th><th style="width:50px;">수량</th><th style="width:100px;">단　가<br><span style="font-weight:500;font-size:7pt;color:#666;">Unit Price</span></th><th style="width:110px;">금　액<br><span style="font-weight:500;font-size:7pt;color:#666;">Amount</span></th><th style="width:90px;">비고<br><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>'
             ) +

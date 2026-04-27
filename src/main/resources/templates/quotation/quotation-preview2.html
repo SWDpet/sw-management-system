@@ -558,7 +558,7 @@
                     <th class="col-name">품　　명<br/><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th>
                     <th class="col-wage">노임단가</th>
                     <th class="col-people">투입인력<br/><span style="font-weight:500;font-size:6.5pt;">(인)</span></th>
-                    <th class="col-period">투입기간<br/><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th>
+                    <th class="col-period">투입기간</th>
                     <th class="col-total-period">총투입기간<br/><span style="font-weight:500;font-size:6.5pt;">(개월)</span></th>
                     <th class="col-amount">금　액<br/><span style="font-weight:500;font-size:7pt;color:#666;">(원)</span></th>
                     <th class="col-remarks">비고<br/><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>
@@ -752,19 +752,42 @@ document.addEventListener('DOMContentLoaded', function() {
             lines.forEach(function(line) {
                 var newMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)개월 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
                 if (newMatch) {
+                    var nmPeople = parseInt(newMatch[3]);
+                    var nmMonths = parseFloat(newMatch[4]);
                     entries.push({
                         gradeName: newMatch[1], dailyRate: parseInt(newMatch[2].replace(/,/g, '')),
-                        people: parseInt(newMatch[3]), months: parseFloat(newMatch[4]),
+                        people: nmPeople,
+                        durationUnit: 'MONTH', durationValue: nmMonths,
+                        months: nmMonths,
                         totalMonths: parseFloat(newMatch[5]), amount: parseInt(newMatch[6].replace(/,/g, '')),
                         remarks: newMatch[7] || ''
                     });
+                }
+                if (!newMatch) {
+                    var dayNewMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)일 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
+                    if (dayNewMatch) {
+                        var dnPeople = parseInt(dayNewMatch[3]);
+                        var dnDays = parseFloat(dayNewMatch[4]);
+                        var dnTotalM = parseFloat(dayNewMatch[5]);
+                        entries.push({
+                            gradeName: dayNewMatch[1], dailyRate: parseInt(dayNewMatch[2].replace(/,/g, '')),
+                            people: dnPeople,
+                            durationUnit: 'DAY', durationValue: dnDays,
+                            months: dnPeople > 0 ? dnTotalM / dnPeople : dnTotalM,
+                            totalMonths: dnTotalM, amount: parseInt(dayNewMatch[6].replace(/,/g, '')),
+                            remarks: dayNewMatch[7] || ''
+                        });
+                        return;
+                    }
                 }
                 if (!newMatch) {
                     var oldMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × ([\d.]+)일 = ([\d,]+)원/);
                     if (oldMatch) {
                         var days = parseFloat(oldMatch[3]);
                         entries.push({ gradeName: oldMatch[1], dailyRate: parseInt(oldMatch[2].replace(/,/g, '')),
-                            people: 1, months: Math.round(days/20.3*10)/10, totalMonths: Math.round(days/20.3*10)/10,
+                            people: 1,
+                            durationUnit: 'DAY', durationValue: days,
+                            months: Math.round(days/20.3*10)/10, totalMonths: Math.round(days/20.3*10)/10,
                             amount: parseInt(oldMatch[4].replace(/,/g, '')), remarks: '' });
                     }
                 }
@@ -848,11 +871,14 @@ document.addEventListener('DOMContentLoaded', function() {
             entries.forEach(function(e) {
                 var tr = document.createElement('tr');
                 tr.className = 'sub-row';
+                var durLabel = (e.durationUnit === 'DAY')
+                    ? ((e.durationValue != null ? e.durationValue : 0) + '일')
+                    : ((e.durationValue != null ? e.durationValue : (e.months || 0)) + '개월');
                 tr.innerHTML =
                     '<td class="col-name" style="padding-left:14px;">' + e.gradeName + '</td>' +
                     '<td class="col-wage">' + formatNum(e.dailyRate || 0) + '</td>' +
                     '<td class="col-people">' + (e.people || 1) + '</td>' +
-                    '<td class="col-period">' + (e.months || 0) + '</td>' +
+                    '<td class="col-period">' + durLabel + '</td>' +
                     '<td class="col-total-period">' + (e.totalMonths || 0) + '</td>' +
                     '<td class="col-amount" style="font-weight:600;">' + formatNum(e.amount || 0) + '</td>' +
                     '<td class="col-remarks" style="font-size:7pt;">' + (e.remarks || '') + '</td>';

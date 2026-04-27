@@ -744,18 +744,43 @@ document.addEventListener('DOMContentLoaded', function() {
             let subtotal = 0, overhead = 0, techFee = 0, total = 0, ohPct = 76, tfPct = 10;
 
             lines.forEach(function(line) {
-                // 새 형식: - 특급기술자 : 326,774원/일 × 1인 × 1개월 (총 1M/M) = 6,633,512원 [비고]
+                // 새 형식 (개월): - 특급기술자 : 326,774원/일 × 1인 × 1개월 (총 1M/M) = 6,633,512원 [비고]
                 var newMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)개월 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
                 if (newMatch) {
+                    var nmPeople = parseInt(newMatch[3]);
+                    var nmMonths = parseFloat(newMatch[4]);
                     entries.push({
                         gradeName: newMatch[1],
                         dailyRate: parseInt(newMatch[2].replace(/,/g, '')),
-                        people: parseInt(newMatch[3]),
-                        months: parseFloat(newMatch[4]),
+                        people: nmPeople,
+                        durationUnit: 'MONTH',
+                        durationValue: nmMonths,
+                        months: nmMonths,
                         totalMonths: parseFloat(newMatch[5]),
                         amount: parseInt(newMatch[6].replace(/,/g, '')),
                         remarks: newMatch[7] || ''
                     });
+                }
+                // 새 형식 (일): - 특급기술자 : 326,774원/일 × 1인 × 5일 (총 0.25M/M) = 408,468원 [비고]
+                if (!newMatch) {
+                    var dayNewMatch = line.match(/- (.+?) : ([\d,]+)원\/일 × (\d+)인 × ([\d.]+)일 \(총 ([\d.]+)M\/M\) = ([\d,]+)원(?:\s*\[(.+?)\])?/);
+                    if (dayNewMatch) {
+                        var dnPeople = parseInt(dayNewMatch[3]);
+                        var dnDays = parseFloat(dayNewMatch[4]);
+                        var dnTotalM = parseFloat(dayNewMatch[5]);
+                        entries.push({
+                            gradeName: dayNewMatch[1],
+                            dailyRate: parseInt(dayNewMatch[2].replace(/,/g, '')),
+                            people: dnPeople,
+                            durationUnit: 'DAY',
+                            durationValue: dnDays,
+                            months: dnPeople > 0 ? dnTotalM / dnPeople : dnTotalM,
+                            totalMonths: dnTotalM,
+                            amount: parseInt(dayNewMatch[6].replace(/,/g, '')),
+                            remarks: dayNewMatch[7] || ''
+                        });
+                        return;
+                    }
                 }
                 // 이전 형식 호환: - 특급기술자 : 326,774원/일 × 20일 = 6,535,480원
                 if (!newMatch) {
@@ -766,6 +791,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             gradeName: oldMatch[1],
                             dailyRate: parseInt(oldMatch[2].replace(/,/g, '')),
                             people: 1,
+                            durationUnit: 'DAY',
+                            durationValue: days,
                             months: Math.round(days / 20.3 * 10) / 10,
                             totalMonths: Math.round(days / 20.3 * 10) / 10,
                             amount: parseInt(oldMatch[4].replace(/,/g, '')),
@@ -803,16 +830,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<th>품명</th>' +
                 '<th>노임단가</th>' +
                 '<th>투입인력<br><span style="font-weight:500;font-size:6pt;">(인)</span></th>' +
-                '<th>투입기간<br><span style="font-weight:500;font-size:6pt;">(개월)</span></th>' +
+                '<th>투입기간</th>' +
                 '<th>총투입<br><span style="font-weight:500;font-size:6pt;">(개월)</span></th>' +
                 '<th style="text-align:right;">금액(원)</th>' +
                 '<th>비고</th>' +
                 '</tr></thead><tbody>';
             entries.forEach(function(e) {
+                var durLabel = (e.durationUnit === 'DAY')
+                    ? ((e.durationValue != null ? e.durationValue : 0) + '일')
+                    : ((e.durationValue != null ? e.durationValue : (e.months || 0)) + '개월');
                 html += '<tr><td>' + e.gradeName + '</td>' +
                     '<td style="text-align:right;">' + formatNum(e.dailyRate || 0) + '</td>' +
                     '<td style="text-align:center;">' + (e.people || 1) + '</td>' +
-                    '<td style="text-align:center;">' + (e.months || 0) + '</td>' +
+                    '<td style="text-align:center;">' + durLabel + '</td>' +
                     '<td style="text-align:center;">' + (e.totalMonths || 0) + '</td>' +
                     '<td style="text-align:right;font-weight:600;">' + formatNum(e.amount || 0) + '</td>' +
                     '<td style="text-align:center;font-size:6.5pt;">' + (e.remarks || '') + '</td></tr>';
