@@ -831,19 +831,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<th>노임단가</th>' +
                 '<th>투입인력<br><span style="font-weight:500;font-size:6pt;">(인)</span></th>' +
                 '<th>투입기간</th>' +
-                '<th>총투입<br><span style="font-weight:500;font-size:6pt;">(개월)</span></th>' +
+                '<th>총투입</th>' +
                 '<th style="text-align:right;">금액(원)</th>' +
                 '<th>비고</th>' +
                 '</tr></thead><tbody>';
             entries.forEach(function(e) {
-                var durLabel = (e.durationUnit === 'DAY')
-                    ? ((e.durationValue != null ? e.durationValue : 0) + '일')
-                    : ((e.durationValue != null ? e.durationValue : (e.months || 0)) + '개월');
+                var unitSuffix = (e.durationUnit === 'DAY') ? '일' : '개월';
+                var durValue = (e.durationValue != null) ? e.durationValue : (e.months || 0);
+                var totalDur = Math.round((e.people || 1) * durValue * 100) / 100;
                 html += '<tr><td>' + e.gradeName + '</td>' +
                     '<td style="text-align:right;">' + formatNum(e.dailyRate || 0) + '</td>' +
                     '<td style="text-align:center;">' + (e.people || 1) + '</td>' +
-                    '<td style="text-align:center;">' + durLabel + '</td>' +
-                    '<td style="text-align:center;">' + (e.totalMonths || 0) + '</td>' +
+                    '<td style="text-align:center;">' + durValue + unitSuffix + '</td>' +
+                    '<td style="text-align:center;">' + totalDur + unitSuffix + '</td>' +
                     '<td style="text-align:right;font-weight:600;">' + formatNum(e.amount || 0) + '</td>' +
                     '<td style="text-align:center;font-size:6.5pt;">' + (e.remarks || '') + '</td></tr>';
             });

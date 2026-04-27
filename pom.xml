@@ -34,6 +34,14 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- tomcat-embed-el 은 다른 transitive 가 compile 로 끌어와서 WEB-INF/lib/ 에 들어가는 문제 방지.
+             외부 톰캣(11) 의 EL impl 과 충돌해 컨텍스트 시작 실패 → 모든 path 404 유발. -->
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-el</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
