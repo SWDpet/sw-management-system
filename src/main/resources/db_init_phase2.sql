@@ -2,19 +2,20 @@
 -- Phase 2: DB 증분 DDL 스크립트
 -- ============================================================
 -- ⚠ 본 스크립트는 phase1 이후의 **증분 DDL** 입니다.
---   이 파일만으로는 신규 환경 초기화가 불가능하며, 별도 phase1
---   스키마(또는 JPA DDL 생성) 가 선행되어야 합니다.
+--   신규 환경 초기화 시 phase1 → [phase1_sigungu] → phase2 → V*.sql 순서로 실행.
 --
--- 전제 테이블 목록 (phase1 에서 생성되어 있어야 함):
---   sw_pjt, users, tb_infra_master, tb_infra_server,
---   tb_infra_software, tb_infra_link_upis, tb_infra_link_api,
---   tb_infra_memo, access_logs, ps_info, tb_performance_summary,
---   sys_mst, sigungu_code, prj_types, maint_tp_mst,
---   cont_stat_mst, cont_frm_mst, pjt_equip, tb_pjt_target,
---   tb_pjt_manpower_plan, tb_pjt_schedule
+-- 전제: db_init_phase1.sql (19 테이블 + 마스터 시드 ~54건) 선행 실행됨.
+--   phase1 테이블 (19): sw_pjt, users, tb_infra_master, tb_infra_server,
+--   tb_infra_software, tb_infra_link_upis, tb_infra_link_api, tb_infra_memo,
+--   access_logs, ps_info, sys_mst, sigungu_code, prj_types, maint_tp_mst,
+--   cont_stat_mst, cont_frm_mst, tb_pjt_target, tb_pjt_manpower_plan, tb_pjt_schedule
 --
--- phase1 DDL 정리는 향후 별도 스프린트에서 일괄 정비 예정
--- (감사 2026-04-18 P2 2-2 조치 기록, 스프린트 2a).
+-- 추가 의존:
+--   tb_performance_summary 는 V100 (work_plan_performance_tables.sql) 에서 생성됨
+--   pjt_equip 은 V025 에서 DROPPED (2026-04-22, 미사용 테이블 제거)
+--
+-- phase1 정식화 스프린트: phase1-ddl-formalization (2026-04-27)
+-- 감사 2026-04-18 P2 2-2 조치 (스프린트 2a) → 본 스프린트로 후속 완료.
 -- ============================================================
 
 -- 1. 사업별 과업참여자 배정

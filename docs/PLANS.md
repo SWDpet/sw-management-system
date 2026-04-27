@@ -44,7 +44,26 @@
 | 2c | audit-fix-p2-security-logging | P2 보안·로깅 4건 (MAC 응답 / show-sql / debug 로그 / Validation 로그) | `d73dd12` |
 | 3 | audit-fix-p3-minor | P3 경미 3건 (LoginController / SwRepository / AdminUser keyword 로그) | `a27032c` |
 
-후속 백로그 (별도 스프린트 또는 운영): `docs/generated/audit/dashboard.md` 참조 — phase1 DDL 정식 정리, security-hardening-v2 (보류), 운영 작업 (DB password rotation, Shodan 점검 등).
+후속 백로그 (별도 스프린트 또는 운영): `docs/generated/audit/dashboard.md` 참조 — security-hardening-v2 (보류), 운영 작업 (DB password rotation, Shodan 점검 등).
+
+### 2-b. phase1 DDL 정식화 (2026-04-27, 단일 스프린트)
+
+근거: `docs/product-specs/phase1-ddl-formalization.md` (v3) + `docs/exec-plans/phase1-ddl-formalization.md` (v1).
+
+| 항목 | 내용 |
+|------|------|
+| 스프린트 | `phase1-ddl-formalization` |
+| 산출물 | `db_init_phase1.sql` (19 테이블 + 마스터 54건) / `db_init_phase1_sigungu.sql` (279행) / `db_init_phase2.sql` 헤더 정정 / `docs/references/snapshots/2026-04-27-prod-schema.{sql,meta.md}` / `docs/references/setup-guide.md` §2-2 |
+| 검증 | Step 8 ephemeral schema diff = **0건** (phase1 19 테이블 한정, `\restrict` 보안 토큰 외) |
+| 발견 #1 (in-scope, 패치) | `phase1.sql` DO 블록 EXCEPTION 결손 — `WHEN invalid_table_definition THEN NULL;` 35건 추가 (3회 멱등성 통과) |
+| 발견 #2 (out-of-scope) | `phase2.sql:60` ON CONFLICT 가 `V018_process_master_dedup.sql` UNIQUE 에 의존 — fresh init 깨짐. 후속 `phase2-V018-init-ordering` 스프린트로 분리 |
+| 차단 해소 | Docker 미설치 → 동일 PG 16 binary 별도 클러스터(`localhost:25880`, data `C:\Users\PUJ\pg16-verify\data`) 로 우회. exec-plan 본문 25432→25880 정정 (9건) |
+| Step 9-A | 운영DB `ro_phase1_audit` NOLOGIN + VALID UNTIL 'yesterday' (사용자 작업) |
+| 커밋 | (본 작업완료 커밋에 채움) |
+
+후속 백로그 (별도 스프린트):
+- `phase2-V018-init-ordering` — `db_init_phase2.sql` ON CONFLICT INSERT 와 V018 UNIQUE 의존성 정리
+- `ro_phase1_audit` 롤 DROP (Step 9-B, 별도 시점에 사용자 결정)
 
 ---
 
@@ -73,4 +92,4 @@
 
 ---
 
-*Last updated: 2026-04-27 · audit follow-up table backfill*
+*Last updated: 2026-04-27 · phase1-ddl-formalization 스프린트 완료*

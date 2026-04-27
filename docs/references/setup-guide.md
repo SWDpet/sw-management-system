@@ -8,7 +8,9 @@ C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot
 ```
 - 환경변수 `JAVA_HOME` 설정 필수
 
-### 2. PostgreSQL 접속 정보
+### 2. PostgreSQL 접속 정보 + 신규 환경 DB 초기화
+
+#### 2-1. 기존 DB 에 연결 (대부분의 경우)
 `src/main/resources/application-local.properties` 파일이 필요합니다 (Git에 포함되지 않음).
 
 **자동 보정 (권장)**: `server-restart.sh` / `server-start.bat` 첫 실행 시
@@ -25,6 +27,30 @@ spring.datasource.password=비밀번호
 
 prod DB 실제 좌표는 **1Password** 또는 사내 운영팀 문의 (harness-hardening-v1 마스킹 이후).
 비밀번호는 환경변수 `DB_PASSWORD` 로도 주입 가능 (`server-restart.sh` 가 Windows User env 에서 자동 로드).
+
+#### 2-2. 신규 빈 DB 초기화 (DR 복구 / 새 테스트 환경)
+
+phase1-ddl-formalization 스프린트(2026-04-27) 이후 정식 DDL 파일로 초기화 가능:
+
+```bash
+# 1) phase1: 19 기초 테이블 + 마스터 시드 ~54건
+psql -d <db_name> -f src/main/resources/db_init_phase1.sql
+
+# 2) phase1_sigungu (선택): 시군구 코드 279행
+psql -d <db_name> -f src/main/resources/db_init_phase1_sigungu.sql
+
+# 3) phase2: 문서관리·과업참여자·공정마스터·tb_org_unit 등 9 테이블
+psql -d <db_name> -f src/main/resources/db_init_phase2.sql
+
+# 4) V*.sql: 견적·inspect·work_plan 등 누적 마이그레이션
+for f in swdept/sql/V*.sql; do psql -d <db_name> -f "$f"; done
+```
+
+**주의**:
+- 라이선스 모듈(`license_registry`, `license_upload_history`, `qr_license`, `geonuris_license`) 은 phase1 에 미포함. 라이선스 엔드포인트 호출 시 SQL 오류는 의도된 동작
+- V*.sql 은 파일명 사전순 실행. V100 은 V026 보다 뒤에 실행됨
+- 대상 PostgreSQL 14+ 권장 (운영 16.11)
+- 멱등성 보장: `CREATE TABLE/INDEX IF NOT EXISTS` + `ADD CONSTRAINT` DO 블록 + `INSERT ... ON CONFLICT DO NOTHING`
 
 ### 3. GeoNURIS_License.jar 파일 (Git에 포함됨)
 
