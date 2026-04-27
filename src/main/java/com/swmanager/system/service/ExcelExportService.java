@@ -8,6 +8,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -21,8 +23,50 @@ import java.util.Map;
 @Service
 public class ExcelExportService {
 
+    private static final Logger log = LoggerFactory.getLogger(ExcelExportService.class);
+
     @Autowired private DocumentService documentService;
     @Autowired private com.swmanager.system.i18n.MessageResolver messages;
+
+    // ===== 절사 단위(rounddownUnit) 정책 — quotation 모듈과 동일 매핑 =====
+    // 1000=백단위(-3), 10000=천단위(-4), 100000=만단위(-5), 1000000=십만단위(-6)
+
+    /** sectionData 등에서 가져온 raw 값 → 정규화.
+     *  null 또는 빈 값 → 0 (절사 안 함). 허용외 값 → 1000(백단위) fallback + WARN.
+     *  허용 값: 1000(백)/10000(천)/100000(만)/1000000(십만) */
+    private static int normalizeRounddownUnit(Object raw) {
+        if (raw == null || raw.toString().trim().isEmpty()) return 0;
+        try {
+            int v = (raw instanceof Number) ? ((Number) raw).intValue()
+                    : Integer.parseInt(raw.toString().trim());
+            if (v == 0) return 0;
+            if (v == 1000 || v == 10000 || v == 100000 || v == 1000000) return v;
+            log.warn("rounddownUnit 허용외 값({}), 1000(백단위)로 fallback", v);
+        } catch (NumberFormatException e) {
+            log.warn("rounddownUnit 파싱 실패 raw='{}', 1000(백단위)로 fallback", raw);
+        }
+        return 1000;
+    }
+
+    /** 절사 단위 → ROUNDDOWN 두번째 인자(digits). 1000→-3, 10000→-4, 100000→-5, 1000000→-6 */
+    private static int toRoundDigits(int unit) {
+        return switch (unit) {
+            case 10000 -> -4;
+            case 100000 -> -5;
+            case 1000000 -> -6;
+            default -> -3; // 1000 fallback
+        };
+    }
+
+    /** 절사 단위 → 비고 셀 라벨. */
+    private static String roundLabel(int unit) {
+        return switch (unit) {
+            case 10000 -> "천단위 절사";
+            case 100000 -> "만단위 절사";
+            case 1000000 -> "십만단위 절사";
+            default -> "백단위 절사"; // 1000 fallback
+        };
+    }
 
     /**
      * 성과 리포트 엑셀 생성
@@ -190,6 +234,7 @@ public class ExcelExportService {
         String designDate = (String) estData.getOrDefault("designDate", "");
         String location = (String) estData.getOrDefault("location", "");
         double bidRate = toDouble(estData.get("bidRate")) / 100.0;
+        int rounddownUnit = normalizeRounddownUnit(estData.get("rounddownUnit"));
         boolean vatSeparate = Boolean.TRUE.equals(estData.get("vatSeparate"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) estData.getOrDefault("items", List.of());
 
@@ -216,7 +261,7 @@ public class ExcelExportService {
         }
         if ("TYPE_B".equals(estimateType)) {
             // TYPE_B: 중간형 (단양군 등) - 단양군 템플릿 기반
-            return generateFromTypeBTemplate(projNm, distNm, year, designDate, bidRate, hwItems, swItems);
+            return generateFromTypeBTemplate(projNm, distNm, year, designDate, bidRate, rounddownUnit, hwItems, swItems);
         }
         if ("TYPE_C".equals(estimateType)) {
             // TYPE_C: 복합형 (김포시 등) - 김포시 템플릿 기반
@@ -225,7 +270,7 @@ public class ExcelExportService {
 
         // TYPE_A: 기존 템플릿 기반 생성 (밀양시 형식)
         return generateFromTemplate(doc, projNm, distNm, year, designDate, location,
-                bidRate, vatSeparate, hwItems, swItems);
+                bidRate, rounddownUnit, vatSeparate, hwItems, swItems);
     }
 
     /**
@@ -240,7 +285,7 @@ public class ExcelExportService {
      */
     private byte[] generateFromTemplate(Document doc, String projNm, String distNm, int year,
                                          String designDate, String location,
-                                         double bidRate, boolean vatSeparate,
+                                         double bidRate, int rounddownUnit, boolean vatSeparate,
                                          List<Map<String, Object>> hwItems,
                                          List<Map<String, Object>> swItems) throws IOException {
 
@@ -255,7 +300,7 @@ public class ExcelExportService {
             fillGapjiSheet(wb, designDate, location);
 
             // === 시트2: 총괄표 ===
-            fillSummarySheet(wb, hwItems, swItems, bidRate);
+            fillSummarySheet(wb, hwItems, swItems, bidRate, rounddownUnit);
 
             // === 시트3: 유지보수등급측정표(전산장비) - 비어있으므로 그대로 유지 ===
 
@@ -324,7 +369,7 @@ public class ExcelExportService {
      *   Row10 (A11): "총계(부가세포함)" (수식)
      */
     private void fillSummarySheet(XSSFWorkbook wb, List<Map<String, Object>> hwItems,
-                                   List<Map<String, Object>> swItems, double bidRate) {
+                                   List<Map<String, Object>> swItems, double bidRate, int rounddownUnit) {
         Sheet sheet = wb.getSheetAt(2); // 총괄표
 
         // HW 항목 채우기 (row4=index4, row5=index5 ... 템플릿에 2행 있음)
@@ -343,6 +388,8 @@ public class ExcelExportService {
             // E열: 도입가
             long unitPrice = toLong(item.get("unitPrice"));
             setCellKeepStyle(sheet, rowIdx, 4, (double) unitPrice);
+            // H열(유지관리소계): 템플릿 default `=SUM(F:G)/12*12` → 단순 `=F+G` 로 정리
+            simplifyMaintFormula(sheet, rowIdx);
         }
         // 템플릿보다 항목이 적으면 빈 행 클리어
         int hwTemplateRows = 2; // 원본 템플릿의 HW 데이터 행 수
@@ -363,6 +410,7 @@ public class ExcelExportService {
             setCellKeepStyle(sheet, rowIdx, 3, rate);
             long unitPrice = toLong(item.get("unitPrice"));
             setCellKeepStyle(sheet, rowIdx, 4, (double) unitPrice);
+            simplifyMaintFormula(sheet, rowIdx);
         }
         int swTemplateRows = 2; // 원본 템플릿의 SW 데이터 행 수
         for (int i = swItems.size(); i < swTemplateRows; i++) {
@@ -370,18 +418,47 @@ public class ExcelExportService {
             clearDataRow(sheet, rowIdx);
         }
 
-        // I11 (row10, col8): 낙찰율 비고 - 기존 수식에 반영된 낙찰율은 그대로 유지
-        // 원본 수식: =ROUNDDOWN((H4+H8)*0.9696,-3) 에서 0.9696이 낙찰율
-        // bidRate가 다르면 수식 갱신 필요
-        if (bidRate > 0 && bidRate != 0.9696) {
-            Row totalRow = sheet.getRow(10); // row11 (0-based 10)
-            if (totalRow != null) {
-                Cell formulaCell = totalRow.getCell(7); // H열 (col7)
-                if (formulaCell != null) {
-                    formulaCell.setCellFormula("ROUNDDOWN((H4+H8)*" + bidRate + ",-3)");
-                }
+        // H11 (총계 수식) + I11 (비고 라벨) — 사용자 입력 bidRate · rounddownUnit 동적 적용
+        // 템플릿 default (예: 0.9696, -3, "백단위 절사 / 낙찰율 적용 97%") 는 무조건 덮어쓰기.
+        // rounddownUnit == 0 (UI 미선택) 인 경우 ROUNDDOWN 미적용 + 라벨에서 절사 표기 제거.
+        Row totalRow = sheet.getRow(10);
+        if (totalRow == null) totalRow = sheet.createRow(10);
+        boolean applyRound = rounddownUnit > 0;
+        Cell h11 = totalRow.getCell(7);
+        if (h11 == null) h11 = totalRow.createCell(7);
+        if (applyRound) {
+            int digits = toRoundDigits(rounddownUnit);
+            if (bidRate > 0 && bidRate < 1.0) {
+                h11.setCellFormula("ROUNDDOWN((H4+H8)*" + bidRate + "," + digits + ")");
+            } else {
+                h11.setCellFormula("ROUNDDOWN(H4+H8," + digits + ")");
+            }
+        } else {
+            if (bidRate > 0 && bidRate < 1.0) {
+                h11.setCellFormula("(H4+H8)*" + bidRate);
+            } else {
+                h11.setCellFormula("H4+H8");
             }
         }
+        Cell i11 = totalRow.getCell(8);
+        if (i11 == null) i11 = totalRow.createCell(8);
+        StringBuilder remark = new StringBuilder();
+        if (applyRound) remark.append(roundLabel(rounddownUnit));
+        if (bidRate > 0 && bidRate < 1.0) {
+            if (remark.length() > 0) remark.append("\n");
+            remark.append("낙찰율 적용 ").append(Math.round(bidRate * 100)).append("%");
+        }
+        i11.setCellValue(remark.toString());
+    }
+
+    /** H열(col7) 유지관리소계 수식을 단순 `=F{n}+G{n}` 으로 정리 (템플릿 default `=SUM(F:G)/12*12` 가독성 개선). */
+    private void simplifyMaintFormula(Sheet sheet, int rowIdx) {
+        Row row = sheet.getRow(rowIdx);
+        if (row == null) return;
+        Cell cell = row.getCell(7);
+        if (cell == null) cell = row.createCell(7);
+        int excelRow = rowIdx + 1; // 0-based → Excel 1-based
+        cell.setCellFormula("F" + excelRow + "+G" + excelRow);
     }
 
     /**
@@ -939,7 +1016,7 @@ public class ExcelExportService {
     // 템플릿 기본 행: HW 행 4-5 (2개), SW 행 7-8 (2개)
     // =====================================================
     private byte[] generateFromTypeBTemplate(String projNm, String distNm, int year,
-                                             String designDate, double bidRate,
+                                             String designDate, double bidRate, int rounddownUnit,
                                              List<Map<String, Object>> hwItems,
                                              List<Map<String, Object>> swItems) throws IOException {
         ClassPathResource res = new ClassPathResource("templates/excel/design_estimate_b_template.xlsx");
@@ -972,23 +1049,36 @@ public class ExcelExportService {
             // SW 항목: 행 7-8 (0-based 6-7)
             fillTypeBItemRows(summary, swItems, 6, "SW");
 
-            // 낙찰율 적용 (H11 = row 10, col 7)
-            Cell h11 = summary.getRow(10).getCell(7);
-            if (h11 != null) {
+            // 낙찰율·절사 단위 적용 (H11 = row 10, col 7 / I11 = col 8)
+            // rounddownUnit == 0 인 경우 절사 안 함 (사용자 미선택)
+            boolean applyRound = rounddownUnit > 0;
+            Row row11 = summary.getRow(10);
+            if (row11 == null) row11 = summary.createRow(10);
+            Cell h11 = row11.getCell(7);
+            if (h11 == null) h11 = row11.createCell(7);
+            if (applyRound) {
+                int digits = toRoundDigits(rounddownUnit);
                 if (bidRate > 0 && bidRate < 1.0) {
-                    h11.setCellFormula("ROUNDDOWN((H10+H9)*" + bidRate + ",-3)");
+                    h11.setCellFormula("ROUNDDOWN((H10+H9)*" + bidRate + "," + digits + ")");
                 } else {
-                    h11.setCellFormula("ROUNDDOWN(H10+H9,-3)");
+                    h11.setCellFormula("ROUNDDOWN(H10+H9," + digits + ")");
+                }
+            } else {
+                if (bidRate > 0 && bidRate < 1.0) {
+                    h11.setCellFormula("(H10+H9)*" + bidRate);
+                } else {
+                    h11.setCellFormula("H10+H9");
                 }
             }
-            Cell i11 = summary.getRow(10).getCell(8);
-            if (i11 != null) {
-                if (bidRate > 0 && bidRate < 1.0) {
-                    i11.setCellValue("낙찰률 적용(" + Math.round(bidRate * 100) + "%)\n백단위절사");
-                } else {
-                    i11.setCellValue("");
-                }
+            Cell i11 = row11.getCell(8);
+            if (i11 == null) i11 = row11.createCell(8);
+            StringBuilder remark = new StringBuilder();
+            if (applyRound) remark.append(roundLabel(rounddownUnit));
+            if (bidRate > 0 && bidRate < 1.0) {
+                if (remark.length() > 0) remark.append("\n");
+                remark.append("낙찰율 적용 ").append(Math.round(bidRate * 100)).append("%");
             }
+            i11.setCellValue(remark.toString());
 
             wb.setForceFormulaRecalculation(true);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
