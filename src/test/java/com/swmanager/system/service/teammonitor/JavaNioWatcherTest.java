@@ -174,6 +174,52 @@ class JavaNioWatcherTest {
     }
 
     @Test
+    void wildcardWatcher_atomicReplaceStatusFile_synthesizesModify_notDelete() throws IOException {
+        // R-14 (T-DELETE-ONLY-WIN): Windows + JDK17 NIO 에서 atomic mv 가
+        // ENTRY_DELETE 만 발생시키는 케이스. backoff 후 파일 재출현하면
+        // MODIFY 합성 (notifySubscribers) — notifyTeamDeleted 발화 X.
+        Path statusDir = workspaceDir.resolve("status");
+        Files.createDirectories(statusDir);
+        Path target = statusDir.resolve("planner.status");
+        Files.writeString(target, "team=planner\nstate=대기\nprogress=0\n");
+
+        startWatcher();
+        List<String> modifyCalls = new CopyOnWriteArrayList<>();
+        List<String> deletedCalls = new CopyOnWriteArrayList<>();
+        watcher.subscribe(modifyCalls::add);
+        watcher.subscribeTeamDeleted(deletedCalls::add);
+
+        // atomic replace — set-status.sh 패턴 재현 (tmp → mv -f).
+        // POSIX/NTFS: tmp 작성 후 REPLACE_EXISTING 으로 mv → 기존 파일 즉시 교체.
+        // OS/JDK 조합에 따라 ENTRY_DELETE 만 발생할 수 있음.
+        Path tmp = statusDir.resolve(".planner.status.tmp");
+        Files.writeString(tmp, "team=planner\nstate=진행중\nprogress=80\ntask=R-14 검증\n");
+        Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+
+        // 기대: 카드가 사라지지 않고 MODIFY 합성됨
+        assertThat(waitFor(() -> modifyCalls.contains("planner"), 5000)).isTrue();
+        assertThat(deletedCalls).isEmpty();
+    }
+
+    @Test
+    void wildcardWatcher_realDeleteWithoutReappear_callsTeamDeleted() throws IOException {
+        // R-14 보정의 반대 케이스 — 진짜 삭제 (재출현 X) 는 정상적으로 onTeamDeleted 발화.
+        Path statusDir = workspaceDir.resolve("status");
+        Files.createDirectories(statusDir);
+        Path target = statusDir.resolve("ghost.status");
+        Files.writeString(target, "team=ghost\n");
+
+        startWatcher();
+        List<String> deletedCalls = new CopyOnWriteArrayList<>();
+        watcher.subscribeTeamDeleted(deletedCalls::add);
+
+        Files.delete(target);
+
+        // 120ms backoff 후 재출현 X → onTeamDeleted 정상 호출
+        assertThat(waitFor(() -> deletedCalls.contains("ghost"), 5000)).isTrue();
+    }
+
+    @Test
     void wildcardWatcher_normalizedPathComparison_works() throws IOException {
         // Z-01 + S1-02: 정규화 경로 비교
         startWatcher();

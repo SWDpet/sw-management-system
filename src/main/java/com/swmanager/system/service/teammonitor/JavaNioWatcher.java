@@ -135,8 +135,19 @@ public class JavaNioWatcher implements TeamStatusWatcher {
                         String team = name.substring(0, name.length() - ".status".length());
                         reader.invalidateCache();
                         if (ev.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                            // C3-01-B: 팀 삭제 → Service 가 snapshot 재발행
-                            notifyTeamDeleted(team);
+                            // R-14: Windows + JDK17 NIO 에서 atomic mv (REPLACE_EXISTING) 가
+                            // ENTRY_DELETE 만 발생시키는 케이스 보정. 짧은 backoff 동안
+                            // 파일 재출현 시 MODIFY 합성 — 그렇지 않으면 진짜 삭제.
+                            Path target = watchedDir.resolve(p.getFileName());
+                            if (appearsReplacedQuickly(target)) {
+                                if (recentlyNotified.add(team)) {
+                                    log.debug("R-14 보정: DELETE-only → MODIFY 합성: team={}", team);
+                                    notifySubscribers(team);
+                                }
+                            } else {
+                                // C3-01-B: 팀 삭제 → Service 가 snapshot 재발행
+                                notifyTeamDeleted(team);
+                            }
                         } else {
                             // CREATE/MODIFY — dedup 적용 (S2-05)
                             if (recentlyNotified.add(team)) {
@@ -173,6 +184,27 @@ public class JavaNioWatcher implements TeamStatusWatcher {
         lastEventAt = Instant.now();
     }
 
+    /**
+     * R-14: Windows + JDK17 NIO atomic replace 가 ENTRY_DELETE 만 발생시키는
+     * 케이스 보정. 짧은 backoff 동안 파일 재출현 여부 확인.
+     *
+     * @return 파일이 backoff 내에 (재)존재 확인되면 true (= replace 로 간주)
+     */
+    private boolean appearsReplacedQuickly(Path target) {
+        if (Files.exists(target)) return true;
+        final long deadlineNanos = System.nanoTime()
+                + java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(120);
+        while (System.nanoTime() < deadlineNanos) {
+            try { Thread.sleep(10); }
+            catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+            if (Files.exists(target)) return true;
+        }
+        return false;
+    }
+
     private void notifySubscribers(String team) {
         for (Consumer<String> sub : subscribers) {
             try { sub.accept(team); }
@@ -202,6 +234,10 @@ public class JavaNioWatcher implements TeamStatusWatcher {
         }
         if (thread != null) {
             thread.interrupt();
+            // 동기적 종료 대기 — 핸들 해제 보장 (Windows + @TempDir cleanup race 회피).
+            // R-14 보정의 backoff sleep (최대 120ms) + 여유 마진 확보.
+            try { thread.join(500); }
+            catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
         }
     }
 

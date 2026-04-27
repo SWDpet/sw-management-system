@@ -635,6 +635,16 @@ revised: "2026-04-26"
   - M-13b 단위 테스트 `listTeams_handlesWindowsStylePath` — Windows-스타일 경로 케이스 포함
   - M-13c PollingWatcher 도 동일 SSoT 적용 (FR-3)
 
+### R-14. Windows + JDK17 NIO atomic replace DELETE-only 누락 (codex round 9 / 2026-04-27 라이브 관측)
+- **리스크**: Windows 11 + JDK17 + Git Bash `mv -f` (REPLACE_EXISTING) 시나리오에서 NIO WatchService 가 `ENTRY_DELETE` 만 발생시키고 후속 `ENTRY_CREATE`/`ENTRY_MODIFY` 가 누락되는 케이스. 결과: status 파일이 새 내용으로 갱신됐음에도 SSE 가 "팀 삭제" 로 잘못 broadcast → 카드 사라졌다가 PollingWatcher 또는 다음 NIO 이벤트까지 미복귀.
+- **관측 근거**: 2026-04-27 09:47 로컬 검증 — `set-status.sh` 5팀 순차 실행 시 server.log 에 4건 모두 `ENTRY_DELETE` 만 INFO 로그, CREATE/MODIFY 미관측. 파일 mtime 은 정상 갱신 확인.
+- **영향도**: 중 (UI 깜빡임 + 즉시성 저하). 폴링 1s 가 결국 복구하므로 기능적 치명도 낮음. 단, DELETE-only 패턴 반복 시 UX 흔들림.
+- **보완**:
+  - M-14a `JavaNioWatcher.handleStatusEvent` DELETE 분기에 `appearsReplacedQuickly(target)` 추가 — 120ms 까지 10ms 간격 backoff. 파일 (재)출현 시 `notifySubscribers` (MODIFY 합성), 부재 시 `notifyTeamDeleted` (정상 삭제).
+  - M-14b 단위 테스트 `wildcardWatcher_atomicReplaceStatusFile_synthesizesModify_notDelete` (T-DELETE-ONLY-WIN) — atomic mv 시나리오 재현 + onTeamDeleted 미발화 단정.
+  - M-14c 반대 케이스 단위 테스트 `wildcardWatcher_realDeleteWithoutReappear_callsTeamDeleted` — 진짜 삭제는 정상 처리 단정.
+  - M-14d 잔존 위험: 매우 느린 디스크 (SMB / 네트워크 드라이브) 에서 120ms 초과 가능 → PollingWatcher 1s 폴백.
+
 ### 리스크 매트릭스 요약
 
 | ID | 영역 | 영향도 | 발생빈도 | 우선순위 |
@@ -651,6 +661,7 @@ revised: "2026-04-26"
 | R-11 | 운영 | 중 | 하 | P1 |
 | R-12 | 보안 | **상** | 하 | **P0** |
 | R-13 | 회귀 | 중 | 하 | P1 |
+| R-14 | UI/안정성 | 중 | 중 (Windows) | P1 |
 
 ---
 
