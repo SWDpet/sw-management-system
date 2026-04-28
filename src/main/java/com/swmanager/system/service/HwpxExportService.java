@@ -214,7 +214,6 @@ public class HwpxExportService {
             return "templates/hwpx/interim_inspector.hwpx";
         }
         if ("commence_body".equals(templateType)) {
-            // 단일 12m 템플릿 + {{월N_bf}} 동적 음영으로 통합
             return "templates/hwpx/commence_body.hwpx";
         }
         if ("completion_body".equals(templateType)) {
@@ -359,14 +358,16 @@ public class HwpxExportService {
             map.put("{{용역명}}", projNm);
             map.put("{{수신}}", buildRecipientHead(cityNm, distNm));
 
-            Long contAmt = (proj != null && proj.getContAmt() != null) ? proj.getContAmt() : 0L;
-            map.put("{{계약금액}}", "금" + String.format("%,d", contAmt) + "원(금" + convertToKoreanAmount(contAmt) + "원)");
+            Long contAmt = (proj != null && proj.getContAmt() != null && proj.getContAmt() > 0) ? proj.getContAmt() : null;
+            map.put("{{계약금액}}", contAmt != null
+                    ? "금" + String.format("%,d", contAmt) + "원(금" + convertToKoreanAmount(contAmt) + "원)"
+                    : "(미입력)");
 
             // 계약기간
-            String contractPeriod = "";
-            if (proj != null && proj.getStartDt() != null && proj.getEndDt() != null) {
-                contractPeriod = formatDateKorean(proj.getStartDt()) + " ~ " + formatDateKorean(proj.getEndDt());
-            }
+            boolean hasContractDates = (proj != null && proj.getStartDt() != null && proj.getEndDt() != null);
+            String contractPeriod = hasContractDates
+                    ? formatDateKorean(proj.getStartDt()) + " ~ " + formatDateKorean(proj.getEndDt())
+                    : "(미입력)";
             map.put("{{계약기간}}", contractPeriod);
 
             // 제출일자 (착수월 기준)
@@ -381,22 +382,41 @@ public class HwpxExportService {
             }
             map.put("{{제출일자}}", dateStr);
 
-            // 공정명: 예정공정표 폼의 processName 우선, 없으면 사업명에서 파생
+            // 공정명 source 우선순위:
+            //   1) PjtSchedule.processName (UI P2 예정공정표 입력)
+            //   2) schedule 섹션 processName
+            //   3) projNm 정규식 파생
+            //   4) sysNm 파생
+            //   5) "(미입력)"
             String sysNm = (proj != null && proj.getSysNm() != null) ? proj.getSysNm() : "";
             String sysNmEn = (proj != null && proj.getSysNmEn() != null) ? proj.getSysNmEn() : "";
             Map<String, Object> schedData = getSectionData(doc, "schedule");
-            String processName = getStr(schedData, "processName", "");
-            if (processName.isEmpty()) {
-                processName = projNm;
-                if (processName != null && !processName.isEmpty()) {
-                    processName = processName.replaceFirst("^\\d{4}년\\s+\\S+\\s+", "")
-                                             .replaceFirst("\\s*용역\\s*$", "");
+            String processName = "";
+            String pjtScheduleRemark = null;
+            try {
+                if (pjtScheduleRepository != null && proj != null && proj.getProjId() != null) {
+                    var schs0 = pjtScheduleRepository.findByProjIdOrderBySortOrderAsc(proj.getProjId());
+                    if (!schs0.isEmpty()) {
+                        var s00 = schs0.get(0);
+                        if (s00.getProcessName() != null && !s00.getProcessName().trim().isEmpty()) {
+                            processName = s00.getProcessName().trim();
+                        }
+                        pjtScheduleRemark = s00.getRemark();
+                    }
                 }
-                if (processName == null || processName.isEmpty()) {
-                    processName = sysNm.isEmpty() ? projNm : sysNm + "용 GIS SW 유지관리";
-                }
+            } catch (Exception e) { log.warn("PjtSchedule head load fail: {}", e.getMessage()); }
+            if (processName.isEmpty()) processName = getStr(schedData, "processName", "");
+            if (processName.isEmpty() && projNm != null && !projNm.isEmpty()) {
+                processName = projNm.replaceFirst("^\\d{4}년\\s+\\S+\\s+", "")
+                                    .replaceFirst("\\s*용역\\s*$", "");
+            }
+            if (processName == null || processName.isEmpty()) {
+                processName = !sysNm.isEmpty() ? sysNm + "용 GIS SW 유지관리" : "(미입력)";
             }
             map.put("{{공정명}}", processName);
+            map.put("{{공정비고}}", (pjtScheduleRemark != null && !pjtScheduleRemark.trim().isEmpty())
+                    ? pjtScheduleRemark.trim() : "(미입력)");
+            System.err.println("[HWPX] 공정명="+processName+" 공정비고="+pjtScheduleRemark);
             // 공정명 2줄 분할: ')' 기준 (공백 유무 무관).
             //   예: "부동산종합공부시스템(KRAS)용 GIS SW 유지관리"
             //        → 1줄: "부동산종합공부시스템(KRAS)"
@@ -412,26 +432,26 @@ public class HwpxExportService {
             map.put("{{공정명1}}", pn1);
             map.put("{{공정명2}}", pn2);
 
-            // 용역기간 (포함 개월수): startDt월 ~ endDt월 사이의 달 수
-            int months = 12;
-            int startMonth = 1, endMonth = 12;
-            if (proj != null && proj.getStartDt() != null && proj.getEndDt() != null) {
+            // 용역기간 (포함 개월수): startDt~endDt 의 absolute 개월차.
+            // 표 column 의미는 sequential ("착수일로부터 N개월차") — calendar 월 무관.
+            // cross-year 도 자연 처리됨 (months 만으로 결정).
+            int months = 0;
+            if (hasContractDates) {
                 int sm = proj.getStartDt().getYear()*12 + proj.getStartDt().getMonthValue();
                 int em = proj.getEndDt().getYear()*12 + proj.getEndDt().getMonthValue();
                 months = em - sm + 1;
-                if (months <= 0) months = 12;
-                startMonth = proj.getStartDt().getMonthValue();
-                endMonth = proj.getEndDt().getMonthValue();
-                // 다른 해에 걸치면 단순 1~12 처리(향후 확장)
-                if (proj.getStartDt().getYear() != proj.getEndDt().getYear()) {
-                    startMonth = 1; endMonth = 12;
-                }
+                if (months <= 0) months = 0;
+                if (months > 12) months = 12; // template 12 col 한계
             }
-            map.put("{{용역기간}}", "착수일로부터 " + months + "개월");
-            map.put("{{계약개월수}}", String.valueOf(months));
+            map.put("{{용역기간}}", hasContractDates ? "착수일로부터 " + months + "개월" : "(미입력)");
+            map.put("{{계약개월수}}", hasContractDates ? String.valueOf(months) : "(미입력)");
+            // 통합 placeholder: 용역기간 표시 (template "(N개월)" 묶음 영역) — start/end NULL 시 단일 "(미입력)"
+            map.put("{{용역기간_표시}}", hasContractDates ? contractPeriod + "(" + months + "개월)" : "(미입력)");
 
-            // 계획 및 일정 표 월별 음영 (44=회색, 144=흰색)
-            // 우선순위: pjt_schedule (예정공정표 폼 체크박스) > 계약 시작/종료월 범위
+            // 예정공정표 월별 active/inactive borderFill 분기
+            //  - {{월N_bf}}  → 착수계 본문 예정공정표 (회색): active=97 / inactive=99
+            //  - {{월N_bfY}} → 사업수행계획서 P2 (노란색):    active=98 / inactive=99
+            // 우선순위: pjt_schedule (사용자 입력) > 계약 시작/종료월 범위
             boolean[] monthMask = new boolean[13];
             boolean fromForm = false;
             try {
@@ -447,11 +467,24 @@ public class HwpxExportService {
                     }
                 }
             } catch (Exception e) { log.warn("PjtSchedule load fail: {}", e.getMessage()); }
+            StringBuilder maskDbg = new StringBuilder();
             for (int i = 1; i <= 12; i++) {
-                boolean on = fromForm ? monthMask[i] : (i >= startMonth && i <= endMonth);
-                map.put("{{월" + i + "_bf}}", on ? "93" : "45");
+                // sequential: PjtSchedule 사용자 입력 우선, 없으면 1~months 활성
+                boolean on = fromForm ? monthMask[i] : (i <= months);
+                maskDbg.append(on ? '1' : '0');
+                // sample HWPX 의 borderFill ID 사용: 64=회색대각선(active), 57=노란대각선(active), 56=plain(inactive)
+                map.put("{{월" + i + "_bf}}",  on ? "64" : "56");
+                map.put("{{월" + i + "_bfY}}", on ? "57" : "56");
+                // column 헤더 라벨: 사업 외 col 은 빈 칸, 그 외 N / N+1 / ... / N+11
+                String label;
+                if (months > 0 && i > months) {
+                    label = "";
+                } else {
+                    label = (i == 1) ? "N" : "N+" + (i - 1);
+                }
+                map.put("{{월" + i + "_라벨}}", label);
             }
-            System.err.println("[HWPX] month_bf fromForm="+fromForm+" startMonth="+startMonth+" endMonth="+endMonth+" mask="+java.util.Arrays.toString(monthMask));
+            System.err.println("[HWPX] monthMask fromForm="+fromForm+" months="+months+" mask="+maskDbg);
 
             // P13 공정별 투입인력계획 (PjtManpowerPlan 첫 행 기준)
             String p13Step = projNm;
@@ -482,6 +515,17 @@ public class HwpxExportService {
             java.util.function.IntFunction<String> fmt = v -> v == 0 ? "" : String.valueOf(v);
             map.put("{{P13_단계명}}", p13Step);
             map.put("{{P13_기간}}", p13Period);
+            // sample 기반 신규 템플릿: 기간이 두 줄로 분리 (시작 + 종료)
+            String p13Start, p13End;
+            if (hasContractDates) {
+                p13Start = formatDateKorean(proj.getStartDt()) + " ~";
+                p13End   = formatDateKorean(proj.getEndDt());
+            } else {
+                p13Start = "(미입력)";
+                p13End   = "";
+            }
+            map.put("{{P13_기간시작}}", p13Start);
+            map.put("{{P13_기간종료}}", p13End);
             map.put("{{P13_특급}}", fmt.apply(gSp));
             map.put("{{P13_고급}}", fmt.apply(gHi));
             map.put("{{P13_중급}}", fmt.apply(gMi));
@@ -491,12 +535,6 @@ public class HwpxExportService {
             map.put("{{P13_기능초}}", fmt.apply(fLo));
             map.put("{{P13_계}}", fmt.apply(p13Sum));
             System.err.println("[HWPX] P13 step="+p13Step+" period="+p13Period+" 특="+gSp+" 고="+gHi+" 중="+gMi+" 초="+gLo+" 기능고="+fHi+" 기능중="+fMi+" 기능초="+fLo+" 계="+p13Sum);
-
-            // 예정공정표: 시작~종료월은 노란색(52), 그 외는 흰색(51) - 12칸 모두 표시
-            for (int i = 1; i <= 12; i++) {
-                boolean inRange = (i >= startMonth && i <= endMonth);
-                map.put("{{월" + i + "색}}", inRange ? "52" : "51");
-            }
 
             // 제품명 (PjtTarget 모두 → 줄바꿈 마커로 결합, 후처리에서 다중 hp:p로 확장)
             String productName = sysNmEn.isEmpty() ? sysNm : sysNmEn;
@@ -526,17 +564,17 @@ public class HwpxExportService {
             // === 사업수행계획서 (P12) - sw_pjt 4 컬럼 ===
             // 용역목적
             String projPurpose = (proj != null && proj.getProjPurpose() != null && !proj.getProjPurpose().isEmpty())
-                    ? proj.getProjPurpose()
-                    : (processName + "의 최신 버전 유지와 원활한 서비스를 제공");
+                    ? proj.getProjPurpose() : "(미입력)";
             map.put("{{용역목적}}", projPurpose);
 
-            // 지원형태
+            // 지원형태 — 템플릿이 "- " prefix 를 literal 로 보유 (sample 기반)
             String supportType = (proj != null && proj.getSupportType() != null && !proj.getSupportType().isEmpty())
-                    ? proj.getSupportType() : "비상주 지원";
-            map.put("{{지원형태}}", "- " + supportType);
+                    ? proj.getSupportType() : "(미입력)";
+            map.put("{{지원형태}}", supportType);
 
-            // 용역범위 (줄바꿈으로 구분된 텍스트 → 1/2/3 분할)
-            String[] scopeLines = new String[]{"GIS SW 최신 버전 유지", "GIS SW 원활한 서비스 제공", "긴급/장애처리"};
+            // 용역범위 (줄바꿈으로 구분된 텍스트 → 1/2/3 분할) — 템플릿이 "- " prefix 보유.
+            // 미입력 시 3줄 모두 "(미입력)", UI 입력된 줄만 덮어쓰기 (사용자 정책).
+            String[] scopeLines = new String[]{"(미입력)", "(미입력)", "(미입력)"};
             if (proj != null && proj.getScopeText() != null && !proj.getScopeText().isEmpty()) {
                 String[] parts = proj.getScopeText().split("\\r?\\n");
                 for (int i = 0; i < scopeLines.length && i < parts.length; i++) {
@@ -545,14 +583,14 @@ public class HwpxExportService {
                     }
                 }
             }
-            map.put("{{용역범위1}}", "- " + scopeLines[0]);
-            map.put("{{용역범위2}}", "- " + scopeLines[1]);
-            map.put("{{용역범위3}}", "- " + scopeLines[2]);
+            map.put("{{용역범위1}}", scopeLines[0]);
+            map.put("{{용역범위2}}", scopeLines[1]);
+            map.put("{{용역범위3}}", scopeLines[2]);
 
-            // 점검방법 (sw_pjt.inspect_method 우선, 없으면 기본값)
+            // 점검방법 (sw_pjt.inspect_method 우선) — 템플릿이 "- " prefix 보유
             String inspectMethod = (proj != null && proj.getInspectMethod() != null && !proj.getInspectMethod().isEmpty())
-                    ? proj.getInspectMethod() : "월 1회 유지보수 방문";
-            map.put("{{점검방법}}", "- " + inspectMethod);
+                    ? proj.getInspectMethod() : "(미입력)";
+            map.put("{{점검방법}}", inspectMethod);
 
             // ── 착수일자 한글 (보안서약서용) ──
             if (proj != null && proj.getStartDt() != null) {

@@ -342,7 +342,7 @@
             <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다 (다중 행 cloning은 후속 작업 예정).</div>
 
             <h4 style="margin-top:18px; color:#1565c0;">P2 - 예정공정표
-                <button type="button" onclick="addPlanScheduleRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                <button type="button" onclick="addPlanScheduleRow(); updatePlanScheduleHeader();" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </h4>
             <table class="dynamic-table" id="planScheduleTable">
                 <thead><tr><th style="min-width:150px;">공정명</th>
@@ -1230,6 +1230,54 @@
             document.getElementById('planScheduleBody').appendChild(tr);
         }
 
+        // 사업 개월수 (currentProject.startDt~endDt 기준, 1~12 clamp). 미입력 시 0.
+        function planScheduleMonths() {
+            if (!currentProject || !currentProject.startDt || !currentProject.endDt) return 0;
+            var s = currentProject.startDt.split('-');
+            var e = currentProject.endDt.split('-');
+            var m = (parseInt(e[0], 10) - parseInt(s[0], 10)) * 12
+                  + (parseInt(e[1], 10) - parseInt(s[1], 10)) + 1;
+            if (m < 0) m = 0;
+            if (m > 12) m = 12;
+            return m;
+        }
+
+        // P2 예정공정표 column 헤더 = sequential index ("1, 2, ..., N"). 1=착수달, 2=다음달, ..., N=N개월차.
+        // 사업 개월수 N < 12 이면 col N+1~12 헤더는 "—" + dim. 모든 row 의 col N+1~12 checkbox 도 disabled.
+        // (표 제목 "착수일로부터 N개월" 으로 sequential 의미 안내)
+        function updatePlanScheduleHeader() {
+            var thead = document.querySelector('#planScheduleTable thead tr');
+            if (!thead) return;
+            var ths = thead.querySelectorAll('th');
+            // 구조: [공정명, 1, 2, ..., 12, 비고, 삭제] → 14 ths. 월 cell index 1~12.
+            if (ths.length < 14) return;
+            var months = planScheduleMonths();
+            for (var i = 0; i < 12; i++) {
+                if (months > 0 && i >= months) {
+                    ths[i + 1].textContent = '—';
+                    ths[i + 1].style.color = '#bbb';
+                    ths[i + 1].style.background = '#f5f5f5';
+                } else {
+                    ths[i + 1].textContent = i === 0 ? 'N' : 'N+' + i;
+                    ths[i + 1].style.color = '';
+                    ths[i + 1].style.background = '';
+                }
+            }
+            // 모든 row 의 사업 외 checkbox disabled + uncheck
+            var rows = document.querySelectorAll('#planScheduleBody tr');
+            rows.forEach(function(tr) {
+                for (var k = 1; k <= 12; k++) {
+                    var key = 'm' + (k < 10 ? '0' + k : k);
+                    var cb = tr.querySelector('.psc-' + key);
+                    if (!cb) continue;
+                    var outOfRange = (months > 0 && k > months);
+                    cb.disabled = outOfRange;
+                    if (outOfRange) cb.checked = false;
+                    cb.parentElement.style.background = outOfRange ? '#f5f5f5' : '';
+                }
+            });
+        }
+
         function updateProjInfoBadge(p) {
             var badge = document.getElementById('projInfoBadge');
             if (!p || (!p.contDt && !p.startDt && !p.endDt)) { badge.style.display = 'none'; return; }
@@ -1347,6 +1395,7 @@
                     (d.targets || []).forEach(addPlanTargetRow);
                     document.getElementById('planScheduleBody').innerHTML = '';
                     (d.schedules || []).forEach(addPlanScheduleRow);
+                    updatePlanScheduleHeader();
                     document.getElementById('planManpowerBody').innerHTML = '';
                     (d.manpowerPlans || []).forEach(addPlanManpowerRow);
                 })
