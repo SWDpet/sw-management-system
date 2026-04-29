@@ -302,48 +302,15 @@ public class DocumentController {
 
             String docNo = (String) requestData.get("docNo"); // 수동입력 문서번호
 
-            // [스프린트 5] 새 필드
-            String supportTargetType = (String) requestData.get("supportTargetType"); // EXTERNAL / INTERNAL
-            Long orgUnitId = requestData.get("orgUnitId") != null ? Long.valueOf(requestData.get("orgUnitId").toString()) : null;
-            String environment = (String) requestData.get("environment"); // PROD / TEST
-
-            // [스프린트 5 v2] 4개 문서는 사업·인프라 무관 — region_code + sys_type 으로 식별
-            String regionCode = (String) requestData.get("regionCode");
-            // sysType 은 sys_mst.cd 값 (상단에서 이미 받음). 4개 문서에서는 필수.
-
-            if (DocumentType.FAULT == docType || DocumentType.INSTALL == docType || DocumentType.PATCH == docType) {
-                if (regionCode == null || regionCode.isEmpty() || sysType == null || sysType.isEmpty()) {
-                    return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "지역·시스템을 다시 선택하세요.")));
-                }
-            }
-            if (DocumentType.SUPPORT == docType) {
-                if (supportTargetType == null || !("EXTERNAL".equals(supportTargetType) || "INTERNAL".equals(supportTargetType))) {
-                    return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "INVALID_INPUT", "message", "지원 대상(외부/내부)을 선택하세요.")));
-                }
-                if ("EXTERNAL".equals(supportTargetType)
-                        && (regionCode == null || regionCode.isEmpty() || sysType == null || sysType.isEmpty())) {
-                    return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "RESELECT_REQUIRED", "message", "지역·시스템을 다시 선택하세요.")));
-                }
-                if ("INTERNAL".equals(supportTargetType) && orgUnitId == null) {
-                    return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "INVALID_INPUT", "message", "조직을 선택하세요.")));
-                }
-            }
-            if (DocumentType.INSTALL == docType || DocumentType.PATCH == docType) {
-                if (environment == null || !("PROD".equals(environment) || "TEST".equals(environment))) {
-                    return ResponseEntity.badRequest().body(Map.of("success", false,
-                            "error", Map.of("code", "INVALID_INPUT", "message", "환경 구분(운영/테스트)을 선택하세요.")));
-                }
+            // doc-split-ops: 사업문서 3 종 (COMMENCE/INTERIM/COMPLETION) 만 처리.
+            // 운영문서 5 종 (INSPECT/FAULT/SUPPORT/INSTALL/PATCH) 은 OpsDocController 가 담당.
+            if (!(DocumentType.COMMENCE == docType || DocumentType.INTERIM == docType || DocumentType.COMPLETION == docType)) {
+                return ResponseEntity.badRequest().body(Map.of("success", false,
+                        "error", Map.of("code", "INVALID_INPUT", "message", "사업문서(착수/기성/준공)만 이 엔드포인트에서 처리합니다.")));
             }
 
             // [중복 방지] 착수계/준공계 = projId 당 1건, 기성계 = projId+회차 당 1건
-            // — 신규 createDocument 호출 전에 검사하여 orphan row 방지.
-            if (projId != null && !(DocumentType.FAULT == docType || DocumentType.INSTALL == docType
-                    || DocumentType.PATCH == docType || DocumentType.SUPPORT == docType)
-                    && (DocumentType.COMMENCE == docType
+            if (projId != null && (DocumentType.COMMENCE == docType
                         || DocumentType.COMPLETION == docType
                         || DocumentType.INTERIM == docType)) {
                 Integer round = null;
@@ -387,40 +354,9 @@ public class DocumentController {
                 doc.setDocNo(docNo.trim().isEmpty() ? null : docNo.trim());
             }
 
-            // [스프린트 5 v2] 4개 문서는 region_code + sys_type 저장 (사업·인프라 null)
-            boolean isFourDocType = DocumentType.FAULT == docType || DocumentType.INSTALL == docType
-                    || DocumentType.PATCH == docType || DocumentType.SUPPORT == docType;
-            if (isFourDocType) {
-                doc.setInfra(null);
-                doc.setProject(null);
-                if (regionCode != null && !regionCode.isEmpty()) {
-                    doc.setRegionCode(regionCode);
-                }
-                if (sysType != null && !sysType.isEmpty()) {
-                    doc.setSysType(sysType);
-                }
-            } else {
-                // 착수계/기성계/준공계/점검내역서 등은 기존 방식 유지 (proj_id 연결)
-                if (projId != null) {
-                    doc.setProject(swProjectRepository.findById(projId).orElse(null));
-                }
-            }
-
-            // [스프린트 5] 업무지원 대상 타입 + 내부 조직
-            if (DocumentType.SUPPORT == docType && supportTargetType != null) {
-                doc.setSupportTargetType(supportTargetType);
-                if ("INTERNAL".equals(supportTargetType) && orgUnitId != null) {
-                    doc.setOrgUnit(orgUnitRepository.findById(orgUnitId).orElse(null));
-                    doc.setRegionCode(null);  // 내부 저장 시 지역도 null
-                    doc.setSysType(null);
-                } else if ("EXTERNAL".equals(supportTargetType)) {
-                    doc.setOrgUnit(null); // 외부 저장 시 org_unit_id null
-                }
-            }
-
-            // [스프린트 5] 설치/패치 환경 구분
-            if ((DocumentType.INSTALL == docType || DocumentType.PATCH == docType) && environment != null) {
-                doc.setEnvironment(environment);
+            // 사업문서: 사업(proj_id) 연결 유지
+            if (projId != null) {
+                doc.setProject(swProjectRepository.findById(projId).orElse(null));
             }
 
             // 섹션 데이터 저장

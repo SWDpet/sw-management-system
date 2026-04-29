@@ -370,35 +370,120 @@ CREATE TABLE IF NOT EXISTS tb_document_signature (
 
 CREATE INDEX IF NOT EXISTS idx_tb_document_signature_doc ON tb_document_signature(doc_id);
 
--- 점검 체크리스트 (문서 기반)
-CREATE TABLE IF NOT EXISTS tb_inspect_checklist (
-    check_id        BIGSERIAL PRIMARY KEY,
-    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
-    inspect_month   VARCHAR(7),
-    target_sw       VARCHAR(50),
-    check_item      VARCHAR(300) NOT NULL,
-    check_method    VARCHAR(500),
-    check_result    VARCHAR(20),
-    sort_order      INTEGER DEFAULT 0,
-    created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+-- ============================================================
+-- doc-split-ops (2026-04-29): 운영·유지보수 문서 신규 테이블 + 레거시 제거
+-- 기획서: docs/product-specs/doc-split-ops.md (v3)
+-- 개발계획: docs/exec-plans/doc-split-ops.md (v2)
+-- ============================================================
+
+-- [doc-split-ops 안전망] DocumentType 5 종 enum 제거 전 row 부재 보장 (멱등)
+DELETE FROM tb_document WHERE doc_type IN ('INSPECT','FAULT','SUPPORT','INSTALL','PATCH');
+
+-- [doc-split-ops] 레거시 점검 테이블 DROP (S1 inspect-comprehensive-redesign 후 deprecated)
+DROP TABLE IF EXISTS tb_inspect_checklist CASCADE;
+DROP TABLE IF EXISTS tb_inspect_issue CASCADE;
+
+-- 운영·유지보수 문서 (5 종: INSPECT/FAULT/SUPPORT/INSTALL/PATCH)
+CREATE TABLE IF NOT EXISTS tb_ops_doc (
+    doc_id              BIGSERIAL PRIMARY KEY,
+    doc_no              VARCHAR(50) NOT NULL UNIQUE,            -- codex: NOT NULL 강제
+    doc_type            VARCHAR(30) NOT NULL,
+    sys_type            VARCHAR(20),
+    region_code         VARCHAR(10),
+    org_unit_id         BIGINT REFERENCES tb_org_unit(unit_id),
+    environment         VARCHAR(20),
+    support_target_type VARCHAR(20),
+    infra_id            BIGINT REFERENCES tb_infra_master(infra_id),
+    plan_id             BIGINT REFERENCES tb_work_plan(plan_id),
+    title               VARCHAR(500) NOT NULL,
+    status              VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    author_id           BIGINT NOT NULL REFERENCES users(user_id),
+    approver_id         BIGINT REFERENCES users(user_id),
+    approved_at         TIMESTAMP,
+    created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_by          VARCHAR(50),
+    updated_by          VARCHAR(50),
+    CONSTRAINT ck_tb_ops_doc_type   CHECK (doc_type IN ('INSPECT','FAULT','SUPPORT','INSTALL','PATCH')),
+    CONSTRAINT ck_tb_ops_doc_status CHECK (status IN ('DRAFT','COMPLETED')),
+    CONSTRAINT ck_tb_ops_doc_env    CHECK (environment IS NULL OR environment IN ('PROD','TEST')),
+    CONSTRAINT ck_tb_ops_doc_target CHECK (support_target_type IS NULL OR support_target_type IN ('EXTERNAL','INTERNAL')),
+    CONSTRAINT ck_tb_ops_doc_combo  CHECK (
+        -- INSPECT: 점검내역서 본 데이터(inspect_report)가 infra 와 직접 연결되지 않으므로
+        --         doc_type 만 검사. sys_type 도 nullable (점검 폼이 sys_type 미입력 케이스 있음).
+        doc_type = 'INSPECT' OR
+        (doc_type IN ('FAULT','SUPPORT') AND region_code IS NOT NULL AND sys_type IS NOT NULL) OR
+        (doc_type IN ('INSTALL','PATCH') AND infra_id IS NOT NULL AND environment IS NOT NULL)
+    )
 );
 
-CREATE INDEX IF NOT EXISTS idx_tb_inspect_checklist_doc ON tb_inspect_checklist(doc_id);
+-- doc-split-ops: 이미 strict 한 CHECK 가 적용된 환경에서도 동일하게 갱신 (멱등)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_tb_ops_doc_combo') THEN
+        ALTER TABLE tb_ops_doc DROP CONSTRAINT ck_tb_ops_doc_combo;
+    END IF;
+    ALTER TABLE tb_ops_doc ADD CONSTRAINT ck_tb_ops_doc_combo CHECK (
+        doc_type = 'INSPECT' OR
+        (doc_type IN ('FAULT','SUPPORT') AND region_code IS NOT NULL AND sys_type IS NOT NULL) OR
+        (doc_type IN ('INSTALL','PATCH') AND infra_id IS NOT NULL AND environment IS NOT NULL)
+    );
+END $$;
 
--- 점검 이슈/방문이력 (문서 기반)
-CREATE TABLE IF NOT EXISTS tb_inspect_issue (
-    issue_id        BIGSERIAL PRIMARY KEY,
-    doc_id          BIGINT NOT NULL REFERENCES tb_document(doc_id) ON DELETE CASCADE,
-    issue_year      VARCHAR(4),
-    issue_month     VARCHAR(2),
-    issue_day       VARCHAR(2),
-    task_type       VARCHAR(50),
-    symptom         TEXT,
-    action_taken    TEXT,
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_type_status  ON tb_ops_doc(doc_type, status);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_region_sys   ON tb_ops_doc(region_code, sys_type);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_proj         ON tb_ops_doc(plan_id);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_infra        ON tb_ops_doc(infra_id);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_org_unit     ON tb_ops_doc(org_unit_id);
+
+-- 운영문서 섹션 상세 (jsonb)
+CREATE TABLE IF NOT EXISTS tb_ops_doc_detail (
+    detail_id    BIGSERIAL PRIMARY KEY,
+    doc_id       BIGINT NOT NULL REFERENCES tb_ops_doc(doc_id) ON DELETE CASCADE,
+    section_key  VARCHAR(50) NOT NULL,
+    section_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    sort_order   INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_detail_doc ON tb_ops_doc_detail(doc_id);
+
+-- 운영문서 변경 이력
+CREATE TABLE IF NOT EXISTS tb_ops_doc_history (
+    history_id    BIGSERIAL PRIMARY KEY,
+    doc_id        BIGINT NOT NULL REFERENCES tb_ops_doc(doc_id) ON DELETE CASCADE,
+    action        VARCHAR(30) NOT NULL,
+    changed_field VARCHAR(100),
+    old_value     TEXT,
+    new_value     TEXT,
+    actor_id      BIGINT NOT NULL REFERENCES users(user_id),
+    comment       TEXT,
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_history_doc ON tb_ops_doc_history(doc_id);
+
+-- 운영문서 첨부파일
+CREATE TABLE IF NOT EXISTS tb_ops_doc_attachment (
+    attach_id   BIGSERIAL PRIMARY KEY,
+    doc_id      BIGINT NOT NULL REFERENCES tb_ops_doc(doc_id) ON DELETE CASCADE,
+    file_name   VARCHAR(300) NOT NULL,
+    file_path   VARCHAR(500) NOT NULL,
+    file_size   BIGINT,
+    mime_type   VARCHAR(100),
+    uploaded_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_attachment_doc ON tb_ops_doc_attachment(doc_id);
+
+-- 운영문서 서명 (DB §A 권고 — Base64 PNG 흡수 위해 TEXT 확장)
+CREATE TABLE IF NOT EXISTS tb_ops_doc_signature (
+    sign_id         BIGSERIAL PRIMARY KEY,
+    doc_id          BIGINT NOT NULL REFERENCES tb_ops_doc(doc_id) ON DELETE CASCADE,
+    signer_type     VARCHAR(30) NOT NULL,
+    signer_name     VARCHAR(50) NOT NULL,
+    signer_org      VARCHAR(200),
+    signature_image TEXT,
+    signed_at       TIMESTAMP,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );
-
-CREATE INDEX IF NOT EXISTS idx_tb_inspect_issue_doc ON tb_inspect_issue(doc_id);
+CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_signature_doc ON tb_ops_doc_signature(doc_id);
 
 -- 작업/점검 계획 (self-FK: parent_plan_id)
 CREATE TABLE IF NOT EXISTS tb_work_plan (

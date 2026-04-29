@@ -329,7 +329,8 @@ button:active:not(:disabled) { transform: scale(0.97); transition: transform 0.0
 - geonuris/geonuris-list, geonuris/geonuris-form, geonuris/geonuris-edit, geonuris/geonuris-detail
 - quotation/quotation-list, quotation-form, quotation-detail, quotation-ledger, pattern-list, remarks-pattern-list, wage-rate-list
 - workplan/workplan-calendar, workplan-form, process-status
-- document/document-list, document-detail, doc-* (8개 문서 타입), inspect-*
+- document/document-list, document-detail, doc-{commence,interim,completion} (사업문서 3 종), inspect-*
+- ops-doc/list, doc-{fault,support,install,patch} (운영문서 4 종 폼) — doc-split-ops (2026-04-29)
 - performance/personal-dashboard, dept-dashboard, performance-report
 - qrcode/qr-ledger, qr-issue, qr-detail
 - admin-user-list, admin-logs, admin-system-graph, admin/org-unit-management
@@ -358,4 +359,5 @@ button:active:not(:disabled) { transform: scale(0.97); transition: transform 0.0
 | 2026-04-19 | 로그인 페이지 Minimal Gradient Mesh 적용 |
 | 2026-04-19 | 라이선스 4페이지 전면 리디자인 |
 | 2026-04-19 | workplan/document/performance 19개 파일 컬러 스웁 |
+| 2026-04-29 | doc-split-ops: 운영문서 5 종 분리 (`/ops-doc/*` + `ops-doc.css`) — disclosure 네비게이션 + 운영/사업 그룹 칩 + doc_type 별 칩 컬러 |
 | TBD | **Phase 4**: CSS 변수 리팩터 + 완전 다크모드 |

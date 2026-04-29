@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>운영·유지보수 문서 목록</title>
+    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: top-nav}"></div>
+
+<main class="ops-page">
+    <div class="ops-breadcrumb">
+        <a th:href="@{/}">홈</a> &rsaquo; 운영·유지보수 문서 &rsaquo; 목록
+    </div>
+    <div class="ops-page-header">
+        <span class="group-chip">운영문서</span>
+        <h1>운영·유지보수 문서 목록</h1>
+        <div>
+            <a class="ops-btn" th:href="@{/ops-doc/fault/form}">+ 장애처리</a>
+            <a class="ops-btn" th:href="@{/ops-doc/support/form}">+ 업무지원</a>
+            <a class="ops-btn" th:href="@{/ops-doc/install/form}">+ 설치보고서</a>
+            <a class="ops-btn" th:href="@{/ops-doc/patch/form}">+ 패치내역서</a>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(documents)}" class="ops-empty-state">
+        <i class="fas fa-folder-open" style="font-size:2.4rem; color:var(--ops-text-secondary);"></i>
+        <h3>등록된 운영문서가 없습니다</h3>
+        <p>위 버튼으로 신규 작성을 시작하거나, 점검내역서는 사업·인프라 메뉴에서 생성됩니다.</p>
+    </div>
+
+    <table th:if="${not #lists.isEmpty(documents)}" class="ops-list-table">
+        <thead>
+            <tr>
+                <th>유형</th>
+                <th>문서번호</th>
+                <th>제목</th>
+                <th>시스템</th>
+                <th>지역</th>
+                <th>상태</th>
+                <th>작성자</th>
+                <th>작성일</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="d : ${documents}"
+                th:attr="onclick=|location.href='/ops-doc/${d.docType.name().toLowerCase()}/${d.docId}'|">
+                <td>
+                    <span class="ops-type-chip"
+                          th:classappend="${'ops-type-' + d.docType.name()}"
+                          th:text="${d.docType.label()}">유형</span>
+                </td>
+                <td th:text="${d.docNo}">DOC-NO</td>
+                <td th:text="${d.title}">제목</td>
+                <td th:text="${d.sysType ?: '-'}">UPIS</td>
+                <td th:text="${d.regionCode ?: '-'}">-</td>
+                <td th:text="${d.status?.name() ?: 'DRAFT'}">DRAFT</td>
+                <td th:text="${d.author?.username ?: '-'}">-</td>
+                <td th:text="${#temporals.format(d.createdAt, 'yyyy-MM-dd')}">2026-04-29</td>
+            </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

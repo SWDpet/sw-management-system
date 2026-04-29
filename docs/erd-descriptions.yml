@@ -189,31 +189,31 @@ tables:
       start_date: 시작일
       status: 상태
 
-  # ─────────── Document (점검 문서 관리) ───────────
+  # ─────────── Document (사업문서 — 착수계 / 기성계 / 준공계) ───────────
 
   tb_document:
-    desc: 문서 마스터 (점검내역서·견적서·보고서 등)
+    desc: 사업문서 마스터 — doc-split-ops(2026-04-29) 이후 COMMENCE/INTERIM/COMPLETION 3 종만 사용
     columns:
       doc_id: 문서 식별자
       doc_no: 문서 번호 (고유)
-      doc_type: 문서 구분
+      doc_type: 사업문서 구분 (COMMENCE / INTERIM / COMPLETION)
       infra_id: 대상 인프라
       plan_id: 연관 업무계획
       contract_id: 연관 계약
       proj_id: 연관 프로젝트
       author_id: 작성자
-      status: 문서 상태 (작성중 / 완료 등)
+      status: 문서 상태 (DRAFT / IN_REVIEW / COMPLETED)
 
   tb_document_detail:
-    desc: 문서 상세 섹션 데이터 (JSON 구조)
+    desc: 사업문서 상세 섹션 데이터 (JSON 구조)
     columns:
       detail_id: 상세 식별자
       doc_id: 소속 문서
-      section_key: 섹션 키 (cover / check_results 등)
+      section_key: 섹션 키 (cover / inspector / detail_sheet 등)
       section_data: 섹션 데이터 (JSONB)
 
   tb_document_history:
-    desc: 문서 변경 이력 (작성/수정/승인/반려 등)
+    desc: 사업문서 변경 이력 (작성/수정/승인/반려 등)
     columns:
       history_id: 이력 식별자
       doc_id: 대상 문서
@@ -221,7 +221,7 @@ tables:
       actor_id: 행위자
 
   tb_document_attachment:
-    desc: 문서 첨부파일
+    desc: 사업문서 첨부파일
     columns:
       attach_id: 첨부 식별자
       doc_id: 소속 문서
@@ -229,28 +229,69 @@ tables:
       file_size: 파일 크기 (바이트)
 
   tb_document_signature:
-    desc: 문서 서명 (점검자·확인자 전자서명)
+    desc: 사업문서 서명 (점검자·확인자 전자서명)
     columns:
       sign_id: 서명 식별자
       doc_id: 대상 문서
       signer_type: 서명자 구분 (점검자 / 확인자)
       signer_name: 서명자 이름
 
-  tb_inspect_checklist:
-    desc: 점검내역서 체크리스트 항목
-    columns:
-      check_id: 체크항목 식별자
-      doc_id: 소속 점검내역서
-      check_item: 점검 항목
-      check_result: 점검 결과 (정상 / 점검 등)
+  # ─────────── Operations Document (운영·유지보수 문서, doc-split-ops 신규) ───────────
 
-  tb_inspect_issue:
-    desc: 점검 중 발견된 장애/이슈 기록
+  tb_ops_doc:
+    desc: 운영·유지보수 문서 마스터 — INSPECT/FAULT/SUPPORT/INSTALL/PATCH 5 종을 통합 관리
     columns:
-      issue_id: 이슈 식별자
-      doc_id: 소속 점검내역서
-      task_type: 작업 유형
-      symptom: 증상 설명
+      doc_id: 문서 식별자 (BIGSERIAL)
+      doc_no: 문서 번호 (고유 — INSP-/FLT-/SUP-/INS-/PAT- prefix)
+      doc_type: 운영문서 구분 (INSPECT / FAULT / SUPPORT / INSTALL / PATCH)
+      sys_type: 시스템 유형 코드 (sys_mst.cd)
+      region_code: 지역 코드 (FAULT/SUPPORT(EXTERNAL) 필수)
+      org_unit_id: 내부 조직 (SUPPORT(INTERNAL) 시 사용)
+      environment: 환경 구분 (PROD / TEST — INSTALL/PATCH 필수)
+      support_target_type: 지원 대상 (EXTERNAL / INTERNAL — SUPPORT 만)
+      infra_id: 인프라 (INSTALL/PATCH 필수)
+      plan_id: 연관 업무계획
+      title: 제목
+      status: 문서 상태 (DRAFT / IN_REVIEW / COMPLETED)
+      author_id: 작성자
+      approver_id: 승인자
+      approved_at: 승인 시각
+
+  tb_ops_doc_detail:
+    desc: 운영문서 상세 섹션 데이터 (JSONB)
+    columns:
+      detail_id: 상세 식별자
+      doc_id: 소속 문서
+      section_key: 섹션 키 (fault_date / patch_kind 등 doc_type 별 필수 키 고정)
+      section_data: 섹션 데이터 (JSONB)
+      sort_order: 정렬 순서
+
+  tb_ops_doc_history:
+    desc: 운영문서 변경 이력
+    columns:
+      history_id: 이력 식별자
+      doc_id: 대상 문서
+      action: 수행 행위
+      changed_field: 변경 필드명
+      actor_id: 행위자
+
+  tb_ops_doc_attachment:
+    desc: 운영문서 첨부파일 — 디스크 저장 경로는 ${file.ops-upload-dir}/yyyyMM/UUID
+    columns:
+      attach_id: 첨부 식별자
+      doc_id: 소속 문서
+      file_name: 원본 파일명
+      file_path: 저장 경로
+      file_size: 파일 크기 (바이트)
+
+  tb_ops_doc_signature:
+    desc: 운영문서 서명 (점검자·확인자 전자서명, Base64 PNG)
+    columns:
+      sign_id: 서명 식별자
+      doc_id: 대상 문서
+      signer_type: 서명자 구분
+      signer_name: 서명자 이름
+      signature_image: 서명 이미지 (Base64 PNG, TEXT)
 
   # ─────────── Quotation (견적 관리) ───────────
 

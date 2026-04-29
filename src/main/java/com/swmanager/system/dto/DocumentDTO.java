@@ -178,15 +178,8 @@ public class DocumentDTO {
     }
 
     private static String buildTargetDisplay(Document doc) {
-        if (DocumentType.SUPPORT == doc.getDocType() && "INTERNAL".equals(doc.getSupportTargetType())) {
-            if (doc.getOrgUnit() != null) {
-                return buildOrgUnitPath(doc.getOrgUnit());
-            }
-            return "내부";
-        }
-        // [v2] 4개 문서 region_code 기반 — 실제 시도/시군구명은 Service.enrichRegion 에서 보강됨
-        // 여기서는 regionCode/sysType 존재 여부로만 판단. 최종 문자열은 Service 가 targetDisplay 재계산.
-        // (fromEntity 시점엔 Repository 접근 불가이므로 placeholder 만 반환)
+        // doc-split-ops: SUPPORT/INTERNAL 분기 제거 (운영문서로 이관됨).
+        // 사업문서는 project / infra / regionCode 만 사용.
         if (doc.getRegionCode() != null) {
             return "[" + doc.getRegionCode() + "] " + (doc.getSysType() != null ? doc.getSysType() : "");
         }

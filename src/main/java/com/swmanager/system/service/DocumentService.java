@@ -281,11 +281,6 @@ public class DocumentService {
         return documentHistoryRepository.findByDocument_DocIdOrderByCreatedAtDesc(docId);
     }
 
-    // S1 inspect-comprehensive-redesign (2026-04-21):
-    // 점검 체크리스트(tb_inspect_checklist), 점검 이슈(tb_inspect_issue) 기능은
-    // inspect_check_result / inspect_visit_log 에 통합되어 본 Service 에서 제거.
-    // 관련 API 엔드포인트 / Repository / Entity 모두 삭제됨.
-
     // === 전자서명 ===
 
     public DocumentSignature saveSignature(Integer docId, String signerType,

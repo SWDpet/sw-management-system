@@ -18,14 +18,11 @@ import java.util.Map;
  * 값 세트: DocumentDTO.getDocTypeLabel / DocumentController 라우팅 실측 기반.
  */
 public enum DocumentType {
+    // doc-split-ops: 사업문서 3 종만 tb_document.doc_type 으로 사용.
+    // 운영문서 5 종 (INSPECT/FAULT/SUPPORT/INSTALL/PATCH) 은 OpsDocType + tb_ops_doc 로 이관.
     COMMENCE("착수계", "doc-commence", "pdf-commence"),
     INTERIM("기성계", "doc-interim", "pdf-interim"),
-    COMPLETION("준공계", "doc-completion", "pdf-completion"),
-    INSPECT("점검내역서", "doc-inspect", "pdf-inspect"),
-    FAULT("장애처리", "doc-fault", "pdf-fault"),
-    SUPPORT("업무지원", "doc-support", "pdf-support"),
-    INSTALL("설치보고서", "doc-install", "pdf-install"),
-    PATCH("패치내역서", "doc-patch", "pdf-patch");
+    COMPLETION("준공계", "doc-completion", "pdf-completion");
 
     private final String label;
     private final String templateName;

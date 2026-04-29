@@ -1,11 +1,13 @@
 package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.DocumentType;
+import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.constant.enums.WorkPlanType;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.PerformanceSummary;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.repository.ops.OpsDocumentRepository;
 import com.swmanager.system.repository.workplan.DocumentRepository;
 import com.swmanager.system.repository.workplan.PerformanceSummaryRepository;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
@@ -25,6 +27,7 @@ public class PerformanceService {
 
     @Autowired private PerformanceSummaryRepository summaryRepository;
     @Autowired private DocumentRepository documentRepository;
+    @Autowired private OpsDocumentRepository opsDocumentRepository;  // doc-split-ops: 운영문서 4 종 카운트
     @Autowired private WorkPlanRepository workPlanRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private MessageResolver messages;
@@ -50,10 +53,11 @@ public class PerformanceService {
         LocalDateTime to = from.plusMonths(1).minusSeconds(1);
 
         // 문서 유형별 승인 건수 집계
-        summary.setInstallCount(safeCount(documentRepository.countApprovedByTypeAndUser(DocumentType.INSTALL, userId, from, to)));
-        summary.setPatchCount(safeCount(documentRepository.countApprovedByTypeAndUser(DocumentType.PATCH, userId, from, to)));
-        summary.setFaultCount(safeCount(documentRepository.countApprovedByTypeAndUser(DocumentType.FAULT, userId, from, to)));
-        summary.setSupportCount(safeCount(documentRepository.countApprovedByTypeAndUser(DocumentType.SUPPORT, userId, from, to)));
+        // doc-split-ops: 사업문서 (INTERIM/COMPLETION) 는 tb_document, 운영문서 (INSTALL/PATCH/FAULT/SUPPORT) 는 tb_ops_doc.
+        summary.setInstallCount(safeCount(opsDocumentRepository.countCompletedByTypeAndUser(OpsDocType.INSTALL, userId, from, to)));
+        summary.setPatchCount(safeCount(opsDocumentRepository.countCompletedByTypeAndUser(OpsDocType.PATCH, userId, from, to)));
+        summary.setFaultCount(safeCount(opsDocumentRepository.countCompletedByTypeAndUser(OpsDocType.FAULT, userId, from, to)));
+        summary.setSupportCount(safeCount(opsDocumentRepository.countCompletedByTypeAndUser(OpsDocType.SUPPORT, userId, from, to)));
         summary.setInterimCount(safeCount(documentRepository.countApprovedByTypeAndUser(DocumentType.INTERIM, userId, from, to)));
         summary.setCompletionCount(safeCount(documentRepository.countApprovedByTypeAndUser(DocumentType.COMPLETION, userId, from, to)));
 

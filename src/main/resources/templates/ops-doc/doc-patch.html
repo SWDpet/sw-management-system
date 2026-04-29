@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>패치내역서</title>
+    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: top-nav}"></div>
+
+<main class="ops-page">
+    <div class="ops-breadcrumb">
+        <a th:href="@{/}">홈</a> &rsaquo; <a th:href="@{/ops-doc/list}">운영·유지보수 문서</a> &rsaquo; 패치내역서
+    </div>
+    <div class="ops-page-header">
+        <span class="group-chip">운영문서</span>
+        <h1><span class="ops-type-chip ops-type-PATCH">패치</span> 패치내역서</h1>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">패치 정보</h3>
+        <table class="ops-form-table">
+            <tr><th>제목</th><td><input type="text" id="title"></td></tr>
+            <tr><th>패치일</th><td><input type="date" id="patch_date"></td>
+                <th>환경 *</th>
+                <td>
+                    <select id="environment">
+                        <option value="">선택</option>
+                        <option value="PROD">운영</option>
+                        <option value="TEST">테스트</option>
+                    </select>
+                </td>
+            </tr>
+            <tr><th>패치 구분</th>
+                <td>
+                    <select id="patch_kind">
+                        <option value="">선택</option>
+                        <option value="SECURITY">보안</option>
+                        <option value="FUNCTIONAL">기능</option>
+                        <option value="URGENT">긴급</option>
+                    </select>
+                </td>
+                <th>버전 *</th>
+                <td><input type="text" id="version" placeholder="예: 2.5.1 → 2.5.2"></td>
+            </tr>
+            <tr><th>대상 *</th>
+                <td><input type="text" id="target" placeholder="예: 운영서버 2 대 / DB"></td>
+                <th>영향 사용자(명)</th>
+                <td><input type="number" id="affected_users_count" min="0"></td>
+            </tr>
+            <tr><th>적용 서버</th>
+                <td colspan="3"><input type="text" id="patch_applied_server" placeholder="예: prod-app-01, prod-db-01"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">패치 내용 / 롤백 계획</h3>
+        <table class="ops-form-table">
+            <tr><th>패치 내용</th><td><textarea id="patch_content"></textarea></td></tr>
+            <tr><th>롤백 계획 *</th><td><textarea id="rollback_plan" placeholder="필수 — 미입력 시 저장 차단"></textarea></td></tr>
+            <tr><th>비고</th><td><textarea id="notes"></textarea></td></tr>
+        </table>
+    </div>
+
+    <div class="ops-actions">
+        <a class="ops-btn" th:href="@{/ops-doc/list}">목록</a>
+        <button class="ops-btn ops-btn-primary" onclick="savePatch()">저장</button>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const isEdit = /*[[${isEdit}]]*/ false;
+    const docId  = /*[[${doc?.docId}]]*/ null;
+    function savePatch() {
+        const rollbackPlan = document.getElementById('rollback_plan').value.trim();
+        if (!rollbackPlan) { alert('롤백 계획은 필수입니다'); return; }
+        const body = {
+            title: document.getElementById('title').value,
+            sys_type: '',
+            environment: document.getElementById('environment').value,
+            section_data: {
+                patch_date: document.getElementById('patch_date').value,
+                patch_kind: document.getElementById('patch_kind').value,
+                target: document.getElementById('target').value,
+                version: document.getElementById('version').value,
+                affected_users_count: document.getElementById('affected_users_count').value,
+                patch_applied_server: document.getElementById('patch_applied_server').value,
+                patch_content: document.getElementById('patch_content').value,
+                rollback_plan: rollbackPlan,
+                notes: document.getElementById('notes').value
+            }
+        };
+        const url = isEdit ? ('/ops-doc/api/patch/' + docId) : '/ops-doc/api/patch';
+        fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+            .then(r => r.json()).then(d => {
+                if (d.success) location.href = '/ops-doc/patch/' + d.docId;
+                else alert('저장 실패');
+            });
+    }
+</script>
+</body>
+</html>

@@ -36,9 +36,10 @@ class DocumentStatusBindingServiceTest {
 
     @Test
     void documentType_validValues_bindSuccessfully() {
-        assertThat(DocumentType.fromString("INSPECT")).isEqualTo(DocumentType.INSPECT);
+        // doc-split-ops: 사업문서 3 종만 DocumentType 으로 인식.
         assertThat(DocumentType.fromString("COMMENCE")).isEqualTo(DocumentType.COMMENCE);
-        assertThat(DocumentType.fromString("  support  ")).isEqualTo(DocumentType.SUPPORT);
+        assertThat(DocumentType.fromString("INTERIM")).isEqualTo(DocumentType.INTERIM);
+        assertThat(DocumentType.fromString("  completion  ")).isEqualTo(DocumentType.COMPLETION);
     }
 
     @Test
@@ -46,6 +47,13 @@ class DocumentStatusBindingServiceTest {
         assertThatThrownBy(() -> DocumentType.fromString("WORKPLAN_PLAN_TYPE"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ENUM_VALUE_NOT_ALLOWED");
+        // 운영문서 5 종 모두 — DocumentType 에서는 거부 (OpsDocType 으로 이관됨).
+        for (String opsType : new String[]{"INSPECT", "FAULT", "SUPPORT", "INSTALL", "PATCH"}) {
+            assertThatThrownBy(() -> DocumentType.fromString(opsType))
+                    .as("운영문서 종류 %s 은 DocumentType 에서 거부되어야 함", opsType)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ENUM_VALUE_NOT_ALLOWED");
+        }
     }
 
     @Test

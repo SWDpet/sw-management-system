@@ -88,7 +88,10 @@
 <body>
     <!-- 도구바 -->
     <div class="toolbar">
-        <h3><i class="fas fa-clipboard-check"></i> 점검내역서 미리보기</h3>
+        <h3>
+            <span style="background:#0f766e; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7em; font-weight:600; margin-right:8px;">운영문서</span>
+            <i class="fas fa-clipboard-check"></i> 점검내역서 미리보기
+        </h3>
         <div class="toolbar-actions">
             <a th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-download"></i> PDF 다운로드</a>
             <a href="/document/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>

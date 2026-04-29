@@ -1,11 +1,17 @@
 # SW Management System - ERD (Entity Relationship Diagram)
 
-> 실제 구현 기준 총 38개 테이블 / 7개 도메인 모듈
+> 실제 구현 기준 (doc-split-ops, 2026-04-29 갱신)
 >
 > ※ 이전 문서에 기재되어 있던 `tb_contract`, `tb_contract_target`,
 >   `tb_inspect_cycle` 은 **현재 엔티티/스키마에 존재하지 않음** — 감사
->   2026-04-18 P2 3-1/3-3 조치로 ERD 에서 제거. 필요 시 후속 스프린트에서
->   재정의 (스프린트 2a, 2026-04-19).
+>   2026-04-18 P2 3-1/3-3 조치로 ERD 에서 제거.
+>
+> ※ doc-split-ops (2026-04-29): 운영·유지보수 문서 5 종 (INSPECT / FAULT /
+>   SUPPORT / INSTALL / PATCH) 은 `tb_ops_doc` + 자식 4 (detail / history /
+>   attachment / signature) 로 분리. `tb_document` 에는 사업문서 3 종
+>   (COMMENCE / INTERIM / COMPLETION) 만 잔존. `tb_inspect_checklist` /
+>   `tb_inspect_issue` 는 DROP (점검 데이터는 `inspect_check_result` /
+>   `inspect_visit_log` 에 통합 존재).
 
 ---
 
@@ -25,17 +31,19 @@
 | prj_types        |     +---------------------+
 | cont_stat_mst    |
 | cont_frm_mst     |     +---------------------+     +-------------------+
-| maint_tp_mst     |     |  Document Mgmt      |     | Inspection &      |
-+------------------+     |   (6 tables)        |     | Performance       |
-                          +---------------------+     |   (2 tables)      |
-                          | tb_document         |     +-------------------+
-                          | tb_document_detail  |     | tb_inspect_       |
-                          | tb_document_history |     |   checklist       |
-                          | tb_document_        |     | tb_inspect_issue  |
-                          |   attachment        |     | tb_performance_   |
-                          | tb_document_        |     |   summary         |
-                          |   signature         |     +-------------------+
-                          +---------------------+
+| maint_tp_mst     |     | Business Doc Mgmt   |     | Ops Doc Mgmt      |
++------------------+     |   (5 tables)        |     |   (5 tables)      |
+                          +---------------------+     +-------------------+
+                          | tb_document         |     | tb_ops_doc        |
+                          | tb_document_detail  |     | tb_ops_doc_detail |
+                          | tb_document_history |     | tb_ops_doc_history|
+                          | tb_document_        |     | tb_ops_doc_       |
+                          |   attachment        |     |   attachment      |
+                          | tb_document_        |     | tb_ops_doc_       |
+                          |   signature         |     |   signature       |
+                          +---------------------+     +-------------------+
+                          (COMMENCE/INTERIM/          (INSPECT/FAULT/
+                           COMPLETION)                 SUPPORT/INSTALL/PATCH)
 
 +---------------------+     +-------------------+
 |  License Mgmt       |     | Quotation Mgmt    |
@@ -93,14 +101,20 @@
                   v                           v
            tb_contract_participant      tb_document (proj)
                                               |
-               +--------+--------+--------+--------+
-               |        |        |        |        |
-               v        v        v        v        v
-          doc_detail doc_hist doc_attach doc_sign inspect_
-                                                 checklist
-                                                    |
-                                                    v
-                                               inspect_issue
+                            +--------+--------+--------+
+                            |        |        |        |
+                            v        v        v        v
+                       doc_detail doc_hist doc_attach doc_sign
+
+                                       +-----------+
+                                       | tb_ops_doc|
+                                       +-----+-----+
+                                             |
+                            +--------+--------+--------+
+                            |        |        |        |
+                            v        v        v        v
+                      ops_detail ops_hist ops_attach ops_sign
+                      (INSPECT/FAULT/SUPPORT/INSTALL/PATCH)
 
 
     +---------------+
@@ -198,18 +212,41 @@
 | status | VARCHAR(20) | default='PLANNED' |
 | created_by | BIGINT | FK -> users |
 
-### 9. Document - tb_document
+### 9. Business Document - tb_document
 | Column | Type | Constraint |
 |--------|------|------------|
 | doc_id | INT | PK, AUTO |
 | doc_no | VARCHAR(50) | UNIQUE, NOT NULL |
-| doc_type | VARCHAR(30) | NOT NULL |
+| doc_type | VARCHAR(30) | NOT NULL — COMMENCE / INTERIM / COMPLETION (doc-split-ops, 2026-04-29) |
 | infra_id | BIGINT | FK -> tb_infra_master |
 | plan_id | INT | FK -> tb_work_plan |
 | proj_id | BIGINT | FK -> sw_pjt |
 | author_id | BIGINT | FK -> users, NOT NULL |
 | approver_id | BIGINT | FK -> users |
 | status | VARCHAR(20) | default='DRAFT' |
+
+### 9b. Ops Document - tb_ops_doc *(doc-split-ops, 2026-04-29 신규)*
+| Column | Type | Constraint |
+|--------|------|------------|
+| doc_id | BIGSERIAL | PK |
+| doc_no | VARCHAR(50) | UNIQUE, NOT NULL — INSP-/FLT-/SUP-/INS-/PAT- prefix |
+| doc_type | VARCHAR(30) | NOT NULL — INSPECT / FAULT / SUPPORT / INSTALL / PATCH (CHECK 제약) |
+| sys_type | VARCHAR(20) | sys_mst.cd 참조 |
+| region_code | VARCHAR(10) | FAULT/SUPPORT(EXTERNAL) 필수 (조합 CHECK) |
+| org_unit_id | BIGINT | FK -> tb_org_unit (SUPPORT(INTERNAL) 시) |
+| environment | VARCHAR(20) | PROD / TEST — INSTALL/PATCH 필수 (조합 CHECK) |
+| support_target_type | VARCHAR(20) | EXTERNAL / INTERNAL — SUPPORT 만 |
+| infra_id | BIGINT | FK -> tb_infra_master (INSTALL/PATCH 필수) |
+| plan_id | INT | FK -> tb_work_plan |
+| title | VARCHAR(500) | NOT NULL |
+| status | VARCHAR(20) | NOT NULL, default='DRAFT' (CHECK ∈ DRAFT/IN_REVIEW/COMPLETED) |
+| author_id | BIGINT | FK -> users, NOT NULL |
+| approver_id | BIGINT | FK -> users |
+| approved_at | TIMESTAMP | COMPLETED 전이 시 자동 세팅 (PerformanceService 집계용) |
+| created_at / updated_at | TIMESTAMP | NOT NULL |
+| created_by / updated_by | VARCHAR(50) | |
+
+자식 테이블 4: `tb_ops_doc_detail` (jsonb section_data) / `tb_ops_doc_history` / `tb_ops_doc_attachment` / `tb_ops_doc_signature` (Base64 PNG signature_image).
 
 ### 10. Quotation - qt_quotation
 | Column | Type | Constraint |
@@ -262,8 +299,15 @@
 | tb_document_history | users | actor_id | N:1 |
 | tb_document_attachment | tb_document | doc_id | N:1 |
 | tb_document_signature | tb_document | doc_id | N:1 |
-| tb_inspect_checklist | tb_document | doc_id | N:1 |
-| tb_inspect_issue | tb_document | doc_id | N:1 |
+| tb_ops_doc | tb_org_unit | org_unit_id | N:1 (SUPPORT INTERNAL) |
+| tb_ops_doc | tb_infra_master | infra_id | N:1 (INSTALL/PATCH) |
+| tb_ops_doc | tb_work_plan | plan_id | N:1 |
+| tb_ops_doc | users | author_id | N:1 |
+| tb_ops_doc | users | approver_id | N:1 |
+| tb_ops_doc_detail | tb_ops_doc | doc_id | N:1 |
+| tb_ops_doc_history | tb_ops_doc | doc_id | N:1 |
+| tb_ops_doc_attachment | tb_ops_doc | doc_id | N:1 |
+| tb_ops_doc_signature | tb_ops_doc | doc_id | N:1 |
 | tb_performance_summary | users | user_id | N:1 |
 | qt_quotation_item | qt_quotation | quote_id | N:1 |
 

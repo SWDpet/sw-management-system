@@ -72,11 +72,17 @@
 </head>
 <body>
 <div th:replace="~{fragments/top-nav :: nav}"></div>
+<link rel="stylesheet" th:href="@{/css/ops-doc.css}">
     <div class="container">
         <div th:if="${errorMessage}" class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span></div>
 
+        <!-- doc-split-ops: 운영문서 그룹 시각 단서 (FR-11) -->
+        <div class="ops-breadcrumb" style="margin: 12px 0 4px;">
+            <a th:href="@{/}">홈</a> &rsaquo; 운영·유지보수 문서 &rsaquo; 점검내역서 상세
+        </div>
         <div class="page-header">
             <h2>
+                <span class="group-chip">운영문서</span>
                 <i class="fas fa-clipboard-check"></i> 점검내역서 상세
                 <span th:class="'badge badge-' + ${#strings.toLowerCase(report.status)}"
                       th:text="${report.status == 'COMPLETED' ? '작성완료' : '임시저장'}"></span>

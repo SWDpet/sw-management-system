@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>장애처리</title>
+    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: top-nav}"></div>
+
+<main class="ops-page">
+    <div class="ops-breadcrumb">
+        <a th:href="@{/}">홈</a> &rsaquo; <a th:href="@{/ops-doc/list}">운영·유지보수 문서</a> &rsaquo; 장애처리
+    </div>
+    <div class="ops-page-header">
+        <span class="group-chip">운영문서</span>
+        <h1><span class="ops-type-chip ops-type-FAULT">장애</span> 장애처리</h1>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">장애 정보</h3>
+        <table class="ops-form-table">
+            <tr><th>제목</th><td><input type="text" id="title" th:value="${doc?.title ?: ''}"></td></tr>
+            <tr><th>발생일</th><td><input type="date" id="fault_date"></td>
+                <th>심각도</th>
+                <td>
+                    <select id="severity">
+                        <option value="">선택</option>
+                        <option value="P1">P1 (긴급)</option>
+                        <option value="P2">P2 (중요)</option>
+                        <option value="P3">P3 (일반)</option>
+                    </select>
+                </td>
+            </tr>
+            <tr><th>지역코드 *</th><td><input type="text" id="region_code" placeholder="예: 11000"></td>
+                <th>시스템 *</th><td><input type="text" id="sys_type" placeholder="UPIS / KRAS / IPSS / GIS_SW / APIMS / ETC"></td>
+            </tr>
+            <tr><th>장애시간(분)</th><td><input type="number" id="downtime_minutes" min="0"></td>
+                <th>고객영향도</th>
+                <td>
+                    <select id="customer_impact_level">
+                        <option value="">선택</option>
+                        <option>HIGH</option><option>MEDIUM</option><option>LOW</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">증상·원인·조치</h3>
+        <table class="ops-form-table">
+            <tr><th>증상 *</th><td><textarea id="symptom"></textarea></td></tr>
+            <tr><th>원인</th><td><textarea id="cause"></textarea></td></tr>
+            <tr><th>조치 *</th><td><textarea id="action"></textarea></td></tr>
+        </table>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">첨부파일</h3>
+        <div class="ops-attachment-area">
+            <input type="file" id="attachFile" multiple>
+            <div id="attachList"></div>
+        </div>
+    </div>
+
+    <div class="ops-actions">
+        <a class="ops-btn" th:href="@{/ops-doc/list}">목록</a>
+        <button class="ops-btn ops-btn-primary" onclick="saveFault()">저장</button>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const isEdit = /*[[${isEdit}]]*/ false;
+    const docId  = /*[[${doc?.docId}]]*/ null;
+    function saveFault() {
+        const body = {
+            title: document.getElementById('title').value,
+            sys_type: document.getElementById('sys_type').value,
+            region_code: document.getElementById('region_code').value,
+            section_data: {
+                fault_date: document.getElementById('fault_date').value,
+                severity: document.getElementById('severity').value,
+                downtime_minutes: document.getElementById('downtime_minutes').value,
+                customer_impact_level: document.getElementById('customer_impact_level').value,
+                symptom: document.getElementById('symptom').value,
+                cause: document.getElementById('cause').value,
+                action: document.getElementById('action').value
+            }
+        };
+        const url = isEdit ? ('/ops-doc/api/fault/' + docId) : '/ops-doc/api/fault';
+        const method = isEdit ? 'PUT' : 'POST';
+        fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) location.href = '/ops-doc/fault/' + d.docId;
+                else alert('저장 실패');
+            }).catch(e => alert('오류: ' + e));
+    }
+</script>
+</body>
+</html>

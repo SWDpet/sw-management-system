@@ -1,13 +1,10 @@
 package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.DocumentStatus;
-import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.InspectCheckResult;
 import com.swmanager.system.domain.InspectReport;
 import com.swmanager.system.domain.InspectTemplate;
 import com.swmanager.system.domain.InspectVisitLog;
-import com.swmanager.system.domain.User;
-import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.dto.InspectReportDTO;
 import com.swmanager.system.dto.InspectVisitLogDTO;
@@ -15,9 +12,7 @@ import com.swmanager.system.repository.InspectCheckResultRepository;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.InspectTemplateRepository;
 import com.swmanager.system.repository.InspectVisitLogRepository;
-import com.swmanager.system.repository.SwProjectRepository;
-import com.swmanager.system.repository.UserRepository;
-import com.swmanager.system.repository.workplan.DocumentRepository;
+import com.swmanager.system.service.ops.OpsDocLinkService;
 import com.swmanager.system.i18n.MessageResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,9 +31,7 @@ public class InspectReportService {
     private final InspectVisitLogRepository visitLogRepository;
     private final InspectCheckResultRepository checkResultRepository;
     private final InspectTemplateRepository templateRepository;
-    private final DocumentRepository documentRepository;
-    private final SwProjectRepository swProjectRepository;
-    private final UserRepository userRepository;
+    private final OpsDocLinkService opsDocLinkService;  // doc-split-ops: tb_ops_doc 연계 (codex 권고로 별도 bean)
     private final MessageResolver messages;
 
     // ===== 저장 (신규/수정 통합) =====
@@ -91,61 +84,17 @@ public class InspectReportService {
             }
         }
 
-        // COMPLETED 상태면 문서관리(tb_document)에 연계
+        // COMPLETED 상태면 운영문서(tb_ops_doc.INSPECT)에 연계 — doc-split-ops 스프린트 (FR-6)
         if (DocumentStatus.COMPLETED == saved.getStatus()) {
-            linkToDocument(saved);
+            opsDocLinkService.linkInspectReport(saved);
         }
 
         return findById(reportId);
     }
 
-    /** COMPLETED 점검내역서를 tb_document에 연계 (없으면 생성, 있으면 갱신) */
-    private void linkToDocument(InspectReport report) {
-        try {
-            String month = report.getInspectMonth();
-            String yyyy = month != null && month.length() >= 4
-                    ? month.substring(0, 4)
-                    : String.valueOf(java.time.LocalDate.now().getYear());
-            String mm = month != null && month.length() >= 7 ? month.substring(5, 7) : null;
-            String docNo = "INSP-" + yyyy + "-" + report.getId();
-            // 신규 포맷 → 월포함 중간포맷 → 최구포맷(id only) 순으로 룩업 후 마이그레이션
-            String monthlyFormat = mm != null
-                    ? "INSP-" + yyyy + "-" + mm + "-" + report.getId()
-                    : null;
-            Document doc = documentRepository.findByDocNo(docNo)
-                    .orElseGet(() -> monthlyFormat != null
-                            ? documentRepository.findByDocNo(monthlyFormat)
-                                    .orElseGet(() -> documentRepository.findByDocNo("INSP-" + report.getId()).orElse(null))
-                            : documentRepository.findByDocNo("INSP-" + report.getId()).orElse(null));
-
-            if (doc == null) {
-                doc = new Document();
-                doc.setDocType(DocumentType.INSPECT);
-            }
-            doc.setDocNo(docNo);
-
-            doc.setSysType(report.getSysType());
-            doc.setTitle(report.getDocTitle() != null ? report.getDocTitle() : "점검내역서");
-            doc.setStatus(DocumentStatus.COMPLETED);
-
-            // 프로젝트 연결
-            if (report.getPjtId() != null) {
-                swProjectRepository.findById(report.getPjtId()).ifPresent(doc::setProject);
-            }
-
-            // 작성자 연결
-            User author = userRepository.findByUserid(report.getCreatedBy()).orElse(null);
-            if (author == null) {
-                author = userRepository.findAll().stream().findFirst().orElse(null);
-            }
-            if (author != null) doc.setAuthor(author);
-
-            documentRepository.save(doc);
-            log.info("점검내역서 문서관리 연계 완료: docNo={}, reportId={}", docNo, report.getId());
-        } catch (Exception e) {
-            log.warn("문서관리 연계 실패 (무시): {}", e.getMessage());
-        }
-    }
+    // doc-split-ops: linkToDocument() 메서드 제거 (FR-6).
+    // COMPLETED 시 tb_ops_doc.INSPECT row 연계는 OpsDocLinkService bean 이 담당 — Spring
+    // self-invocation 회피로 @Transactional(REQUIRES_NEW) 가 정상 동작 (codex 권고).
 
     // ===== 단건 조회 (방문이력 + 점검결과 포함) =====
 

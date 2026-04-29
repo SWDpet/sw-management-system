@@ -1,11 +1,12 @@
 ---
-title: "3. Document Management"
+title: "3. Document Management (doc-split-ops, 2026-04-29)"
 ---
 erDiagram
+    %% 사업문서 (착수계 / 기성계 / 준공계) — tb_document 유지
     tb_document {
         int doc_id PK
         varchar doc_no UK
-        varchar doc_type
+        varchar doc_type "COMMENCE | INTERIM | COMPLETION"
         bigint infra_id FK
         int plan_id FK
         int contract_id FK
@@ -37,21 +38,63 @@ erDiagram
         varchar signer_type
         varchar signer_name
     }
-    tb_inspect_checklist {
-        int check_id PK
-        int doc_id FK
-        varchar check_item
-        varchar check_result
+
+    %% 운영·유지보수 문서 (점검 / 장애 / 업무지원 / 설치 / 패치) — tb_ops_doc 신규 분리
+    tb_ops_doc {
+        bigint doc_id PK
+        varchar doc_no UK
+        varchar doc_type "INSPECT | FAULT | SUPPORT | INSTALL | PATCH (CHECK)"
+        varchar sys_type
+        varchar region_code
+        bigint org_unit_id FK
+        varchar environment "PROD | TEST (CHECK)"
+        varchar support_target_type "EXTERNAL | INTERNAL"
+        bigint infra_id FK
+        int plan_id FK
+        varchar title
+        varchar status "DRAFT | IN_REVIEW | COMPLETED"
+        bigint author_id FK
+        bigint approver_id FK
+        timestamp approved_at
+        timestamp created_at
+        timestamp updated_at
+        varchar created_by
+        varchar updated_by
     }
-    tb_inspect_issue {
-        int issue_id PK
-        int doc_id FK
-        varchar task_type
-        text symptom
+    tb_ops_doc_detail {
+        bigint detail_id PK
+        bigint doc_id FK
+        varchar section_key
+        jsonb section_data
+        int sort_order
     }
+    tb_ops_doc_history {
+        bigint history_id PK
+        bigint doc_id FK
+        varchar action
+        varchar changed_field
+        bigint actor_id FK
+    }
+    tb_ops_doc_attachment {
+        bigint attach_id PK
+        bigint doc_id FK
+        varchar file_name
+        bigint file_size
+    }
+    tb_ops_doc_signature {
+        bigint sign_id PK
+        bigint doc_id FK
+        varchar signer_type
+        varchar signer_name
+        text signature_image
+    }
+
     tb_document ||--o{ tb_document_detail : "details"
     tb_document ||--o{ tb_document_history : "history"
     tb_document ||--o{ tb_document_attachment : "files"
     tb_document ||--o{ tb_document_signature : "signs"
-    tb_document ||--o{ tb_inspect_checklist : "checklist"
-    tb_document ||--o{ tb_inspect_issue : "issues"
+
+    tb_ops_doc ||--o{ tb_ops_doc_detail : "details"
+    tb_ops_doc ||--o{ tb_ops_doc_history : "history"
+    tb_ops_doc ||--o{ tb_ops_doc_attachment : "files"
+    tb_ops_doc ||--o{ tb_ops_doc_signature : "signs"

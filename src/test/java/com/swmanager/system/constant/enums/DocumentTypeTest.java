@@ -8,25 +8,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * DocumentType Enum 단위 테스트.
  *
- * 기획서/개발계획서 매핑:
- *  - NFR-3: DB 저장 문자열 ↔ Enum 라운드트립 (Pre-flight 실측: INSPECT/COMMENCE/COMPLETION/INTERIM)
- *  - FR-A1: label()/templateName()/pdfTemplateName() 계약
- *  - 개발계획서 §0-2: WorkPlanType → DocumentType 명 변경
+ * doc-split-ops (2026-04-29) 이후: 사업문서 3 종 (COMMENCE/INTERIM/COMPLETION) 만 존재.
+ * 운영문서 5 종 (INSPECT/FAULT/SUPPORT/INSTALL/PATCH) 은 OpsDocType 으로 이관 (OpsDocTypeTest).
  */
 class DocumentTypeTest {
 
     @Test
     void valueOf_roundTrip_matchesDbStringValues() {
-        // Pre-flight 결과 (2026-04-20): INSPECT(8), COMMENCE(3), COMPLETION(2), INTERIM(2)
-        assertThat(DocumentType.valueOf("INSPECT")).isEqualTo(DocumentType.INSPECT);
         assertThat(DocumentType.valueOf("COMMENCE")).isEqualTo(DocumentType.COMMENCE);
         assertThat(DocumentType.valueOf("COMPLETION")).isEqualTo(DocumentType.COMPLETION);
         assertThat(DocumentType.valueOf("INTERIM")).isEqualTo(DocumentType.INTERIM);
-        // 코드상 추가 타입
-        assertThat(DocumentType.valueOf("FAULT")).isEqualTo(DocumentType.FAULT);
-        assertThat(DocumentType.valueOf("SUPPORT")).isEqualTo(DocumentType.SUPPORT);
-        assertThat(DocumentType.valueOf("INSTALL")).isEqualTo(DocumentType.INSTALL);
-        assertThat(DocumentType.valueOf("PATCH")).isEqualTo(DocumentType.PATCH);
     }
 
     @Test
@@ -34,34 +25,33 @@ class DocumentTypeTest {
         assertThat(DocumentType.COMMENCE.label()).isEqualTo("착수계");
         assertThat(DocumentType.INTERIM.label()).isEqualTo("기성계");
         assertThat(DocumentType.COMPLETION.label()).isEqualTo("준공계");
-        assertThat(DocumentType.INSPECT.label()).isEqualTo("점검내역서");
-        assertThat(DocumentType.FAULT.label()).isEqualTo("장애처리");
-        assertThat(DocumentType.SUPPORT.label()).isEqualTo("업무지원");
-        assertThat(DocumentType.INSTALL.label()).isEqualTo("설치보고서");
-        assertThat(DocumentType.PATCH.label()).isEqualTo("패치내역서");
     }
 
     @Test
     void templateName_returnsDocumentPathPrefix() {
-        assertThat(DocumentType.INSPECT.templateName()).isEqualTo("document/doc-inspect");
         assertThat(DocumentType.COMMENCE.templateName()).isEqualTo("document/doc-commence");
-        assertThat(DocumentType.SUPPORT.templateName()).isEqualTo("document/doc-support");
+        assertThat(DocumentType.INTERIM.templateName()).isEqualTo("document/doc-interim");
+        assertThat(DocumentType.COMPLETION.templateName()).isEqualTo("document/doc-completion");
     }
 
     @Test
     void pdfTemplateName_returnsPdfPathPrefix() {
-        assertThat(DocumentType.INSPECT.pdfTemplateName()).isEqualTo("pdf/pdf-inspect");
         assertThat(DocumentType.COMMENCE.pdfTemplateName()).isEqualTo("pdf/pdf-commence");
+        assertThat(DocumentType.INTERIM.pdfTemplateName()).isEqualTo("pdf/pdf-interim");
     }
 
     @Test
     void fromString_trimsAndUppercases() {
-        assertThat(DocumentType.fromString("inspect")).isEqualTo(DocumentType.INSPECT);
-        assertThat(DocumentType.fromString(" Commence ")).isEqualTo(DocumentType.COMMENCE);
+        assertThat(DocumentType.fromString("commence")).isEqualTo(DocumentType.COMMENCE);
+        assertThat(DocumentType.fromString(" Interim ")).isEqualTo(DocumentType.INTERIM);
     }
 
     @Test
     void fromString_invalidValue_throwsEnumValueNotAllowed() {
+        // 운영문서 종류는 더 이상 DocumentType 에서 인식되지 않음
+        assertThatThrownBy(() -> DocumentType.fromString("INSPECT"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ENUM_VALUE_NOT_ALLOWED");
         assertThatThrownBy(() -> DocumentType.fromString("UNKNOWN_TYPE"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ENUM_VALUE_NOT_ALLOWED");

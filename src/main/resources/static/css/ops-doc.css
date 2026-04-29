@@ -1,0 +1,227 @@
+/* doc-split-ops 운영문서 전용 스타일 — 인라인 hex 0건, 토큰 100% (NFR-6).
+ * 다크모드 자동 대응: <html data-theme="dark">.
+ */
+
+:root {
+    --ops-primary:        #0f766e;
+    --ops-primary-50:     #ccfbf1;
+    --ops-surface:        #ffffff;
+    --ops-surface-2:      #f8fafc;
+    --ops-border:         #e2e8f0;
+    --ops-text:           #1e293b;
+    --ops-text-secondary: #64748b;
+
+    --ops-chip-fault:   #ef4444;
+    --ops-chip-support: #3b82f6;
+    --ops-chip-install: #22c55e;
+    --ops-chip-patch:   #f59e0b;
+    --ops-chip-inspect: #0f766e;
+    --ops-chip-bg-fault:   #fee2e2;
+    --ops-chip-bg-support: #dbeafe;
+    --ops-chip-bg-install: #dcfce7;
+    --ops-chip-bg-patch:   #fef3c7;
+    --ops-chip-bg-inspect: #ccfbf1;
+}
+
+[data-theme="dark"] {
+    --ops-primary:        #2dd4bf;
+    --ops-primary-50:     #134e4a;
+    --ops-surface:        #1e293b;
+    --ops-surface-2:      #0f172a;
+    --ops-border:         #334155;
+    --ops-text:           #e2e8f0;
+    --ops-text-secondary: #94a3b8;
+
+    --ops-chip-bg-fault:   #7f1d1d;
+    --ops-chip-bg-support: #1e3a8a;
+    --ops-chip-bg-install: #14532d;
+    --ops-chip-bg-patch:   #78350f;
+    --ops-chip-bg-inspect: #134e4a;
+}
+
+.ops-page {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 0 16px;
+    color: var(--ops-text);
+    background: var(--ops-surface);
+}
+
+.ops-page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--ops-border);
+    margin-bottom: 20px;
+}
+
+.ops-page-header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--ops-text);
+    flex: 1;
+}
+
+.group-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--ops-primary-50);
+    color: var(--ops-primary);
+}
+
+.ops-breadcrumb {
+    font-size: 0.78rem;
+    color: var(--ops-text-secondary);
+    margin-bottom: 8px;
+}
+
+.ops-breadcrumb a {
+    color: var(--ops-text-secondary);
+    text-decoration: none;
+}
+
+.ops-section {
+    background: var(--ops-surface);
+    border: 1px solid var(--ops-border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.ops-section-title {
+    font-weight: 700;
+    color: var(--ops-text);
+    border-left: 4px solid var(--ops-primary);
+    padding-left: 10px;
+    margin: 0 0 14px;
+    font-size: 1.05rem;
+}
+
+.ops-form-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ops-form-table th {
+    width: 140px;
+    background: var(--ops-surface-2);
+    color: var(--ops-text-secondary);
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    border: 1px solid var(--ops-border);
+    font-size: 0.85rem;
+}
+
+.ops-form-table td {
+    padding: 10px 12px;
+    border: 1px solid var(--ops-border);
+    background: var(--ops-surface);
+}
+
+.ops-form-table input[type="text"],
+.ops-form-table input[type="date"],
+.ops-form-table input[type="number"],
+.ops-form-table select,
+.ops-form-table textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--ops-border);
+    border-radius: 4px;
+    background: var(--ops-surface);
+    color: var(--ops-text);
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+
+.ops-form-table textarea { min-height: 80px; resize: vertical; }
+
+.ops-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin: 16px 0;
+}
+
+.ops-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--ops-border);
+    background: var(--ops-surface);
+    color: var(--ops-text);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.ops-btn-primary {
+    background: var(--ops-primary);
+    color: #fff;
+    border-color: var(--ops-primary);
+}
+
+.ops-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--ops-surface);
+}
+
+.ops-list-table th,
+.ops-list-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--ops-border);
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--ops-text);
+}
+
+.ops-list-table thead th {
+    background: var(--ops-surface-2);
+    color: var(--ops-text-secondary);
+    font-weight: 600;
+}
+
+.ops-list-table tbody tr:hover { background: var(--ops-surface-2); cursor: pointer; }
+
+.ops-type-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.ops-type-INSPECT { background: var(--ops-chip-bg-inspect); color: var(--ops-chip-inspect); }
+.ops-type-FAULT   { background: var(--ops-chip-bg-fault);   color: var(--ops-chip-fault); }
+.ops-type-SUPPORT { background: var(--ops-chip-bg-support); color: var(--ops-chip-support); }
+.ops-type-INSTALL { background: var(--ops-chip-bg-install); color: var(--ops-chip-install); }
+.ops-type-PATCH   { background: var(--ops-chip-bg-patch);   color: var(--ops-chip-patch); }
+
+.ops-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ops-text-secondary);
+    background: var(--ops-surface-2);
+    border-radius: 8px;
+    border: 1px dashed var(--ops-border);
+}
+
+.ops-empty-state h3 { color: var(--ops-text); margin: 8px 0; }
+.ops-empty-state p { margin: 8px 0 16px; font-size: 0.88rem; }
+
+.ops-attachment-area {
+    border: 1px dashed var(--ops-border);
+    padding: 12px;
+    border-radius: 6px;
+    background: var(--ops-surface-2);
+}
+
+@media (max-width: 900px) {
+    .ops-form-table th { width: 110px; font-size: 0.8rem; }
+    .ops-form-table td { font-size: 0.8rem; }
+    .ops-actions { flex-direction: column; }
+    .ops-actions .ops-btn { width: 100%; }
+}
