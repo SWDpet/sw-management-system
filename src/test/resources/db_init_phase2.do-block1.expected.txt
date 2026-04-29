@@ -1,0 +1,12 @@
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_tb_document_org_unit') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT fk_tb_document_org_unit FOREIGN KEY (org_unit_id) REFERENCES tb_org_unit(unit_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_tb_document_support_target_type') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT ck_tb_document_support_target_type CHECK (support_target_type IS NULL OR support_target_type IN ('EXTERNAL','INTERNAL'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_tb_document_environment') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT ck_tb_document_environment CHECK (environment IS NULL OR environment IN ('PROD','TEST'));
+    END IF;
+END $$

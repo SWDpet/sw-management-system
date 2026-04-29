@@ -1,0 +1,8 @@
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_tb_document_region_code')
+       AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='sigungu_code') THEN
+        ALTER TABLE tb_document ADD CONSTRAINT fk_tb_document_region_code
+            FOREIGN KEY (region_code) REFERENCES sigungu_code(adm_sect_c);
+    END IF;
+END $$
