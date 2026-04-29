@@ -33,7 +33,7 @@ if %ERRORLEVEL%==0 if "%DB_URL%"=="" (
 REM Stop existing server first
 call server-stop.bat
 
-echo [START] Starting SW Manager on port 9090...
+echo [START] Starting SW Manager on port 8080...
 start /b mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local > server.log 2>&1
 
 REM Wait for startup
@@ -49,7 +49,7 @@ timeout /t 2 /nobreak >nul
 findstr /c:"Started SwManagerApplication" server.log >nul 2>&1
 if %ERRORLEVEL%==0 (
     echo [START] Server started successfully!
-    echo [START] Access: http://localhost:9090
+    echo [START] Access: http://localhost:8080
     exit /b 0
 )
 set /a RETRY+=1

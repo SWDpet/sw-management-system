@@ -19,7 +19,7 @@ C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot
 > **수동으로 만들 때**도 동일 형식. 예시:
 
 ```properties
-server.port=9090
+server.port=8080
 spring.datasource.url=jdbc:postgresql://호스트:포트/DB명
 spring.datasource.username=사용자명
 spring.datasource.password=비밀번호

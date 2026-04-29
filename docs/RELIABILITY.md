@@ -11,10 +11,10 @@
 bash server-restart.sh
 ```
 
-- 기존 포트(9090) PID 종료 → Maven `spring-boot:run` 재기동
+- 기존 포트(8080) PID 종료 → Maven `spring-boot:run` 재기동
 - DB_PASSWORD 자동 로드 (Windows User 환경변수)
 - 기동 타임아웃: ~8~15초 (실측)
-- 기동 완료 기준: 포트 9090 응답
+- 기동 완료 기준: 포트 8080 응답
 
 ---
 

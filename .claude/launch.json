@@ -4,8 +4,8 @@
     {
       "name": "swmanager",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "echo Spring Boot already running on port 9090 via server-restart.sh"],
-      "port": 9090,
+      "runtimeArgs": ["/c", "echo Spring Boot already running on port 8080 via server-restart.sh"],
+      "port": 8080,
       "autoPort": true
     }
   ]

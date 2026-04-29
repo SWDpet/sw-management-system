@@ -9,7 +9,7 @@
 - **이름**: SW Manager (sw-manager)
 - **목적**: SW Project Management System — 사업·점검·견적서·업무계획·문서 통합 관리
 - **스택**: Spring Boot 3.2.1 / Java 17 / PostgreSQL / Thymeleaf
-- **서버 포트**: 9090
+- **서버 포트**: 8080
 - **DB**: PostgreSQL @ `${DB_HOST}:${DB_PORT}/${DB_NAME}` (실제 좌표는 `.env` 또는 1Password — `docs/AGENT_SAFETY.md` §4-5 참조)
 - **빌드**: `./mvnw spring-boot:run` 또는 `bash server-restart.sh`
 

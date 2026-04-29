@@ -14,7 +14,7 @@
 # 로컬에서만 SQL 디버그를 활성화하는 방법을 보여줍니다.
 # ========================================
 
-server.port=9090
+server.port=8080
 
 # DB 연결 (비밀번호는 DB_PASSWORD 환경변수에서 읽음)
 # harness-hardening-v1 (2026-04-26): 좌표 dummy default — 실제 prod 좌표는
