@@ -2,65 +2,139 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>운영·유지보수 문서 목록</title>
-    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title>운영문서 목록</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        .container { max-width: 1500px; margin: auto; }
+        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .header-actions { display: flex; gap: 8px; }
+        .header-actions a, .header-actions button { padding: 8px 14px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; }
+        .btn-primary { background: #1cc88a; color: white; }
+        .btn-home { background: #858796; color: white; }
+        .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+
+        /* 필터 */
+        .filter-bar { background: white; border-radius: 10px; padding: 12px 18px; margin-bottom: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.82em; }
+        .filter-bar label { font-size: 0.82em; font-weight: 600; color: #5a5c69; }
+        .btn-search { padding: 7px 15px; background: #0F766E; color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+
+        /* 문서 생성 드롭다운 */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 8px; z-index: 10; overflow: hidden; }
+        .dropdown-content a { display: block; padding: 10px 16px; font-size: 0.85em; color: #333; text-decoration: none; }
+        .dropdown-content a:hover { background: #f0f0f0; }
+        .dropdown:hover .dropdown-content { display: block; }
+
+        /* 테이블 */
+        .list-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; font-size: 0.85em; border-bottom: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fc; font-weight: 600; color: #5a5c69; }
+        tr:hover { background: #f8f9fc; cursor: pointer; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600; color: white; }
+        .badge-draft { background: #858796; }
+        .badge-completed { background: #1cc88a; }
+        .badge-in_review { background: #f6c23e; }
+        .type-badge { background: #5a5c69; }
+        .type-INSPECT    { background: #36b9cc; }
+        .type-FAULT      { background: #e74a3b; }
+        .type-SUPPORT    { background: #6f42c1; }
+        .type-INSTALL    { background: #20c997; }
+        .type-PATCH      { background: #fd7e14; }
+        .empty-row td { text-align: center; color: #aaa; padding: 40px; }
+        .btn-link { color: #0F766E; text-decoration: none; font-weight: 600; }
+    </style>
 </head>
 <body>
-<div th:replace="~{fragments/top-nav :: top-nav}"></div>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+    <div class="container">
+        <div th:if="${successMessage}" class="alert alert-success"><i class="fas fa-check-circle"></i> <span th:text="${successMessage}"></span></div>
+        <div th:if="${errorMessage}" class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span></div>
 
-<main class="ops-page">
-    <div class="ops-breadcrumb">
-        <a th:href="@{/}">홈</a> &rsaquo; 운영·유지보수 문서 &rsaquo; 목록
-    </div>
-    <div class="ops-page-header">
-        <span class="group-chip">운영문서</span>
-        <h1>운영·유지보수 문서 목록</h1>
-        <div>
-            <a class="ops-btn" th:href="@{/ops-doc/fault/form}">+ 장애처리</a>
-            <a class="ops-btn" th:href="@{/ops-doc/support/form}">+ 업무지원</a>
-            <a class="ops-btn" th:href="@{/ops-doc/install/form}">+ 설치보고서</a>
-            <a class="ops-btn" th:href="@{/ops-doc/patch/form}">+ 패치내역서</a>
+        <div class="page-header">
+            <h2><i class="fas fa-tools"></i> 운영문서 목록 (D-02)</h2>
+            <div class="header-actions">
+                <div class="dropdown">
+                    <button class="btn-primary"><i class="fas fa-plus"></i> 문서 작성 ▾</button>
+                    <div class="dropdown-content">
+                        <a href="/document/create?docType=INSPECT"><i class="fas fa-clipboard-check"></i> 점검내역서</a>
+                        <a href="/ops-doc/fault/form"><i class="fas fa-exclamation-triangle"></i> 장애처리</a>
+                        <a href="/ops-doc/support/form"><i class="fas fa-hands-helping"></i> 업무지원</a>
+                        <a href="/ops-doc/install/form"><i class="fas fa-download"></i> 설치보고서</a>
+                        <a href="/ops-doc/patch/form"><i class="fas fa-puzzle-piece"></i> 패치내역서</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 필터 -->
+        <form class="filter-bar" action="/ops-doc/list" method="get">
+            <label>문서유형</label>
+            <select name="docType">
+                <option value="">전체</option>
+                <option value="INSPECT" th:selected="${docType == 'INSPECT'}">점검내역서</option>
+                <option value="FAULT" th:selected="${docType == 'FAULT'}">장애처리</option>
+                <option value="SUPPORT" th:selected="${docType == 'SUPPORT'}">업무지원</option>
+                <option value="INSTALL" th:selected="${docType == 'INSTALL'}">설치보고서</option>
+                <option value="PATCH" th:selected="${docType == 'PATCH'}">패치내역서</option>
+            </select>
+            <label>상태</label>
+            <select name="status">
+                <option value="">전체</option>
+                <option value="DRAFT" th:selected="${status == 'DRAFT'}">작성중</option>
+                <option value="IN_REVIEW" th:selected="${status == 'IN_REVIEW'}">검토중</option>
+                <option value="COMPLETED" th:selected="${status == 'COMPLETED'}">작성완료</option>
+            </select>
+            <label>검색</label>
+            <input type="text" name="keyword" th:value="${keyword}" placeholder="문서번호/제목 검색">
+            <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
+        </form>
+
+        <!-- 목록 -->
+        <div class="list-section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>문서번호</th>
+                        <th>문서유형</th>
+                        <th>제목</th>
+                        <th>시스템</th>
+                        <th>지역</th>
+                        <th>상태</th>
+                        <th>작성자</th>
+                        <th>작성일</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="d, stat : ${documents}"
+                        th:attr="onclick=|location.href='/ops-doc/${d.docType.name().toLowerCase()}/${d.docId}'|">
+                        <td th:text="${stat.count}">1</td>
+                        <td th:text="${d.docNo}">-</td>
+                        <td>
+                            <span th:class="'badge type-' + ${d.docType?.name()}" th:text="${d.docType?.label()}">유형</span>
+                        </td>
+                        <td th:text="${d.title}">제목</td>
+                        <td th:text="${d.sysType ?: '-'}">-</td>
+                        <td th:text="${d.regionCode ?: '-'}">-</td>
+                        <td>
+                            <span th:class="'badge badge-' + ${#strings.toLowerCase(d.status?.name() ?: 'draft')}"
+                                  th:text="${d.status?.name() == 'COMPLETED' ? '작성완료' : (d.status?.name() == 'IN_REVIEW' ? '검토중' : '작성중')}">상태</span>
+                        </td>
+                        <td th:text="${d.author?.username ?: '-'}">-</td>
+                        <td th:text="${d.createdAt != null ? #temporals.format(d.createdAt, 'yyyy-MM-dd') : '-'}">-</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(documents)}" class="empty-row">
+                        <td colspan="9"><i class="fas fa-inbox"></i> 등록된 운영문서가 없습니다. 점검내역서는 점검 보고서 작성 후 자동 연계됩니다.</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <div th:if="${#lists.isEmpty(documents)}" class="ops-empty-state">
-        <i class="fas fa-folder-open" style="font-size:2.4rem; color:var(--ops-text-secondary);"></i>
-        <h3>등록된 운영문서가 없습니다</h3>
-        <p>위 버튼으로 신규 작성을 시작하거나, 점검내역서는 사업·인프라 메뉴에서 생성됩니다.</p>
-    </div>
-
-    <table th:if="${not #lists.isEmpty(documents)}" class="ops-list-table">
-        <thead>
-            <tr>
-                <th>유형</th>
-                <th>문서번호</th>
-                <th>제목</th>
-                <th>시스템</th>
-                <th>지역</th>
-                <th>상태</th>
-                <th>작성자</th>
-                <th>작성일</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="d : ${documents}"
-                th:attr="onclick=|location.href='/ops-doc/${d.docType.name().toLowerCase()}/${d.docId}'|">
-                <td>
-                    <span class="ops-type-chip"
-                          th:classappend="${'ops-type-' + d.docType.name()}"
-                          th:text="${d.docType.label()}">유형</span>
-                </td>
-                <td th:text="${d.docNo}">DOC-NO</td>
-                <td th:text="${d.title}">제목</td>
-                <td th:text="${d.sysType ?: '-'}">UPIS</td>
-                <td th:text="${d.regionCode ?: '-'}">-</td>
-                <td th:text="${d.status?.name() ?: 'DRAFT'}">DRAFT</td>
-                <td th:text="${d.author?.username ?: '-'}">-</td>
-                <td th:text="${#temporals.format(d.createdAt, 'yyyy-MM-dd')}">2026-04-29</td>
-            </tr>
-        </tbody>
-    </table>
-</main>
 </body>
 </html>

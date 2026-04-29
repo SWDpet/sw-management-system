@@ -261,14 +261,25 @@ public class DocumentController {
             }
         }
 
-        // 문서유형별 템플릿 분기
+        // doc-split-ops: INSPECT 는 DocumentType enum 에서 제거됐지만 점검내역서 작성 화면
+        // (doc-inspect.html) 은 90% 완성된 InspectReport 흐름을 그대로 사용. 직접 라우팅.
+        if ("INSPECT".equalsIgnoreCase(docType)) {
+            return "document/doc-inspect";
+        }
+
+        // 사업문서 3 종 (COMMENCE/INTERIM/COMPLETION) 만 enum 매핑.
         DocumentType docTypeEnum;
         try {
             docTypeEnum = DocumentType.fromString(docType);
         } catch (IllegalArgumentException e) {
             docTypeEnum = null;
         }
-        return docTypeEnum != null ? docTypeEnum.templateName() : "document/document-list";
+        if (docTypeEnum != null) return docTypeEnum.templateName();
+
+        // 알 수 없는 docType 은 안전하게 사업문서 목록으로 redirect (document-list 가 documents
+        // null 일 때 NPE 던지는 걸 방지 — codex P1 회귀 방어).
+        rttr.addFlashAttribute("errorMessage", "지원하지 않는 문서 유형입니다: " + docType);
+        return "redirect:/document/list";
     }
 
     // === 문서 저장 (공통 API) ===

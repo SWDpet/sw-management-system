@@ -37,11 +37,25 @@ public class OpsDocController {
     private final OpsDocAttachmentService attachmentService;
     private final OpsDocSignatureService signatureService;
 
-    /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 도 포함). */
+    /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
-    public String list(Model model) {
-        List<OpsDocument> docs = opsDocService.findAll();
+    public String list(@RequestParam(required = false) String docType,
+                       @RequestParam(required = false) String status,
+                       @RequestParam(required = false) String keyword,
+                       Model model) {
+        List<OpsDocument> docs = opsDocService.findAll().stream()
+                .filter(d -> docType == null || docType.isBlank()
+                        || (d.getDocType() != null && d.getDocType().name().equals(docType)))
+                .filter(d -> status == null || status.isBlank()
+                        || (d.getStatus() != null && d.getStatus().name().equals(status)))
+                .filter(d -> keyword == null || keyword.isBlank()
+                        || (d.getDocNo() != null && d.getDocNo().contains(keyword))
+                        || (d.getTitle() != null && d.getTitle().contains(keyword)))
+                .toList();
         model.addAttribute("documents", docs);
+        model.addAttribute("docType", docType);
+        model.addAttribute("status", status);
+        model.addAttribute("keyword", keyword);
         model.addAttribute("activeMenu", "ops");
         return "ops-doc/list";
     }
