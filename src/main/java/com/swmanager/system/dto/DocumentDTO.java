@@ -57,6 +57,9 @@ public class DocumentDTO {
     private String regionSidoNm;      // 조회 시 sigungu_code 에서 룩업
     private String regionSigunguNm;   // 조회 시 sigungu_code 에서 룩업
 
+    // 점검내역서 월 뱃지용 (목록 표시) — inspect_report.inspect_month (예: "2026-04")
+    private String inspectMonth;
+
     // 문서 상세 섹션
     private List<DetailSectionDTO> sections;
 

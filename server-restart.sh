@@ -5,7 +5,7 @@
 # 스크립트가 위치한 디렉토리를 프로젝트 루트로 자동 인식 (어떤 PC에서도 동작)
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$PROJECT_DIR/server.log"
-PORT=9090
+PORT=8080
 
 # [환경변수 자동 보정] DB_PASSWORD 가 현재 셸에 없으면 Windows 사용자 환경변수에서 읽어옴.
 # (PowerShell 로 [Environment]::GetEnvironmentVariable) — Claude/IDE 가 오래 떠 있을 때 유용.

@@ -866,7 +866,7 @@ public class HwpxExportService {
 
             Long contAmt = (proj != null && proj.getContAmt() != null) ? proj.getContAmt() : 0L;
             map.put("{{계약금액}}", String.format("%,d", contAmt));
-            map.put("{{계약금액한글}}", convertToKoreanAmount(contAmt));
+            map.put("{{계약금액한글}}", convertToKoreanAmount(contAmt) + "원");
 
             // 계약년월일
             if (proj != null && proj.getContDt() != null) {
@@ -882,8 +882,9 @@ public class HwpxExportService {
             String submitDateStr = getStr(compFullData, "submitDate", "");
             String actualDateK;
             try {
-                actualDateK = !actualDateStr.isEmpty() ? formatDateKoreanPadded(LocalDate.parse(actualDateStr)) : scheduledDate;
-            } catch (Exception e) { actualDateK = scheduledDate; }
+                // 실제준공일 미입력 시 공란 유지 (준공예정일 fallback 안 함)
+                actualDateK = !actualDateStr.isEmpty() ? formatDateKoreanPadded(LocalDate.parse(actualDateStr)) : "";
+            } catch (Exception e) { actualDateK = ""; }
             String submitDateK;
             try {
                 submitDateK = !submitDateStr.isEmpty() ? formatDateKoreanPadded(LocalDate.parse(submitDateStr)) : actualDateK;

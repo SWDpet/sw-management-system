@@ -339,6 +339,41 @@ public class DocumentController {
                 }
             }
 
+            // [중복 방지] 착수계/준공계 = projId 당 1건, 기성계 = projId+회차 당 1건
+            // — 신규 createDocument 호출 전에 검사하여 orphan row 방지.
+            if (projId != null && !(DocumentType.FAULT == docType || DocumentType.INSTALL == docType
+                    || DocumentType.PATCH == docType || DocumentType.SUPPORT == docType)
+                    && (DocumentType.COMMENCE == docType
+                        || DocumentType.COMPLETION == docType
+                        || DocumentType.INTERIM == docType)) {
+                Integer round = null;
+                if (DocumentType.INTERIM == docType) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> _secs = (List<Map<String, Object>>) requestData.get("sections");
+                    if (_secs != null) {
+                        for (Map<String, Object> sec : _secs) {
+                            if ("inspector".equals(sec.get("sectionKey"))) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> sd = (Map<String, Object>) sec.get("sectionData");
+                                Object r = sd != null ? sd.get("paymentRound") : null;
+                                if (r != null && !r.toString().isBlank()) {
+                                    try { round = Integer.parseInt(r.toString().trim()); } catch (NumberFormatException ignore) {}
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                Integer dupId = documentService.findDuplicateProjDoc(projId, docType, round, docId);
+                if (dupId != null) {
+                    String msg = (DocumentType.INTERIM == docType)
+                            ? "이 사업의 " + (round != null ? round + "차 " : "동일 회차 ") + "기성계가 이미 작성되었습니다."
+                            : "이 사업의 " + DocumentDTO.getDocTypeLabel(docType) + " 가 이미 작성되었습니다.";
+                    return ResponseEntity.badRequest().body(Map.of("success", false,
+                            "error", Map.of("code", "DUPLICATE", "message", msg, "existingDocId", dupId)));
+                }
+            }
+
             Document doc;
             if (docId != null) {
                 doc = documentService.getDocumentById(docId);

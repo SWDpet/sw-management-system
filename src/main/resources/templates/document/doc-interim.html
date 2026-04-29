@@ -129,11 +129,11 @@
                         <input type="number" id="insp_interim_day" min="1" max="31" style="width:60px;"> 일
                     </span>
                 </td></tr>
-                <tr><th>기성기간</th><td><input type="date" id="insp_period_from"></td>
-                    <th>~</th><td><input type="date" id="insp_period_to"></td></tr>
+                <tr><th>기성기간</th><td><input type="date" id="insp_period_from" onchange="calcPeriodRatio()"></td>
+                    <th>~</th><td><input type="date" id="insp_period_to" onchange="calcPeriodRatio()"></td></tr>
                 <tr><th>기성회차</th><td><input type="number" id="insp_payment_round" placeholder="기성회차"></td>
                     <th>금회기성금액</th><td><input type="number" id="insp_payment_amount" placeholder="금액"></td></tr>
-                <tr><th>기성율</th><td><input type="number" id="insp_payment_rate" placeholder="%" min="0" max="100" step="0.1"> %</td>
+                <tr><th>기성율</th><td><input type="number" id="insp_payment_rate" placeholder="%" min="0" max="100" step="0.1" oninput="calcInspectorPaymentAmount()"> %</td>
                     <th>수신</th><td><input type="text" id="insp_recipient" placeholder="지자체장 직함 귀하"></td></tr>
             </table>
         </div>
@@ -158,6 +158,13 @@
                     <th>준공기간(개월)</th><td><input type="number" id="detail_completionMonths" value="6" min="0" max="12" style="width:60px;" onchange="calcInterimPreview()"> 개월</td></tr>
                 <tr><th>전회 기성 비율(%)</th><td colspan="3"><input type="number" id="detail_prevRate" value="0" step="0.1" min="0" max="100" style="width:80px;" onchange="calcInterimPreview()"> %
                     <span class="help-text">금회 기성 비율은 기성검사원의 기성율을 사용합니다.</span></td></tr>
+                <tr><th>합계 절사 단위<br><span style="font-weight:400; font-size:0.78em; color:#888;">(설계서 D12)</span></th><td colspan="3">
+                    <select id="detail_truncDigit" style="width:120px;">
+                        <option value="3">백 단위 절사</option>
+                        <option value="4">천 단위 절사</option>
+                        <option value="5">만 단위 절사</option>
+                    </select>
+                    <span class="help-text">운영장비용 템플릿 한정 — D12 = ROUNDDOWN(D5+D9, -N)</span></td></tr>
             </table>
 
             <!-- SW 항목 (프로젝트 장비에서 자동 로드) -->
@@ -242,6 +249,35 @@
             var num = parseInt(document.getElementById('insp_amount').value) || 0;
             var formatted = Number(num).toLocaleString();
             document.getElementById('insp_amount_kr').textContent = '금' + formatted + '원(금' + convertToKorean(num) + '원)';
+        }
+
+        function calcInspectorPaymentAmount() {
+            var amount = parseFloat(document.getElementById('insp_amount').value) || 0;
+            var rate = parseFloat(document.getElementById('insp_payment_rate').value);
+            if (isNaN(rate)) return;
+            document.getElementById('insp_payment_amount').value = Math.round(amount * rate / 100);
+        }
+
+        function calcPeriodRatio() {
+            var pf = document.getElementById('insp_period_from').value;
+            var pt = document.getElementById('insp_period_to').value;
+            if (!pf || !pt) return;
+            function monthsInclusive(s, e) {
+                var sd = new Date(s), ed = new Date(e);
+                return (ed.getFullYear() - sd.getFullYear()) * 12 + (ed.getMonth() - sd.getMonth()) + 1;
+            }
+            var interimM = monthsInclusive(pf, pt);
+            if (interimM <= 0) return;
+            // 기성내역서 ▸ 수행기간 자동 채우기 ("yyyy.MM~yyyy.MM(N개월)")
+            var sf = pf.replace(/-/g, '.').substring(0, 7);
+            var ef = pt.replace(/-/g, '.').substring(0, 7);
+            document.getElementById('detail_periodText').value = sf + '~' + ef + '(' + interimM + '개월)';
+            // 기성기간(개월) 자동, 준공기간 = 사업 전체 - 기성기간
+            document.getElementById('detail_interimMonths').value = interimM;
+            if (currentProject && currentProject.startDt && currentProject.endDt) {
+                var totalM = monthsInclusive(currentProject.startDt, currentProject.endDt);
+                if (totalM > 0) document.getElementById('detail_completionMonths').value = Math.max(0, totalM - interimM);
+            }
         }
 
         function convertToKorean(num) {
@@ -384,6 +420,7 @@
             setVal('detail_periodText', d.periodText);
             setVal('detail_interimMonths', d.interimMonths); setVal('detail_prevRate', d.prevRate);
             setVal('detail_completionMonths', d.completionMonths);
+            if (d.truncDigit) setVal('detail_truncDigit', d.truncDigit);
             if (Array.isArray(d.items)) {
                 document.getElementById('interimItemBody').innerHTML = '';
                 d.items.forEach(function(it) {
@@ -562,6 +599,10 @@
                 .then(function(r) { return r.json(); })
                 .then(function(p) {
                     currentProject = p;
+                    // 운영장비(HW포함) 사업이면 유지보수항목 컬럼 헤더 변경
+                    var isHwInterim = p.maintType === 'HS' || p.maintType === 'DHS';
+                    var priceTh = document.querySelector('#interimItemTable thead th:nth-child(3)');
+                    if (priceTh) priceTh.textContent = isHwInterim ? '유지보수금액(VAT포함)' : '도입가(VAT포함)';
                     var projName = p.projNm || p.sysNm || '';
                     var recipient = buildRecipient(p.cityNm, p.distNm, p.orgNm);
                     var recipientHead = buildRecipientHead(p.cityNm, p.distNm, p.orgNm);
@@ -643,6 +684,7 @@
                     interimMonths: parseInt(document.getElementById('detail_interimMonths').value) || 6,
                     completionMonths: parseInt(document.getElementById('detail_completionMonths').value) || 6,
                     prevRate: parseFloat(document.getElementById('detail_prevRate').value) || 0,
+                    truncDigit: parseInt(document.getElementById('detail_truncDigit').value) || 3,
                     items: collectInterimItems()
                 }}
             ];
@@ -672,7 +714,8 @@
                     alert('저장되었습니다.');
                     location.href = '/document/detail/' + data.docId;
                 } else {
-                    alert(data.error || '저장 실패');
+                    var msg = (data.error && data.error.message) ? data.error.message : (data.error || '저장 실패');
+                    alert(msg);
                 }
             });
         }

@@ -102,14 +102,27 @@ public class InspectReportService {
     /** COMPLETED 점검내역서를 tb_document에 연계 (없으면 생성, 있으면 갱신) */
     private void linkToDocument(InspectReport report) {
         try {
-            String docNo = "INSP-" + report.getId();
-            Document doc = documentRepository.findByDocNo(docNo).orElse(null);
+            String month = report.getInspectMonth();
+            String yyyy = month != null && month.length() >= 4
+                    ? month.substring(0, 4)
+                    : String.valueOf(java.time.LocalDate.now().getYear());
+            String mm = month != null && month.length() >= 7 ? month.substring(5, 7) : null;
+            String docNo = "INSP-" + yyyy + "-" + report.getId();
+            // 신규 포맷 → 월포함 중간포맷 → 최구포맷(id only) 순으로 룩업 후 마이그레이션
+            String monthlyFormat = mm != null
+                    ? "INSP-" + yyyy + "-" + mm + "-" + report.getId()
+                    : null;
+            Document doc = documentRepository.findByDocNo(docNo)
+                    .orElseGet(() -> monthlyFormat != null
+                            ? documentRepository.findByDocNo(monthlyFormat)
+                                    .orElseGet(() -> documentRepository.findByDocNo("INSP-" + report.getId()).orElse(null))
+                            : documentRepository.findByDocNo("INSP-" + report.getId()).orElse(null));
 
             if (doc == null) {
                 doc = new Document();
-                doc.setDocNo(docNo);
                 doc.setDocType(DocumentType.INSPECT);
             }
+            doc.setDocNo(docNo);
 
             doc.setSysType(report.getSysType());
             doc.setTitle(report.getDocTitle() != null ? report.getDocTitle() : "점검내역서");

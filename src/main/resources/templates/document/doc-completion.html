@@ -184,6 +184,7 @@
                 </tbody>
             </table>
             <button class="btn-add-row" onclick="addInspectRow()" style="margin-top:8px;"><i class="fas fa-plus"></i> 항목 추가</button>
+            <button class="btn-add-row" onclick="duplicateLastInspectRow()" style="margin-top:8px; margin-left:6px;"><i class="fas fa-copy"></i> 직전 행 복제</button>
         </div>
     </div>
 
@@ -209,6 +210,24 @@
         function addInspectRow() {
             var html = '<tr><td><input type="date"></td><td><textarea rows="3" style="width:100%;resize:vertical;"></textarea></td>' +
                 '<td><select><option value="">선택</option><option value="NORMAL">정상(이상없음)</option><option value="CHECK">점검</option></select></td>' +
+                '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
+            document.getElementById('inspectBody').insertAdjacentHTML('beforeend', html);
+        }
+
+        function duplicateLastInspectRow() {
+            var rows = document.querySelectorAll('#inspectBody tr');
+            if (rows.length === 0) { addInspectRow(); return; }
+            var src = rows[rows.length - 1];
+            var date = (src.querySelector('input[type=date]') || {}).value || '';
+            var memo = (src.querySelector('textarea') || {}).value || '';
+            var status = (src.querySelector('select') || {}).value || '';
+            function esc(s) { return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+            var html = '<tr><td><input type="date" value="' + esc(date) + '"></td>' +
+                '<td><textarea rows="3" style="width:100%;resize:vertical;">' + esc(memo) + '</textarea></td>' +
+                '<td><select><option value="">선택</option>' +
+                '<option value="NORMAL"' + (status === 'NORMAL' ? ' selected' : '') + '>정상(이상없음)</option>' +
+                '<option value="CHECK"'  + (status === 'CHECK'  ? ' selected' : '') + '>점검</option>' +
+                '</select></td>' +
                 '<td><button class="btn-del-row" onclick="this.closest(\'tr\').remove()">×</button></td></tr>';
             document.getElementById('inspectBody').insertAdjacentHTML('beforeend', html);
         }
@@ -674,7 +693,7 @@
                     alert('저장되었습니다.');
                     location.href = '/document/detail/' + data.docId;
                 } else {
-                    alert(data.error || '저장 실패');
+                    alert((data.error && data.error.message) ? data.error.message : (data.error || '저장 실패'));
                 }
             });
         }

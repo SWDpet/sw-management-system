@@ -1576,7 +1576,7 @@
                         location.href = '/document/detail/' + data.docId;
                     }
                 } else {
-                    alert(data.error || '저장 실패');
+                    alert((data.error && data.error.message) ? data.error.message : (data.error || '저장 실패'));
                 }
             });
         }

@@ -7,7 +7,7 @@
 ## 프로젝트 요약
 
 - **SW Manager** — Spring Boot 3.2.1 / Java 17 / PostgreSQL / Thymeleaf
-- **서버 포트**: 9090
+- **서버 포트**: 8080
 - **DB**: PostgreSQL @ `${DB_HOST}:${DB_PORT}/${DB_NAME}` (실제 좌표는 환경변수 또는 1Password)
 - **빌드**: `./mvnw spring-boot:run` 또는 `bash server-restart.sh`
 

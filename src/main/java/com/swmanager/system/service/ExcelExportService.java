@@ -1557,16 +1557,36 @@ public class ExcelExportService {
         long paymentAmt = toLong(inspData.get("paymentAmount"));
         // 금회 기성율: 기성검사원 > inspector.paymentRate (% 단위, 예: 50)
         double currRate = toDouble(inspData.get("paymentRate"));
+        // paymentAmt 가 비어있고 비율이 있으면 계약금액×비율/100 으로 보정
+        if (paymentAmt == 0 && currRate > 0 && contAmt > 0) {
+            paymentAmt = Math.round(contAmt * currRate / 100.0);
+        }
         // 전회 기성율: 기성내역서 폼 입력 (% 단위)
         double prevRate = toDouble(data.get("prevRate"));
         double cumRate = prevRate + currRate;              // 기성누계 비율
         if (cumRate > 100) cumRate = 100;
         double completionRate = 100 - cumRate;             // 준공금 비율
 
-        // 강릉시 템플릿 로드 (xlsx)
-        ClassPathResource res = new ClassPathResource("templates/excel/interim_template.xlsx");
+        // maint_type 별 템플릿 분기: HS/DHS = HW 포함 → 운영장비용 / 그 외 = SW용
+        String maintType = proj != null ? proj.getMaintType() : null;
+        boolean isHwTemplate = "HS".equals(maintType) || "DHS".equals(maintType);
+        String tmplPath = isHwTemplate
+                ? "templates/excel/interim_template_hw.xlsx"
+                : "templates/excel/interim_template.xlsx";
+        // 회차 (기성검사원 입력 paymentRound, 기본 1)
+        int round = (int) toDouble(inspData.get("paymentRound"));
+        if (round == 0) round = 1;
+
+        ClassPathResource res = new ClassPathResource(tmplPath);
         try (InputStream is = res.getInputStream();
              XSSFWorkbook wb = new XSSFWorkbook(is)) {
+
+            if (isHwTemplate) {
+                int truncDigit = (int) toDouble(data.get("truncDigit"));
+                if (truncDigit < 3 || truncDigit > 5) truncDigit = 3;
+                populateHwInterimTemplate(wb, projNm, distNm, year, contAmt, paymentAmt,
+                        currRate, prevRate, round, items, inspData, truncDigit, periodText);
+            } else {
 
             // ── [0] 표지 ──
             Sheet cover = wb.getSheet("표지");
@@ -1607,6 +1627,7 @@ public class ExcelExportService {
                 setNumericDirect(geo, 3, 10, completionMonths);
                 setNumericDirect(geo, 3, 11, Math.round(h4 * completionRate / 100.0));
             }
+            } // end else (SW용)
 
             wb.setForceFormulaRecalculation(true);
             org.apache.poi.xssf.usermodel.XSSFFormulaEvaluator.evaluateAllFormulaCells(wb);
@@ -1614,6 +1635,133 @@ public class ExcelExportService {
             wb.write(out);
             return out.toByteArray();
         }
+    }
+
+    /**
+     * 운영장비용(HW+SW) 기성내역서 템플릿 채우기.
+     * 시트 구성: 표지 / 기성내역서 / 설계서 / 참고
+     * 항목별 금액은 설계서 시트의 기존 수식이 자동 계산하므로
+     * 여기서는 표지·헤더 텍스트와 금회/전회 기성율(H12/F12)만 주입한다.
+     */
+    private void populateHwInterimTemplate(XSSFWorkbook wb, String projNm, String distNm,
+            int year, long contAmt, long paymentAmt,
+            double currRate, double prevRate, int round,
+            List<Map<String, Object>> items, Map<String, Object> inspData,
+            int truncDigit, String periodText) {
+
+        Sheet cover = wb.getSheet("표지");
+        if (cover != null) {
+            setStringDirect(cover, 4, 0, projNm);
+            setStringDirect(cover, 5, 0, "기성(" + round + "회) 내역서");
+            setStringDirect(cover, 14, 0, year + ". " + currentMonthLabel(inspData));
+            setStringDirect(cover, 21, 0, "  " + (distNm == null ? "" : distNm));
+        }
+
+        Sheet detail = wb.getSheet("기성내역서");
+        if (detail != null) {
+            // 행 9 에 "사. 수행기간" 새로 삽입 — 기존 9~18 행 한 줄씩 아래로(머지/수식 자동 시프트)
+            detail.shiftRows(8, 17, 1);
+            setStringDirect(detail, 0, 0, "기성(제" + round + "회) 내역서");
+            setStringDirect(detail, 2, 0, "가. 용    역     명 : " + projNm);
+            setStringDirect(detail, 3, 0, "나. 계  약  금  액 : 금"
+                    + HwpxExportService.convertToKoreanAmount(contAmt)
+                    + "원(\\" + String.format("%,d", contAmt) + ")");
+            setStringDirect(detail, 7, 0, "바. 금회기성신청금액 : 금"
+                    + HwpxExportService.convertToKoreanAmount(paymentAmt)
+                    + "원(\\" + String.format("%,d", paymentAmt) + ")");
+            // 옛 템플릿이 L8 에 잔여 숫자(8,190,000) 가 남아있어 보임 — 명시적으로 비움
+            Row r8 = detail.getRow(7);
+            if (r8 != null) {
+                Cell oldL8 = r8.getCell(11);
+                if (oldL8 != null) r8.removeCell(oldL8);
+            }
+            setStringDirect(detail, 8, 0, "사. 수행기간 : " + (periodText == null ? "" : periodText));
+            applyFontSize(wb, detail, 8, 0, (short) 12);
+            setStringDirect(detail, 9, 0, "아. 내       역(부가가치세 포함)");
+        }
+
+        Sheet plan = wb.getSheet("설계서");
+        if (plan != null) {
+            // 항목 매핑: items[0..3] → HW 2개(B6/B7,D6/D7) + SW 2개(B10/B11,D10/D11)
+            int[] itemRows = { 5, 6, 9, 10 }; // POI 0-index → B6/D6, B7/D7, B10/D10, B11/D11
+            for (int i = 0; i < itemRows.length && i < items.size(); i++) {
+                Map<String, Object> it = items.get(i);
+                String name = str(it.get("name"));
+                long unitPrice = toLong(it.get("unitPrice"));
+                if (!name.isBlank()) setStringDirect(plan, itemRows[i], 1, name);
+                setNumericDirect(plan, itemRows[i], 3, unitPrice);
+            }
+
+            // 비율(0~1) 변환
+            double prev = prevRate / 100.0;
+            double curr = currRate / 100.0;
+            double cum = prev + curr;
+            if (cum > 1.0) cum = 1.0;
+
+            // 전회기성 비율: F5,F6,F7,F9,F10,F11,F12  (행 index: 4,5,6,8,9,10,11)
+            int[] rateRows = { 4, 5, 6, 8, 9, 10, 11 };
+            for (int r : rateRows) setNumericDirect(plan, r, 5, prev);   // F열
+            for (int r : rateRows) setNumericDirect(plan, r, 7, curr);   // H열
+            for (int r : rateRows) setNumericDirect(plan, r, 9, cum);    // J열 (누계)
+
+            // D12 절사 단위 (백/천/만 → -3/-4/-5)
+            Row d12row = plan.getRow(11);
+            if (d12row == null) d12row = plan.createRow(11);
+            Cell d12 = d12row.getCell(3);
+            if (d12 == null) d12 = d12row.createCell(3, CellType.FORMULA);
+            d12.setCellFormula("ROUNDDOWN((D5+D9),-" + truncDigit + ")");
+        }
+
+        // 기성내역서 시트 합계 행(행 삽입 후 B19/E19/G19)도 같은 절사 단위 적용
+        Sheet detailSh = wb.getSheet("기성내역서");
+        if (detailSh != null) {
+            Row r19 = detailSh.getRow(18);
+            if (r19 == null) r19 = detailSh.createRow(18);
+            setSumFormula(r19, 1, "ROUNDDOWN((SUM(B13+B16)),-" + truncDigit + ")");
+            setSumFormula(r19, 4, "ROUNDDOWN((E13+E16),-" + truncDigit + ")");
+            setSumFormula(r19, 6, "ROUNDDOWN((G13+G16),-" + truncDigit + ")");
+
+            // 항목 이름: items[0..3] → A14/A15/A17/A18 (행 삽입 후, 2-space 들여쓰기)
+            int[] nameRows = { 13, 14, 16, 17 };
+            for (int i = 0; i < nameRows.length && i < items.size(); i++) {
+                String name = str(items.get(i).get("name"));
+                if (!name.isBlank()) setStringDirect(detailSh, nameRows[i], 0, "  " + name);
+            }
+        }
+    }
+
+    private void applyFontSize(XSSFWorkbook wb, Sheet sheet, int rowIdx, int colIdx, short pts) {
+        if (sheet == null) return;
+        Row row = sheet.getRow(rowIdx);
+        if (row == null) return;
+        Cell cell = row.getCell(colIdx);
+        if (cell == null) return;
+        org.apache.poi.ss.usermodel.Font f = wb.createFont();
+        f.setFontName("맑은 고딕");
+        f.setFontHeightInPoints(pts);
+        CellStyle cs = wb.createCellStyle();
+        CellStyle existing = cell.getCellStyle();
+        if (existing != null) cs.cloneStyleFrom(existing);
+        cs.setFont(f);
+        cell.setCellStyle(cs);
+    }
+
+    private void setSumFormula(Row row, int colIdx, String formula) {
+        Cell c = row.getCell(colIdx);
+        CellStyle keep = (c != null) ? c.getCellStyle() : null;
+        if (c != null) row.removeCell(c);
+        c = row.createCell(colIdx, CellType.FORMULA);
+        if (keep != null) c.setCellStyle(keep);
+        c.setCellFormula(formula);
+    }
+
+    private String currentMonthLabel(Map<String, Object> inspData) {
+        Object m = inspData != null ? inspData.get("month") : null;
+        if (m != null && !String.valueOf(m).isBlank()) {
+            try { return String.format("%02d", Integer.parseInt(String.valueOf(m).trim())); }
+            catch (NumberFormatException ignore) { return String.valueOf(m); }
+        }
+        return String.format("%02d", java.time.LocalDate.now().getMonthValue());
     }
 
     /** 소수점 2자리까지만 표기하되 불필요한 0 제거 */
