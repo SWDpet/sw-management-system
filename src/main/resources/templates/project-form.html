@@ -70,6 +70,94 @@
             box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
         }
 
+        /* === PDF 자동 입력 (sprint pdf-contract-autofill, PCA-1) === */
+        .pdf-upload-card {
+            margin: 0 30px 20px;
+            padding: 18px 22px;
+            background: linear-gradient(135deg, #F0FDFA 0%, #FAFAF9 100%);
+            border: 1px solid #99F6E4;
+            border-radius: 10px;
+            display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        }
+        .pdf-upload-card.disabled { opacity: 0.55; }
+        .pdf-upload-card .pdf-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: #0F766E; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; flex-shrink: 0;
+        }
+        .pdf-upload-card .pdf-text { flex: 1; min-width: 200px; }
+        .pdf-upload-card .pdf-title { font-weight: 700; color: #134E4A; font-size: 0.95rem; }
+        .pdf-upload-card .pdf-hint  { color: #57534E; font-size: 0.8rem; margin-top: 2px; }
+        .btn-pdf-upload {
+            background: #0F766E; color: white; padding: 10px 20px;
+            border-radius: 8px; font-weight: 600; cursor: pointer;
+            border: none; font-size: 0.9rem;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: all 0.15s;
+        }
+        .btn-pdf-upload:hover { background: #115E59; transform: translateY(-1px); }
+        .btn-pdf-upload:disabled { background: #A8A29E; cursor: not-allowed; transform: none; }
+
+        /* "AI 추출" 배지 — input/select 우측 상단에 띄움 */
+        .form-group { position: relative; }
+        .form-group input.ai-extracted,
+        .form-group select.ai-extracted {
+            border-color: #0F766E !important;
+            background-color: #F0FDFA !important;
+            box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.08);
+        }
+        .ai-badge {
+            position: absolute; top: -2px; right: 4px;
+            font-size: 0.65rem; padding: 2px 7px;
+            background: #0F766E; color: white;
+            border-radius: 10px; font-weight: 600;
+            pointer-events: none; letter-spacing: 0.02em;
+        }
+
+        /* 동의 모달 (NFR-9) */
+        .consent-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 1100;
+            justify-content: center; align-items: center;
+        }
+        .consent-modal-box {
+            background: white; padding: 32px; border-radius: 12px;
+            max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .consent-modal-title {
+            font-size: 1.15rem; font-weight: 700; color: #134E4A; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .consent-modal-body {
+            color: #44403C; font-size: 0.9rem; line-height: 1.6; margin-bottom: 22px;
+        }
+        .consent-modal-body strong { color: #0F766E; }
+        .consent-modal-btns { display: flex; justify-content: flex-end; gap: 10px; }
+        .btn-consent-cancel {
+            padding: 10px 20px; border-radius: 8px; border: 1px solid #E7E5E4;
+            background: white; cursor: pointer; font-weight: 600;
+        }
+        .btn-consent-ok {
+            padding: 10px 20px; border-radius: 8px; border: none;
+            background: #0F766E; color: white; cursor: pointer; font-weight: 600;
+        }
+
+        /* 토스트 */
+        .pdf-toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: #0F766E; color: white;
+            padding: 12px 18px; border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            font-size: 0.88rem; z-index: 1200;
+            animation: pdf-toast-in 0.2s ease;
+        }
+        .pdf-toast.warn { background: #C2410C; }
+        .pdf-toast.error { background: #B91C1C; }
+        @keyframes pdf-toast-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -90,6 +178,19 @@
             <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
         </div>
 
+        <!-- ★ PDF 자동 입력 (sprint pdf-contract-autofill, PCA-1) — API 키 설정 시에만 노출 -->
+        <div th:if="${@anthropicVisionClient.isConfigured()}" class="pdf-upload-card" id="pdfUploadCard">
+            <div class="pdf-icon"><i class="fas fa-file-pdf"></i></div>
+            <div class="pdf-text">
+                <div class="pdf-title">전자계약서 PDF 로 자동 입력</div>
+                <div class="pdf-hint">PDF 업로드 시 폼이 자동 채워집니다 — 검토 후 [저장] 클릭</div>
+            </div>
+            <button type="button" class="btn-pdf-upload" onclick="document.getElementById('pdfUploadInput').click();">
+                <i class="fas fa-upload"></i> PDF 선택
+            </button>
+            <input type="file" id="pdfUploadInput" accept=".pdf,application/pdf" hidden onchange="handlePdfUpload(this)">
+        </div>
+
         <!-- ① 기본 및 담당자 정보 -->
         <fieldset>
             <legend><i class="fas fa-user-check"></i> 기본 및 담당자 정보</legend>
@@ -108,10 +209,11 @@
                         sw_pjt.person_id = users.user_id (userSeq)
                         표시: users.username  +  users.team_nm
                     -->
-                    <select name="personId">
+                    <select id="personSelect" name="personId" onchange="autoFillContDept()">
                         <option value="">-- 담당자 선택 --</option>
                         <option th:each="p : ${personList}"
                                 th:value="${p.userSeq}"
+                                th:attr="data-team-nm=${p.teamNm}"
                                 th:text="${p.username + ' (' + p.teamNm + ')'}"
                                 th:selected="${p.userSeq == project.personId}">
                         </option>
@@ -371,6 +473,26 @@
     </form>
 </div>
 
+<!-- PDF 자동 입력 동의 모달 (NFR-9, 첫 사용 시 1회) -->
+<div id="pdfConsentModal" class="consent-modal-overlay">
+    <div class="consent-modal-box">
+        <div class="consent-modal-title">
+            <i class="fas fa-shield-alt" style="color:#0F766E;"></i> PDF 자동 입력 사용 안내
+        </div>
+        <div class="consent-modal-body">
+            업로드하신 PDF 의 페이지 이미지가 <strong>Anthropic Claude Vision API</strong> 로 전송되어 텍스트가 추출됩니다.<br><br>
+            • 추출된 데이터는 폼에 자동 채워지며, 사용자 검토·수정 후 [저장] 클릭 시에만 DB 에 저장됩니다.<br>
+            • PDF 본문은 서버에 영구 저장되지 않습니다 (메모리 처리 후 즉시 폐기).<br>
+            • 이 안내는 <strong>최초 1회만</strong> 표시됩니다.<br><br>
+            동의하지 않으시면 기존처럼 수동 입력하실 수 있습니다.
+        </div>
+        <div class="consent-modal-btns">
+            <button type="button" class="btn-consent-cancel" onclick="closePdfConsent(false)">취소</button>
+            <button type="button" class="btn-consent-ok" onclick="closePdfConsent(true)">동의하고 업로드</button>
+        </div>
+    </div>
+</div>
+
 <!-- 저장 완료 모달 -->
 <div id="successModal" class="modal-overlay">
     <div class="modal-box">
@@ -475,6 +597,219 @@ function mapSysMst() {
     const sel = document.getElementById('sysMstSelect');
     const opt = sel.options[sel.selectedIndex];
     document.getElementById('sysNmEn').value = (opt && opt.dataset.cd) ? opt.dataset.cd : '';
+}
+
+// ── 사업담당자 → 계약부서 자동 채움 (FR-11, PCA-1) ────────────────
+function autoFillContDept() {
+    const sel = document.getElementById('personSelect');
+    if (!sel) return;
+    const opt = sel.options[sel.selectedIndex];
+    const teamNm = (opt && opt.dataset.teamNm) ? opt.dataset.teamNm : '';
+    const contDept = document.querySelector('input[name="contDept"]');
+    if (contDept) {
+        contDept.value = teamNm;
+        // 사용자가 PDF 자동 채움 후 personId 변경하면 contDept 도 갱신 → ai-extracted 마크 제거
+        contDept.classList.remove('ai-extracted');
+        const badge = contDept.parentElement.querySelector('.ai-badge');
+        if (badge) badge.remove();
+    }
+}
+
+// ── PDF 자동 입력 (sprint pdf-contract-autofill, PCA-1) ────────────
+const PDF_CONSENT_KEY = 'pca-vision-consent-given';
+let pendingPdfFile = null;
+
+/** 핵심 5 필드 중 하나라도 입력되어 있는지 (FR-14 confirm 트리거) */
+function hasUserInput() {
+    const keys = ['projNm', 'contAmt', 'personId', 'cityNm', 'contDt'];
+    return keys.some(name => {
+        const el = document.querySelector(`[name="${name}"]`);
+        return el && el.value && el.value.trim() !== '';
+    });
+}
+
+function handlePdfUpload(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    pendingPdfFile = file;
+    // 입력 element 는 재사용 위해 reset
+    input.value = '';
+
+    // [FR-14] 사용자 입력 있으면 confirm
+    if (hasUserInput()) {
+        if (!confirm('이미 입력된 값이 있습니다. PDF 의 데이터로 덮어쓰시겠습니까?')) {
+            pendingPdfFile = null;
+            return;
+        }
+    }
+
+    // [NFR-9] 첫 사용 시 동의 모달
+    if (localStorage.getItem(PDF_CONSENT_KEY) === '1') {
+        startPdfUpload();
+    } else {
+        document.getElementById('pdfConsentModal').style.display = 'flex';
+    }
+}
+
+function closePdfConsent(agreed) {
+    document.getElementById('pdfConsentModal').style.display = 'none';
+    if (agreed) {
+        localStorage.setItem(PDF_CONSENT_KEY, '1');
+        startPdfUpload();
+    } else {
+        pendingPdfFile = null;
+    }
+}
+
+async function startPdfUpload() {
+    if (!pendingPdfFile) return;
+
+    showPdfToast('PDF 분석 중... (약 10초 소요)', 'info', 30000);
+
+    const fd = new FormData();
+    fd.append('file', pendingPdfFile);
+    pendingPdfFile = null;
+
+    const csrfTok = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHdr = document.querySelector('meta[name="_csrf_header"]')?.content;
+    const headers = (csrfTok && csrfHdr) ? { [csrfHdr]: csrfTok } : {};
+
+    try {
+        const res = await fetch('/projects/parse-contract-pdf', {
+            method: 'POST',
+            headers,
+            body: fd
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            showPdfToast(data.error || ('PDF 처리 실패 (HTTP ' + res.status + ')'), 'error', 5000);
+            return;
+        }
+
+        await applyPdfResult(data);
+    } catch (e) {
+        console.error('[PDF upload]', e);
+        showPdfToast('PDF 업로드 중 오류: ' + e.message, 'error', 5000);
+    }
+}
+
+/** ContractParseResultDTO → 폼 채움 + AI 배지 */
+async function applyPdfResult(dto) {
+    // 1) cityNm 먼저 (loadDistricts 가 distNm 옵션 채움)
+    if (dto.cityNm) {
+        const citySel = document.getElementById('citySelect');
+        citySel.value = dto.cityNm;
+        markAiExtracted(citySel);
+        await loadDistricts();  // 비동기 로드
+    }
+
+    // 2) distNm (loadDistricts 후)
+    if (dto.distNm) {
+        const distSel = document.getElementById('distSelect');
+        // 옵션 중 매칭 찾기
+        for (const opt of distSel.options) {
+            if (opt.value === dto.distNm) {
+                distSel.value = dto.distNm;
+                markAiExtracted(distSel);
+                break;
+            }
+        }
+    }
+
+    // 3) 코드들 — 서버에서 매칭한 값 우선 (loadDistricts 의 autoFillCodes 와 충돌 안 함)
+    setIfPresent('orgCd', dto.orgCd);
+    setIfPresent('distCd', dto.distCd);
+
+    // 4) 일반 input 들
+    setInputByName('orgNm',   dto.orgNm);
+    setInputByName('orgLghNm', dto.orgLghNm);
+    setInputByName('client',  dto.client);
+    setInputByName('projNm',  dto.projNm);
+    setInputByName('contEnt', dto.contEnt);
+    setInputByName('contDt',  dto.contDt);
+    setInputByName('startDt', dto.startDt);
+    setInputByName('endDt',   dto.endDt);
+    setInputByName('contAmt', dto.contAmt);
+
+    // 5) 마스터 select 들
+    setSelectByName('bizType', dto.bizTypeCd);
+    setSelectByName('sysNm',   dto.sysNm);
+    if (dto.sysNmEn) setIfPresent('sysNmEn', dto.sysNmEn);
+
+    // 6) 결과 토스트
+    const failed = (dto.failedFields || []);
+    if (failed.length === 0) {
+        showPdfToast('PDF 자동 입력 완료! 검토 후 [저장] 클릭', 'info', 4000);
+    } else {
+        showPdfToast(failed.length + '개 필드는 자동 입력되지 않았습니다 — 수동 입력 후 저장하세요', 'warn', 6000);
+    }
+}
+
+function setIfPresent(elId, val) {
+    if (val == null || val === '') return;
+    const el = document.getElementById(elId);
+    if (el) {
+        el.value = val;
+        markAiExtracted(el);
+    }
+}
+
+function setInputByName(name, val) {
+    if (val == null || val === '') return;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (el) {
+        el.value = val;
+        markAiExtracted(el);
+    }
+}
+
+function setSelectByName(name, val) {
+    if (val == null || val === '') return;
+    const el = document.querySelector(`select[name="${name}"]`);
+    if (!el) return;
+    for (const opt of el.options) {
+        if (opt.value === val) {
+            el.value = val;
+            markAiExtracted(el);
+            // 의존 자동 채움 트리거 (sysNm 의 경우 sysNmEn 갱신)
+            if (name === 'sysNm') mapSysMst();
+            return;
+        }
+    }
+}
+
+function markAiExtracted(el) {
+    if (!el) return;
+    el.classList.add('ai-extracted');
+    // 배지 (이미 있으면 skip)
+    const parent = el.parentElement;
+    if (parent && !parent.querySelector('.ai-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'ai-badge';
+        badge.textContent = 'AI 추출';
+        parent.appendChild(badge);
+    }
+    // 사용자가 수정하면 마크 제거 (1회 바인딩)
+    const removeOnEdit = () => {
+        el.classList.remove('ai-extracted');
+        const b = parent && parent.querySelector('.ai-badge');
+        if (b) b.remove();
+        el.removeEventListener('input', removeOnEdit);
+        el.removeEventListener('change', removeOnEdit);
+    };
+    el.addEventListener('input', removeOnEdit);
+    el.addEventListener('change', removeOnEdit);
+}
+
+function showPdfToast(msg, kind, durationMs) {
+    // 기존 토스트 제거
+    document.querySelectorAll('.pdf-toast').forEach(el => el.remove());
+    const t = document.createElement('div');
+    t.className = 'pdf-toast' + (kind === 'warn' ? ' warn' : (kind === 'error' ? ' error' : ''));
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.remove(); }, durationMs || 3500);
 }
 
 // ── 청구여부 Y/N → 청구형태 활성/비활성 ─────────────────────────
