@@ -4,10 +4,20 @@
 # (sprint harness-hardening-v1 — Phase 3-1)
 #
 # 사용:
-#   bash .team-workspace/codex-trace.sh -m gpt-5 "프롬프트 한 줄"
-#   echo "긴 프롬프트" | bash .team-workspace/codex-trace.sh -m gpt-5
+#   bash .team-workspace/codex-trace.sh "프롬프트 한 줄"
+#   echo "긴 프롬프트" | bash .team-workspace/codex-trace.sh
 #   cat docs/spec.md | TRACE_SPRINT=spec-v1 TRACE_ROUND=1 \
-#       bash .team-workspace/codex-trace.sh -m gpt-5 "검토 요청"
+#       bash .team-workspace/codex-trace.sh "검토 요청"
+#
+# 모델 선택:
+#   - ChatGPT Plus/Pro OAuth 인증: 기본값 자동 라우팅 (관측 시점 gpt-5.5). -m 생략 권장.
+#     `-m gpt-5` / `-m gpt-5-codex` 는 OAuth 환경에서 400 invalid_request_error 관측됨 (2026-05-06).
+#   - API 키 인증: 필요 시 `-m <모델명>` 으로 명시 (예: -m gpt-5).
+#
+# 감사 정확성:
+#   `-m` 생략 시 JSONL 의 model 필드가 "unknown" 으로 기록됨 (이 스크립트는 -m 인자를 자동파싱 안 함).
+#   trace 정확도가 중요한 호출은 TRACE_MODEL 명시 권장:
+#     TRACE_MODEL=gpt-5.5 echo "..." | bash .team-workspace/codex-trace.sh
 #
 # 환경변수 (선택):
 #   TRACE_MODEL                 — 모델명 (jsonl 기록용. -m 인자 자동파싱 안 함)

@@ -107,6 +107,12 @@ codex --version           # codex-cli x.y.z
 ls "$HOME/.codex/auth.json"   # 인증 파일 존재
 ```
 
+> **모델 라우팅 관측 (2026-05-06, codex-cli 0.128.0)**:
+> 현 PC/OAuth 환경에서 `-m gpt-5` / `-m gpt-5-codex` 명시 호출 시 `400 invalid_request_error: not supported when using Codex with a ChatGPT account` 응답을 확인.
+> `-m` 생략 시 자동 라우팅 (관측 시점 `gpt-5.5`) 으로 정상 동작 — 검증 워크플로우는 이 기본값을 사용.
+> 추후 OpenAI 정책 변동 가능성 있으니 OAuth 환경에서 `-m` 모델 명시가 필요하면 codex 공식 문서(developers.openai.com/codex/models, /codex/cli/reference) 재확인.
+> `gpt-5` 명시가 반드시 필요한 경우 OPENAI_API_KEY 인증으로 fallback (별도 결제 발생).
+
 #### 5-3. jq 설치 (codex-trace.sh 의존성)
 ```bash
 # Windows
@@ -126,7 +132,7 @@ jq --version              # jq-1.x.x
 ```bash
 # 기획서/개발계획서 검토
 echo "파일 docs/product-specs/feature-xxx.md 검토. 평가: 1)요건 2)설계 3)DB 4)리스크 5)권고" \
-  | bash .team-workspace/codex-trace.sh -m gpt-5
+  | bash .team-workspace/codex-trace.sh
 
 # 트레이스 결과: ~/.claude/trace/codex-trace-YYYY-MM.jsonl
 ```
