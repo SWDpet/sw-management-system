@@ -30,6 +30,7 @@
 |------|------|------|
 | **진입점** (본 문서) | `AGENTS.md` | 모든 에이전트 첫 참조 |
 | Claude Code 자동 로드 | `CLAUDE.md` | Claude Code 플랫폼 전용 컨텍스트 |
+| 코딩 휴리스틱 | `docs/AGENT_GUIDELINES.md` | 모든 에이전트 공통 코딩 룰 (13원칙) |
 | 시스템 아키텍처 | `ARCHITECTURE.md` | 패키지 트리 + ERD 요약 |
 | 기능 설계 스펙 | `docs/product-specs/` | 기획서 (확정 전/후 전반) |
 | 결정 완료 문서 | `docs/design-docs/` | 로드맵 + 실행 완료된 결정 |

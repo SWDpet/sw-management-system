@@ -47,6 +47,7 @@
 ## 주요 문서 링크
 
 - `@AGENTS.md` — 에이전트 진입점 (필독)
+- `@docs/AGENT_GUIDELINES.md` — 코딩 휴리스틱 13원칙 (Karpathy 기반, 본 프로젝트 룰 적용)
 - `@ARCHITECTURE.md` — 시스템 아키텍처
 - `@docs/design-docs/data-architecture-roadmap.md` — 데이터 아키텍처 로드맵
 - `@docs/generated/erd.md` — ERD
