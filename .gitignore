@@ -92,3 +92,7 @@ docs/.obsidian/cache
 docs/_private/
 # Obsidian 첫 실행 시 생성된 임시 기본 Vault 흔적 (필요 없으면 수동 삭제)
 docs/swbms/
+
+# Refero design references — fetched JSON cache (재생성 가능, 33MB)
+docs/design-references/_tmp/json_cache/
+docs/design-references/_tmp/__pycache__/
