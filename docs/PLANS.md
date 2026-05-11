@@ -62,7 +62,12 @@
 | 커밋 | (본 작업완료 커밋에 채움) |
 
 후속 백로그 (별도 스프린트):
-- `phase2-V018-init-ordering` — `db_init_phase2.sql` ON CONFLICT INSERT 와 V018 UNIQUE 의존성 정리
+- `phase2-V018-init-ordering` — **완료 (2026-05-11, 기획서 v3.3 + 개발계획서 v1.1 + commit `<TBD>`)**:
+  - 산출물: `db_init_phase2.sql` (UNIQUE 제약·INDEX 선이동 + NFR-3-x 검증 게이트 + 헤더/INSERT 주석 보강)
+  - 검증 (ephemeral 25880, v3.3 scope 한정): T1 (phase2 멱등 3회 — NFR-3-x PASS NOTICE + count=5/distinct=5/UNIQUE 1) / T2 (psql fresh-init line 60/70 stop 회귀 0건) / T3 (V018 재진입 rc=0 + DELETE 0) / T4 (V018 SHA256 무변경)
+  - V018 무수정 (Flyway checksum 보존). 운영DB 영향 0.
+  - Discovery: phase2.sql:464 `tb_org_unit` forward-reference 표면화 → 후속 `phase2-tb_ops_doc-forward-ref` 분리
+- `phase2-tb_ops_doc-forward-ref` (신규, 2026-05-11) — `tb_ops_doc` 의 `tb_org_unit`/`tb_work_plan` FK forward-reference 해소. fresh-init 완전 통과 보장 마무리. 본 스프린트와 동일 패턴 (선이동) 적용 가능.
 - `ro_phase1_audit` 롤 DROP (Step 9-B, 별도 시점에 사용자 결정)
 
 ---

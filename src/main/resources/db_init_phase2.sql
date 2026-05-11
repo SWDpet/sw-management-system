@@ -16,6 +16,7 @@
 --
 -- phase1 정식화 스프린트: phase1-ddl-formalization (2026-04-27)
 -- 감사 2026-04-18 P2 2-2 조치 (스프린트 2a) → 본 스프린트로 후속 완료.
+-- phase2-V018-init-ordering (2026-05-11) — V018 의 UNIQUE 제약·INDEX 를 phase2 의 INSERT 앞에 선이동. V018 무수정. 선행: dbinitrunner-dollar-quote-aware (ba12fc6).
 -- ============================================================
 
 -- 1. 사업별 과업참여자 배정
@@ -39,6 +40,16 @@ CREATE TABLE IF NOT EXISTS tb_process_master (
     use_yn VARCHAR(1) DEFAULT 'Y'
 );
 
+-- [phase2-V018-init-ordering] V018 의 UNIQUE 제약을 INSERT 앞에 선이동 (멱등 가드).
+-- V018 (4) 와 동일 식별자/동일 컬럼. V018 재진입 시 conname EXISTS 로 무해 PASS.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_process_master_sys_name') THEN
+    ALTER TABLE tb_process_master
+      ADD CONSTRAINT uq_process_master_sys_name
+      UNIQUE (sys_nm_en, process_name);
+  END IF;
+END $$ LANGUAGE plpgsql;
+
 -- 3. 시스템별 용역 목적/과업 내용 마스터
 CREATE TABLE IF NOT EXISTS tb_service_purpose (
     purpose_id SERIAL PRIMARY KEY,
@@ -49,8 +60,42 @@ CREATE TABLE IF NOT EXISTS tb_service_purpose (
     use_yn VARCHAR(1) DEFAULT 'Y'
 );
 
+-- [phase2-V018-init-ordering] V018 의 표현식 UNIQUE INDEX 를 INSERT 앞에 선이동 (PG 9.5+ 멱등).
+-- V018 (4) 와 동일 식별자/동일 표현식. V018 재진입 시 IF NOT EXISTS 로 무해 PASS.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_service_purpose_sys_type_md5
+  ON tb_service_purpose (sys_nm_en, purpose_type, md5(purpose_text));
+
+-- [phase2-V018-init-ordering NFR-3-x] UNIQUE 제약·INDEX 등록 게이트 (필수, v1.1 강화).
+-- 두 INSERT 가 ON CONFLICT 추론 실패(42P10) 또는 UNIQUE 미등록 상태로 진행되는 회귀를 fast-fail.
+-- 트랜잭션 경계 부재의 보강책 — 게이트 통과 못하면 INSERT 진입 자체를 차단.
+-- conrelid/contype/tablename 까지 검사 — 이름만 동일한 다른 객체 false PASS 차단.
+DO $$
+DECLARE
+  uq_proc_cnt int;
+  uq_purp_cnt int;
+BEGIN
+  SELECT COUNT(*) INTO uq_proc_cnt
+    FROM pg_constraint
+   WHERE conname = 'uq_process_master_sys_name'
+     AND conrelid = 'public.tb_process_master'::regclass
+     AND contype = 'u';
+  SELECT COUNT(*) INTO uq_purp_cnt
+    FROM pg_indexes
+   WHERE schemaname = 'public'
+     AND indexname = 'uq_service_purpose_sys_type_md5'
+     AND tablename = 'tb_service_purpose';
+  IF uq_proc_cnt <> 1 THEN
+    RAISE EXCEPTION 'HALT [phase2-V018-init-ordering NFR-3-x]: uq_process_master_sys_name 미등록 또는 정의 불일치 (count=%) — INSERT 진행 차단', uq_proc_cnt;
+  END IF;
+  IF uq_purp_cnt <> 1 THEN
+    RAISE EXCEPTION 'HALT [phase2-V018-init-ordering NFR-3-x]: uq_service_purpose_sys_type_md5 미등록 또는 정의 불일치 (count=%) — INSERT 진행 차단', uq_purp_cnt;
+  END IF;
+  RAISE NOTICE 'PASS [phase2-V018-init-ordering NFR-3-x]: UNIQUE 제약·INDEX 등록 확인 — INSERT 진행 가능';
+END $$ LANGUAGE plpgsql;
+
 -- 기본 공정명 데이터
 -- V018 (process-master-dedup 2026-04-20) 이후: UNIQUE(sys_nm_en, process_name) 적용됨
+-- [phase2-V018-init-ordering 2026-05-11] phase2 에서 선이동됨 — fresh-init 환경에서도 본 INSERT 의 ON CONFLICT 가 동작.
 INSERT INTO tb_process_master (sys_nm_en, process_name, sort_order) VALUES
 ('UPIS', '도시계획정보체계용 GIS SW 유지관리', 1),
 ('KRAS', '부동산종합공부시스템용 GIS SW 유지관리', 1),
@@ -61,6 +106,7 @@ ON CONFLICT (sys_nm_en, process_name) DO NOTHING;
 
 -- 기본 용역 목적 데이터
 -- V018 이후: UNIQUE INDEX uq_service_purpose_sys_type_md5 (sys_nm_en, purpose_type, md5(purpose_text)) 적용됨
+-- [phase2-V018-init-ordering 2026-05-11] phase2 에서 선이동됨 — fresh-init 환경에서도 본 INSERT 의 ON CONFLICT 가 동작.
 INSERT INTO tb_service_purpose (sys_nm_en, purpose_type, purpose_text, sort_order) VALUES
 ('UPIS', 'PURPOSE', '도시계획정보체계(UPIS)의 최신 버전 유지와 원활한 서비스를 제공', 1),
 ('KRAS', 'PURPOSE', '부동산종합공부시스템(KRAS)의 최신 버전 유지와 원활한 서비스를 제공', 1),
