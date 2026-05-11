@@ -73,7 +73,14 @@
   - V100 무수정 (Flyway checksum 보존). 운영DB 영향 0 (`CREATE TABLE IF NOT EXISTS` 멱등성).
   - **선행 sprint phase2-V018-init-ordering §10 Discovery closure 완료** — line 464 forward-reference 해소.
   - **신규 Discovery**: `qt_category_mst` (phase2.sql:682 INSERT) 가 외부 V024 (`swdept/sql/V024_qt_category_master.sql`) 에 의존. fresh-init 시 phase2 가 V*.sql 보다 먼저 실행돼 line 686 stop 가능성. 별도 후속 sprint 영역.
-- `phase2-vsql-external-deps` (신규 권고, 2026-05-11) — phase2.sql 안에서 V*.sql 외부 정의 테이블 (`qt_category_mst` 등) 에 INSERT 하는 패턴. 이런 외부 의존 INSERT 들을 phase2 에서 분리하거나, 또는 V*.sql 의 정의를 phase2 로 흡수. 발견 패턴 grep 으로 일제 점검 권장.
+- `phase2-vsql-external-deps` — ⏸ **PAUSED v2 (2026-05-11)**:
+  - 기획서 `docs/product-specs/phase2-vsql-external-deps.md` v2 + 개발계획 `docs/exec-plans/phase2-vsql-external-deps.md` v1.2 모두 codex ⭕ + 사용자 최종승인 → 구현 Step 1~2 완료 (3 INSERT 삭제 + compile PASS) → Step 3 T2 측정 시 phase2.sql rc=0 ✅ (본 sprint 핵심) 그러나 **V*.sql 9건 본 sprint 외 결함 표면화** → 사용자 결정 (option 4) 으로 phase2.sql revert + sprint 일시 중단
+  - 9건 분석 보고서: `docs/references/vsql-fresh-init-defects-analysis.md` v3 (codex 1차 ⚠ 7건 + 2차 ⚠ 차단 2건 반영)
+  - **재진입 조건**: 후속 sprint `vsql-fresh-init-procedure-fix` 처리 → V*.sql 7건 해소 → 본 기획서 v3 개정 (skip-list 명시) → 재개. 잔여 V005/V100 은 별도 sprint 위임
+- `vsql-fresh-init-procedure-fix` (신규 권고, 2026-05-11) — fresh-init 절차 보강 sprint. setup-guide §2-2 의 V*.sql for-loop 에 (1) skip-list 추가 (V021_rollback_data, V022, V023, V025 — 영구 skip + V005/V100 — 임시 skip) + (2) `-v run_id=...` 추가로 V019/V020/V021_users_masking 통과. V*.sql 무수정 → Flyway 영향 0. 본 sprint 가 `phase2-vsql-external-deps` 재진입의 직전 sprint
+- `vsql-V005-ordering` (신규 권고, 2026-05-11) — V005 두 파일 ordering 결함 (V005_add_surveying_wage_rates 가 V005_wage_rate_table 보다 먼저 실행) 정리. **옵션 E (manifest 기반)** 우선 → 장기적으로 옵션 B (단일 파일 통합). 운영DB flyway_schema_history 확인 선행. 분량 소~중
+- `vsql-V100-legacy-contract-cleanup` (신규 권고, 2026-05-11) — V100 의 legacy contract block (헤더 주석에 예고된 후속 정리 미완) 전체 정리. `tb_document.contract_id`, `idx_doc_contract`, line 388-390 trigger loop 의 `tb_contract`, `tb_contract_participant/target`, `CREATE INDEX IF NOT EXISTS` 일괄 보강 포함. 운영DB history + 기획 검토 선행. 분량 중~대
+- `vsql-V025-idempotent` (선택 권고, 2026-05-11) — V025 의 멱등성 결함 (이미 DROP 된 pjt_equip 재참조). `vsql-fresh-init-procedure-fix` 의 skip-list 처리가 충분하므로 본 sprint 는 선택. skip 부적합 시 V025 자체에 `IF EXISTS` 가드 추가 (Flyway 위배 위험)
 - `ro_phase1_audit` 롤 DROP (Step 9-B, 별도 시점에 사용자 결정)
 
 ---
@@ -103,4 +110,4 @@
 
 ---
 
-*Last updated: 2026-04-27 · phase1-ddl-formalization 스프린트 완료*
+*Last updated: 2026-05-11 · phase2-vsql-external-deps PAUSED + V*.sql 9건 분석 보고서 v3 + 후속 sprint 4개 (vsql-fresh-init-procedure-fix / V005-ordering / V100-legacy-contract-cleanup / V025-idempotent) 등록*
