@@ -1,0 +1,33 @@
+{
+  "header": {
+    "v": 1,
+    "id": "stress-2026-05",
+    "seq": 0,
+    "total": 1,
+    "site": "stress",
+    "round": "2026-05",
+    "ts": 1778461321,
+    "hash": "326d49",
+    "raw_bytes": 31920,
+    "gz_bytes": 860,
+    "b45_chars": 1290
+  },
+  "frames": [
+    {
+      "seq": 0,
+      "kind": "header",
+      "filename": "qr_00_header.png",
+      "qr_version": 8,
+      "chars": 163,
+      "png_bytes": 1603
+    },
+    {
+      "seq": 1,
+      "kind": "data",
+      "filename": "qr_01_data.png",
+      "qr_version": 22,
+      "chars": 1357,
+      "png_bytes": 5705
+    }
+  ]
+}

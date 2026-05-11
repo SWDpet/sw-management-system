@@ -1,0 +1,74 @@
+{
+  "s": "snapshot/qr1",
+  "id": "dyg-2026-05",
+  "site": "dyg",
+  "round": "2026-05",
+  "ts": 1778461321,
+  "inspector": "박욱진",
+  "tiers": {
+    "ap": {
+      "h": "UPIS-AP",
+      "os": "WinSvr 2012R2",
+      "i": [
+        ["ap.cpu.cores", "ok", 4],
+        ["ap.mem.gb", "ok", 16],
+        ["ap.perf.cpu_pct", "ok", 23.4],
+        ["ap.perf.mem_pct", "ok", 41.2],
+        ["ap.disk.C_pct", "ok", 60.3],
+        ["ap.disk.D_pct", "ok", 22.1],
+        ["ap.disk.C_used_gb", "ok", 120.1],
+        ["ap.disk.D_used_gb", "ok", 201.6],
+        ["ap.log.sys_err", "ok", 0],
+        ["ap.log.sec_err", "ok", 0],
+        ["ap.net.adapter_up", "ok", 4],
+        ["ap.led.system", "M", null],
+        ["ap.led.psu", "M", null],
+        ["ap.led.disk", "M", null]
+      ]
+    },
+    "db": {
+      "h": "UPIS-DB",
+      "os": "AIX 6.1",
+      "i": [
+        ["db.cpu.cores", "ok", 4],
+        ["db.mem.gb", "ok", 32],
+        ["db.perf.cpu_pct", "ok", 18.2],
+        ["db.perf.mem_pct", "ok", 38.7],
+        ["db.perf.swap_pct", "ok", 12.3],
+        ["db.fs./", "ok", 18.7],
+        ["db.fs./backup", "ok", 52.1],
+        ["db.fs./oracle", "ok", 33.4],
+        ["db.fs./oradata", "warn", 67.1],
+        ["db.fs./Archive", "ok", 41.8],
+        ["db.mirror.degraded", "ok", 0],
+        ["db.net.gw_rtt_ms", "ok", 0.8],
+        ["db.net.coll", "ok", 0],
+        ["db.log.errpt_new", "ok", 0],
+        ["oracle.version", "ok", "11.2.0.4"],
+        ["oracle.archive_mode", "ok", "ENABLED"],
+        ["oracle.sga_mb", "ok", 8192],
+        ["oracle.ts.SYSTEM", "ok", 32.1],
+        ["oracle.ts.UPIS_DATA", "warn", 78.4],
+        ["oracle.ts.UPIS_INDEX", "ok", 61.2],
+        ["oracle.datafiles_gb", "ok", 134.2],
+        ["oracle.last_export", "ok", "2026-05-10T03:00:00"],
+        ["db.led.hw", "M", null],
+        ["db.led.disk", "M", null],
+        ["db.led.fan", "M", null],
+        ["db.led.power", "M", null],
+        ["db.cable", "M", null]
+      ]
+    },
+    "gis": {
+      "h": "UPIS-AP",
+      "i": [
+        ["gss.running", "ok", true],
+        ["gss.log_purged_mb", "ok", 12.4],
+        ["gws.status", "ok", "Running"],
+        ["gws.store_total_gb", "warn", 18.4],
+        ["gws.store_log_purged", "ok", 24],
+        ["gws.http_status", "ok", 200]
+      ]
+    }
+  }
+}

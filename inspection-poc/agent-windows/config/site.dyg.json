@@ -1,0 +1,28 @@
+{
+  "site": "dyg",
+  "site_name": "단양군 UPIS",
+  "inspector": "박욱진",
+  "tier": "ap",
+  "hosts": {
+    "ap": { "expected_hostname": "UPIS-AP", "ip_hint": null }
+  },
+  "thresholds": {
+    "perf.cpu_pct":   { "warn": 70, "crit": 85 },
+    "perf.mem_pct":   { "warn": 75, "crit": 90 },
+    "perf.swap_pct":  { "warn": 30, "crit": 60 },
+    "disk.pct":       { "warn": 80, "crit": 90 },
+    "event.error_count": { "warn": 1, "crit": 10 },
+    "gws.store_gb":   { "warn": 15, "crit": 25 }
+  },
+  "paths": {
+    "gss_log_dir":   "C:\\GeoNURIS_Spatial_Server\\logs",
+    "gws_log_dir":   "C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\logs",
+    "gws_store_dir": "C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store",
+    "gws_url":       "http://localhost:8880/uwes"
+  },
+  "purge": {
+    "log_retain_days": 30,
+    "exclude_patterns": ["*DEM*", "*SLOP*"],
+    "dry_run": true
+  }
+}

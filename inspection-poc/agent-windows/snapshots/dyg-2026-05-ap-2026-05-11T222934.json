@@ -1,0 +1,436 @@
+﻿{
+    "schema":  "snapshot/v1",
+    "site":  "dyg",
+    "site_name":  "단양군 UPIS",
+    "round":  "2026-05",
+    "round_date":  "2026-05-11",
+    "tier":  "ap",
+    "host":  {
+                 "hostname":  "IUHOME",
+                 "os":  "Microsoft Windows 11 Pro",
+                 "os_detail":  "10.0.26200",
+                 "model":  "Nitro AN515-45",
+                 "ip":  "172.30.1.65"
+             },
+    "taken_at":  "2026-05-11T22:29:34+09:00",
+    "took_ms":  14618,
+    "agent_version":  "0.1.0",
+    "inspector":  "박욱진",
+    "items":  [
+                  {
+                      "id":  "ap.hw.adapter",
+                      "label":  "Adapter (연결상태)",
+                      "category":  "hw_config",
+                      "method":  "auto",
+                      "cmd":  "Get-NetAdapter",
+                      "value":  {
+                                    "adapters":  [
+                                                     {
+                                                         "Name":  "이더넷",
+                                                         "Status":  "Disconnected",
+                                                         "LinkSpeed":  "0 bps",
+                                                         "MacAddress":  "08-97-98-F1-D6-CE"
+                                                     },
+                                                     {
+                                                         "Name":  "Bluetooth 네트워크 연결",
+                                                         "Status":  "Disconnected",
+                                                         "LinkSpeed":  "3 Mbps",
+                                                         "MacAddress":  "D8-F3-BC-6C-AA-C0"
+                                                     },
+                                                     {
+                                                         "Name":  "Wi-Fi",
+                                                         "Status":  "Up",
+                                                         "LinkSpeed":  "1.2 Gbps",
+                                                         "MacAddress":  "D8-F3-BC-6C-AA-BF"
+                                                     }
+                                                 ],
+                                    "up":  1,
+                                    "total":  3
+                                },
+                      "status":  "ok",
+                      "took_ms":  1419
+                  },
+                  {
+                      "id":  "ap.hw.cpu",
+                      "label":  "CPU 구성",
+                      "category":  "hw_config",
+                      "method":  "auto",
+                      "cmd":  "Get-CimInstance Win32_Processor",
+                      "value":  {
+                                    "clock_ghz":  3.2,
+                                    "name":  "AMD Ryzen 7 5800H with Radeon Graphics         ",
+                                    "cores":  8
+                                },
+                      "status":  "ok",
+                      "took_ms":  1178
+                  },
+                  {
+                      "id":  "ap.disk.c",
+                      "label":  "Disk C: 사용량",
+                      "category":  "filesystem",
+                      "method":  "auto",
+                      "cmd":  "Get-CimInstance Win32_LogicalDisk",
+                      "value":  {
+                                    "used_gb":  218.61,
+                                    "total_gb":  469.14,
+                                    "pct":  46.6,
+                                    "free_gb":  250.53
+                                },
+                      "status":  "ok",
+                      "threshold":  {
+                                        "warn":  80,
+                                        "crit":  90
+                                    },
+                      "took_ms":  141
+                  },
+                  {
+                      "id":  "ap.disk.d",
+                      "label":  "Disk D: 사용량",
+                      "category":  "filesystem",
+                      "method":  "auto",
+                      "cmd":  "Get-CimInstance Win32_LogicalDisk",
+                      "value":  {
+                                    "used_gb":  5.65,
+                                    "total_gb":  6.4,
+                                    "pct":  88.2,
+                                    "free_gb":  0.75
+                                },
+                      "status":  "warn",
+                      "threshold":  {
+                                        "warn":  80,
+                                        "crit":  90
+                                    },
+                      "took_ms":  141
+                  },
+                  {
+                      "id":  "ap.disk.g",
+                      "label":  "Disk G: 사용량",
+                      "category":  "filesystem",
+                      "method":  "auto",
+                      "cmd":  "Get-CimInstance Win32_LogicalDisk",
+                      "value":  {
+                                    "used_gb":  231.14,
+                                    "total_gb":  469.14,
+                                    "pct":  49.3,
+                                    "free_gb":  238.01
+                                },
+                      "status":  "ok",
+                      "threshold":  {
+                                        "warn":  80,
+                                        "crit":  90
+                                    },
+                      "took_ms":  141
+                  },
+                  {
+                      "id":  "ap.disk.h",
+                      "label":  "Disk H: 사용량",
+                      "category":  "filesystem",
+                      "method":  "auto",
+                      "cmd":  "Get-CimInstance Win32_LogicalDisk",
+                      "value":  {
+                                    "used_gb":  231.14,
+                                    "total_gb":  469.14,
+                                    "pct":  49.3,
+                                    "free_gb":  238.01
+                                },
+                      "status":  "ok",
+                      "threshold":  {
+                                        "warn":  80,
+                                        "crit":  90
+                                    },
+                      "took_ms":  141
+                  },
+                  {
+                      "id":  "ap.log.security_err",
+                      "label":  "Event Log (Security) 에러",
+                      "category":  "log",
+                      "method":  "auto",
+                      "cmd":  "Get-WinEvent Security Level 1,2",
+                      "value":  {
+                                    "error_count":  0,
+                                    "since_days":  30
+                                },
+                      "status":  "n/a",
+                      "note":  "Security 로그 접근 불가: No events were found that match the specified selection criteria.",
+                      "took_ms":  507
+                  },
+                  {
+                      "id":  "ap.log.system_err",
+                      "label":  "Event Log (System) 에러",
+                      "category":  "log",
+                      "method":  "auto",
+                      "cmd":  "Get-WinEvent System Level 1,2 (지난30일)",
+                      "value":  {
+                                    "recent":  [
+                                                   {
+                                                       "provider":  "Tcpip",
+                                                       "time":  "2026-05-11T21:54:41",
+                                                       "message":  "A request to allocate an ephemeral port number from the global UDP port space has failed due to all such ports being in use.",
+                                                       "id":  4266
+                                                   },
+                                                   {
+                                                       "provider":  "Microsoft-Windows-DistributedCOM",
+                                                       "time":  "2026-05-11T20:59:15",
+                                                       "message":  "The 응용 프로그램별 permission settings do not grant 로컬 활성화 permission for the COM Server application with CLSID ",
+                                                       "id":  10016
+                                                   },
+                                                   {
+                                                       "provider":  "Microsoft-Windows-DistributedCOM",
+                                                       "time":  "2026-05-11T20:48:39",
+                                                       "message":  "The 응용 프로그램별 permission settings do not grant 로컬 활성화 permission for the COM Server application with CLSID ",
+                                                       "id":  10016
+                                                   },
+                                                   {
+                                                       "provider":  "Microsoft-Windows-DistributedCOM",
+                                                       "time":  "2026-05-11T20:48:39",
+                                                       "message":  "The 응용 프로그램별 permission settings do not grant 로컬 활성화 permission for the COM Server application with CLSID ",
+                                                       "id":  10016
+                                                   },
+                                                   {
+                                                       "provider":  "Microsoft-Windows-Time-Service",
+                                                       "time":  "2026-05-11T20:48:36",
+                                                       "message":  "NtpClient was unable to set a manual peer to use as a time source because of DNS resolution error on \u0027time.windows.com,0x9\u0027. NtpClient will try again in 15 minutes and double the reattempt interval thereafter. The error was: 알려진 호스트가 없습니다. (0x80072AF9)",
+                                                       "id":  134
+                                                   }
+                                               ],
+                                    "since_days":  30,
+                                    "error_count":  69
+                                },
+                      "status":  "crit",
+                      "threshold":  {
+                                        "warn":  1,
+                                        "crit":  10
+                                    },
+                      "took_ms":  310
+                  },
+                  {
+                      "id":  "ap.led.system",
+                      "label":  "시스템 LED",
+                      "category":  "visual",
+                      "method":  "manual",
+                      "cmd":  "",
+                      "value":  null,
+                      "status":  "pending_manual",
+                      "took_ms":  29
+                  },
+                  {
+                      "id":  "ap.led.psu",
+                      "label":  "Power Supply LED",
+                      "category":  "visual",
+                      "method":  "manual",
+                      "cmd":  "",
+                      "value":  null,
+                      "status":  "pending_manual",
+                      "took_ms":  29
+                  },
+                  {
+                      "id":  "ap.led.disk",
+                      "label":  "Disk LED",
+                      "category":  "visual",
+                      "method":  "manual",
+                      "cmd":  "",
+                      "value":  null,
+                      "status":  "pending_manual",
+                      "took_ms":  29
+                  },
+                  {
+                      "id":  "ap.cable",
+                      "label":  "케이블 연결상태",
+                      "category":  "visual",
+                      "method":  "manual",
+                      "cmd":  "",
+                      "value":  null,
+                      "status":  "pending_manual",
+                      "took_ms":  29
+                  },
+                  {
+                      "id":  "ap.hw.memory",
+                      "label":  "Memory 구성",
+                      "category":  "hw_config",
+                      "method":  "auto",
+                      "cmd":  "Get-CimInstance Win32_PhysicalMemory",
+                      "value":  {
+                                    "installed_gb":  16
+                                },
+                      "status":  "ok",
+                      "took_ms":  38
+                  },
+                  {
+                      "id":  "ap.net.ip",
+                      "label":  "IP 설정 정보",
+                      "category":  "network",
+                      "method":  "auto",
+                      "cmd":  "Get-NetIPAddress / Get-DnsClientServerAddress",
+                      "value":  {
+                                    "ips":  [
+                                                {
+                                                    "IPAddress":  "172.30.1.65",
+                                                    "InterfaceAlias":  "Wi-Fi",
+                                                    "PrefixLength":  24
+                                                }
+                                            ],
+                                    "dns":  "168.126.63.1,168.126.63.2"
+                                },
+                      "status":  "ok",
+                      "took_ms":  1860
+                  },
+                  {
+                      "id":  "ap.net.routes",
+                      "label":  "Network 라우팅",
+                      "category":  "network",
+                      "method":  "auto",
+                      "cmd":  "Get-NetRoute / Get-NetAdapterStatistics",
+                      "value":  {
+                                    "discarded":  0,
+                                    "default_gw":  "172.30.1.254",
+                                    "routes":  36
+                                },
+                      "status":  "ok",
+                      "took_ms":  184
+                  },
+                  {
+                      "id":  "ap.perf.cpu_pct",
+                      "label":  "CPU 사용률",
+                      "category":  "perf",
+                      "method":  "auto",
+                      "cmd":  "Get-Counter \\Processor(_Total)\\% Processor Time",
+                      "value":  {
+                                    "pct":  22.9
+                                },
+                      "status":  "ok",
+                      "threshold":  {
+                                        "warn":  70,
+                                        "crit":  85
+                                    },
+                      "took_ms":  3552
+                  },
+                  {
+                      "id":  "ap.perf.mem_pct",
+                      "label":  "Memory 사용률",
+                      "category":  "perf",
+                      "method":  "auto",
+                      "cmd":  "Win32_OperatingSystem.FreePhysicalMemory",
+                      "value":  {
+                                    "used_gb":  13.84,
+                                    "total_gb":  15.36,
+                                    "pct":  90.1
+                                },
+                      "status":  "crit",
+                      "threshold":  {
+                                        "warn":  75,
+                                        "crit":  90
+                                    },
+                      "took_ms":  218
+                  },
+                  {
+                      "id":  "ap.security.users",
+                      "label":  "사용자 계정 (활성)",
+                      "category":  "security",
+                      "method":  "auto",
+                      "cmd":  "Get-LocalUser / net user",
+                      "value":  {
+                                    "users":  [
+                                                  {
+                                                      "Name":  "ukjin",
+                                                      "LastLogon":  null,
+                                                      "PasswordLastSet":  "\/Date(1733986020684)\/"
+                                                  }
+                                              ],
+                                    "enabled":  1
+                                },
+                      "status":  "ok",
+                      "took_ms":  615
+                  },
+                  {
+                      "id":  "gis.gss.log_purge",
+                      "label":  "GSS 로그 파일 정리",
+                      "category":  "gis",
+                      "method":  "auto",
+                      "cmd":  "dir not found: C:\\GeoNURIS_Spatial_Server\\logs",
+                      "value":  {
+                                    "exists":  false,
+                                    "path":  "C:\\GeoNURIS_Spatial_Server\\logs"
+                                },
+                      "status":  "n/a",
+                      "note":  "path missing: C:\\GeoNURIS_Spatial_Server\\logs",
+                      "took_ms":  29
+                  },
+                  {
+                      "id":  "gis.gss.running",
+                      "label":  "GSS 구동 상태",
+                      "category":  "gis",
+                      "method":  "auto",
+                      "cmd":  "Get-Process | ?{ $_.Path -like *GeoNURIS_Spatial_Server* }",
+                      "value":  {
+                                    "pids":  {
+
+                                             },
+                                    "process_count":  0,
+                                    "running":  false
+                                },
+                      "status":  "crit",
+                      "took_ms":  170
+                  },
+                  {
+                      "id":  "gis.gws.http",
+                      "label":  "GWS HTTP 응답",
+                      "category":  "gis",
+                      "method":  "auto",
+                      "cmd":  "Invoke-WebRequest http://localhost:8880/uwes",
+                      "value":  {
+                                    "error":  "원격 서버에 연결할 수 없습니다.",
+                                    "url":  "http://localhost:8880/uwes",
+                                    "http_status":  0
+                                },
+                      "status":  "crit",
+                      "took_ms":  4151
+                  },
+                  {
+                      "id":  "gis.gws.log_purge",
+                      "label":  "GWS 로그 파일 정리",
+                      "category":  "gis",
+                      "method":  "auto",
+                      "cmd":  "dir not found: C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\logs",
+                      "value":  {
+                                    "exists":  false,
+                                    "path":  "C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\logs"
+                                },
+                      "status":  "n/a",
+                      "took_ms":  40
+                  },
+                  {
+                      "id":  "gis.gws.running",
+                      "label":  "GWS 서비스 구동",
+                      "category":  "gis",
+                      "method":  "auto",
+                      "cmd":  "Get-Service GeoWebService64",
+                      "value":  {
+                                    "status":  "NotInstalled",
+                                    "service":  "GeoWebService64"
+                                },
+                      "status":  "crit",
+                      "took_ms":  33
+                  },
+                  {
+                      "id":  "gis.gws.store_size",
+                      "label":  "GWS store 폴더 용량",
+                      "category":  "gis",
+                      "method":  "auto",
+                      "cmd":  "",
+                      "value":  {
+                                    "exists":  false,
+                                    "path":  "C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store"
+                                },
+                      "status":  "n/a",
+                      "took_ms":  26
+                  }
+              ],
+    "summary":  {
+                    "total_items":  24,
+                    "ok":  10,
+                    "warn":  null,
+                    "crit":  5,
+                    "errors":  0,
+                    "pending_manual":  4
+                }
+}
