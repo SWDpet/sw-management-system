@@ -17,6 +17,7 @@
 -- phase1 정식화 스프린트: phase1-ddl-formalization (2026-04-27)
 -- 감사 2026-04-18 P2 2-2 조치 (스프린트 2a) → 본 스프린트로 후속 완료.
 -- phase2-V018-init-ordering (2026-05-11) — V018 의 UNIQUE 제약·INDEX 를 phase2 의 INSERT 앞에 선이동. V018 무수정. 선행: dbinitrunner-dollar-quote-aware (ba12fc6).
+-- phase2-tb_ops_doc-forward-ref (2026-05-11) — tb_ops_doc 의 forward-reference 해소를 위해 tb_work_plan + tb_org_unit 블록을 tb_ops_doc 직전으로 선이동. schema/seed 의미 변경 0.
 -- ============================================================
 
 -- 1. 사업별 과업참여자 배정
@@ -417,6 +418,103 @@ CREATE TABLE IF NOT EXISTS tb_document_signature (
 CREATE INDEX IF NOT EXISTS idx_tb_document_signature_doc ON tb_document_signature(doc_id);
 
 -- ============================================================
+-- [phase2-tb_ops_doc-forward-ref 2026-05-11] tb_ops_doc 의 forward-reference 해소를 위해
+-- 본 두 블록 (tb_work_plan + tb_org_unit) 을 tb_ops_doc 직전으로 선이동. 원본 위치: 본 파일 후반부.
+-- schema/seed 의미 변경 0. CREATE TABLE IF NOT EXISTS / IF NOT EXISTS 멱등성으로 운영 영향 0.
+-- ============================================================
+
+-- 작업/점검 계획 (self-FK: parent_plan_id)
+CREATE TABLE IF NOT EXISTS tb_work_plan (
+    plan_id         BIGSERIAL PRIMARY KEY,
+    infra_id        BIGINT REFERENCES tb_infra_master(infra_id),
+    plan_type       VARCHAR(30) NOT NULL,
+    process_step    VARCHAR(100),
+    title           VARCHAR(300) NOT NULL,
+    description     TEXT,
+    assignee_id     BIGINT REFERENCES users(user_id),
+    start_date      DATE NOT NULL,
+    end_date        DATE,
+    location        VARCHAR(300),
+    repeat_type     VARCHAR(20) NOT NULL,
+    parent_plan_id  BIGINT REFERENCES tb_work_plan(plan_id),
+    status          VARCHAR(20) NOT NULL,
+    status_reason   VARCHAR(500),
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_by      BIGINT REFERENCES users(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_infra    ON tb_work_plan(infra_id);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_assignee ON tb_work_plan(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_parent   ON tb_work_plan(parent_plan_id);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_status   ON tb_work_plan(status);
+CREATE INDEX IF NOT EXISTS idx_tb_work_plan_start    ON tb_work_plan(start_date);
+
+-- ============================================================
+-- 스프린트 5 (2026-04-19): 조직도 + 문서 선택 UI 통일 + 운영/테스트 구분
+-- 기획서: docs/product-specs/doc-selector-org-env.md
+-- ============================================================
+
+-- 조직도 마스터 (self-FK 로 가변 계층)
+CREATE TABLE IF NOT EXISTS tb_org_unit (
+    unit_id       BIGSERIAL PRIMARY KEY,
+    parent_id     BIGINT REFERENCES tb_org_unit(unit_id) ON DELETE RESTRICT,
+    unit_type     VARCHAR(20) NOT NULL CHECK (unit_type IN ('DIVISION','DEPARTMENT','TEAM')),
+    name          VARCHAR(100) NOT NULL,
+    sort_order    INTEGER DEFAULT 0,
+    use_yn        VARCHAR(1) DEFAULT 'Y',
+    created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_unit_parent ON tb_org_unit(parent_id);
+CREATE INDEX IF NOT EXISTS idx_org_unit_type   ON tb_org_unit(unit_type);
+CREATE INDEX IF NOT EXISTS idx_org_unit_use    ON tb_org_unit(use_yn);
+
+-- 조직도 초기 seed — 독립 INSERT (DbInitRunner 세미콜론 분리기 호환, 각 행 멱등)
+-- DIVISION (최상위)
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '경영관리본부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '글로벌사업본부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='글로벌사업본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '글로벌기획본부', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='글로벌기획본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'AI전략기획본부', 40 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI전략기획본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'AI GIS 연구본부', 50 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'SW기술연구소', 60 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW기술연구소' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'SW영업본부', 70 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW영업본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'GIS사업본부', 80 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '도시계획사업본부', 90 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업본부' AND unit_type='DIVISION');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '스마트시티본부', 100 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='스마트시티본부' AND unit_type='DIVISION');
+-- 하위 부서·팀
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION'), 'DEPARTMENT', '인사총무부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='인사총무부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION'), 'DEPARTMENT', '재무회계부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='재무회계부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION'), 'TEAM', '베트남 경영관리팀', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='베트남 경영관리팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='글로벌사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', '해외사업부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='해외사업부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='해외사업부' AND unit_type='DEPARTMENT'), 'TEAM', '해외사업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='해외사업팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI전략기획본부' AND unit_type='DIVISION'), 'TEAM', 'AI기획팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI기획팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI전략기획본부' AND unit_type='DIVISION'), 'TEAM', '디자인팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='디자인팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'AI GIS 연구부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI GIS 연구부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구부' AND unit_type='DEPARTMENT'), 'TEAM', '연구1팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='연구1팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구부' AND unit_type='DEPARTMENT'), 'TEAM', '연구2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='연구2팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'R&D기획부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='R&D기획부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='R&D기획부' AND unit_type='DEPARTMENT'), 'TEAM', 'R&D기획팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='R&D기획팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'SW지원부', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW지원부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW지원부' AND unit_type='DEPARTMENT'), 'TEAM', 'SW지원팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW지원팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW기술연구소' AND unit_type='DIVISION'), 'DEPARTMENT', '응용개발연구부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='응용개발연구부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW기술연구소' AND unit_type='DIVISION'), 'DEPARTMENT', '제품개발연구부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='제품개발연구부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW영업본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'GIS SW영업부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS SW영업부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS SW영업부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS SW영업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS SW영업팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW영업본부' AND unit_type='DIVISION'), 'DEPARTMENT', '도시계획 SW영업부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획 SW영업부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획 SW영업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획 SW영업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획 SW영업팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'GIS사업1부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS사업1부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업1부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS1부 사업1팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS1부 사업1팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업1부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS1부 사업2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS1부 사업2팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'GIS사업2부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS사업2부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업2부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS2부 사업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS2부 사업팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION'), 'TEAM', 'GIS 사업4팀', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS 사업4팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', '도시계획사업부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획사업1팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업1팀' AND unit_type='TEAM');
+INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획사업2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업2팀' AND unit_type='TEAM');
+
+-- ============================================================
 -- doc-split-ops (2026-04-29): 운영·유지보수 문서 신규 테이블 + 레거시 제거
 -- 기획서: docs/product-specs/doc-split-ops.md (v3)
 -- 개발계획: docs/exec-plans/doc-split-ops.md (v2)
@@ -531,96 +629,7 @@ CREATE TABLE IF NOT EXISTS tb_ops_doc_signature (
 );
 CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_signature_doc ON tb_ops_doc_signature(doc_id);
 
--- 작업/점검 계획 (self-FK: parent_plan_id)
-CREATE TABLE IF NOT EXISTS tb_work_plan (
-    plan_id         BIGSERIAL PRIMARY KEY,
-    infra_id        BIGINT REFERENCES tb_infra_master(infra_id),
-    plan_type       VARCHAR(30) NOT NULL,
-    process_step    VARCHAR(100),
-    title           VARCHAR(300) NOT NULL,
-    description     TEXT,
-    assignee_id     BIGINT REFERENCES users(user_id),
-    start_date      DATE NOT NULL,
-    end_date        DATE,
-    location        VARCHAR(300),
-    repeat_type     VARCHAR(20) NOT NULL,
-    parent_plan_id  BIGINT REFERENCES tb_work_plan(plan_id),
-    status          VARCHAR(20) NOT NULL,
-    status_reason   VARCHAR(500),
-    created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP NOT NULL DEFAULT NOW(),
-    created_by      BIGINT REFERENCES users(user_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_tb_work_plan_infra    ON tb_work_plan(infra_id);
-CREATE INDEX IF NOT EXISTS idx_tb_work_plan_assignee ON tb_work_plan(assignee_id);
-CREATE INDEX IF NOT EXISTS idx_tb_work_plan_parent   ON tb_work_plan(parent_plan_id);
-CREATE INDEX IF NOT EXISTS idx_tb_work_plan_status   ON tb_work_plan(status);
-CREATE INDEX IF NOT EXISTS idx_tb_work_plan_start    ON tb_work_plan(start_date);
-
--- ============================================================
--- 스프린트 5 (2026-04-19): 조직도 + 문서 선택 UI 통일 + 운영/테스트 구분
--- 기획서: docs/product-specs/doc-selector-org-env.md
--- ============================================================
-
--- 조직도 마스터 (self-FK 로 가변 계층)
-CREATE TABLE IF NOT EXISTS tb_org_unit (
-    unit_id       BIGSERIAL PRIMARY KEY,
-    parent_id     BIGINT REFERENCES tb_org_unit(unit_id) ON DELETE RESTRICT,
-    unit_type     VARCHAR(20) NOT NULL CHECK (unit_type IN ('DIVISION','DEPARTMENT','TEAM')),
-    name          VARCHAR(100) NOT NULL,
-    sort_order    INTEGER DEFAULT 0,
-    use_yn        VARCHAR(1) DEFAULT 'Y',
-    created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_org_unit_parent ON tb_org_unit(parent_id);
-CREATE INDEX IF NOT EXISTS idx_org_unit_type   ON tb_org_unit(unit_type);
-CREATE INDEX IF NOT EXISTS idx_org_unit_use    ON tb_org_unit(use_yn);
-
--- 조직도 초기 seed — 독립 INSERT (DbInitRunner 세미콜론 분리기 호환, 각 행 멱등)
--- DIVISION (최상위)
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '경영관리본부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '글로벌사업본부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='글로벌사업본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '글로벌기획본부', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='글로벌기획본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'AI전략기획본부', 40 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI전략기획본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'AI GIS 연구본부', 50 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'SW기술연구소', 60 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW기술연구소' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'SW영업본부', 70 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW영업본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', 'GIS사업본부', 80 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '도시계획사업본부', 90 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업본부' AND unit_type='DIVISION');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT NULL, 'DIVISION', '스마트시티본부', 100 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='스마트시티본부' AND unit_type='DIVISION');
--- 하위 부서·팀
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION'), 'DEPARTMENT', '인사총무부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='인사총무부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION'), 'DEPARTMENT', '재무회계부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='재무회계부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='경영관리본부' AND unit_type='DIVISION'), 'TEAM', '베트남 경영관리팀', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='베트남 경영관리팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='글로벌사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', '해외사업부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='해외사업부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='해외사업부' AND unit_type='DEPARTMENT'), 'TEAM', '해외사업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='해외사업팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI전략기획본부' AND unit_type='DIVISION'), 'TEAM', 'AI기획팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI기획팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI전략기획본부' AND unit_type='DIVISION'), 'TEAM', '디자인팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='디자인팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'AI GIS 연구부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='AI GIS 연구부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구부' AND unit_type='DEPARTMENT'), 'TEAM', '연구1팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='연구1팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구부' AND unit_type='DEPARTMENT'), 'TEAM', '연구2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='연구2팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'R&D기획부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='R&D기획부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='R&D기획부' AND unit_type='DEPARTMENT'), 'TEAM', 'R&D기획팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='R&D기획팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='AI GIS 연구본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'SW지원부', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW지원부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW지원부' AND unit_type='DEPARTMENT'), 'TEAM', 'SW지원팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='SW지원팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW기술연구소' AND unit_type='DIVISION'), 'DEPARTMENT', '응용개발연구부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='응용개발연구부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW기술연구소' AND unit_type='DIVISION'), 'DEPARTMENT', '제품개발연구부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='제품개발연구부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW영업본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'GIS SW영업부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS SW영업부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS SW영업부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS SW영업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS SW영업팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='SW영업본부' AND unit_type='DIVISION'), 'DEPARTMENT', '도시계획 SW영업부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획 SW영업부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획 SW영업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획 SW영업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획 SW영업팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'GIS사업1부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS사업1부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업1부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS1부 사업1팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS1부 사업1팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업1부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS1부 사업2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS1부 사업2팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', 'GIS사업2부', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS사업2부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업2부' AND unit_type='DEPARTMENT'), 'TEAM', 'GIS2부 사업팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS2부 사업팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='GIS사업본부' AND unit_type='DIVISION'), 'TEAM', 'GIS 사업4팀', 30 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='GIS 사업4팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업본부' AND unit_type='DIVISION'), 'DEPARTMENT', '도시계획사업부', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획사업1팀', 10 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업1팀' AND unit_type='TEAM');
-INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획사업2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업2팀' AND unit_type='TEAM');
+-- [phase2-tb_ops_doc-forward-ref 2026-05-11] 본 위치의 tb_work_plan + tb_org_unit 블록은 tb_ops_doc 직전으로 선이동됨.
 
 -- tb_document 3 컬럼 보강
 ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS support_target_type VARCHAR(20);

@@ -51,7 +51,7 @@ for f in swdept/sql/V*.sql; do psql -d <db_name> -f "$f"; done
 - V*.sql 은 파일명 사전순 실행. V100 은 V026 보다 뒤에 실행됨
 - 대상 PostgreSQL 14+ 권장 (운영 16.11)
 - 멱등성 보장: `CREATE TABLE/INDEX IF NOT EXISTS` + `ADD CONSTRAINT` DO 블록 + `INSERT ... ON CONFLICT DO NOTHING`
-- **2026-05-11 보강** (`phase2-V018-init-ordering` 적용 후): 본 절차의 phase2.sql 은 **line 60/70 의 V018 UNIQUE 의존 구간 통과가 보장됨** (NFR-3-x 게이트 + UNIQUE 선이동). full phase2 통과는 후속 sprint `phase2-tb_ops_doc-forward-ref` (`tb_ops_doc` → `tb_org_unit`/`tb_work_plan` forward-reference 해소) 완료 후. 그 사이에는 `psql -f` + `ON_ERROR_STOP=1` 환경에서 phase2.sql:464 부근 stop 가능 — DbInitRunner 부팅 경로는 per-stmt try/catch 로 무해.
+- **2026-05-11 보강** (`phase2-V018-init-ordering` + `phase2-tb_ops_doc-forward-ref` 적용 후): 본 절차의 phase2.sql 은 **line 60/70 의 V018 UNIQUE 의존 구간 + line 464 부근 tb_ops_doc forward-reference 모두 통과 보장**. 다만 `qt_category_mst` (line 686 부근) 등 V*.sql 외부 정의 테이블에 대한 INSERT 의존은 잔존 — 후속 sprint `phase2-vsql-external-deps` 미완 상태에서는 phase2.sql 후반부 stop 가능. DbInitRunner 부팅 경로는 per-stmt try/catch 로 무해.
 
 ### 3. GeoNURIS_License.jar 파일 (Git에 포함됨)
 

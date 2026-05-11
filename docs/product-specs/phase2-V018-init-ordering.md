@@ -397,3 +397,5 @@ psql:src/main/resources/db_init_phase2.sql:464: ERROR:  relation "tb_org_unit" d
 | 예상 분량 | 작은 (선이동 2건 + 검증) — phase2-V018-init-ordering 보다 더 단순할 가능성 |
 
 > 본 스프린트 완료 + commit 후 별도 기획서 (`docs/product-specs/phase2-tb_ops_doc-forward-ref.md`) 작성 권고.
+>
+> **2026-05-11 closure**: 후속 sprint `phase2-tb_ops_doc-forward-ref` (commit `<TBD>`) 로 line 464 forward-reference 해소 완료. 그 결과 또 다른 후속 결함 (line 686 부근 `qt_category_mst` 외부 V024 의존) 표면화 — `phase2-vsql-external-deps` 신규 sprint 권고 (PLANS.md 참조).

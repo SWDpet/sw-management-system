@@ -67,7 +67,13 @@
   - 검증 (ephemeral 25880, v3.3 scope 한정): T1 (phase2 멱등 3회 — NFR-3-x PASS NOTICE + count=5/distinct=5/UNIQUE 1) / T2 (psql fresh-init line 60/70 stop 회귀 0건) / T3 (V018 재진입 rc=0 + DELETE 0) / T4 (V018 SHA256 무변경)
   - V018 무수정 (Flyway checksum 보존). 운영DB 영향 0.
   - Discovery: phase2.sql:464 `tb_org_unit` forward-reference 표면화 → 후속 `phase2-tb_ops_doc-forward-ref` 분리
-- `phase2-tb_ops_doc-forward-ref` (신규, 2026-05-11) — `tb_ops_doc` 의 `tb_org_unit`/`tb_work_plan` FK forward-reference 해소. fresh-init 완전 통과 보장 마무리. 본 스프린트와 동일 패턴 (선이동) 적용 가능.
+- `phase2-tb_ops_doc-forward-ref` — **완료 (2026-05-11, commit `<TBD>`)**:
+  - 산출물: `db_init_phase2.sql` (`tb_work_plan` + `tb_org_unit` 블록 + 39 seed INSERT 를 `tb_ops_doc` 직전으로 통째 선이동)
+  - 검증 (ephemeral 25880, 본 sprint surface scope): T1 phase2 멱등 3회 — surface ERROR 0 / T2 fresh-init line 60/70/464 stop 회귀 0건 / T3 git diff 의미 불변 (`<` 0건, hunk 3개 H1+H2+H3·4 병합) / T4 V100 SHA256 무변경
+  - V100 무수정 (Flyway checksum 보존). 운영DB 영향 0 (`CREATE TABLE IF NOT EXISTS` 멱등성).
+  - **선행 sprint phase2-V018-init-ordering §10 Discovery closure 완료** — line 464 forward-reference 해소.
+  - **신규 Discovery**: `qt_category_mst` (phase2.sql:682 INSERT) 가 외부 V024 (`swdept/sql/V024_qt_category_master.sql`) 에 의존. fresh-init 시 phase2 가 V*.sql 보다 먼저 실행돼 line 686 stop 가능성. 별도 후속 sprint 영역.
+- `phase2-vsql-external-deps` (신규 권고, 2026-05-11) — phase2.sql 안에서 V*.sql 외부 정의 테이블 (`qt_category_mst` 등) 에 INSERT 하는 패턴. 이런 외부 의존 INSERT 들을 phase2 에서 분리하거나, 또는 V*.sql 의 정의를 phase2 로 흡수. 발견 패턴 grep 으로 일제 점검 권장.
 - `ro_phase1_audit` 롤 DROP (Step 9-B, 별도 시점에 사용자 결정)
 
 ---
