@@ -11,8 +11,12 @@ inspection-poc/
 ├── encoder/
 │   └── encode.py             서버 측 인코더 (gzip + base45 + QR PNG)
 ├── decoder/
-│   ├── decode.js             PWA 측 디코더 (CRC + 조립 + SHA-1 + gunzip)
+│   ├── decode.js             Node 디코더 레퍼런스 (CRC + 조립 + SHA-1 + gunzip)
 │   └── fault_test.js         결함 주입 테스트 (CRC/누락/SHA 변조)
+├── pwa/
+│   ├── scanner.html          PWA 스캐너 페이지 (카메라 + BarcodeDetector/jsQR)
+│   ├── decoder.mjs           브라우저용 디코더 (DecompressionStream + crypto.subtle)
+│   └── _smoke.mjs            decoder.mjs 라운드트립 + 결함 거부 회귀 테스트
 ├── viewer.html               갤럭시탭으로 스캔하기 위한 QR 표시 페이지
 ├── out/                      sample_payload 인코딩 결과
 ├── out_stress/               stress_payload 인코딩 결과 (단일 청크)
@@ -47,16 +51,31 @@ node decode.js ../out/frames.json
 # 4. 결함 주입 테스트
 node fault_test.js
 
-# 5. 갤럭시탭 검증
+# 5. 브라우저 디코더 회귀 (Node 24+)
+cd ../pwa
+node _smoke.mjs              # 3건 라운드트립 + 3건 결함 거부
+
+# 6. 갤럭시탭 검증
 #    - inspection-poc/ 디렉토리에 간단한 HTTP 서버 띄우기
 #      python -m http.server 8000
-#    - 같은 LAN의 갤럭시탭 브라우저로 http://PC_IP:8000/viewer.html
-#    - 카메라 앱으로 QR 스캔 → seq=0(헤더) → seq=1.. 순서로
+#    - 같은 LAN의 갤럭시탭 브라우저로 http://PC_IP:8000/viewer.html (반출 화면)
+#                                          또는 /pwa/scanner.html (스캐너)
+#    - 스캐너: 헤더(seq=0) → 데이터(seq=1..N) 순서로 스캔 (순서 무관)
+#    - 개발 모드: 카메라 없이 frames.json 텍스트 주입으로 검증 가능
+#
+#    ⚠ getUserMedia 는 secure context 필요:
+#      - localhost (PC 자체) : HTTP 그대로 OK
+#      - LAN IP 접속 시       : HTTPS 필요 (또는 Chrome flag
+#        chrome://flags/#unsafely-treat-insecure-origin-as-secure 에
+#        http://PC_IP:8000 등록)
+#      - 카메라 없이 검증만이면 dev 모드 주입으로 충분
 ```
 
 ## 다음 단계
 
-- [ ] 갤럭시탭 실제 스캔 검증 (BarcodeDetector vs jsQR 인식률 비교)
-- [ ] PWA 스캐너 페이지 구현 (decode.js를 브라우저로 포팅)
+- [x] PWA 스캐너 페이지 구현 (decoder.mjs로 브라우저 포팅)
+- [x] Windows AP 서버 점검 에이전트 (PowerShell)
+- [ ] 갤럭시탭 실제 스캔 검증 (BarcodeDetector vs jsQR 인식률 비교, 거리/조도/글레어)
 - [ ] SW Manager `/api/inspection/qr-batch` 엔드포인트 구현
-- [ ] Windows AP 서버 점검 에이전트 (PowerShell)
+- [ ] PWA 오프라인 캐싱 (service worker + jsQR 로컬 번들)
+- [ ] AIX DB 에이전트 (ksh, 동일 컨트랙트)

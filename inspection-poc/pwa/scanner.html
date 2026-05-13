@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>UPIS 점검 QR 스캐너 (PWA PoC)</title>
+<style>
+  :root { color-scheme: light; --accent:#2563eb; --ok:#16a34a; --warn:#ea580c; --err:#dc2626; --muted:#777; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px;
+    font-family: "Pretendard", "Segoe UI", sans-serif;
+    background: #f5f5f5; color: #111;
+  }
+  h1 { margin: 0 0 4px; font-size: 18px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+  .panel {
+    background: #fff; border: 1px solid #ddd; border-radius: 12px;
+    padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .panel h2 { margin: 0 0 12px; font-size: 14px; color: var(--muted); font-weight: 600; }
+  button {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 10px 16px; border-radius: 8px;
+    background: var(--accent); color: #fff;
+    font-size: 14px; font-weight: 600;
+  }
+  button.secondary { background: #e5e7eb; color: #111; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* camera */
+  #cam-wrap { position: relative; aspect-ratio: 4/3; background: #000; border-radius: 8px; overflow: hidden; }
+  #cam { width: 100%; height: 100%; object-fit: cover; }
+  #cam-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(transparent 45%, rgba(37,99,235,0.4) 50%, transparent 55%);
+    pointer-events: none; opacity: 0.4;
+  }
+  #cam-status {
+    position: absolute; left: 8px; top: 8px;
+    background: rgba(0,0,0,0.55); color: #fff;
+    padding: 4px 8px; border-radius: 4px;
+    font-size: 11px;
+  }
+
+  /* progress */
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+  }
+  .pill.ok { background: #dcfce7; color: var(--ok); }
+  .pill.warn { background: #fef3c7; color: var(--warn); }
+  .pill.err { background: #fee2e2; color: var(--err); }
+  .pill.muted { background: #e5e7eb; color: var(--muted); }
+
+  .chunks {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+  }
+  .chunk {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+    background: #f3f4f6; color: #9ca3af;
+    border: 1px solid #e5e7eb;
+  }
+  .chunk.recv { background: #dcfce7; color: var(--ok); border-color: #86efac; }
+  .chunk.header { background: #dbeafe; color: var(--accent); border-color: #93c5fd; }
+
+  .header-info {
+    margin-top: 12px; padding: 10px 12px;
+    background: #f9fafb; border-radius: 8px;
+    font-size: 13px; line-height: 1.6;
+  }
+  .header-info b { color: #111; }
+
+  /* log */
+  #log {
+    max-height: 200px; overflow-y: auto;
+    background: #0f172a; color: #e5e7eb;
+    border-radius: 8px; padding: 10px;
+    font-family: "Consolas", "Cascadia Mono", monospace;
+    font-size: 11px; line-height: 1.5;
+  }
+  #log .line { white-space: pre-wrap; word-break: break-all; }
+  #log .line.ok { color: #86efac; }
+  #log .line.err { color: #fca5a5; }
+  #log .line.info { color: #bfdbfe; }
+
+  /* result */
+  #result { display: none; }
+  #result.show { display: block; }
+  #result pre {
+    background: #f9fafb; border-radius: 8px;
+    padding: 12px; max-height: 360px; overflow: auto;
+    font-size: 11px; line-height: 1.5;
+    border: 1px solid #e5e7eb;
+  }
+  .tier-row { display: flex; gap: 12px; font-size: 13px; padding: 4px 0; }
+  .tier-row .t { font-weight: 700; min-width: 60px; }
+
+  /* dev */
+  details { margin-top: 16px; }
+  details summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 4px 0; }
+  textarea {
+    width: 100%; min-height: 120px;
+    font-family: monospace; font-size: 11px;
+    padding: 8px; border-radius: 6px; border: 1px solid #d1d5db;
+  }
+</style>
+</head>
+<body>
+<h1>UPIS 점검 QR 스캐너 <span class="pill muted" id="engine-pill">engine: …</span></h1>
+<div class="sub">갤럭시탭에서 모니터 QR을 순서대로 스캔 (헤더 → 데이터 청크). 순서 무관.</div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>카메라</h2>
+    <div id="cam-wrap">
+      <video id="cam" playsinline muted autoplay></video>
+      <div id="cam-overlay"></div>
+      <div id="cam-status">대기 중</div>
+    </div>
+    <div class="row" style="margin-top: 12px;">
+      <button id="btn-start">스캔 시작</button>
+      <button id="btn-stop" class="secondary" disabled>중지</button>
+      <button id="btn-reset" class="secondary">초기화</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>진행 상황</h2>
+    <div class="row">
+      <span class="pill muted" id="pill-header">헤더 대기</span>
+      <span class="pill muted" id="pill-progress">청크 0/?</span>
+      <span class="pill muted" id="pill-status">대기 중</span>
+    </div>
+    <div class="chunks" id="chunks"></div>
+    <div class="header-info" id="header-info" style="display:none"></div>
+
+    <h2 style="margin-top: 20px;">로그</h2>
+    <div id="log"></div>
+  </div>
+</div>
+
+<div class="panel" id="result" style="margin-top: 16px;">
+  <h2>디코드 결과</h2>
+  <div id="result-summary"></div>
+  <details><summary>전체 JSON</summary><pre id="result-json"></pre></details>
+</div>
+
+<details class="panel" style="margin-top: 16px;">
+  <summary>개발 모드 — frames.json 수동 주입</summary>
+  <p class="sub" style="margin-top: 8px;">카메라 없이 라운드트립을 검증하려면 frames.json 내용을 붙여넣고 "주입".</p>
+  <textarea id="dev-frames" placeholder='[{"v":1,"id":"...","seq":0,...}, ...]'></textarea>
+  <div class="row" style="margin-top: 8px;">
+    <button id="btn-inject">주입</button>
+    <button class="secondary" id="btn-load-sample">샘플 로드 (out/frames.json)</button>
+  </div>
+</details>
+
+<script type="module">
+import { FrameAccumulator } from "./decoder.mjs";
+
+const $ = (id) => document.getElementById(id);
+const camEl = $("cam");
+const camStatusEl = $("cam-status");
+const enginePill = $("engine-pill");
+const pillHeader = $("pill-header");
+const pillProgress = $("pill-progress");
+const pillStatus = $("pill-status");
+const chunksEl = $("chunks");
+const headerInfoEl = $("header-info");
+const logEl = $("log");
+const resultEl = $("result");
+const resultSummaryEl = $("result-summary");
+const resultJsonEl = $("result-json");
+
+let stream = null;
+let scanning = false;
+let rafId = null;
+let detector = null;     // BarcodeDetector instance
+let jsqrModule = null;   // lazy-loaded jsQR
+let lastDecodedTexts = new Set(); // throttle dedup across frames
+let canvas, ctx;         // off-screen for jsQR
+
+// ── logging ─────────────────────────────────────────────────────────────────
+function log(level, msg) {
+  const line = document.createElement("div");
+  line.className = `line ${level}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ── accumulator wiring ──────────────────────────────────────────────────────
+const acc = new FrameAccumulator((ev) => {
+  if (ev.kind === "header") {
+    log("ok", `헤더 수신: id=${ev.frame.id} total=${ev.frame.total} hash=${ev.frame.hash}`);
+    renderHeader(ev.frame);
+    renderProgress(ev.progress);
+  } else if (ev.kind === "chunk") {
+    log("ok", `청크 수신: seq=${ev.frame.seq}/${ev.frame.total}`);
+    renderProgress(ev.progress);
+  } else if (ev.kind === "complete") {
+    log("ok", `디코드 완료. JSON ${ev.stats.jsonBytes}B (gz ${ev.stats.gzBytes}B, sha=${ev.stats.sha})`);
+    pillStatus.className = "pill ok";
+    pillStatus.textContent = "완료 ✓";
+    renderResult(ev);
+    stopScanning();
+  } else if (ev.kind === "error") {
+    log("err", ev.message);
+    pillStatus.className = "pill err";
+    pillStatus.textContent = "오류";
+  }
+});
+
+function renderHeader(h) {
+  headerInfoEl.style.display = "block";
+  headerInfoEl.innerHTML = `
+    <b>${h.id}</b> · site=${h.site ?? "—"} · round=${h.round ?? "—"}<br>
+    raw <b>${h.raw_bytes}</b>B → gzip <b>${h.gz_bytes}</b>B → base45 <b>${h.b45_chars}</b> chars<br>
+    SHA-1 <b>${h.hash}</b> · 청크 <b>${h.total}</b>
+  `;
+  pillHeader.className = "pill ok";
+  pillHeader.textContent = "헤더 ✓";
+  renderChunkSlots(h.total);
+}
+
+function renderChunkSlots(total) {
+  chunksEl.innerHTML = "";
+  const headerSlot = document.createElement("div");
+  headerSlot.className = "chunk header";
+  headerSlot.textContent = "H";
+  headerSlot.title = "header (seq=0)";
+  chunksEl.appendChild(headerSlot);
+  for (let i = 1; i <= total; i++) {
+    const cell = document.createElement("div");
+    cell.className = "chunk";
+    cell.dataset.seq = String(i);
+    cell.textContent = String(i);
+    chunksEl.appendChild(cell);
+  }
+}
+
+function renderProgress(p) {
+  if (p.total) {
+    pillProgress.className = p.received === p.total ? "pill ok" : "pill warn";
+    pillProgress.textContent = `청크 ${p.received}/${p.total}`;
+    if (p.missing && p.missing.length) {
+      pillStatus.className = "pill warn";
+      pillStatus.textContent = `대기: ${p.missing.slice(0, 6).join(",")}${p.missing.length > 6 ? "…" : ""}`;
+    } else {
+      pillStatus.className = "pill ok";
+      pillStatus.textContent = "조립 중";
+    }
+  }
+  for (const seq of acc.chunks.keys()) {
+    const el = chunksEl.querySelector(`.chunk[data-seq="${seq}"]`);
+    if (el) el.classList.add("recv");
+  }
+}
+
+function renderResult({ payload, header, stats }) {
+  resultEl.classList.add("show");
+  const tiers = payload.tiers ?? {};
+  const tierRows = Object.entries(tiers).map(([tier, body]) => {
+    const total = body.i?.length ?? 0;
+    const warn = (body.i ?? []).filter((x) => x[1] === "warn").length;
+    const manual = (body.i ?? []).filter((x) => x[1] === "M").length;
+    return `<div class="tier-row"><span class="t">${tier}</span>
+      <span>${body.h ?? ""}</span>
+      <span class="pill muted">${total}건</span>
+      ${warn > 0 ? `<span class="pill warn">warn ${warn}</span>` : ""}
+      ${manual > 0 ? `<span class="pill muted">M ${manual}</span>` : ""}
+    </div>`;
+  }).join("");
+  resultSummaryEl.innerHTML = `
+    <div style="font-size: 14px; line-height: 1.7;">
+      <b>${payload.id}</b> · site=${payload.site} · round=${payload.round} · 점검자=${payload.inspector ?? "—"}<br>
+      <span class="pill ok">SHA-1 일치 ${stats.sha}</span>
+      <span class="pill muted">raw ${stats.jsonBytes}B</span>
+      <span class="pill muted">gz ${stats.gzBytes}B</span>
+    </div>
+    <div style="margin-top: 12px;">${tierRows}</div>
+  `;
+  resultJsonEl.textContent = JSON.stringify(payload, null, 2);
+}
+
+function resetUi() {
+  acc.reset();
+  lastDecodedTexts.clear();
+  pillHeader.className = "pill muted"; pillHeader.textContent = "헤더 대기";
+  pillProgress.className = "pill muted"; pillProgress.textContent = "청크 0/?";
+  pillStatus.className = "pill muted"; pillStatus.textContent = "대기 중";
+  chunksEl.innerHTML = "";
+  headerInfoEl.style.display = "none";
+  resultEl.classList.remove("show");
+  logEl.innerHTML = "";
+}
+
+// ── engine selection ────────────────────────────────────────────────────────
+async function pickEngine() {
+  if ("BarcodeDetector" in window) {
+    try {
+      const formats = await window.BarcodeDetector.getSupportedFormats();
+      if (formats.includes("qr_code")) {
+        detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+        enginePill.textContent = "engine: BarcodeDetector";
+        enginePill.className = "pill ok";
+        return "barcode-detector";
+      }
+    } catch (e) {
+      log("err", `BarcodeDetector 초기화 실패: ${e.message}`);
+    }
+  }
+  // fallback: jsQR via CDN
+  try {
+    log("info", "BarcodeDetector 미지원 → jsQR(CDN) 로드 시도");
+    jsqrModule = await import("https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm");
+    enginePill.textContent = "engine: jsQR";
+    enginePill.className = "pill warn";
+    canvas = document.createElement("canvas");
+    ctx = canvas.getContext("2d", { willReadFrequently: true });
+    return "jsqr";
+  } catch (e) {
+    enginePill.textContent = "engine: 없음";
+    enginePill.className = "pill err";
+    log("err", `jsQR 로드 실패 (오프라인?): ${e.message}`);
+    return null;
+  }
+}
+
+// ── camera ───────────────────────────────────────────────────────────────────
+async function startScanning() {
+  if (scanning) return;
+  if (!detector && !jsqrModule) {
+    log("err", "QR 인식 엔진을 사용할 수 없습니다");
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+  } catch (e) {
+    log("err", `카메라 접근 거부됨: ${e.message}`);
+    camStatusEl.textContent = "카메라 거부";
+    return;
+  }
+  camEl.srcObject = stream;
+  await camEl.play();
+  scanning = true;
+  $("btn-start").disabled = true;
+  $("btn-stop").disabled = false;
+  camStatusEl.textContent = "스캔 중…";
+  log("info", `카메라 시작 (${camEl.videoWidth}×${camEl.videoHeight})`);
+  scanLoop();
+}
+
+function stopScanning() {
+  scanning = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) {
+    for (const t of stream.getTracks()) t.stop();
+    stream = null;
+  }
+  $("btn-start").disabled = false;
+  $("btn-stop").disabled = true;
+  camStatusEl.textContent = "정지";
+}
+
+async function scanLoop() {
+  if (!scanning) return;
+  try {
+    if (detector) {
+      const codes = await detector.detect(camEl);
+      for (const c of codes) await handleDecoded(c.rawValue);
+    } else if (jsqrModule) {
+      const w = camEl.videoWidth, h = camEl.videoHeight;
+      if (w && h) {
+        canvas.width = w; canvas.height = h;
+        ctx.drawImage(camEl, 0, 0, w, h);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const code = jsqrModule.default(imgData.data, w, h, { inversionAttempts: "dontInvert" });
+        if (code) await handleDecoded(code.data);
+      }
+    }
+  } catch (e) {
+    log("err", `스캔 루프 오류: ${e.message}`);
+  }
+  rafId = requestAnimationFrame(scanLoop);
+}
+
+async function handleDecoded(text) {
+  if (lastDecodedTexts.has(text)) return; // already ingested
+  lastDecodedTexts.add(text);
+  await acc.ingest(text);
+}
+
+// ── dev injection ───────────────────────────────────────────────────────────
+async function injectFromTextarea() {
+  resetUi();
+  const ta = $("dev-frames");
+  if (!ta.value.trim()) {
+    log("info", "textarea 비어있음 → out/frames.json 자동 로드");
+    await loadSample();
+  }
+  let frames;
+  try {
+    frames = JSON.parse(ta.value);
+  } catch (e) {
+    log("err", `JSON 파싱 실패: ${e.message}`);
+    return;
+  }
+  if (!Array.isArray(frames)) { log("err", "배열이 아닙니다"); return; }
+  log("info", `${frames.length} 프레임 주입`);
+  const header = frames.find((f) => f.seq === 0);
+  if (header) await acc.ingest(JSON.stringify(header));
+  for (const f of frames) {
+    if (f.seq !== 0) await acc.ingest(JSON.stringify(f));
+  }
+}
+
+async function loadSample() {
+  try {
+    const res = await fetch("../out/frames.json", { cache: "no-store" });
+    const text = await res.text();
+    $("dev-frames").value = text;
+    log("info", "샘플 로드됨 — '주입' 클릭하여 검증");
+  } catch (e) {
+    log("err", `샘플 로드 실패: ${e.message}`);
+  }
+}
+
+// ── boot ────────────────────────────────────────────────────────────────────
+$("btn-start").addEventListener("click", startScanning);
+$("btn-stop").addEventListener("click", stopScanning);
+$("btn-reset").addEventListener("click", () => { stopScanning(); resetUi(); });
+$("btn-inject").addEventListener("click", injectFromTextarea);
+$("btn-load-sample").addEventListener("click", loadSample);
+
+pickEngine();
+</script>
+</body>
+</html>
