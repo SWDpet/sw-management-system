@@ -746,6 +746,7 @@ public class DocumentController {
             data.put("contAmt", p.getContAmt());
             data.put("contRt", p.getContRt());
             data.put("swAmt", p.getSwAmt());
+            data.put("swRt", p.getSwRt());
             data.put("hwAmt", p.getHwAmt());
             data.put("contDt", p.getContDt() != null ? p.getContDt().toString() : null);
             data.put("startDt", p.getStartDt() != null ? p.getStartDt().toString() : null);

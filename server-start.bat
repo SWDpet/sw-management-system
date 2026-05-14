@@ -23,7 +23,7 @@ if not exist "%LOCAL_PROPS%" (
 )
 findstr /c:"localhost:5432/swdept_local" "%LOCAL_PROPS%" >nul 2>&1
 if %ERRORLEVEL%==0 if "%DB_URL%"=="" (
-    echo [START] ERROR: application-local.properties 가 dummy 좌표 (localhost:5432/swdept_local) 그대로이고
+    echo [START] ERROR: application-local.properties 가 dummy 좌표 ^(localhost:5432/swdept_local^) 그대로이고
     echo [START]   DB_URL 환경변수도 미설정 → prod DB 접근 불가.
     echo [START]   1Password 에서 prod 좌표를 가져와 다음 파일 편집:
     echo [START]     %LOCAL_PROPS%

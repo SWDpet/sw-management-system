@@ -1563,9 +1563,6 @@ public class ExcelExportService {
         }
         // 전회 기성율: 기성내역서 폼 입력 (% 단위)
         double prevRate = toDouble(data.get("prevRate"));
-        double cumRate = prevRate + currRate;              // 기성누계 비율
-        if (cumRate > 100) cumRate = 100;
-        double completionRate = 100 - cumRate;             // 준공금 비율
 
         // maint_type 별 템플릿 분기: HS/DHS = HW 포함 → 운영장비용 / 그 외 = SW용
         String maintType = proj != null ? proj.getMaintType() : null;
@@ -1583,7 +1580,7 @@ public class ExcelExportService {
 
             if (isHwTemplate) {
                 int truncDigit = (int) toDouble(data.get("truncDigit"));
-                if (truncDigit < 3 || truncDigit > 5) truncDigit = 3;
+                if (truncDigit < 1 || truncDigit > 5) truncDigit = 3;
                 populateHwInterimTemplate(wb, projNm, distNm, year, contAmt, paymentAmt,
                         currRate, prevRate, round, items, inspData, truncDigit, periodText);
             } else {
@@ -1596,6 +1593,30 @@ public class ExcelExportService {
                 setStringDirect(cover, 11, 0, distNm);                     // A12
             }
 
+            boolean fullBidRate = bidRate >= 100.0;
+            int truncDigit = (int) toDouble(data.get("truncDigit"));
+            if (truncDigit < 1 || truncDigit > 5) truncDigit = 3;
+            String truncLabel = switch (truncDigit) {
+                case 1 -> "일단위 절사";
+                case 2 -> "십단위 절사";
+                case 4 -> "천단위 절사";
+                case 5 -> "만단위 절사";
+                default -> "백단위 절사";
+            };
+
+            // ── [0-b] 표지: A5 사업명 셀 폭 초과 시 자동 축소
+            if (cover != null) {
+                Row r5 = cover.getRow(4);
+                Cell a5 = r5 != null ? r5.getCell(0) : null;
+                if (a5 != null) {
+                    CellStyle src = a5.getCellStyle();
+                    CellStyle cs = wb.createCellStyle();
+                    if (src != null) cs.cloneStyleFrom(src);
+                    cs.setShrinkToFit(true);
+                    a5.setCellStyle(cs);
+                }
+            }
+
             // ── [1] 기성 내역서 ──
             Sheet detail = wb.getSheet("기성 내역서");
             if (detail != null) {
@@ -1605,27 +1626,97 @@ public class ExcelExportService {
                 setStringDirect(detail, 7, 0, "바. 금회기성신청금액 : 금" + String.format("%,d", paymentAmt)
                         + "원(금" + HwpxExportService.convertToKoreanAmount(paymentAmt) + "원)");
                 setStringDirect(detail, 8, 0, "사. 수행기간: " + periodText);
+                // row 18 (B/E/G/I): 100% → row 17 직접 참조 / 미만 → 선택 절사 단위 적용
+                Row row18 = detail.getRow(17);
+                if (row18 == null) row18 = detail.createRow(17);
+                for (int col : new int[]{1, 4, 6, 8}) {  // B18, E18, G18, I18
+                    Cell c = row18.getCell(col);
+                    if (c == null) c = row18.createCell(col);
+                    String letter = String.valueOf((char) ('A' + col));
+                    if (fullBidRate) {
+                        c.setCellFormula(letter + "17");
+                    } else {
+                        c.setCellFormula("ROUNDDOWN(" + letter + "17,-" + truncDigit + ")");
+                    }
+                }
             }
 
             // ── [3] GeoNURIS for KRAS 1.0 유지관리 ──
             Sheet geo = wb.getSheet("GeoNURIS for KRAS 1.0 유지관리");
+            // SW요율(%): 폼 입력 > proj.swRt > 12 fallback
+            double swRtPct;
+            Object swRtForm = data.get("swRt");
+            if (swRtForm != null && !String.valueOf(swRtForm).isBlank() && toDouble(swRtForm) > 0) {
+                swRtPct = toDouble(swRtForm);
+            } else if (proj != null && proj.getSwRt() != null && proj.getSwRt() > 0) {
+                swRtPct = proj.getSwRt();
+            } else {
+                swRtPct = 12.0;
+            }
+            double swRate = swRtPct / 100.0;
             if (geo != null) {
-                // G2 header: 낙찰율 %
-                setStringDirect(geo, 1, 6, "연간 유지관리비\n(낙찰율 " + trimPct(bidRate) + "%)");
+                // G2 header: 낙찰율 100% 면 라벨에서 (낙찰율 %) 생략
+                String g2Text = fullBidRate
+                        ? "연간 유지관리비"
+                        : "연간 유지관리비\n(낙찰율 " + trimPct(bidRate) + "%)";
+                setStringDirect(geo, 1, 6, g2Text);
                 // D4: 도입가(VAT포함) 총액
                 setNumericDirect(geo, 3, 3, totalUnitPrice);
                 // E4: VAT 제외 단가 직접 기재(수식 대체)
                 double e4 = totalUnitPrice / 1.1;
                 setNumericDirect(geo, 3, 4, Math.round(e4));
-                // H4: 연간 유지관리비 = E4 * 0.12 * 낙찰율 (기존 수식 제거, 직접 값)
-                double h4 = Math.round(e4 * 0.12 * (bidRate / 100.0));
-                setNumericDirect(geo, 3, 7, h4);
-                // I4: 기성기간(개월), J4: 기성누계 금액(전회+금회 비율)
+                // F4: SW 요율 동적 주입 (소수 비율)
+                setNumericDirect(geo, 3, 5, swRate);
+                // H4: 100% 면 formula `=E4*F4` (낙찰율 곱 제거), 미만이면 numeric 으로 낙찰율 반영
+                double h4;
+                if (fullBidRate) {
+                    Row r4 = geo.getRow(3);
+                    if (r4 == null) r4 = geo.createRow(3);
+                    Cell h4cell = r4.getCell(7);
+                    if (h4cell == null) h4cell = r4.createCell(7);
+                    h4cell.setCellFormula("E4*F4");
+                    h4 = Math.round(e4 * swRate);
+                } else {
+                    h4 = Math.round(e4 * swRate * (bidRate / 100.0));
+                    setNumericDirect(geo, 3, 7, h4);
+                }
+                // I4: 기성기간(개월), K4: 준공기간(개월)
                 setNumericDirect(geo, 3, 8, interimMonths);
-                setNumericDirect(geo, 3, 9, Math.round(h4 * cumRate / 100.0));
-                // K4: 준공기간(개월), L4: 준공금 금액(잔여 비율)
                 setNumericDirect(geo, 3, 10, completionMonths);
-                setNumericDirect(geo, 3, 11, Math.round(h4 * completionRate / 100.0));
+                // J4: 기성금 = =H4/(G4/I4) — formula 로 설정
+                Row r4j = geo.getRow(3);
+                if (r4j == null) r4j = geo.createRow(3);
+                Cell j4cell = r4j.getCell(9);
+                if (j4cell == null) j4cell = r4j.createCell(9);
+                j4cell.setCellFormula("H4/(G4/I4)");
+                // L4: 준공금 = =H4-J4 — formula 로 설정
+                Cell l4cell = r4j.getCell(11);
+                if (l4cell == null) l4cell = r4j.createCell(11);
+                l4cell.setCellFormula("H4-J4");
+            }
+
+            // ── [4] 총괄표: bidRate=100 시 ROUNDDOWN 제거 / 미만이면 선택된 절사 단위 적용
+            Sheet summary = wb.getSheet("총괄표");
+            if (summary != null) {
+                Row row8 = summary.getRow(7);
+                if (row8 == null) row8 = summary.createRow(7);
+                if (fullBidRate) {
+                    Cell f8 = row8.getCell(5);
+                    if (f8 == null) f8 = row8.createCell(5);
+                    f8.setCellFormula("F7");
+                    Cell g8 = row8.getCell(6);
+                    if (g8 == null) g8 = row8.createCell(6);
+                    g8.setCellFormula("G7");
+                    setStringDirect(summary, 7, 8, "");
+                } else {
+                    Cell f8 = row8.getCell(5);
+                    if (f8 == null) f8 = row8.createCell(5);
+                    f8.setCellFormula("ROUNDDOWN(F7,-" + truncDigit + ")");
+                    Cell g8 = row8.getCell(6);
+                    if (g8 == null) g8 = row8.createCell(6);
+                    g8.setCellFormula("ROUNDDOWN(G7,-" + truncDigit + ")");
+                    setStringDirect(summary, 7, 8, truncLabel + "(낙찰율 " + trimPct(bidRate) + "%)");
+                }
             }
             } // end else (SW용)
 

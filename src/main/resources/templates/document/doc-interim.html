@@ -148,6 +148,8 @@
                 <tr><th>나. 계약금액</th><td><input type="number" id="detail_contAmt" placeholder="계약금액" onchange="calcInterimPreview()">
                     <div class="amount-text" id="detail_contAmt_kr"></div></td>
                     <th>낙찰율(%)</th><td><input type="number" id="detail_bidRate" step="0.01" value="100" style="width:80px;" onchange="calcInterimPreview()"> %</td></tr>
+                <tr><th>SW요율(%)<br><span style="font-weight:400; font-size:0.78em; color:#888;">(사업기본정보 자동, 수정가능)</span></th><td colspan="3"><input type="number" id="detail_swRt" step="0.000001" placeholder="자동" style="width:120px;"> %
+                    <span class="help-text">사업 선택 시 sw_pjt.sw_rt 자동 로드. 비워두면 12% 기본값 사용</span></td></tr>
                 <tr><th>다. 선금금액</th><td><input type="number" id="detail_prePay" value="0" placeholder="0" onchange="calcInterimPreview()"></td>
                     <th>라. 전회기성금액</th><td><input type="number" id="detail_prevAmt" value="0" placeholder="0" onchange="calcInterimPreview()"></td></tr>
                 <tr><th>마. 선급금 정산</th><td><input type="number" id="detail_prePaySettle" value="0" placeholder="0"></td>
@@ -160,6 +162,8 @@
                     <span class="help-text">금회 기성 비율은 기성검사원의 기성율을 사용합니다.</span></td></tr>
                 <tr><th>합계 절사 단위<br><span style="font-weight:400; font-size:0.78em; color:#888;">(설계서 D12)</span></th><td colspan="3">
                     <select id="detail_truncDigit" style="width:120px;">
+                        <option value="1">일 단위 절사</option>
+                        <option value="2">십 단위 절사</option>
                         <option value="3">백 단위 절사</option>
                         <option value="4">천 단위 절사</option>
                         <option value="5">만 단위 절사</option>
@@ -228,6 +232,10 @@
             var contAmt = parseInt(document.getElementById('detail_contAmt').value) || 0;
             document.getElementById('detail_contAmt_kr').textContent = contAmt > 0 ?
                 '금' + Number(contAmt).toLocaleString() + '원(금' + convertToKorean(contAmt) + '원)' : '';
+            // 낙찰율 100% 면 절사 단위 선택 비활성 (적용 안 함)
+            var bidRate = parseFloat(document.getElementById('detail_bidRate').value);
+            var truncSel = document.getElementById('detail_truncDigit');
+            if (truncSel) truncSel.disabled = (!isNaN(bidRate) && bidRate >= 100);
         }
 
         function collectInterimItems() {
@@ -330,6 +338,7 @@
                     var yEl = document.getElementById('insp_interim_year');
                     if (yEl && !yEl.value) yEl.value = new Date().getFullYear();
                     if (window.__existingDoc) hydrateExistingDoc(window.__existingDoc);
+                    else calcInterimPreview();
                 });
         })();
 
@@ -415,7 +424,7 @@
 
             var d = sections.detail_sheet || {};
             setVal('detail_name', d.name); setVal('detail_contAmt', d.contAmt);
-            setVal('detail_bidRate', d.bidRate); setVal('detail_prePay', d.prePay);
+            setVal('detail_bidRate', d.bidRate); setVal('detail_swRt', d.swRt); setVal('detail_prePay', d.prePay);
             setVal('detail_prevAmt', d.prevAmt); setVal('detail_prePaySettle', d.prePaySettle);
             setVal('detail_periodText', d.periodText);
             setVal('detail_interimMonths', d.interimMonths); setVal('detail_prevRate', d.prevRate);
@@ -426,8 +435,8 @@
                 d.items.forEach(function(it) {
                     addInterimItemRow({ equipName: it.name || it.equipName || '', unitPrice: it.unitPrice });
                 });
-                calcInterimPreview();
             }
+            calcInterimPreview();
         }
 
         function onYearChange() {
@@ -632,6 +641,7 @@
                     document.getElementById('detail_name').value = projName;
                     if (p.contAmt) { document.getElementById('detail_contAmt').value = p.contAmt; }
                     if (p.contRt != null) { document.getElementById('detail_bidRate').value = p.contRt; }
+                    if (p.swRt != null) { document.getElementById('detail_swRt').value = p.swRt; }
                     if (p.prePay) document.getElementById('detail_prePay').value = p.prePay;
                     // 수행기간 텍스트 자동생성
                     if (p.startDt && p.endDt) {
@@ -677,6 +687,7 @@
                     name: document.getElementById('detail_name').value,
                     contAmt: parseInt(document.getElementById('detail_contAmt').value) || 0,
                     bidRate: parseFloat(document.getElementById('detail_bidRate').value) || 100,
+                    swRt: parseFloat(document.getElementById('detail_swRt').value),
                     prePay: parseInt(document.getElementById('detail_prePay').value) || 0,
                     prevAmt: parseInt(document.getElementById('detail_prevAmt').value) || 0,
                     prePaySettle: parseInt(document.getElementById('detail_prePaySettle').value) || 0,
