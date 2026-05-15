@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * SW 프로젝트 Repository
@@ -181,4 +182,11 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
      * 준공계 대상 사업: completion_yn = 'Y'
      */
     List<SwProject> findByYearAndCompletionYnOrderByCityNmAscDistNmAsc(Integer year, String completionYn);
+
+    // ========== inspection-qr-batch sprint ==========
+
+    /**
+     * payload.site → pjt_id 매핑. site_code 는 UNIQUE (partial index where not null).
+     */
+    Optional<SwProject> findBySiteCode(String siteCode);
 }

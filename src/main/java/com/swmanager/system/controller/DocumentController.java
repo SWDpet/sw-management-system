@@ -24,6 +24,7 @@ import com.swmanager.system.service.ExcelExportService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.service.InspectReportService;
 import com.swmanager.system.service.InspectPdfService;
+import com.swmanager.system.service.InspectReportDocxService;
 import com.swmanager.system.dto.InspectReportDTO;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.domain.workplan.ProcessMaster;
@@ -74,6 +75,7 @@ public class DocumentController {
     @Autowired private com.swmanager.system.repository.PjtScheduleRepository pjtScheduleRepository;
     @Autowired private InspectReportService inspectReportService;
     @Autowired private InspectPdfService inspectPdfService;
+    @Autowired private InspectReportDocxService inspectReportDocxService;
 
     // === 권한 ===
 
@@ -1562,6 +1564,24 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
+    /** GET /document/api/inspect-report/find?pjtId={pjtId}&inspectMonth={YYYY-MM}
+     *  inspection-report-d-v5: doc-inspect 진입 시 prefill 용.
+     *  동일 (사업, 점검월) 의 기존 회차가 있으면 풀 데이터, 없으면 data=null. */
+    @GetMapping("/api/inspect-report/find")
+    @ResponseBody
+    public ResponseEntity<?> findInspectReport(@RequestParam Long pjtId, @RequestParam String inspectMonth) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        try {
+            result.put("success", true);
+            result.put("data", inspectReportService.findByProjectAndMonth(pjtId, inspectMonth));
+        } catch (Exception e) {
+            log.error("점검내역서 prefill 조회 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
     /** GET /document/api/inspect-report/previous-visits?pjtId={pjtId}&inspectMonth={YYYY-MM} - 이전 월 이력 조회 (신규 작성용) */
     @GetMapping("/api/inspect-report/previous-visits")
     @ResponseBody
@@ -1699,6 +1719,24 @@ public class DocumentController {
                     .body(pdf);
         } catch (Exception e) {
             log.error("점검내역서 PDF 생성 실패: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /** GET /document/api/inspect-docx/{reportId} - 점검내역서 시안D v5 DOCX 다운로드 (inspection-report-d-v5) */
+    @GetMapping("/api/inspect-docx/{reportId}")
+    @ResponseBody
+    public ResponseEntity<byte[]> downloadInspectDocx(@PathVariable Long reportId) {
+        try {
+            byte[] docx = inspectReportDocxService.generate(reportId);
+            String filename = inspectReportDocxService.fileName(reportId);
+            String encoded = java.net.URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encoded)
+                    .body(docx);
+        } catch (Exception e) {
+            log.error("점검내역서 DOCX 생성 실패: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

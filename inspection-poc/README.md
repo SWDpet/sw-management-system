@@ -75,7 +75,10 @@ node _smoke.mjs              # 3건 라운드트립 + 3건 결함 거부
 
 - [x] PWA 스캐너 페이지 구현 (decoder.mjs로 브라우저 포팅)
 - [x] Windows AP 서버 점검 에이전트 (PowerShell)
+- [x] SW Manager `/api/inspection/qr-batch` 엔드포인트 구현 (sprint `inspection-qr-batch`)
+- [x] Unix DB 에이전트 — AIX / HP-UX / Linux / Solaris + Oracle 17항목 (`agent-unix/`)
+- [x] Unix snapshot → Windows QR 인코더 라운드트립 (`encode-snapshot.ps1`, 옵션 A)
 - [ ] 갤럭시탭 실제 스캔 검증 (BarcodeDetector vs jsQR 인식률 비교, 거리/조도/글레어)
-- [ ] SW Manager `/api/inspection/qr-batch` 엔드포인트 구현
 - [ ] PWA 오프라인 캐싱 (service worker + jsQR 로컬 번들)
-- [ ] AIX DB 에이전트 (ksh, 동일 컨트랙트)
+- [ ] PWA → SW Manager 세션 인계 흐름 (현 sprint 비목표)
+- [ ] AIX/HP-UX/Solaris 실기 검증 (현재 명령어 매핑만 — Linux 만 실 e2e)

@@ -158,6 +158,16 @@ CREATE TABLE IF NOT EXISTS inspect_report (
 ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS insp_sign TEXT;
 ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS conf_sign TEXT;
 
+-- [inspection-report-d-v5 2026-05-15] 시안D v5 NEXT ROUND + 핵심발견사항 수동입력 컬럼
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS key_findings       TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS recommendation_1   TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS recommendation_2   TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS recommendation_3   TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS followup_1         TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS followup_2         TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS followup_3         TEXT;
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS next_schedule_note VARCHAR(300);
+
 CREATE INDEX IF NOT EXISTS idx_inspect_report_pjt ON inspect_report(pjt_id);
 CREATE INDEX IF NOT EXISTS idx_inspect_report_month ON inspect_report(inspect_month);
 
@@ -328,6 +338,29 @@ INSERT INTO inspect_template (template_type, section, category, item_name, item_
 ('KRAS', 'GIS', '측량성과 프로그램', '부동산종합공부시스템 실행', 'C/S 실행 확인', 7),
 ('KRAS', 'GIS', 'GeoNURIS Desktop Pro', 'Desktop Pro 구동확인', '바탕화면의 Desktop Pro 실행', 8),
 ('KRAS', 'GIS', 'GeoNURIS Desktop Pro', 'Map Display 확인', '데이터저장소를 통해 데이터 목록 갱신 | 공간 데이터 표출 확인', 9)
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- UPIS 표준시스템(APP) — 14 메뉴 (시안D v5 8장 APPLICATION)
+-- 칼럼: 대분류(category) | 중분류(item_name) | 점검 내용(item_method) | 결과
+-- 카테고리 마스터(check_category_mst.section='APP')는 V027 에서 시드 (서버 재시작 시
+-- DELETE 대상이 아니므로 유지). 본 INSERT 는 inspect_template DELETE 직후 재시드를 보장.
+-- ============================================================
+INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
+  ('UPIS', 'APP', '도시계획',     '조회/검색',           '도시계획 정보 조회 화면 진입 → 검색 결과 정상 표출 확인',         411),
+  ('UPIS', 'APP', '도시계획',     'KRAS 연계',           'KRAS 연계 메뉴 클릭 → 연계 응답 정상 확인',                       412),
+  ('UPIS', 'APP', '도시계획',     '토지이용계획확인서',  '토지이용계획확인서 발급 화면 진입 → 발급 정상 확인',              413),
+  ('UPIS', 'APP', '도시계획',     '건축물대장',          '건축물대장 조회 → 정상 표출 확인',                                414),
+  ('UPIS', 'APP', '도시계획',     '통계',                '통계 메뉴 진입 → 차트/표 정상 표출 확인',                         415),
+  ('UPIS', 'APP', '전자심의',     '전자심의',            '전자심의 게시판 진입 → 정상 표출 및 첨부 접근 확인',              421),
+  ('UPIS', 'APP', '지구단위계획', '지구단위계획',        '지구단위계획 조회 메뉴 진입 → 결과 정상 표출',                    431),
+  ('UPIS', 'APP', '비정형',       '비정형',              '비정형 메뉴 진입 → 정상 응답 및 작성/저장 동작 확인',             441),
+  ('UPIS', 'APP', '관리자',       '관리자',              '관리자 로그인 → 관리 메뉴 정상 표출 및 사용자 조회 확인',         451),
+  ('UPIS', 'APP', 'GIS 연동',     '지도요청',            '지도 표출 정상 (Tile/WMS 응답 확인)',                             461),
+  ('UPIS', 'APP', 'GIS 연동',     '필지이동',            '필지 검색 → 필지 위치로 지도 이동 동작 확인',                     462),
+  ('UPIS', 'APP', 'GIS 연동',     '하일라이팅',          '필지 선택 시 하일라이트(강조 표시) 동작 확인',                    463),
+  ('UPIS', 'APP', 'GIS 연동',     '필지정보',            '필지 클릭 시 정보 팝업 정상 표출',                                464),
+  ('UPIS', 'APP', 'GIS 연동',     '이력정보',            '이력 조회 메뉴 동작 및 결과 정상 표출 확인',                      465)
 ON CONFLICT DO NOTHING;
 
 -- pjt_server_info 테이블 제거 (더 이상 사용하지 않음)
@@ -712,3 +745,39 @@ INSERT INTO work_plan_status_mst (status_code, status_label, display_order) VALU
   ('POSTPONED',   '연기',     6),
   ('CANCELLED',   '취소',     7)
 ON CONFLICT (status_code) DO NOTHING;
+
+-- ============================================================
+-- 점검 QR 배치 (PoC 자동수집 원본 보존 — inspection-qr-batch sprint)
+-- 폐쇄망 점검 에이전트 → QR → PWA 스캐너 → SW Manager 업로드 흐름의 마지막 한 단계.
+-- payload JSON 을 JSONB 로 원본 보존 + inspect_report DRAFT 자동생성을 연결.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS inspect_qr_batch (
+    id                BIGSERIAL PRIMARY KEY,
+    payload_id        VARCHAR(64) NOT NULL UNIQUE,    -- payload.id (멱등 키, 예: "dyg-2026-05")
+    report_id         BIGINT REFERENCES inspect_report(id) ON DELETE SET NULL,
+    site_code         VARCHAR(32) NOT NULL,           -- payload.site
+    inspect_round     VARCHAR(7),                     -- payload.round (예: "2026-05")
+    payload_ts        BIGINT,                         -- payload.ts (unix seconds)
+    source_inspector  VARCHAR(50),                    -- payload.inspector (이름)
+    header_hash       VARCHAR(16),                    -- header.hash (sha1 hex[:6])
+    raw_bytes         INT,
+    gz_bytes          INT,
+    payload_json      JSONB NOT NULL,                 -- 원본 페이로드 전체 보존 (audit)
+    hash_check        VARCHAR(10) DEFAULT 'skip',     -- 'ok' | 'warn' | 'skip' (NFR-3 warn-only)
+    uploaded_by       BIGINT REFERENCES users(user_id),
+    uploaded_at       TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_qr_batch_site_round ON inspect_qr_batch(site_code, inspect_round);
+CREATE INDEX IF NOT EXISTS idx_qr_batch_report ON inspect_qr_batch(report_id);
+
+-- inspect_report: 자동수집 출처 + 멱등 응답용 batch_id
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'manual';
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS batch_id VARCHAR(64);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inspect_report_batch_id
+    ON inspect_report(batch_id) WHERE batch_id IS NOT NULL;
+
+-- sw_pjt: site_code 매핑 컬럼 (payload.site → pjt_id 변환용)
+ALTER TABLE sw_pjt ADD COLUMN IF NOT EXISTS site_code VARCHAR(32);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_sw_pjt_site_code
+    ON sw_pjt(site_code) WHERE site_code IS NOT NULL;

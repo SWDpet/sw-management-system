@@ -91,7 +91,8 @@
                 <a th:href="@{'/document/create?docType=INSPECT&reportId=' + ${report.id}}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
                 <a th:href="@{'/document/inspect-preview/' + ${report.id}}" class="btn-preview"><i class="fas fa-eye"></i> 미리보기</a>
                 <a th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-file-pdf"></i> PDF 다운로드</a>
-                <a href="/document/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>
+                <a th:href="@{'/document/api/inspect-docx/' + ${report.id}}" class="btn-pdf" style="background:#2b6cb0;"><i class="fas fa-file-word"></i> DOCX 다운로드</a>
+                <a href="/ops-doc/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>
             </div>
         </div>
 

@@ -54,11 +54,49 @@ public class InspectReport {
     @Column(name = "status", length = 20)
     private DocumentStatus status;
 
+    /**
+     * inspection-qr-batch sprint: 자동수집 출처 + 멱등 응답용 batch_id.
+     *  - source: "manual" (UI 수동 작성) | "auto-qr" (QR batch 자동생성)
+     *  - batchId: inspect_qr_batch.payload_id 와 동일 (멱등 조회 키)
+     */
+    @Column(name = "source", length = 20)
+    private String source;
+
+    @Column(name = "batch_id", length = 64)
+    private String batchId;
+
     @Column(name = "insp_sign", columnDefinition = "TEXT")
     private String inspSign;
 
     @Column(name = "conf_sign", columnDefinition = "TEXT")
     private String confSign;
+
+    /**
+     * inspection-report-d-v5 (Phase C): 시안D v5 본문의 수동 입력 항목.
+     */
+    @Column(name = "key_findings", columnDefinition = "TEXT")
+    private String keyFindings;
+
+    @Column(name = "recommendation_1", columnDefinition = "TEXT")
+    private String recommendation1;
+
+    @Column(name = "recommendation_2", columnDefinition = "TEXT")
+    private String recommendation2;
+
+    @Column(name = "recommendation_3", columnDefinition = "TEXT")
+    private String recommendation3;
+
+    @Column(name = "followup_1", columnDefinition = "TEXT")
+    private String followup1;
+
+    @Column(name = "followup_2", columnDefinition = "TEXT")
+    private String followup2;
+
+    @Column(name = "followup_3", columnDefinition = "TEXT")
+    private String followup3;
+
+    @Column(name = "next_schedule_note", length = 300)
+    private String nextScheduleNote;
 
     @Column(name = "created_by", length = 50)
     private String createdBy;
@@ -78,6 +116,9 @@ public class InspectReport {
         this.updatedAt = LocalDateTime.now();
         if (this.status == null) {
             this.status = DocumentStatus.DRAFT;
+        }
+        if (this.source == null) {
+            this.source = "manual";
         }
     }
 

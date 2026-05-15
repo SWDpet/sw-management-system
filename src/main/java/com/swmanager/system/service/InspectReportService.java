@@ -157,6 +157,18 @@ public class InspectReportService {
                 .toList();
     }
 
+    /**
+     * inspection-report-d-v5: doc-inspect 진입 시 prefill 용.
+     * 동일 프로젝트+점검월 의 기존 회차(QR 적재본 등)가 있으면 단건 반환, 없으면 null.
+     */
+    @Transactional(readOnly = true)
+    public InspectReportDTO findByProjectAndMonth(Long pjtId, String inspectMonth) {
+        if (pjtId == null || inspectMonth == null || inspectMonth.isEmpty()) return null;
+        return reportRepository.findByPjtIdAndInspectMonth(pjtId, inspectMonth)
+                .map(r -> findById(r.getId()))   // 풀 DTO (visits+checkResults 포함) 가져오기
+                .orElse(null);
+    }
+
     // ===== 삭제 =====
 
     @Transactional

@@ -119,21 +119,44 @@
             <button onclick="saveReport('DRAFT')" class="btn-save" style="background:#f6c23e;color:#333;"><i class="fas fa-edit"></i> 임시저장</button>
             <button onclick="saveReport('COMPLETED')" class="btn-save"><i class="fas fa-save"></i> 저장</button>
             <button onclick="openSignModal()" class="btn-save" style="background:#0F766E;"><i class="fas fa-signature"></i> 서명 요청</button>
-            <a href="/document/list" class="btn-load" style="background:#36b9cc;"><i class="fas fa-list"></i> 목록</a>
-            <a href="/document/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            <a href="/ops-doc/list" class="btn-load" style="background:#36b9cc;"><i class="fas fa-list"></i> 목록</a>
+            <a href="/ops-doc/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
             </div>
     </div>
 
-    <!-- 탭 -->
-    <div class="tab-nav" id="tabNav">
-        <button class="active" onclick="showTab(0, this)">① 표지</button>
-        <button onclick="showTab(1, this)">② 점검대상</button>
-        <button onclick="showTab(2, this)" id="tabServer" style="display:none;">③ 서버 점검결과</button>
-        <button onclick="showTab(3, this)" id="tabSw">③ SW 점검결과</button>
+    <!-- Step Wizard Navigator (inspection-report-d-v5 wizard) -->
+    <div class="step-nav" id="stepNav" style="display:flex;gap:6px;margin:0 0 14px;padding:10px;background:#f8fafc;border-radius:10px;flex-wrap:wrap;">
+        <div class="step-nav-item active" data-step="1" onclick="goStep(1)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #1565c0;text-align:center;font-size:0.92em;">
+            <div style="font-weight:700;color:#1565c0;">STEP 1</div>
+            <div>표지 / 대상 작성</div>
+        </div>
+        <div class="step-nav-item" data-step="2" onclick="goStep(2)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+            <div style="font-weight:700;">STEP 2</div>
+            <div>QR 자동수집 대기</div>
+        </div>
+        <div class="step-nav-item" data-step="3" onclick="goStep(3)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+            <div style="font-weight:700;">STEP 3</div>
+            <div>점검결과 검토·입력</div>
+        </div>
+        <div class="step-nav-item" data-step="4" onclick="goStep(4)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+            <div style="font-weight:700;">STEP 4</div>
+            <div>발견사항·차회계획</div>
+        </div>
+        <div class="step-nav-item" data-step="5" onclick="goStep(5)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+            <div style="font-weight:700;">STEP 5</div>
+            <div>서명 / 저장</div>
+        </div>
     </div>
 
+    <style>
+        .step-nav-item.completed { background:#dcfce7 !important; border-color:#16a34a !important; color:#166534 !important; }
+        .step-nav-item.completed div:first-child { color:#16a34a !important; }
+        .step-nav-item.active { background:#fff !important; border-color:#1565c0 !important; color:#1565c0 !important; }
+        .step-nav-item.active div:first-child { color:#1565c0 !important; }
+    </style>
+
     <!-- =========== ① 표지 =========== -->
-    <div class="form-section active" id="section-0">
+    <div class="form-section active" id="section-0" data-step="1">
         <h3 class="section-title"><i class="fas fa-file-alt"></i> 표지</h3>
         <input type="hidden" id="reportId" value="">
         <input type="hidden" id="cover_sysType" value="">
@@ -200,7 +223,7 @@
     </div>
 
     <!-- =========== ② 점검대상 =========== -->
-    <div class="form-section" id="section-1">
+    <div class="form-section" id="section-1" data-step="1">
         <h3 class="section-title"><i class="fas fa-server"></i> 2. 점검대상</h3>
 
         <!-- UPIS HW+SW: 서버 + 소프트웨어 -->
@@ -268,7 +291,7 @@
     </div>
 
     <!-- =========== ③ 서버 점검결과 (UPIS HW+SW 전용) =========== -->
-    <div class="form-section" id="section-2">
+    <div class="form-section" id="section-2" data-step="3">
         <h3 class="section-title"><i class="fas fa-hdd"></i> 서버 점검결과</h3>
 
         <!-- DB서버 점검결과 -->
@@ -320,7 +343,7 @@
     </div>
 
     <!-- =========== SW 점검결과 =========== -->
-    <div class="form-section" id="section-3">
+    <div class="form-section" id="section-3" data-step="3">
         <h3 class="section-title"><i class="fas fa-database"></i> SW 점검결과</h3>
 
         <!-- DBMS (Oracle) 점검결과 (UPIS HW+SW 전용) -->
@@ -370,6 +393,107 @@
                 </td></tr>
             </tbody>
         </table>
+
+    </div>
+
+    <!-- =========== STEP 4 — 발견사항 / 차회 점검 계획 (시안D v5 09 NEXT ROUND) =========== -->
+    <div class="form-section" id="section-4" data-step="4">
+        <h3 class="section-title"><i class="fas fa-lightbulb"></i> 발견사항 · 차회 점검 계획</h3>
+        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">점검자가 작성하는 종합 의견 영역. 시안D v5 SUMMARY 본문 / 권고사항 / 후속조치 / 일정 메모.</p>
+        <table class="form-table" style="margin-bottom:12px;">
+            <tr>
+                <th style="width:140px;">핵심 발견사항</th>
+                <td>
+                    <textarea id="key_findings" rows="3" style="width:100%;border:1px solid #d0d4d9;border-radius:4px;padding:6px;resize:vertical;"
+                              placeholder="이번 회차에서 발견한 주요 이슈 / 점검자 종합 의견 (시안D v5 SUMMARY 본문 끝에 자동 포함)"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <th>권고사항 1</th>
+                <td><input type="text" id="recommendation_1" style="width:100%;" placeholder="예) GWS 로그 로테이션 미설정 → logback size-based rotation 적용 권고"></td>
+            </tr>
+            <tr>
+                <th>권고사항 2</th>
+                <td><input type="text" id="recommendation_2" style="width:100%;" placeholder="예) UWES store 용량 임계 근접 — 임시파일 정리 주기 단축 검토"></td>
+            </tr>
+            <tr>
+                <th>권고사항 3</th>
+                <td><input type="text" id="recommendation_3" style="width:100%;" placeholder="예) Oracle 테이블스페이스 모니터링 강화"></td>
+            </tr>
+            <tr>
+                <th>후속조치 1</th>
+                <td><input type="text" id="followup_1" style="width:100%;" placeholder="예) GWS 로그 로테이션 적용 — 수행사 6월 중순 적용 예정"></td>
+            </tr>
+            <tr>
+                <th>후속조치 2</th>
+                <td><input type="text" id="followup_2" style="width:100%;" placeholder="예) Store 임시파일 정리 — 차회 점검 시 일괄 처리"></td>
+            </tr>
+            <tr>
+                <th>후속조치 3</th>
+                <td><input type="text" id="followup_3" style="width:100%;" placeholder="예) Oracle 테이블스페이스 일간 자동 알림 설정"></td>
+            </tr>
+            <tr>
+                <th>차회 일정 메모</th>
+                <td><input type="text" id="next_schedule_note" maxlength="300" style="width:100%;" placeholder="예) 담당자와 협의 후 6월에 점검자 OOO 수행 예정"></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- =========== STEP 2 — QR 자동수집 대기 (신규) =========== -->
+    <div class="form-section" id="section-q" data-step="2">
+        <h3 class="section-title"><i class="fas fa-qrcode"></i> QR 자동수집 대기</h3>
+        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">현장 점검 대상 서버에서 자동화 모듈을 실행한 뒤 QR 코드를 PWA 스캐너로 캡처하면, 본 회차에 자동수집 결과가 적재됩니다.</p>
+        <div id="qrWaitCard" style="background:#fff7ed;border:2px dashed #fb923c;border-radius:12px;padding:30px;text-align:center;">
+            <div style="font-size:48px;color:#fb923c;"><i class="fas fa-satellite-dish"></i></div>
+            <h2 style="margin:10px 0 4px;color:#9a3412;">QR 데이터 대기 중...</h2>
+            <p id="qrWaitMsg" style="color:#7c2d12;margin:0;font-size:0.95em;">5초마다 확인합니다. 자동수집된 점검 결과가 도착하면 자동으로 진행됩니다.</p>
+            <div id="qrPollSpinner" style="margin-top:12px;font-size:24px;color:#fb923c;">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+        </div>
+        <div id="qrResultCard" style="display:none;background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:20px;margin-top:14px;">
+            <h3 style="margin:0 0 10px;color:#166534;"><i class="fas fa-check-circle"></i> QR 자동수집 적재 완료</h3>
+            <div id="qrResultSummary" style="color:#374151;font-size:0.95em;"></div>
+        </div>
+        <div style="margin-top:14px;text-align:center;">
+            <button type="button" onclick="skipQrWait()" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:10px 24px;font-size:0.9em;cursor:pointer;">
+                <i class="fas fa-forward"></i> QR 없이 진행
+            </button>
+        </div>
+    </div>
+
+    <!-- =========== STEP 5 — 서명 / 저장 (신규) =========== -->
+    <div class="form-section" id="section-5" data-step="5">
+        <h3 class="section-title"><i class="fas fa-signature"></i> 서명 / 저장</h3>
+        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">점검자 · 확인자 서명을 캡처한 뒤 저장합니다. 갤럭시탭에서 직접 서명할 수 있습니다.</p>
+        <div id="signSummary" style="background:#f8fafc;border-radius:10px;padding:20px;margin-bottom:14px;">
+            <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:240px;">
+                    <h4 style="margin:0 0 8px;color:#374151;">점검자 서명</h4>
+                    <div id="step5InspSignBox" style="border:1px solid #d1d5db;border-radius:6px;padding:10px;background:#fff;min-height:80px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">미등록</div>
+                </div>
+                <div style="flex:1;min-width:240px;">
+                    <h4 style="margin:0 0 8px;color:#374151;">확인자 서명</h4>
+                    <div id="step5ConfSignBox" style="border:1px solid #d1d5db;border-radius:6px;padding:10px;background:#fff;min-height:80px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">미등록</div>
+                </div>
+            </div>
+        </div>
+        <div style="text-align:center;">
+            <button type="button" onclick="openSignModal()" style="background:#1565c0;color:#fff;border:none;border-radius:8px;padding:14px 32px;font-size:1em;font-weight:700;cursor:pointer;margin-right:8px;">
+                <i class="fas fa-signature"></i> 서명 캡처
+            </button>
+        </div>
+    </div>
+
+    <!-- =========== Wizard Footer (Next/Prev/저장) =========== -->
+    <div id="wizardFooter" style="margin-top:18px;padding:14px;background:#f8fafc;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="btnPrevStep" onclick="prevStep()" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
+            <i class="fas fa-arrow-left"></i> 이전
+        </button>
+        <div style="color:#6b7280;font-size:0.9em;" id="stepIndicator">STEP 1 / 5</div>
+        <button type="button" id="btnNextStep" onclick="nextStep()" style="background:#1565c0;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
+            다음 <i class="fas fa-arrow-right"></i>
+        </button>
     </div>
 </div>
 
@@ -530,12 +654,226 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// === 탭 전환 ===
-function showTab(idx, btn) {
-    document.querySelectorAll('.form-section').forEach(function(el) { el.classList.remove('active'); });
-    document.querySelectorAll('.tab-nav button').forEach(function(el) { el.classList.remove('active'); });
-    document.getElementById('section-' + idx).classList.add('active');
-    btn.classList.add('active');
+// === Step Wizard (inspection-report-d-v5) ===
+var WIZARD_TOTAL_STEPS = 5;
+var WIZARD_CURRENT_STEP = 1;
+var QR_POLL_TIMER = null;
+
+function goStep(n) {
+    n = Math.max(1, Math.min(WIZARD_TOTAL_STEPS, n));
+    WIZARD_CURRENT_STEP = n;
+    // form-section 표시/숨김
+    document.querySelectorAll('.form-section').forEach(function(el) {
+        var step = parseInt(el.getAttribute('data-step') || '0');
+        el.classList.toggle('active', step === n);
+    });
+    // step-nav 표시
+    document.querySelectorAll('.step-nav-item').forEach(function(el) {
+        var step = parseInt(el.getAttribute('data-step') || '0');
+        el.classList.toggle('active', step === n);
+        el.classList.toggle('completed', step < n);
+    });
+    // footer 버튼
+    var prev = document.getElementById('btnPrevStep');
+    var next = document.getElementById('btnNextStep');
+    var ind  = document.getElementById('stepIndicator');
+    if (prev) prev.disabled = (n === 1);
+    if (next) next.style.display = (n < WIZARD_TOTAL_STEPS) ? '' : 'none';
+    if (ind)  ind.textContent = 'STEP ' + n + ' / ' + WIZARD_TOTAL_STEPS;
+    // Step 별 진입 hook
+    if (n === 2) startQrPolling();
+    else stopQrPolling();
+    if (n === 3) {
+        // 약간 delay — 템플릿 항목 로드 후 readonly 적용
+        setTimeout(applyAutoReadonlyIfNeeded, 300);
+    }
+    if (n === 5) refreshSignSummary();
+    // 스크롤 top
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function nextStep() { goStep(WIZARD_CURRENT_STEP + 1); }
+function prevStep() { goStep(WIZARD_CURRENT_STEP - 1); }
+
+// 기존 showTab 사용처 호환 (혹시 잔존 호출 대비)
+function showTab(idx) {
+    var stepMap = {0:1, 1:1, 2:3, 3:3};
+    goStep(stepMap[idx] || 1);
+}
+
+// ── QR 폴링 (Step 2) ──────────────────────────────────────
+function startQrPolling() {
+    stopQrPolling();
+    var attempts = 0;
+    var doPoll = function() {
+        attempts++;
+        var projId = document.getElementById('projId').value;
+        var month  = document.getElementById('cover_month').value;
+        if (!projId || !month) {
+            var msg = document.getElementById('qrWaitMsg');
+            if (msg) msg.textContent = '⚠ 사업과 점검월을 먼저 선택해주세요 (STEP 1).';
+            return;
+        }
+        fetch('/document/api/inspect-report/find?pjtId=' + projId + '&inspectMonth=' + encodeURIComponent(month))
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+                if (resp.success && resp.data) {
+                    var d = resp.data;
+                    var n = (d.checkResults || []).length;
+                    if (n > 0) {
+                        // 적재 감지 — 데이터 prefill + 결과 카드 표시
+                        stopQrPolling();
+                        showQrResult(d);
+                    }
+                }
+            })
+            .catch(function() {/* silent */});
+    };
+    doPoll();
+    QR_POLL_TIMER = setInterval(doPoll, 5000);
+}
+
+function stopQrPolling() {
+    if (QR_POLL_TIMER) { clearInterval(QR_POLL_TIMER); QR_POLL_TIMER = null; }
+}
+
+function showQrResult(data) {
+    var spinner = document.getElementById('qrPollSpinner');
+    if (spinner) spinner.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;"></i>';
+    var waitMsg = document.getElementById('qrWaitMsg');
+    if (waitMsg) waitMsg.textContent = '적재 완료 — 점검결과 검토 단계로 진행할 수 있습니다.';
+    var resultCard = document.getElementById('qrResultCard');
+    var summary = document.getElementById('qrResultSummary');
+    if (resultCard && summary) {
+        // 섹션별 개수 + 결과 코드 분포
+        var bySection = {};
+        (data.checkResults || []).forEach(function(c) {
+            if (!bySection[c.section]) bySection[c.section] = { total: 0, NORMAL: 0, PARTIAL: 0, ABNORMAL: 0, NOT_APPLICABLE: 0 };
+            bySection[c.section].total++;
+            if (bySection[c.section][c.resultCode] !== undefined) bySection[c.section][c.resultCode]++;
+        });
+        var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:10px;">';
+        Object.keys(bySection).forEach(function(sec) {
+            var s = bySection[sec];
+            html += '<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:10px;text-align:center;">'
+                  + '<div style="font-weight:700;color:#166534;">' + sec + '</div>'
+                  + '<div style="font-size:1.4em;color:#15803d;margin-top:4px;">' + s.total + ' 건</div>'
+                  + '<div style="font-size:0.8em;color:#4a5568;margin-top:4px;">'
+                  + '정상 ' + s.NORMAL
+                  + (s.PARTIAL ? ' · 경고 ' + s.PARTIAL : '')
+                  + (s.ABNORMAL ? ' · 비정상 ' + s.ABNORMAL : '')
+                  + '</div></div>';
+        });
+        html += '</div>';
+        html += '<p style="margin-top:10px;color:#374151;">아래 [다음] 버튼을 눌러 STEP 3 에서 결과를 검토하고 수동 점검 항목을 입력하세요.</p>';
+        summary.innerHTML = html;
+        resultCard.style.display = 'block';
+    }
+    // 데이터 prefill — loadReport 사용 (회차 ID 있을 때)
+    if (data.id && !document.getElementById('reportId').value) {
+        // 회차 prefill — confirm 없이 자동
+        loadReport(data.id);
+    }
+}
+
+function skipQrWait() {
+    stopQrPolling();
+    goStep(3);
+}
+
+function openSignModal() {
+    // 기존 서명 모달 활용
+    var m = document.getElementById('signModal');
+    if (m) { m.style.display = 'block'; }
+}
+
+// ── 자동 영역 read-only 처리 (Step 3 진입 시) ─────────────────
+// DB / AP / DBMS 점검표 전체 → 자동수집
+// GIS 점검표 → 항목별 (Desktop Pro / 서비스 확인 = 수동, 나머지 = 자동)
+// APP 점검표 → 전부 수동
+var AUTO_READONLY_APPLIED = false;
+function applyAutoReadonlyIfNeeded() {
+    if (AUTO_READONLY_APPLIED) return;
+    var autoBodies = ['dbCheckBody', 'apCheckBody', 'dbmsCheckBody'];
+    autoBodies.forEach(function(bid) {
+        document.querySelectorAll('#' + bid + ' tr').forEach(function(tr) {
+            markRowReadonly(tr, true);
+        });
+        addAutoBadgeBefore(bid, '🤖 QR 자동수집 (읽기전용)');
+    });
+    // GIS 행 단위
+    document.querySelectorAll('#gisCheckBody tr').forEach(function(tr) {
+        var txt = (tr.textContent || '').toLowerCase();
+        var isManual = /desktop pro|서비스 확인|관리자/i.test(tr.textContent || '');
+        if (!isManual) {
+            markRowReadonly(tr, true);
+        } else {
+            // 수동 행 — 표지
+            tr.style.background = '#fff7ed';
+            tr.title = '👤 수동 입력 필요';
+        }
+    });
+    addAutoBadgeBefore('gisCheckBody', '🤖 일부 자동수집 · 👤 일부 수동 (Desktop Pro / GWS 관리자)');
+    // APP — 수동 강조
+    addAutoBadgeBefore('appCheckBody', '👤 수동 입력 필수 (UPIS 14 메뉴)');
+    AUTO_READONLY_APPLIED = true;
+}
+
+function markRowReadonly(tr, ro) {
+    tr.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.disabled = ro; });
+    tr.querySelectorAll('input[type="text"], textarea').forEach(function(el) { el.readOnly = ro; });
+    if (ro) {
+        tr.style.background = '#f3f4f6';
+        tr.title = '🤖 QR 자동수집 — 읽기전용';
+    } else {
+        tr.style.background = '';
+        tr.title = '';
+    }
+}
+
+function addAutoBadgeBefore(bodyId, label) {
+    var tbl = document.getElementById(bodyId);
+    if (!tbl) return;
+    var parentTable = tbl.closest('table');
+    if (!parentTable || parentTable.previousElementSibling
+        && parentTable.previousElementSibling.classList
+        && parentTable.previousElementSibling.classList.contains('auto-badge')) return;
+    var bg = label.indexOf('자동수집') >= 0 && label.indexOf('일부') < 0 ? '#dbeafe'
+            : label.indexOf('수동') >= 0 && label.indexOf('일부') < 0 ? '#fef3c7'
+            : '#fde68a';
+    var color = label.indexOf('자동수집') >= 0 && label.indexOf('일부') < 0 ? '#1e40af'
+              : label.indexOf('수동') >= 0 && label.indexOf('일부') < 0 ? '#92400e'
+              : '#854d0e';
+    var badge = document.createElement('div');
+    badge.className = 'auto-badge';
+    badge.style.cssText = 'display:inline-block;padding:5px 12px;border-radius:14px;background:' + bg + ';color:' + color + ';font-size:0.85em;font-weight:600;margin:6px 0;';
+    badge.textContent = label;
+    parentTable.parentNode.insertBefore(badge, parentTable);
+}
+
+function refreshSignSummary() {
+    var ins = document.getElementById('step5InspSignBox');
+    var con = document.getElementById('step5ConfSignBox');
+    var inspData = (typeof getSignData === 'function') ? getSignData('inspSignCanvas') : '';
+    var confData = (typeof getSignData === 'function') ? getSignData('confSignCanvas') : '';
+    if (ins) {
+        if (inspData) {
+            ins.innerHTML = '<img src="' + inspData + '" style="max-width:100%;max-height:80px;object-fit:contain;">';
+            ins.style.color = '';
+        } else {
+            ins.innerHTML = '미등록';
+            ins.style.color = '#9ca3af';
+        }
+    }
+    if (con) {
+        if (confData) {
+            con.innerHTML = '<img src="' + confData + '" style="max-width:100%;max-height:80px;object-fit:contain;">';
+            con.style.color = '';
+        } else {
+            con.innerHTML = '미등록';
+            con.style.color = '#9ca3af';
+        }
+    }
 }
 
 // === 4단계 사업 선택 ===
@@ -779,11 +1117,10 @@ function loadSystemDiagram(sysType) {
     area.innerHTML = diagrams[sysType] || '<div style="text-align:center;color:#999;">해당 시스템유형의 구성도가 없습니다.</div>';
 }
 
-// === 시스템유형 변경 → 탭/섹션 동적 표시 + 템플릿 로드 ===
+// === 시스템유형 변경 → 섹션 동적 표시 + 템플릿 로드 ===
+// (wizard 재구성으로 tabServer/tabSw 버튼은 제거됨 — null-safe 처리)
 function onSysTypeChange() {
     var sysType = document.getElementById('cover_sysType').value;
-    var tabServer = document.getElementById('tabServer');
-    var tabSw = document.getElementById('tabSw');
     var dbmsSection = document.getElementById('dbmsSection');
     var appTitle = document.getElementById('appTitle');
     var appTable = document.getElementById('appCheckTable');
@@ -791,44 +1128,33 @@ function onSysTypeChange() {
     var targetSW = document.getElementById('targetSW');
     var targetKRAS = document.getElementById('targetKRAS');
 
-    // 점검대상 영역 초기화
-    targetHW.style.display = 'none';
-    targetSW.style.display = 'none';
-    targetKRAS.style.display = 'none';
+    // 점검대상 영역 초기화 (null-safe)
+    if (targetHW)   targetHW.style.display = 'none';
+    if (targetSW)   targetSW.style.display = 'none';
+    if (targetKRAS) targetKRAS.style.display = 'none';
 
     var appEtcTable = document.getElementById('appEtcTable');
 
     if (sysType === 'UPIS') {
-        // UPIS HW+SW
-        tabServer.style.display = '';
-        tabServer.textContent = '③ 서버 점검결과';
-        tabSw.textContent = '④ SW 점검결과';
-        targetHW.style.display = '';
-        dbmsSection.style.display = '';
-        appTitle.textContent = '표준시스템 점검결과';
-        appTable.style.display = '';
+        if (targetHW)    targetHW.style.display = '';
+        if (dbmsSection) dbmsSection.style.display = '';
+        if (appTitle)    appTitle.textContent = '표준시스템 점검결과';
+        if (appTable)    appTable.style.display = '';
         if (appEtcTable) appEtcTable.style.display = '';
-        // GIS 헤더: 4칼럼
         updateGisHeader('UPIS');
-        // 번호 동적 업데이트
         updateSectionNumbers('UPIS');
     } else if (sysType === 'KRAS') {
-        // KRAS — 7번 섹션 + 기타 모두 숨김 (FR-7)
-        tabServer.style.display = 'none';
-        tabSw.textContent = '③ SW 점검결과';
-        targetKRAS.style.display = '';
-        dbmsSection.style.display = 'none';
-        appTitle.textContent = '';
-        appTable.style.display = 'none';
+        if (targetKRAS)  targetKRAS.style.display = '';
+        if (dbmsSection) dbmsSection.style.display = 'none';
+        if (appTitle)    appTitle.textContent = '';
+        if (appTable)    appTable.style.display = 'none';
         if (appEtcTable) appEtcTable.style.display = 'none';
         updateGisHeader('KRAS');
         updateSectionNumbers('KRAS');
     } else {
-        tabServer.style.display = 'none';
-        tabSw.textContent = '③ SW 점검결과';
-        dbmsSection.style.display = '';
-        appTitle.textContent = '표준시스템 점검결과';
-        appTable.style.display = '';
+        if (dbmsSection) dbmsSection.style.display = '';
+        if (appTitle)    appTitle.textContent = '표준시스템 점검결과';
+        if (appTable)    appTable.style.display = '';
         if (appEtcTable) appEtcTable.style.display = '';
         updateGisHeader('UPIS');
     }
@@ -1153,6 +1479,30 @@ function loadPreviousVisits() {
             }
         })
         .catch(function() { renderPreviousVisits([]); });
+
+    // inspection-report-d-v5: 동일 (사업, 월) 회차가 이미 있으면 prefill 제안.
+    // 단, loadReport() 등으로 이미 회차를 로드한 상태(reportId 세팅됨)면 skip.
+    var alreadyLoaded = document.getElementById('reportId').value;
+    if (!alreadyLoaded) {
+        checkExistingReportForPrefill(projId, month);
+    }
+}
+
+function checkExistingReportForPrefill(projId, month) {
+    fetch('/document/api/inspect-report/find?pjtId=' + projId + '&inspectMonth=' + encodeURIComponent(month))
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (!resp.success || !resp.data) return;
+            var data = resp.data;
+            var nResults = (data.checkResults || []).length;
+            var msg = '이 사업의 ' + month + ' 회차 점검내역서가 이미 존재합니다.\n'
+                    + '(점검항목 ' + nResults + '건' + (nResults > 0 ? ', QR 자동수집 포함 가능' : '') + ')\n\n'
+                    + '불러와서 이어서 작성할까요?';
+            if (confirm(msg)) {
+                loadReport(data.id);
+            }
+        })
+        .catch(function() { /* silent */ });
 }
 
 // === 데이터 수집 ===
@@ -1227,6 +1577,15 @@ function collectFormData(status) {
         dbmsIp: document.getElementById('dbms_ip').value,
         inspSign: getSignData('inspSignCanvas'),
         confSign: getSignData('confSignCanvas'),
+        // inspection-report-d-v5 Phase C — 시안D v5 NEXT ROUND
+        keyFindings:      document.getElementById('key_findings')?.value || '',
+        recommendation1:  document.getElementById('recommendation_1')?.value || '',
+        recommendation2:  document.getElementById('recommendation_2')?.value || '',
+        recommendation3:  document.getElementById('recommendation_3')?.value || '',
+        followup1:        document.getElementById('followup_1')?.value || '',
+        followup2:        document.getElementById('followup_2')?.value || '',
+        followup3:        document.getElementById('followup_3')?.value || '',
+        nextScheduleNote: document.getElementById('next_schedule_note')?.value || '',
         status: status || 'DRAFT',
         visits: visits,
         checkResults: checkResults
@@ -1364,6 +1723,17 @@ function loadReport(id) {
             document.getElementById('cover_confOrg').value = data.confOrg || '';
             document.getElementById('cover_confName').value = data.confName || '';
             document.getElementById('dbms_ip').value = data.dbmsIp || '';
+
+            // inspection-report-d-v5 Phase C — NEXT ROUND prefill
+            var fillIf = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+            fillIf('key_findings',       data.keyFindings);
+            fillIf('recommendation_1',   data.recommendation1);
+            fillIf('recommendation_2',   data.recommendation2);
+            fillIf('recommendation_3',   data.recommendation3);
+            fillIf('followup_1',         data.followup1);
+            fillIf('followup_2',         data.followup2);
+            fillIf('followup_3',         data.followup3);
+            fillIf('next_schedule_note', data.nextScheduleNote);
 
             clearSign('inspSignCanvas');
             clearSign('confSignCanvas');

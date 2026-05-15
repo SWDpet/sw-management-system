@@ -1,0 +1,346 @@
+package com.swmanager.system.service.inspection;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.swmanager.system.constant.enums.InspectResultCode;
+import com.swmanager.system.domain.InspectCheckResult;
+import com.swmanager.system.domain.InspectQrBatch;
+import com.swmanager.system.domain.InspectReport;
+import com.swmanager.system.domain.SwProject;
+import com.swmanager.system.dto.inspection.InspectionQrBatchRequest;
+import com.swmanager.system.dto.inspection.InspectionQrBatchResponse;
+import com.swmanager.system.repository.InspectCheckResultRepository;
+import com.swmanager.system.repository.InspectQrBatchRepository;
+import com.swmanager.system.repository.InspectReportRepository;
+import com.swmanager.system.repository.SwProjectRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.zip.GZIPOutputStream;
+
+/**
+ * 점검 QR batch 업로드 서비스.
+ *
+ * 기획서: docs/product-specs/inspection-qr-batch.md v1
+ * 개발계획서: docs/exec-plans/inspection-qr-batch.md v1
+ *
+ * 흐름:
+ *  A. 멱등 조회 (payload_id UNIQUE)
+ *  B. site_code → pjt_id 매핑 (SwProjectRepository#findBySiteCode)
+ *  C. inspect_report INSERT (source='auto-qr', batch_id=payload.id)
+ *  D. inspect_check_result rows INSERT (tier 별 metric → row)
+ *  E. header.hash 보조검증 (warn-only, NFR-3)
+ *  F. inspect_qr_batch INSERT (원본 + report_id 연결)
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class InspectionQrBatchService {
+
+    private final InspectQrBatchRepository batchRepository;
+    private final InspectReportRepository reportRepository;
+    private final InspectCheckResultRepository checkResultRepository;
+    private final SwProjectRepository swProjectRepository;
+
+    /**
+     * 본 서비스 안에서 hash 보조검증 시 사용. PoC encode.py 의 직렬화와 가능한 한 동일하게
+     * (key 순서 유지, ASCII 비강제). 단 NFR-3 의 warn-only 정책 — 불일치 시도 INSERT 진행.
+     */
+    private static final ObjectMapper HASH_MAPPER = JsonMapper.builder()
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+            .build();
+
+    private static final int RESULT_TEXT_MAX = 500;
+
+    /**
+     * 멱등 조회 — 트랜잭션 외부에서 fast-path 체크.
+     */
+    @Transactional(readOnly = true)
+    public Optional<InspectionQrBatchResponse> findExisting(String payloadId) {
+        return batchRepository.findByPayloadId(payloadId).map(this::toIdempotentResponse);
+    }
+
+    @Transactional
+    public InspectionQrBatchResponse upload(InspectionQrBatchRequest req, Long userId) {
+        InspectionQrBatchRequest.Payload payload = req.getPayload();
+
+        // A. 멱등
+        Optional<InspectQrBatch> existing = batchRepository.findByPayloadId(payload.getId());
+        if (existing.isPresent()) {
+            log.info("inspection-qr-batch idempotent payload_id={} report_id={}",
+                    payload.getId(), existing.get().getReportId());
+            return toIdempotentResponse(existing.get());
+        }
+
+        // B. site → pjt
+        SwProject pjt = swProjectRepository.findBySiteCode(payload.getSite())
+                .orElseThrow(() -> new SiteNotMappedException(payload.getSite()));
+
+        // C. inspect_report — 동일 (pjt, month) 의 기존 manual 회차가 있으면 merge,
+        //    없으면 신규 생성. (inspection-report-d-v5 wizard: 점검자가 STEP 1 에서
+        //    회차를 먼저 만들어두고 STEP 2 에서 QR 적재를 기다리는 흐름 지원.)
+        InspectReport report;
+        Optional<InspectReport> existingReport = reportRepository
+                .findByPjtIdAndInspectMonth(pjt.getProjId(), payload.getRound());
+        if (existingReport.isPresent()) {
+            report = existingReport.get();
+            // batch_id 가 비어있을 때만 기록 (이미 다른 QR 가 머지된 회차면 보존)
+            if (report.getBatchId() == null) {
+                report.setBatchId(payload.getId());
+                report.setSource("auto-qr-merged");
+            }
+            if (report.getInspUserId() == null && userId != null) {
+                report.setInspUserId(userId);
+            }
+            report.setUpdatedBy(userId != null ? String.valueOf(userId) : report.getUpdatedBy());
+            reportRepository.save(report);
+            // 기존 자동수집(AP/DB/DBMS/GIS) 결과만 제거 후 재적재. 수동 입력(APP, *_USAGE, *_ETC) 은 보존.
+            checkResultRepository.deleteByReportIdAndSectionIn(
+                    report.getId(), java.util.List.of("AP", "DB", "DBMS", "GIS"));
+            log.info("inspection-qr-batch merged into existing report id={} (pjt={}, month={})",
+                    report.getId(), pjt.getProjId(), payload.getRound());
+        } else {
+            report = buildReport(payload, pjt, userId);
+            reportRepository.save(report);
+        }
+
+        // D. inspect_check_result rows
+        ItemStats stats = saveCheckResults(report.getId(), payload.getTiers());
+
+        // E. header hash 보조검증 (warn-only)
+        String hashCheck = verifyHash(payload, req.getHeader().getHash());
+
+        // F. inspect_qr_batch
+        InspectQrBatch batch = buildBatch(payload, req.getHeader(), report.getId(), userId, hashCheck);
+        batchRepository.save(batch);
+
+        log.info("inspection-qr-batch ok payload_id={} report_id={} items={} manual={} warn={} hash={}",
+                payload.getId(), report.getId(), stats.total, stats.manual, stats.warn, hashCheck);
+
+        return InspectionQrBatchResponse.builder()
+                .reportId(report.getId())
+                .batchId(payload.getId())
+                .idempotent(false)
+                .pjtId(pjt.getProjId())
+                .tierCount(payload.getTiers().size())
+                .itemCount(stats.total)
+                .manualItems(stats.manual)
+                .warnItems(stats.warn)
+                .hashCheck(hashCheck)
+                .reportUrl("/document/inspect/" + report.getId())
+                .build();
+    }
+
+    // ── helpers ─────────────────────────────────────────────────────────────
+
+    private InspectReport buildReport(InspectionQrBatchRequest.Payload payload, SwProject pjt, Long userId) {
+        InspectReport report = new InspectReport();
+        report.setPjtId(pjt.getProjId());
+        report.setInspectMonth(payload.getRound());
+        report.setSysType(pjt.getSysNmEn());
+        String sysLabel = pjt.getSysNmEn() != null ? pjt.getSysNmEn() : payload.getSite().toUpperCase(Locale.ROOT);
+        report.setDocTitle("[자동수집] " + sysLabel + " " + payload.getRound() + " 점검내역서");
+        report.setSource("auto-qr");
+        report.setBatchId(payload.getId());
+        report.setInspUserId(userId);
+        report.setCreatedBy(userId != null ? String.valueOf(userId) : null);
+        report.setUpdatedBy(userId != null ? String.valueOf(userId) : null);
+        return report;
+    }
+
+    private ItemStats saveCheckResults(Long reportId, Map<String, InspectionQrBatchRequest.Tier> tiers) {
+        ItemStats stats = new ItemStats();
+        List<String> tierKeys = new ArrayList<>(tiers.keySet());
+        for (String tierKey : tierKeys) {
+            InspectionQrBatchRequest.Tier tier = tiers.get(tierKey);
+            if (tier == null || tier.getItems() == null) continue;
+            String section = tierKey.toUpperCase(Locale.ROOT);
+            int sortOrder = 0;
+            for (List<Object> metric : tier.getItems()) {
+                if (metric == null || metric.size() < 2) continue;
+                String key = Objects.toString(metric.get(0), null);
+                String status = Objects.toString(metric.get(1), null);
+                Object value = metric.size() >= 3 ? metric.get(2) : null;
+
+                InspectCheckResult row = new InspectCheckResult();
+                row.setReportId(reportId);
+                row.setSection(section);
+                row.setItemName(key);
+                InspectResultCode code = InspectResultCode.fromPoCStatus(status);
+                row.setResultCode(code != null ? code.name() : InspectResultCode.NORMAL.name());
+
+                ResultText resultText = formatValue(value);
+                row.setResultText(resultText.text);
+                row.setRemarks(buildRemarks(status, code, resultText.truncated));
+                row.setSortOrder(sortOrder++);
+
+                checkResultRepository.save(row);
+                stats.total++;
+                if ("M".equalsIgnoreCase(status)) stats.manual++;
+                else if ("warn".equalsIgnoreCase(status)) stats.warn++;
+            }
+        }
+        return stats;
+    }
+
+    private InspectQrBatch buildBatch(InspectionQrBatchRequest.Payload payload,
+                                      InspectionQrBatchRequest.Header header,
+                                      Long reportId,
+                                      Long userId,
+                                      String hashCheck) {
+        InspectQrBatch batch = new InspectQrBatch();
+        batch.setPayloadId(payload.getId());
+        batch.setReportId(reportId);
+        batch.setSiteCode(payload.getSite());
+        batch.setInspectRound(payload.getRound());
+        batch.setPayloadTs(payload.getTs());
+        batch.setSourceInspector(payload.getInspector());
+        batch.setHeaderHash(header.getHash());
+        batch.setRawBytes(header.getRawBytes());
+        batch.setGzBytes(header.getGzBytes());
+        batch.setPayloadJson(HASH_MAPPER.convertValue(payload, Map.class));
+        batch.setHashCheck(hashCheck);
+        batch.setUploadedBy(userId);
+        return batch;
+    }
+
+    /**
+     * payload 를 Python encode.py 와 가능한 한 동일하게 직렬화 → gzip → SHA-1 hex[:6] 계산 →
+     * header.hash 와 비교. 불일치는 warn-only (NFR-3) — 응답에 표지, 예외는 발생시키지 않음.
+     */
+    String verifyHash(InspectionQrBatchRequest.Payload payload, String headerHash) {
+        if (headerHash == null || headerHash.isBlank()) return "skip";
+        try {
+            String json = HASH_MAPPER.writeValueAsString(payload);
+            byte[] gz = gzip(json.getBytes(StandardCharsets.UTF_8));
+            String sha = sha1Hex(gz);
+            String shaPrefix = sha.substring(0, 6);
+            if (shaPrefix.equalsIgnoreCase(headerHash)) {
+                return "ok";
+            }
+            log.warn("inspection-qr-batch hash mismatch header={} computed={} payload_id={}",
+                    headerHash, shaPrefix, payload.getId());
+            return "warn";
+        } catch (JsonProcessingException | NoSuchAlgorithmException e) {
+            log.warn("inspection-qr-batch hash verify failed payload_id={} reason={}", payload.getId(), e.toString());
+            return "skip";
+        } catch (Exception e) {
+            log.warn("inspection-qr-batch hash verify unexpected payload_id={} reason={}", payload.getId(), e.toString());
+            return "skip";
+        }
+    }
+
+    private static byte[] gzip(byte[] data) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             GZIPOutputStream gz = new GZIPOutputStream(baos)) {
+            gz.write(data);
+            gz.finish();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String sha1Hex(byte[] data) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        byte[] digest = md.digest(data);
+        return HexFormat.of().formatHex(digest);
+    }
+
+    private static ResultText formatValue(Object value) {
+        if (value == null) return new ResultText("", false);
+        String raw = String.valueOf(value);
+        if (raw.length() <= RESULT_TEXT_MAX) return new ResultText(raw, false);
+        return new ResultText(raw.substring(0, RESULT_TEXT_MAX), true);
+    }
+
+    private static String buildRemarks(String status, InspectResultCode code, boolean truncated) {
+        StringBuilder sb = new StringBuilder();
+        if ("M".equalsIgnoreCase(status)) {
+            sb.append("육안 점검 필요 (자동수집 불가)");
+        } else if (code != null && code == InspectResultCode.NORMAL
+                && status != null
+                && !"ok".equalsIgnoreCase(status)
+                && !"normal".equalsIgnoreCase(status)) {
+            sb.append("알 수 없는 상태 fallback: ").append(status);
+        }
+        if (truncated) {
+            if (sb.length() > 0) sb.append(" / ");
+            sb.append("(truncated)");
+        }
+        return sb.length() == 0 ? null : sb.toString();
+    }
+
+    private InspectionQrBatchResponse toIdempotentResponse(InspectQrBatch batch) {
+        Long pjtId = null;
+        Optional<SwProject> pjt = swProjectRepository.findBySiteCode(batch.getSiteCode());
+        if (pjt.isPresent()) pjtId = pjt.get().getProjId();
+
+        int tierCount = 0, itemCount = 0, manual = 0, warn = 0;
+        Map<String, Object> json = batch.getPayloadJson();
+        if (json != null) {
+            Object tiersObj = json.get("tiers");
+            if (tiersObj instanceof Map<?, ?> tiersMap) {
+                tierCount = tiersMap.size();
+                for (Object tier : tiersMap.values()) {
+                    if (tier instanceof Map<?, ?> t) {
+                        Object items = t.get("i");
+                        if (items instanceof List<?> list) {
+                            for (Object metric : list) {
+                                if (metric instanceof List<?> tuple && tuple.size() >= 2) {
+                                    itemCount++;
+                                    Object status = tuple.get(1);
+                                    if (status != null) {
+                                        String s = status.toString();
+                                        if ("M".equalsIgnoreCase(s)) manual++;
+                                        else if ("warn".equalsIgnoreCase(s)) warn++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return InspectionQrBatchResponse.builder()
+                .reportId(batch.getReportId())
+                .batchId(batch.getPayloadId())
+                .idempotent(true)
+                .pjtId(pjtId)
+                .tierCount(tierCount)
+                .itemCount(itemCount)
+                .manualItems(manual)
+                .warnItems(warn)
+                .hashCheck(batch.getHashCheck())
+                .reportUrl(batch.getReportId() == null ? null : "/document/inspect/" + batch.getReportId())
+                .build();
+    }
+
+    // ── value types ─────────────────────────────────────────────────────────
+
+    private static final class ItemStats {
+        int total;
+        int manual;
+        int warn;
+    }
+
+    private record ResultText(String text, boolean truncated) {}
+}

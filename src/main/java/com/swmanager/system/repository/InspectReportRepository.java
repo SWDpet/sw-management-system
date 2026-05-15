@@ -13,4 +13,7 @@ public interface InspectReportRepository extends JpaRepository<InspectReport, Lo
     List<InspectReport> findByPjtIdOrderByCreatedAtDesc(Long pjtId);
 
     Optional<InspectReport> findByPjtIdAndInspectMonth(Long pjtId, String inspectMonth);
+
+    /** inspection-qr-batch sprint: 멱등 응답용 — batch_id 는 UNIQUE (partial index where not null). */
+    Optional<InspectReport> findByBatchId(String batchId);
 }

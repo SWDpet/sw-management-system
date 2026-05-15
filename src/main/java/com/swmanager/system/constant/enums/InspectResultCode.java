@@ -52,4 +52,24 @@ public enum InspectResultCode {
         }
         return null;
     }
+
+    /**
+     * inspection-qr-batch sprint: PoC payload status → result code.
+     *   ok   → NORMAL
+     *   warn → PARTIAL
+     *   err  → ABNORMAL
+     *   M    → NOT_APPLICABLE  (육안 점검 항목 — 자동수집 불가)
+     *   그 외 → NORMAL (fallback, service 에서 remarks 에 표지)
+     */
+    public static InspectResultCode fromPoCStatus(String status) {
+        if (status == null) return NORMAL;
+        String norm = status.trim();
+        return switch (norm.toLowerCase()) {
+            case "ok" -> NORMAL;
+            case "warn" -> PARTIAL;
+            case "err", "error" -> ABNORMAL;
+            case "m" -> NOT_APPLICABLE;
+            default -> NORMAL;
+        };
+    }
 }

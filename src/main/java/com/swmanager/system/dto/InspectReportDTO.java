@@ -48,6 +48,16 @@ public class InspectReportDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // inspection-report-d-v5 (Phase C): NEXT ROUND 수동 입력 영역
+    private String keyFindings;
+    private String recommendation1;
+    private String recommendation2;
+    private String recommendation3;
+    private String followup1;
+    private String followup2;
+    private String followup3;
+    private String nextScheduleNote;
+
     private List<InspectVisitLogDTO> visits = new ArrayList<>();
     private List<InspectCheckResultDTO> checkResults = new ArrayList<>();
 
@@ -71,6 +81,14 @@ public class InspectReportDTO {
         dto.setStatus(e.getStatus());
         dto.setInspSign(e.getInspSign());
         dto.setConfSign(e.getConfSign());
+        dto.setKeyFindings(e.getKeyFindings());
+        dto.setRecommendation1(e.getRecommendation1());
+        dto.setRecommendation2(e.getRecommendation2());
+        dto.setRecommendation3(e.getRecommendation3());
+        dto.setFollowup1(e.getFollowup1());
+        dto.setFollowup2(e.getFollowup2());
+        dto.setFollowup3(e.getFollowup3());
+        dto.setNextScheduleNote(e.getNextScheduleNote());
         dto.setCreatedBy(e.getCreatedBy());
         dto.setUpdatedBy(e.getUpdatedBy());
         dto.setCreatedAt(e.getCreatedAt());
@@ -93,6 +111,14 @@ public class InspectReportDTO {
         e.setStatus(this.status != null ? this.status : DocumentStatus.DRAFT);
         e.setInspSign(this.inspSign);
         e.setConfSign(this.confSign);
+        e.setKeyFindings(this.keyFindings);
+        e.setRecommendation1(this.recommendation1);
+        e.setRecommendation2(this.recommendation2);
+        e.setRecommendation3(this.recommendation3);
+        e.setFollowup1(this.followup1);
+        e.setFollowup2(this.followup2);
+        e.setFollowup3(this.followup3);
+        e.setNextScheduleNote(this.nextScheduleNote);
         return e;
     }
 }

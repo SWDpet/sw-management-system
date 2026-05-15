@@ -101,6 +101,9 @@ public class SwProject {
     @Column(name = "person_id") private Long personId;
     @Column(name = "org_lgh_nm") private String orgLghNm;
 
+    // inspection-qr-batch sprint: 점검 PoC payload.site → pjt_id 매핑용 코드 (예: "dyg" = 단양군)
+    @Column(name = "site_code", length = 32) private String siteCode;
+
     @PrePersist
     public void prePersist() {
         if (this.regDt == null) {
