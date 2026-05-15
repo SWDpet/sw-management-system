@@ -24,6 +24,12 @@ param(
 $ErrorActionPreference = 'Stop'
 # PS 5.1 호환: 단일 객체 .Count 등을 허용하기 위해 strict mode는 사용하지 않음
 
+# 콘솔 UTF-8 출력 — 한국어 Windows 서버에서 한글 표시 안정화 (best-effort).
+try {
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    $OutputEncoding           = [Console]::OutputEncoding
+} catch {}
+
 $root = $PSScriptRoot
 . (Join-Path $root 'lib\Common.ps1')
 . (Join-Path $root 'lib\Collector.ps1')
@@ -87,6 +93,13 @@ $rows = ($snapshot.items | ForEach-Object {
     "<tr class='st-$($_.status)'><td>$($_.id)</td><td>$($_.label)</td><td>$($_.status)</td><td>$([System.Web.HttpUtility]::HtmlEncode($valStr))</td></tr>"
 }) -join "`n"
 
+Add-Type -AssemblyName System.Web -ErrorAction SilentlyContinue
+
+# QR JS 라이브러리 inline embed (단일 HTML 자체 완결 — 폐쇄망 친화)
+$qrLibPath = Join-Path $root 'lib\qrcode.min.js'
+$qrLibCode = if (Test-Path $qrLibPath) { Get-Content -Path $qrLibPath -Raw -Encoding UTF8 } else { '' }
+$framesJson = $qr.Frames | ConvertTo-Json -Depth 6 -Compress
+
 $html = @"
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8">
@@ -100,13 +113,23 @@ $html = @"
  .summary .ok{color:#16a34a;font-weight:700}
  .summary .warn{color:#ea580c;font-weight:700}
  .summary .crit{color:#dc2626;font-weight:700}
- table{border-collapse:collapse;background:#fff;width:100%;font-size:13px}
+ table{border-collapse:collapse;background:#fff;width:100%;font-size:13px;margin-bottom:24px}
  th,td{border:1px solid #ddd;padding:6px 10px;text-align:left}
  th{background:#f0f0f0}
  .st-warn{background:#fff7ed}
  .st-crit{background:#fee2e2}
  .st-pending_manual{background:#eff6ff}
  .footer{margin-top:20px;color:#555;font-size:13px}
+ .qr-section{margin-top:32px;padding-top:24px;border-top:2px solid #1565c0}
+ .qr-section h2{color:#1565c0;margin:0 0 8px;font-size:22px}
+ .qr-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:24px;margin-top:16px}
+ .qr-card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+ .qr-card .label{font-size:14px;color:#777;margin-bottom:4px}
+ .qr-card .seq{font-size:28px;font-weight:700;margin-bottom:12px}
+ .qr-card .seq .kind{font-size:14px;color:#2563eb}
+ .qr-card svg{width:100%;max-width:480px;height:auto}
+ .qr-card .info{margin-top:12px;font-size:12px;color:#555}
+ .qr-card.header .seq .kind{color:#16a34a}
 </style></head><body>
 <h1>UPIS 점검 — $([System.Web.HttpUtility]::HtmlEncode($cfg.site_name))</h1>
 <div class="meta">
@@ -125,21 +148,67 @@ $html = @"
 <thead><tr><th>ID</th><th>항목</th><th>상태</th><th>값</th></tr></thead>
 <tbody>$rows</tbody>
 </table>
-<div class="footer">
-  QR frames.json 생성 완료 ($($qr.Frames.Count) 프레임, $($qr.RawBytes)B → $($qr.GzBytes)B → $($qr.B45Chars)c, sha=$($qr.Hash))
+
+<div class="qr-section">
+  <h2>QR 코드 — 갤럭시탭 PWA 스캐너로 캡처</h2>
+  <p style="color:#555;margin:0 0 4px;">
+    총 <b>$($qr.Frames.Count)</b> 프레임 — payload <b>$($qr.RawBytes)</b> B → gzip <b>$($qr.GzBytes)</b> B → base45 <b>$($qr.B45Chars)</b> chars · sha=<b>$($qr.Hash)</b>
+  </p>
+  <p style="color:#777;margin:0 0 8px;font-size:13px;">
+    스캔 순서: 헤더(seq=0) → 데이터(seq=1..N). 임의 순서 가능. 모니터 글레어 시 화면 밝기 ↑, 카메라 거리 30~50 cm.
+  </p>
+  <div class="qr-grid" id="qrGrid"></div>
 </div>
+
+<div class="footer">
+  agent-version $($snapshot.agent_version) · took $($snapshot.took_ms) ms
+</div>
+
+<script>
+$qrLibCode
+</script>
+<script>
+(function() {
+    var frames = $framesJson;
+    if (!Array.isArray(frames)) { frames = [frames]; }
+    var grid = document.getElementById('qrGrid');
+    frames.forEach(function(f, i) {
+        var q = qrcode(0, 'M');                  // type=auto, ECC=Medium
+        q.addData(JSON.stringify(f));
+        q.make();
+        var svg = q.createSvgTag({ scalable: true, margin: 4 });
+        var isHeader = (f.seq === 0);
+        var card = document.createElement('div');
+        card.className = 'qr-card' + (isHeader ? ' header' : '');
+        var seqLabel = isHeader
+            ? '<span class="kind">HEADER</span> seq 0'
+            : '<span class="kind">DATA</span> seq ' + f.seq + ' / ' + (f.total || frames.length - 1);
+        var info = isHeader
+            ? 'id=' + f.id + ' · total=' + f.total + ' · hash=' + f.hash
+            : 'crc=' + (f.chk || '-') + ' · ' + (f.d ? f.d.length : 0) + ' chars';
+        card.innerHTML = '<div class="label">Frame ' + (i + 1) + ' of ' + frames.length + '</div>'
+                       + '<div class="seq">' + seqLabel + '</div>'
+                       + svg
+                       + '<div class="info">' + info + '</div>';
+        grid.appendChild(card);
+    });
+})();
+</script>
 </body></html>
 "@
-Add-Type -AssemblyName System.Web -ErrorAction SilentlyContinue
-Set-Content -Path $summaryPath -Value $html -Encoding UTF8
+
+# PS 4.0 호환 — BOM 없는 UTF-8 로 저장 (.NET 직접 호출)
+$enc = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($summaryPath, $html, $enc)
 
 Write-Log -Level INFO -Msg "===== DONE ====="
-Write-Host ""
-Write-Host "결과:"
-Write-Host ("  snapshot : {0}" -f $snapPath)
-Write-Host ("  delta    : {0}" -f $deltaPath)
-Write-Host ("  frames   : {0}" -f $framesPath)
-Write-Host ("  summary  : {0}" -f $summaryPath)
-Write-Host ""
-Write-Host ("자동: ok={0} warn={1} crit={2} | 수동 대기: {3} | 에러: {4}" -f `
-    $ok, $warn, $crit, $manual, $snapshot.summary.errors)
+# [Console]::WriteLine 사용 — Write-Host 의 콘솔 버퍼 cursor 버그 회피 (Win32 0x1F).
+[Console]::WriteLine("")
+[Console]::WriteLine("결과:")
+[Console]::WriteLine(("  snapshot : {0}" -f $snapPath))
+[Console]::WriteLine(("  delta    : {0}" -f $deltaPath))
+[Console]::WriteLine(("  frames   : {0}" -f $framesPath))
+[Console]::WriteLine(("  summary  : {0}" -f $summaryPath))
+[Console]::WriteLine("")
+[Console]::WriteLine(("자동: ok={0} warn={1} crit={2} | 수동 대기: {3} | 에러: {4}" -f `
+    $ok, $warn, $crit, $manual, $snapshot.summary.errors))

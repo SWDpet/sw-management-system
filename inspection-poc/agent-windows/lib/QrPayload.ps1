@@ -8,7 +8,8 @@ $script:B45 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:'
 function ConvertTo-Base45 {
     param([Parameter(Mandatory)][byte[]]$Bytes)
     # PS 5.1: byte -shl 8은 결과가 byte로 잘림. int로 캐스트 필수.
-    $sb = [System.Text.StringBuilder]::new()
+    # PS 4.0 (Windows Server 2012 R2) 호환 — ::new() 대신 New-Object 사용.
+    $sb = New-Object System.Text.StringBuilder
     for ($i = 0; $i -lt $Bytes.Count; $i += 2) {
         if ($i + 1 -lt $Bytes.Count) {
             $hi = [int]$Bytes[$i]
@@ -29,8 +30,10 @@ function ConvertTo-Base45 {
 
 function Compress-Gzip {
     param([Parameter(Mandatory)][byte[]]$Bytes)
-    $ms = [System.IO.MemoryStream]::new()
-    $gz = [System.IO.Compression.GZipStream]::new($ms, [System.IO.Compression.CompressionLevel]::Optimal)
+    # PS 4.0 호환 — System.IO.Compression assembly 명시 로드 + New-Object 사용.
+    Add-Type -AssemblyName System.IO.Compression -ErrorAction SilentlyContinue
+    $ms = New-Object System.IO.MemoryStream
+    $gz = New-Object System.IO.Compression.GZipStream($ms, [System.IO.Compression.CompressionLevel]::Optimal)
     $gz.Write($Bytes, 0, $Bytes.Count)
     $gz.Close()
     return $ms.ToArray()

@@ -79,7 +79,18 @@ ORACLE_DRY_RUN=1 ./inspect.sh
 
 # 실제 Oracle 연결
 ORACLE_CONNECT="sys/********@dbhost:1521/UPIS as sysdba" ./inspect.sh
+
+# QR 표출 (터미널 ASCII QR — Linux 우선, qrencode 필요)
+./qr-show.sh                            # 직전 out/snapshot.json 사용
+./qr-show.sh snapshots/dyg-...-db-...json
+# ENTER 로 다음 프레임 / Ctrl+C 로 종료
 ```
+
+### qr-show.sh 의존성
+- **perl** — 코어 모듈 (IO::Compress::Gzip / Digest::SHA / Compress::Zlib) 만 사용. AIX/HP-UX/Linux/Solaris 전부 기본 탑재.
+- **qrencode** — 시스템 패키지.
+  - **Linux**: `apt install qrencode` 또는 `yum install qrencode` 또는 `zypper install qrencode`
+  - **AIX/HP-UX/Solaris**: 직접 빌드 필요 (libqrencode 소스 또는 RPM/pkg 저장소). 보통 폐쇄망 정책상 어려움 → 이 경우 **옵션 A** 권장 (`out/snapshot.json` 을 USB/SCP 로 Windows 모니터링 PC 로 옮긴 뒤 `../encode-snapshot.ps1` 로 인코딩 후 viewer.html 표출).
 
 ## QR 인코딩 (옵션 A)
 

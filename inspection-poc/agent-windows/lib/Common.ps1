@@ -26,7 +26,10 @@ function Write-Json {
     $depth = 10
     $json = if ($Compact) { $Object | ConvertTo-Json -Depth $depth -Compress }
             else          { $Object | ConvertTo-Json -Depth $depth }
-    Set-Content -Path $Path -Value $json -Encoding UTF8 -NoNewline
+    # PS 4.0 (Windows Server 2012 R2 기본) 호환 — Set-Content -NoNewline 은 PS 5.0+ 만 지원.
+    # .NET 직접 호출로 BOM 없는 UTF-8 + trailing newline 없이 저장.
+    $enc = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $json, $enc)
 }
 
 function Read-Json {
@@ -97,5 +100,8 @@ function Get-IsoNow { (Get-Date).ToString($script:IsoFmt) }
 function Write-Log {
     param([string]$Level = 'INFO', [string]$Msg)
     $ts = Get-Date -Format 'HH:mm:ss.fff'
-    Write-Host ("[{0}] [{1,-5}] {2}" -f $ts, $Level, $Msg)
+    $line = "[$ts] [$($Level.PadRight(5))] $Msg"
+    # [Console]::WriteLine 은 콘솔 버퍼 cursor 매트릭스를 직접 조작하지 않아서
+    # Win32 0x1F (ERROR_GEN_FAILURE) 회피. 폰트/RDP/한글 콘솔 호환성 확보.
+    try { [Console]::WriteLine($line) } catch { Write-Output $line }
 }
