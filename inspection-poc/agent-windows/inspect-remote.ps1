@@ -130,7 +130,13 @@ $rows = ($snapshot.items | ForEach-Object {
 }) -join "`n"
 
 $qrLibPath = Join-Path $root 'lib\qrcode.min.js'
-$qrLibCode = if (Test-Path $qrLibPath) { Get-Content -Path $qrLibPath -Raw -Encoding UTF8 } else { '' }
+if (-not (Test-Path $qrLibPath)) {
+    throw "lib\qrcode.min.js 파일이 없습니다: $qrLibPath`n  → 반출 패키지에 lib\ 폴더가 통째로 복사됐는지 확인하세요. 이 파일이 없으면 summary-remote.html 의 QR 카드가 빈 채로 표시됩니다."
+}
+$qrLibCode = Get-Content -Path $qrLibPath -Raw -Encoding UTF8
+if ([string]::IsNullOrWhiteSpace($qrLibCode)) {
+    throw "lib\qrcode.min.js 파일이 비어있습니다: $qrLibPath ($((Get-Item $qrLibPath).Length) bytes)`n  → 정상 파일은 8 KB 이상입니다. 복사 누락 또는 파일 손상 가능."
+}
 $framesJson = $frames | ConvertTo-Json -Depth 6 -Compress
 
 $siteName  = $cfg.site_name
