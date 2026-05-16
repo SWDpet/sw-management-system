@@ -17,7 +17,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $ConfigPath = (Join-Path $PSScriptRoot 'config\site.dyg.json'),
+    [string] $ConfigPath,
     [string] $RemoteKey  = 'unix_db'
 )
 
@@ -28,7 +28,12 @@ try {
     $OutputEncoding           = [Console]::OutputEncoding
 } catch {}
 
-$root = $PSScriptRoot
+# PS 4.0 (Server 2012 R2) — param() default 에서 $PSScriptRoot 가 빈 문자열인 경우 회피
+if ($PSScriptRoot) {
+    $root = $PSScriptRoot
+} else {
+    $root = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
 . (Join-Path $root 'lib\Common.ps1')
 . (Join-Path $root 'lib\DPAPI.ps1')
 . (Join-Path $root 'lib\Ssh.ps1')

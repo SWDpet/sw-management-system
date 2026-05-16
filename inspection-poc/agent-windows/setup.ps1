@@ -22,11 +22,22 @@
 
 [CmdletBinding()]
 param(
-    [string] $ConfigDir = (Join-Path $PSScriptRoot 'config'),
+    [string] $ConfigDir,
     [switch] $NonInteractive
 )
 
 $ErrorActionPreference = 'Stop'
+
+# PS 4.0 (Server 2012 R2) 함정 회피 — param() default 에서 $PSScriptRoot 가 빈 문자열일 수 있음.
+# 본문에서 안전하게 평가.
+if (-not $PSScriptRoot) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+} else {
+    $scriptDir = $PSScriptRoot
+}
+if (-not $ConfigDir) {
+    $ConfigDir = Join-Path $scriptDir 'config'
+}
 
 # ── 한글 입력 안전화 ────────────────────────────────────────────────────────
 try {
@@ -37,7 +48,7 @@ try {
 } catch {}
 
 # ── lib 로드 ───────────────────────────────────────────────────────────────
-$root = $PSScriptRoot
+$root = $scriptDir
 . (Join-Path $root 'lib\DPAPI.ps1')
 . (Join-Path $root 'lib\Ssh.ps1')
 . (Join-Path $root 'lib\Telnet.ps1')

@@ -33,7 +33,12 @@ try {
     $OutputEncoding           = [Console]::OutputEncoding
 } catch {}
 
-$root = $PSScriptRoot
+# PS 4.0 (Server 2012 R2) 안전화 — $PSScriptRoot 가 빈 경우 fallback
+if ($PSScriptRoot) {
+    $root = $PSScriptRoot
+} else {
+    $root = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
 
 # -Setup 명시 시 setup wizard 실행 후 종료
 if ($Setup) {
