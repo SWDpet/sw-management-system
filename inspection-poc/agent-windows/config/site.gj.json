@@ -1,10 +1,10 @@
 {
-  "site": "dyg",
-  "site_name": "단양군 UPIS",
+  "site": "gj",
+  "site_name": "강진군 UPIS",
   "inspector": "박욱진",
   "tier": "ap",
   "hosts": {
-    "ap": { "expected_hostname": "UPIS-AP", "ip_hint": null }
+    "ap": { "expected_hostname": "UPIS-AP", "ip_hint": "110.15.1.171" }
   },
   "thresholds": {
     "perf.cpu_pct":   { "warn": 70, "crit": 85 },

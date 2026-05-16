@@ -96,3 +96,32 @@ docs/swbms/
 # Refero design references — fetched JSON cache (재생성 가능, 33MB)
 docs/design-references/_tmp/json_cache/
 docs/design-references/_tmp/__pycache__/
+
+# === 점검내역서 시안D 빌드 산물 (generate.py 출력) ===
+# 시안 baseline 인 v5 docx 만 커밋. 중간 버전(v1~v4) 과 미리보기 렌더링은 ignore.
+inspection-poc/docs/report-drafts/점검내역서_시안D_annual.docx
+inspection-poc/docs/report-drafts/점검내역서_시안D_annual_filled.docx
+inspection-poc/docs/report-drafts/점검내역서_시안D_annual_filled_v*.docx
+inspection-poc/docs/report-drafts/_v*_p*.png
+inspection-poc/docs/report-drafts/_v*_preview.pdf
+inspection-poc/docs/report-drafts/_original.hwpx
+inspection-poc/docs/report-drafts/_original_text.txt
+inspection-poc/docs/report-drafts/_original_extract/
+inspection-poc/docs/report-drafts/_extract_text.py
+inspection-poc/docs/report-drafts/v3_check.*
+inspection-poc/docs/report-drafts/v3_check.files/
+inspection-poc/docs/report-drafts/build/
+
+# === inspector agent 런타임 산물 ===
+inspection-poc/agent-windows/snapshots/
+inspection-poc/agent-windows/out/
+inspection-poc/out_unix_encoded/
+
+# === hwpx/docx 분석 일회성 스크래치 (Spring 프로젝트 루트에는 .py 가 없는 게 정상) ===
+/*.py
+/.scratch/
+/Measure.java
+/login.html
+/login2.html
+/sample_texts_*.txt
+/schedule_existing_dump.txt
