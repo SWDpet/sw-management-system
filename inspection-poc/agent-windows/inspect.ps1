@@ -13,12 +13,15 @@
 .PARAMETER OnlyChecks
   특정 체크만 실행 (디버깅용). 파일명(확장자 제외)을 콤마로 나열.
 .EXAMPLE
-  .\inspect.ps1 -ConfigPath .\config\site.dyg.json
+  .\inspect.ps1                              # 저장된 active.json 로드 (없으면 setup wizard 자동)
+  .\inspect.ps1 -Setup                       # 사이트 설정 wizard 강제 실행
+  .\inspect.ps1 -ConfigPath .\config\site.dyg.json   # 명시적 config (v1 호환)
 #>
 [CmdletBinding()]
 param(
-    [string] $ConfigPath = (Join-Path $PSScriptRoot 'config\site.dyg.json'),
-    [string[]] $OnlyChecks = @()
+    [string] $ConfigPath,
+    [string[]] $OnlyChecks = @(),
+    [switch] $Setup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,13 +34,34 @@ try {
 } catch {}
 
 $root = $PSScriptRoot
+
+# -Setup 명시 시 setup wizard 실행 후 종료
+if ($Setup) {
+    & (Join-Path $root 'setup.ps1')
+    exit $LASTEXITCODE
+}
+
+# ConfigPath 미지정 시 active.json 우선, 없으면 setup wizard 분기 (FR-1-a)
+if (-not $ConfigPath) {
+    $activePath = Join-Path $root 'config\active.json'
+    if (-not (Test-Path $activePath)) {
+        Write-Host "[INFO] config\active.json 부재 — setup wizard 자동 실행" -ForegroundColor Yellow
+        & (Join-Path $root 'setup.ps1')
+        if (-not (Test-Path $activePath)) {
+            Write-Host "[INFO] setup 취소 또는 미완료 — 점검 종료" -ForegroundColor Yellow
+            exit 0
+        }
+    }
+    $ConfigPath = $activePath
+}
+
 . (Join-Path $root 'lib\Common.ps1')
 . (Join-Path $root 'lib\Collector.ps1')
 . (Join-Path $root 'lib\Snapshot.ps1')
 . (Join-Path $root 'lib\Differ.ps1')
 . (Join-Path $root 'lib\QrPayload.ps1')
 
-Write-Log -Level INFO -Msg "===== UPIS 점검 자동화 v0.1.0 ====="
+Write-Log -Level INFO -Msg "===== UPIS 점검 자동화 v0.2.0 ====="
 Write-Log -Level INFO -Msg "config: $ConfigPath"
 
 $cfg = Read-SiteConfig -Path $ConfigPath

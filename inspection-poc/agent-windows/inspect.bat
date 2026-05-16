@@ -4,12 +4,12 @@ cd /d "%~dp0"
 title UPIS Inspection - Windows AP Agent
 
 echo ============================================================
-echo  UPIS Inspection Automation (Windows AP)
-echo  Config: config\site.dyg.json
+echo  UPIS Inspection Automation (Windows AP) v0.2.0
+echo  Config: config\active.json (setup.bat 으로 변경 가능)
 echo ============================================================
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0inspect.ps1" -ConfigPath "%~dp0config\site.dyg.json"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0inspect.ps1"
 set RC=%ERRORLEVEL%
 
 echo.
