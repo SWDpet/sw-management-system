@@ -100,21 +100,35 @@ if (-not $remoteLogDir) {
 }
 
 # 2-2) 원격 디렉토리에서 mtime 기준 파일 개수/크기 산출 (read-only)
-#   find -mtime +N -type f → 합산. byte 단위는 du 와 ls 차이 회피 위해 stat 사용.
-$cmd = "find '$remoteLogDir' -type f -mtime +$retain -print 2>/dev/null | wc -l; find '$remoteLogDir' -type f -mtime +$retain -exec ls -l {} \; 2>/dev/null | awk '{s+=\$5} END{print s+0}'"
-# v2: Invoke-Remote 라우터 우선 (Telnet/SSH 자동). 미로드 시 Invoke-RemoteSsh fallback.
-if (Get-Command Invoke-Remote -ErrorAction SilentlyContinue) {
-    $r = Invoke-Remote -Remote $remote -Command $cmd -TimeoutSec 60
-} else {
-    $r = Invoke-RemoteSsh -Remote $remote -Command $cmd -TimeoutSec 60
-}
-$lines = ($r.stdout -split "`n") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
-# Telnet 출력은 프롬프트/명령에코/sentinel 노이즈 포함 — 숫자만 남긴 줄을 우선 선택
-$numeric = @($lines | Where-Object { $_ -match '^\d+$' })
+# 이전 버전은 awk '{s+=\$5}' 의 PowerShell escape 실수로 원격에 '\}' 가 전송돼 syntax error.
+# awk 자체를 제거 — count 와 size 두 명령으로 분리하고 PS 측에서 합산. 명령이 짧아져 Telnet wrap 위험도 해소.
+$findCount = "find '$remoteLogDir' -type f -mtime +$retain 2>/dev/null | wc -l"
+$findSize  = "find '$remoteLogDir' -type f -mtime +$retain -exec ls -l {} + 2>/dev/null"
 
-$count = 0; $bytes = 0
-if ($numeric.Count -ge 1) { [void][int]::TryParse($numeric[0], [ref]$count) }
-if ($numeric.Count -ge 2) { [void][int64]::TryParse($numeric[1], [ref]$bytes) }
+if (Get-Command Invoke-Remote -ErrorAction SilentlyContinue) {
+    $rCount = Invoke-Remote -Remote $remote -Command $findCount -TimeoutSec 30
+    $rSize  = Invoke-Remote -Remote $remote -Command $findSize  -TimeoutSec 60
+} else {
+    $rCount = Invoke-RemoteSsh -Remote $remote -Command $findCount -TimeoutSec 30
+    $rSize  = Invoke-RemoteSsh -Remote $remote -Command $findSize  -TimeoutSec 60
+}
+
+# count: 첫 번째 숫자만 라인 (wc -l 결과)
+$count = 0
+foreach ($line in ($rCount.stdout -split "`n")) {
+    $t = $line.Trim()
+    if ($t -match '^\d+$') { $count = [int]$t; break }
+}
+
+# size: ls -l 출력의 5번째 컬럼 합산. AIX/Linux/Solaris 공통 포맷.
+# perms links owner group SIZE month day time filename
+$bytes = [int64]0
+foreach ($line in ($rSize.stdout -split "`n")) {
+    $cols = $line.Trim() -split '\s+'
+    if ($cols.Count -ge 9 -and $cols[4] -match '^\d+$') {
+        $bytes += [int64]$cols[4]
+    }
+}
 
 return (New-CheckResult `
     -Id 'gis.gss.log_purge' `
@@ -132,4 +146,4 @@ return (New-CheckResult `
         note = '원격은 dry-run 강제 (PoC). 실제 삭제는 Unix 에이전트에서 수행'
     } `
     -Status 'ok' `
-    -Raw $r.stdout)
+    -Raw ($rCount.stdout + "`n---`n" + $rSize.stdout))

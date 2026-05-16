@@ -43,6 +43,18 @@ try {
     $OutputEncoding           = [Console]::OutputEncoding
 } catch {}
 
+# Server 2012 R2 + PS 4.0 콘솔 Read-Host 는 한글 IME 입력을 받지 못함 (RDP 시 더 심함).
+# 한글 가능 필드는 WinForms InputBox 로 띄움 - IME 정상 동작 보장. 실패 시 콘솔 fallback.
+$script:GuiAvailable = $false
+try {
+    Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction Stop
+    $script:GuiAvailable = $true
+} catch {
+    # 헤드리스/제약 환경 — Read-Host fallback
+}
+# 자동화 모드에서는 GUI 다이얼로그가 stdin 파이프를 막으니 강제로 콘솔 경로 사용.
+if ($NonInteractive) { $script:GuiAvailable = $false }
+
 # Load libs.
 $root = $scriptDir
 . (Join-Path $root 'lib\DPAPI.ps1')
@@ -84,6 +96,37 @@ function _AskString {
             continue
         }
         return $raw.Trim()
+    }
+}
+
+# 한글 IME 입력이 필요한 필드 전용. WinForms InputBox 로 GUI 다이얼로그 띄움.
+# GUI 실패 시 Read-Host 로 떨어지지만 그 경우 한글은 ASCII 로 입력해야 함.
+function _AskStringKo {
+    param(
+        [string] $Prompt,
+        [string] $Default,
+        [string] $Pattern,
+        [string] $PatternHint
+    )
+    if (-not $script:GuiAvailable) {
+        _Say "    [warn] GUI unavailable - type in ASCII"
+        return (_AskString -Prompt $Prompt -Default $Default -Pattern $Pattern -PatternHint $PatternHint)
+    }
+    $title = "UPIS Setup"
+    while ($true) {
+        $msg = $Prompt
+        if ($PatternHint) { $msg = $msg + "`r`n(" + $PatternHint + ")" }
+        $raw = [Microsoft.VisualBasic.Interaction]::InputBox($msg, $title, $Default)
+        if (-not $raw) { $raw = $Default }
+        if (-not $raw) { _Say "    [!] required"; continue }
+        if ($Pattern -and ($raw -notmatch $Pattern)) {
+            _Say ("    [!] invalid format - " + $PatternHint)
+            continue
+        }
+        $raw = $raw.Trim()
+        # 콘솔 raster 폰트로는 한글이 깨질 수 있어 길이만 echo.
+        _Say ("    [ok] {0} captured ({1} chars)" -f $Prompt, $raw.Length)
+        return $raw
     }
 }
 
@@ -150,9 +193,10 @@ if (Test-Path $activePath) {
 
 # 2. Inputs
 _Say "[1/3] Site info"
-$siteNameKo = _AskString -Prompt "Local government name (e.g. Gangjin or Korean)" -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
-$systemName = _AskString -Prompt "System name" -Default 'UPIS' -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
-$inspector  = _AskString -Prompt "Inspector name" -Default $env:USERNAME -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
+if ($script:GuiAvailable) { _Say "  (Korean fields open a GUI dialog - IME works there)" }
+$siteNameKo = _AskStringKo -Prompt "Local government name (e.g. 강진군)" -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
+$systemName = _AskStringKo -Prompt "System name" -Default 'UPIS' -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
+$inspector  = _AskStringKo -Prompt "Inspector name (e.g. 박욱진)" -Default $env:USERNAME -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
 
 $sitecodeDefault = _SuggestSiteCode -SiteNameKo $siteNameKo
 $siteCode = _AskString -Prompt "Site code (lowercase ascii, e.g. gangjin)" -Default $sitecodeDefault `
