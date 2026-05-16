@@ -1,6 +1,8 @@
 ﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
+. (Join-Path $PSScriptRoot '..\lib\DPAPI.ps1')
 . (Join-Path $PSScriptRoot '..\lib\Ssh.ps1')
+. (Join-Path $PSScriptRoot '..\lib\Telnet.ps1')   # v2 — Invoke-Remote 라우터를 같은 scope 에 import
 
 $dir    = $Config.paths.gss_log_dir
 $retain = $Config.purge.log_retain_days

@@ -1,6 +1,8 @@
 ﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
+. (Join-Path $PSScriptRoot '..\lib\DPAPI.ps1')
 . (Join-Path $PSScriptRoot '..\lib\Ssh.ps1')
+. (Join-Path $PSScriptRoot '..\lib\Telnet.ps1')   # v2 — Invoke-Remote 라우터를 같은 scope 에 import
 
 # 1) 로컬 윈도우에서 우선 탐지
 $proc = Get-Process -ErrorAction SilentlyContinue |

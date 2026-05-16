@@ -203,6 +203,7 @@ function Find-GssPathOnRemote {
 
     # SSH/Telnet 라우팅 — Invoke-Remote 가 로드돼 있으면 우선 (v2 라우터)
     $useRouter = $null -ne (Get-Command Invoke-Remote -ErrorAction SilentlyContinue)
+    $invokerUsed = if ($useRouter) { 'Invoke-Remote' } else { 'Invoke-RemoteSsh' }
 
     function _InvokeOne([string]$cmd) {
         if ($useRouter) { return Invoke-Remote -Remote $Remote -Command $cmd }
@@ -259,6 +260,8 @@ function Find-GssPathOnRemote {
         pids         = $pids
         paths        = $paths
         detected_via = $detectedVia
+        invoker_used = $invokerUsed
+        proto        = if ($Remote.PSObject.Properties['proto'] -and $Remote.proto) { $Remote.proto } else { 'ssh' }
         raw          = $raw
         ok           = $r1.ok
         stderr       = $r1.stderr
