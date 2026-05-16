@@ -60,11 +60,35 @@ if (-not $ConfigPath) {
 . (Join-Path $root 'lib\Snapshot.ps1')
 . (Join-Path $root 'lib\Differ.ps1')
 . (Join-Path $root 'lib\QrPayload.ps1')
+# v2 — 대화형 설정 / GSS 자동탐지 / Telnet 라우팅 의존성
+. (Join-Path $root 'lib\DPAPI.ps1')
+. (Join-Path $root 'lib\Ssh.ps1')
+. (Join-Path $root 'lib\Telnet.ps1')
+. (Join-Path $root 'lib\GssDetect.ps1')
 
 Write-Log -Level INFO -Msg "===== UPIS 점검 자동화 v0.2.0 ====="
 Write-Log -Level INFO -Msg "config: $ConfigPath"
 
 $cfg = Read-SiteConfig -Path $ConfigPath
+
+# v2 — password_dpapi 자동 복호화 (메모리에서만, 디스크 변경 없음)
+if ($cfg.PSObject.Properties['remotes'] -and $cfg.remotes) {
+    foreach ($key in @($cfg.remotes.PSObject.Properties.Name)) {
+        $r = $cfg.remotes.$key
+        if ($r.PSObject.Properties['password_dpapi'] -and $r.password_dpapi -and
+            -not ($r.PSObject.Properties['password'] -and $r.password)) {
+            try {
+                $plain = Unprotect-Password -Encrypted $r.password_dpapi
+                $r | Add-Member -NotePropertyName 'password' -NotePropertyValue $plain -Force
+                if (-not ($r.PSObject.Properties['auth'] -and $r.auth)) {
+                    $r | Add-Member -NotePropertyName 'auth' -NotePropertyValue 'password' -Force
+                }
+            } catch {
+                Write-Log -Level WARN -Msg "remote.$key.password_dpapi 복호화 실패: $($_.Exception.Message)"
+            }
+        }
+    }
+}
 Write-Log -Level INFO -Msg ("site={0}  tier={1}  inspector={2}" -f $cfg.site, $cfg.tier, $cfg.inspector)
 
 $checksDir = Join-Path $root 'checks'

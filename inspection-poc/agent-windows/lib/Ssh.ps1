@@ -189,36 +189,78 @@ function Copy-RemoteFile {
 
 function Find-GssPathOnRemote {
     <#
-    .SYNOPSIS  원격 Unix 서버에서 GSS 프로세스 경로 추출.
+    .SYNOPSIS  원격 Unix 서버에서 GSS 프로세스 경로 추출 (v2 — SSH/Telnet 라우팅 + java grep fallback).
     .DESCRIPTION
-      ps -ef | grep GSS 로 프로세스 라인 수집 후, 경로처럼 보이는 토큰을 휴리스틱으로 추출.
-      반환: @{ running=bool; pids=@(...); paths=@(...); raw=<line> }
+      1차: ps -ef | grep GSS — 프로세스 발견 시 경로 토큰 추출
+      2차 (1차 결과 빈): ps -ef | grep java — Tomcat catalina.home 등에서 GSS 경로 추정 (FR-2)
+
+      SSH/Telnet 자동 라우팅: Remote.proto 가 'telnet' 이면 Invoke-Remote 통해 Telnet 호출
+      (Invoke-Remote 가 로드돼 있으면 사용, 아니면 Invoke-RemoteSsh 호출 — v1 호환).
+
+      반환: @{ running=bool; pids=@(...); paths=@(...); detected_via=string; raw=<line> }
     #>
     param([Parameter(Mandatory)] $Remote)
-    $r = Invoke-RemoteSsh -Remote $Remote -Command "ps -ef | grep -i GSS | grep -v grep"
-    $lines = if ($r.stdout) { ($r.stdout -split "`n") | Where-Object { $_.Trim() -ne '' } } else { @() }
 
+    # SSH/Telnet 라우팅 — Invoke-Remote 가 로드돼 있으면 우선 (v2 라우터)
+    $useRouter = $null -ne (Get-Command Invoke-Remote -ErrorAction SilentlyContinue)
+
+    function _InvokeOne([string]$cmd) {
+        if ($useRouter) { return Invoke-Remote -Remote $Remote -Command $cmd }
+        else            { return Invoke-RemoteSsh -Remote $Remote -Command $cmd }
+    }
+
+    # 1차: GSS grep
+    $r1 = _InvokeOne "ps -ef | grep -i GSS | grep -v grep"
+    $lines1 = if ($r1.stdout) { ($r1.stdout -split "`n") | Where-Object { $_.Trim() -ne '' } } else { @() }
     $pids  = @()
     $paths = @()
-    foreach ($ln in $lines) {
+    $detectedVia = $null
+    foreach ($ln in $lines1) {
         $fields = ($ln -split '\s+', 8)
         if ($fields.Count -ge 2) { $pids += $fields[1] }
-        # 경로처럼 보이는 토큰 (/ 로 시작) 중 GSS 단어 포함
         $tokens = $ln -split '\s+'
         foreach ($t in $tokens) {
             if ($t -match '^/' -and $t -match 'GSS') {
-                # 실행 파일 → 디렉토리 경로
                 $dir = Split-Path -Parent $t
                 if ($dir -and ($paths -notcontains $dir)) { $paths += $dir }
             }
         }
     }
+    if ($pids.Count -gt 0 -or $paths.Count -gt 0) { $detectedVia = "ps-grep-GSS" }
+
+    $raw = $r1.stdout
+    # 2차 fallback: GSS 발견 0건 → java grep (FR-2)
+    if ($pids.Count -eq 0 -and $paths.Count -eq 0) {
+        $r2 = _InvokeOne "ps -ef | grep java | grep -v grep"
+        $lines2 = if ($r2.stdout) { ($r2.stdout -split "`n") | Where-Object { $_.Trim() -ne '' } } else { @() }
+        foreach ($ln in $lines2) {
+            $fields = ($ln -split '\s+', 8)
+            if ($fields.Count -ge 2) { $pids += $fields[1] }
+            # -Dcatalina.home=/opt/tomcat 같은 옵션에서 경로 추출
+            if ($ln -match '-D(?:catalina\.home|catalina\.base)=([^\s]+)') {
+                $dir = $matches[1].TrimEnd('/')
+                if ($paths -notcontains $dir) { $paths += $dir }
+            }
+            # GSS 키워드 포함 경로
+            $tokens = $ln -split '\s+'
+            foreach ($t in $tokens) {
+                if ($t -match '^/' -and $t -match '(?i)(GSS|spatial_server|GeoNURIS)') {
+                    $dir = Split-Path -Parent $t
+                    if ($dir -and ($paths -notcontains $dir)) { $paths += $dir }
+                }
+            }
+        }
+        if ($pids.Count -gt 0 -or $paths.Count -gt 0) { $detectedVia = "ps-grep-java" }
+        $raw = ($r1.stdout + "`n---java---`n" + $r2.stdout)
+    }
+
     return @{
-        running = ($pids.Count -gt 0)
-        pids    = $pids
-        paths   = $paths
-        raw     = ($lines -join "`n")
-        ok      = $r.ok
-        stderr  = $r.stderr
+        running      = ($pids.Count -gt 0)
+        pids         = $pids
+        paths        = $paths
+        detected_via = $detectedVia
+        raw          = $raw
+        ok           = $r1.ok
+        stderr       = $r1.stderr
     }
 }

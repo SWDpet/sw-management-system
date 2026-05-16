@@ -34,10 +34,12 @@ if (Test-Path $dir) {
         -Status 'ok')
 }
 
-# 2) 로컬 미존재 → 원격 Unix(SSH) 탐색
+# 2) 로컬 미존재 → 원격 Unix(SSH/Telnet) 탐색 (FR-2)
+#    v2: unix_db (setup wizard) 우선, v1 호환 gis_unix fallback
 $remote = $null
-if ($Config.PSObject.Properties['remotes'] -and $Config.remotes.PSObject.Properties['gis_unix']) {
-    $remote = $Config.remotes.gis_unix
+if ($Config.PSObject.Properties['remotes'] -and $Config.remotes) {
+    if ($Config.remotes.PSObject.Properties['unix_db']) { $remote = $Config.remotes.unix_db }
+    elseif ($Config.remotes.PSObject.Properties['gis_unix']) { $remote = $Config.remotes.gis_unix }
 }
 if (-not $remote -or -not $remote.enabled) {
     return (New-CheckResult `
