@@ -19,30 +19,67 @@
 #   }
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
+. (Join-Path $PSScriptRoot 'DPAPI.ps1')   # Unprotect-Password — plink -pw 에 DPAPI 디코딩 패스 전달용
+
+# 번들 도구 경로 — agent-windows/tools/plink.exe (PATH 보다 우선).
+# Windows Server 2012 R2 등 OpenSSH 클라이언트 미설치 환경에서 자기완결적 배포 위해 사용.
+$script:BundledToolsDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'tools'
+
+function _FindBundledTool {
+    param([string]$Name)
+    $p = Join-Path $script:BundledToolsDir $Name
+    if (Test-Path $p) { return $p }
+    return $null
+}
 
 function Test-SshAvailable {
-    # ssh.exe 우선, 없으면 plink.exe 탐색
+    # 우선순위: bundled plink → ssh.exe (PATH) → plink.exe (PATH)
+    # bundled plink 가 PATH 의 ssh.exe 보다 먼저 — 폐쇄망 동봉 배포 일관성 보장.
+    $bundledPlink = _FindBundledTool 'plink.exe'
+    if ($bundledPlink) { return @{ Client = 'plink'; Path = $bundledPlink; Source = 'bundled' } }
+
     $ssh = Get-Command ssh.exe -ErrorAction SilentlyContinue
-    if ($ssh) { return @{ Client = 'ssh'; Path = $ssh.Source } }
+    if ($ssh) { return @{ Client = 'ssh'; Path = $ssh.Source; Source = 'path' } }
 
     $plink = Get-Command plink.exe -ErrorAction SilentlyContinue
-    if ($plink) { return @{ Client = 'plink'; Path = $plink.Source } }
+    if ($plink) { return @{ Client = 'plink'; Path = $plink.Source; Source = 'path' } }
 
     return $null
 }
 
 function Resolve-SshClient {
     param($Remote)
-    # auth=plink 또는 plink_path 지정 시 plink 강제
-    if ($Remote.auth -eq 'plink' -or $Remote.plink_path) {
-        $p = $Remote.plink_path
-        if (-not $p) { $p = (Get-Command plink.exe -ErrorAction SilentlyContinue).Source }
-        if (-not $p) { throw "plink.exe not found (auth=plink). Install PuTTY or set remote.plink_path." }
-        return @{ Client = 'plink'; Path = $p }
+    # ssh_backend 명시: 'auto' | 'openssh' | 'plink'. (auth=plink / plink_path 도 plink 강제)
+    $backend = if ($Remote.PSObject.Properties['ssh_backend'] -and $Remote.ssh_backend) { $Remote.ssh_backend } else { 'auto' }
+
+    if ($backend -eq 'openssh') {
+        $ssh = Get-Command ssh.exe -ErrorAction SilentlyContinue
+        if (-not $ssh) { throw "ssh_backend=openssh 인데 ssh.exe 없음 (Win10/Server 2019+ 또는 OpenSSH Client 기능 설치 필요)." }
+        return @{ Client = 'ssh'; Path = $ssh.Source; Source = 'path' }
     }
+    if ($backend -eq 'plink' -or $Remote.auth -eq 'plink' -or $Remote.plink_path) {
+        $p = $Remote.plink_path
+        if (-not $p) { $p = _FindBundledTool 'plink.exe' }
+        if (-not $p) { $p = (Get-Command plink.exe -ErrorAction SilentlyContinue).Source }
+        if (-not $p) { throw "plink.exe not found. agent-windows/tools/plink.exe 동봉 또는 remote.plink_path 지정 (tools/README.md 참조)." }
+        return @{ Client = 'plink'; Path = $p; Source = if ($p -like '*tools*plink.exe') { 'bundled' } else { 'path' } }
+    }
+    # 'auto' — Test-SshAvailable 의 우선순위 따름 (bundled plink → ssh.exe → PATH plink)
     $avail = Test-SshAvailable
-    if (-not $avail) { throw "Neither ssh.exe nor plink.exe found on PATH." }
+    if (-not $avail) { throw "ssh.exe/plink.exe 둘 다 없음. agent-windows/tools/plink.exe 동봉 권장 (tools/README.md)." }
     return $avail
+}
+
+function _ResolveRemotePassword {
+    <# DPAPI 우선, 폴백 plain. plink 의 -pw 인자 또는 다른 백엔드의 stdin 입력용. #>
+    param($Remote)
+    if ($Remote.PSObject.Properties['password_dpapi'] -and $Remote.password_dpapi) {
+        try { return Unprotect-Password -Encrypted $Remote.password_dpapi } catch { return $null }
+    }
+    if ($Remote.PSObject.Properties['password'] -and $Remote.password) {
+        return $Remote.password
+    }
+    return $null
 }
 
 function Invoke-RemoteSsh {
@@ -75,14 +112,17 @@ function Invoke-RemoteSsh {
         [void]$argList.Add($target)
         [void]$argList.Add($Command)
     } else {
-        # plink: -batch 로 prompt 차단. 키(.ppk) 또는 비밀번호.
+        # plink: -ssh -batch (호스트키 first-accept 폐쇄망 가정).
+        # ⚠ 보안: -pw 는 password 가 프로세스 인자에 노출됨 (tasklist). PoC 한정. 운영 전환 시 -pwfile 또는 SSH 키 권장.
+        [void]$argList.Add('-ssh')
         [void]$argList.Add('-batch')
         [void]$argList.Add('-P'); [void]$argList.Add($port)
         if ($Remote.key) {
             [void]$argList.Add('-i'); [void]$argList.Add($Remote.key)
         }
-        if ($Remote.auth -eq 'password' -and $Remote.password) {
-            [void]$argList.Add('-pw'); [void]$argList.Add($Remote.password)
+        $plainPw = _ResolveRemotePassword -Remote $Remote
+        if ($plainPw) {
+            [void]$argList.Add('-pw'); [void]$argList.Add($plainPw)
         }
         [void]$argList.Add($target)
         [void]$argList.Add($Command)
@@ -132,12 +172,14 @@ function Copy-RemoteFile {
     $user   = $Remote.user
     $port   = if ($Remote.port) { [int]$Remote.port } else { 22 }
 
+    # 번들 pscp.exe 우선 검색 (Ssh.ps1 의 plink 와 동일 정책)
+    $bundledPscp = _FindBundledTool 'pscp.exe'
     $scp   = Get-Command scp.exe   -ErrorAction SilentlyContinue
-    $pscp  = Get-Command pscp.exe  -ErrorAction SilentlyContinue
+    $pscp  = if ($bundledPscp) { @{ Source = $bundledPscp } } else { Get-Command pscp.exe -ErrorAction SilentlyContinue }
     $usePscp = ($Remote.auth -eq 'plink') -or (-not $scp -and $pscp)
-    if ($usePscp -and -not $pscp) { throw "pscp.exe not found." }
+    if ($usePscp -and -not $pscp) { throw "pscp.exe not found. agent-windows/tools/pscp.exe 동봉 또는 PATH 등록." }
     if (-not $usePscp -and -not $scp) {
-        if ($pscp) { $usePscp = $true } else { throw "scp.exe / pscp.exe not found." }
+        if ($pscp) { $usePscp = $true } else { throw "scp.exe / pscp.exe not found. agent-windows/tools/pscp.exe 동봉 권장." }
     }
 
     $args = New-Object System.Collections.ArrayList

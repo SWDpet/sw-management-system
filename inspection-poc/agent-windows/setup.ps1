@@ -205,6 +205,12 @@ $siteCode = _AskString -Prompt "Site code (lowercase ascii, e.g. gangjin)" -Defa
 _Say ""
 _Say "[2/3] DB server access"
 $dbProto = _AskChoice -Prompt "Protocol" -Choices @('ssh','telnet') -Default 'ssh'
+# SSH 선택 시 백엔드 분기 - auto/openssh/plink. telnet 은 TcpClient 내장 (선택지 없음).
+# auto: bundled plink 있으면 그거, 없으면 ssh.exe (PATH). Win Server 2012 R2 에서 OpenSSH 미설치 환경 대비.
+$sshBackend = $null
+if ($dbProto -eq 'ssh') {
+    $sshBackend = _AskChoice -Prompt "SSH backend" -Choices @('auto','openssh','plink') -Default 'auto'
+}
 $dbHost  = _AskString -Prompt "DB server IP or hostname" `
     -Pattern '^([0-9]{1,3}\.){3}[0-9]{1,3}$|^[a-zA-Z0-9.-]{1,253}$' -PatternHint 'IPv4 or hostname'
 $portDefault = if ($dbProto -eq 'telnet') { '23' } else { '22' }
@@ -227,7 +233,12 @@ _Say ("  site name    : " + $siteNameKo)
 _Say ("  system       : " + $systemName)
 _Say ("  inspector    : " + $inspector)
 _Say ("  site_code    : " + $siteCode)
-_Say ("  access       : {0}://{1}@{2}:{3}  ({4})" -f $dbProto, $dbUser, $dbHost, $dbPort, $dbOs)
+$accessStr = if ($sshBackend) {
+    "{0}({1})://{2}@{3}:{4}  ({5})" -f $dbProto, $sshBackend, $dbUser, $dbHost, $dbPort, $dbOs
+} else {
+    "{0}://{1}@{2}:{3}  ({4})" -f $dbProto, $dbUser, $dbHost, $dbPort, $dbOs
+}
+_Say ("  access       : " + $accessStr)
 _Say  "  password     : ******** (DPAPI-encrypted on save)"
 _Say ""
 
@@ -317,6 +328,7 @@ $cfg = [ordered]@{
         unix_db = [ordered]@{
             enabled        = $true
             proto          = $dbProto
+            ssh_backend    = $sshBackend                  # null for telnet, 'auto'|'openssh'|'plink' for ssh
             host           = $dbHost
             port           = [int]$dbPort
             user           = $dbUser

@@ -117,6 +117,10 @@ inspection-poc/agent-windows/snapshots/
 inspection-poc/agent-windows/out/
 inspection-poc/out_unix_encoded/
 
+# === inspector agent 외부 바이너리 (현장 동봉) ===
+# tools/README.md 만 commit, 실 exe 는 폐쇄망 반입 절차로 별도 동봉
+inspection-poc/agent-windows/tools/*.exe
+
 # === hwpx/docx 분석 일회성 스크래치 (Spring 프로젝트 루트에는 .py 가 없는 게 정상) ===
 /*.py
 /.scratch/
