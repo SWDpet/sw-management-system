@@ -196,9 +196,14 @@ if (-not $NonInteractive) {
     }
 }
 
-# 4. Connection test
+# 4. Connection test (Telnet 매개 시 단계별 디버그 로그 떨굼)
 _Say ""
 _Say ("  [test] connecting {0}://{1}:{2} ..." -f $dbProto, $dbHost, $dbPort)
+$debugLogPath = Join-Path $scriptDir 'out\setup-telnet-debug.log'
+if ($dbProto -eq 'telnet') {
+    Set-TelnetLog -Path $debugLogPath
+    _Say ("    debug log -> " + $debugLogPath)
+}
 $testRemote = [PSCustomObject]@{
     proto    = $dbProto
     host     = $dbHost
@@ -211,7 +216,12 @@ $ping = Invoke-Remote -Remote $testRemote -Command "echo OK; uname -a" -TimeoutS
 
 if (-not $ping.ok) {
     _Say ("  [!] connection failed: " + $ping.stderr)
-    _Say ("    stdout: " + $ping.stdout)
+    if ($ping.stdout) { _Say ("    stdout tail: " + $ping.stdout.Substring([Math]::Max(0,$ping.stdout.Length-200))) }
+    if ($dbProto -eq 'telnet' -and (Test-Path $debugLogPath)) {
+        _Say ""
+        _Say ("  [debug log] " + $debugLogPath)
+        _Say "    -> 해당 파일을 메일/USB 로 가져와 분석. 끝의 READ-TIMEOUT 이나 STAGE-FAIL 라인이 핵심."
+    }
     if (-not $NonInteractive) {
         $retry = Read-Host -Prompt "  save anyway? [y/N]"
         if ($retry -notmatch '^[Yy]$') {
@@ -225,6 +235,9 @@ if (-not $ping.ok) {
     _Say "  [OK] connection OK"
     $unameLine = ($ping.stdout -split "`n" | Where-Object { $_ -notmatch '^OK' -and $_.Trim() } | Select-Object -First 1)
     if ($unameLine) { _Say ("    remote: " + $unameLine) }
+    if ($dbProto -eq 'telnet') {
+        _Say ("    (telnet debug log saved: " + $debugLogPath + ")")
+    }
 }
 
 # 5. Save
