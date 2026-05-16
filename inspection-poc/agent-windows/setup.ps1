@@ -56,15 +56,17 @@ $root = $scriptDir
 
 # ── 헬퍼 ───────────────────────────────────────────────────────────────────
 function _Banner {
-    Write-Host ""
-    Write-Host "  ╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "  ║  UPIS 점검 자동화 에이전트 — 사이트 설정 wizard v0.2.0           ║" -ForegroundColor Cyan
-    Write-Host "  ╠══════════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
-    Write-Host "  ║  처음 사용 시 1 회만 진행하면, 다음 실행부터 저장된 설정으로     ║" -ForegroundColor Cyan
-    Write-Host "  ║  자동 점검됩니다.                                                 ║" -ForegroundColor Cyan
-    Write-Host "  ║  패스워드는 Windows DPAPI 로 암호화 — 본 사용자 계정만 복호화.    ║" -ForegroundColor Cyan
-    Write-Host "  ╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
-    Write-Host ""
+    # PS 4.0/5.x Write-Host 0x1F 함정 회피 — 박스 그리기 문자(BOX DRAWING) + em dash 사용 시
+    # "A device attached to the system is not functioning" 에러 발생. ASCII 만 사용.
+    [Console]::WriteLine("")
+    [Console]::WriteLine("  ============================================================")
+    [Console]::WriteLine("    UPIS Inspection Setup Wizard v0.2.0 (UPIS 점검 사이트 설정)")
+    [Console]::WriteLine("  ============================================================")
+    [Console]::WriteLine("    처음 사용 시 1 회만 진행하면, 다음 실행부터 저장된 설정으로")
+    [Console]::WriteLine("    자동 점검됩니다.")
+    [Console]::WriteLine("    패스워드는 Windows DPAPI 로 암호화 (본 사용자 계정만 복호화).")
+    [Console]::WriteLine("  ============================================================")
+    [Console]::WriteLine("")
 }
 
 function _AskString {
@@ -78,9 +80,9 @@ function _AskString {
         $hint = if ($Default) { " [기본: $Default]" } else { "" }
         $raw = Read-Host -Prompt "  $Prompt$hint"
         if (-not $raw) { $raw = $Default }
-        if (-not $raw) { Write-Host "    ⚠ 값 필요" -ForegroundColor Yellow; continue }
+        if (-not $raw) { Write-Host "    [!]값 필요" -ForegroundColor Yellow; continue }
         if ($Pattern -and ($raw -notmatch $Pattern)) {
-            Write-Host "    ⚠ 형식 안 맞음 — $PatternHint" -ForegroundColor Yellow
+            Write-Host "    [!]형식 안 맞음 -$PatternHint" -ForegroundColor Yellow
             continue
         }
         return $raw.Trim()
@@ -95,7 +97,7 @@ function _AskChoice {
         if (-not $raw) { return $Default }
         $raw = $raw.Trim().ToLower()
         if ($Choices -contains $raw) { return $raw }
-        Write-Host "    ⚠ $hint 중 하나 선택" -ForegroundColor Yellow
+        Write-Host "    [!]$hint 중 하나 선택" -ForegroundColor Yellow
     }
 }
 
@@ -103,7 +105,7 @@ function _AskPassword {
     param([string] $Prompt)
     while ($true) {
         $sec = Read-Host -Prompt "  $Prompt (입력 시 마스킹됨)" -AsSecureString
-        if ($sec.Length -lt 1) { Write-Host "    ⚠ 빈 패스워드 안 됨" -ForegroundColor Yellow; continue }
+        if ($sec.Length -lt 1) { Write-Host "    [!]빈 패스워드 안 됨" -ForegroundColor Yellow; continue }
         # SecureString → plain (DPAPI 암호화 함수가 plain string 받음)
         $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
         try {
@@ -138,10 +140,10 @@ _Banner
 # 1. 기존 active.json 확인
 $activePath = Join-Path $ConfigDir 'active.json'
 if (Test-Path $activePath) {
-    Write-Host "  ⚠ 기존 설정 발견: $activePath" -ForegroundColor Yellow
+    Write-Host "  [!]기존 설정 발견: $activePath" -ForegroundColor Yellow
     $confirm = Read-Host -Prompt "  덮어쓸까요? [y/N]"
     if ($confirm -notmatch '^[Yy]$') {
-        Write-Host "`n  취소됨 — 기존 설정 유지." -ForegroundColor Yellow
+        Write-Host "`n  취소됨 -기존 설정 유지." -ForegroundColor Yellow
         exit 0
     }
 }
@@ -167,7 +169,7 @@ $dbUser  = _AskString -Prompt "DB 서버 계정" -Default 'root' -Pattern '^[a-z
 
 if ($NonInteractive) {
     $dbPwPlain = $env:SETUP_TEST_PASSWORD
-    if (-not $dbPwPlain) { throw "NonInteractive 모드 — SETUP_TEST_PASSWORD 환경변수 필요" }
+    if (-not $dbPwPlain) { throw "NonInteractive 모드 - SETUP_TEST_PASSWORD 환경변수 필요" }
 } else {
     $dbPwPlain = _AskPassword -Prompt "DB 서버 패스워드"
 }
@@ -203,18 +205,18 @@ $testRemote = [PSCustomObject]@{
 $ping = Invoke-Remote -Remote $testRemote -Command "echo OK; uname -a" -TimeoutSec 15
 
 if (-not $ping.ok) {
-    Write-Host "  ⚠ 연결 실패: $($ping.stderr)" -ForegroundColor Yellow
+    Write-Host "  [!]연결 실패: $($ping.stderr)" -ForegroundColor Yellow
     Write-Host "    stdout: $($ping.stdout)" -ForegroundColor DarkYellow
     if (-not $NonInteractive) {
         $retry = Read-Host -Prompt "  그래도 저장? [y/N]"
         if ($retry -notmatch '^[Yy]$') {
-            Write-Host "`n  취소됨 — config 저장 안 함." -ForegroundColor Yellow
+            Write-Host "`n  취소됨 -config 저장 안 함." -ForegroundColor Yellow
             $dbPwPlain = $null
             exit 1
         }
     }
 } else {
-    Write-Host "  ✓ 연결 OK" -ForegroundColor Green
+    Write-Host "  [OK]연결 OK" -ForegroundColor Green
     $unameLine = ($ping.stdout -split "`n" | Where-Object { $_ -notmatch '^OK' -and $_.Trim() } | Select-Object -First 1)
     if ($unameLine) { Write-Host "    원격: $unameLine" -ForegroundColor DarkGray }
 }
@@ -280,7 +282,7 @@ $sitePath = Join-Path $ConfigDir "site.$siteCode.json"
 [System.IO.File]::WriteAllText($sitePath, $json, $utf8Bom)
 
 Write-Host ""
-Write-Host "  ✓ 저장 완료:" -ForegroundColor Green
+Write-Host "  [OK]저장 완료:" -ForegroundColor Green
 Write-Host "      $activePath"
 Write-Host "      $sitePath (백업)"
 Write-Host ""
