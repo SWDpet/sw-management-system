@@ -43,14 +43,16 @@ $errs = $signalErrs.Count
 $th = $Config.thresholds.'event.error_count'
 $status = Resolve-Status -Value $errs -Threshold $th
 
-$top = $signalErrs | Select-Object -First 5 | ForEach-Object {
+# @(...) 강제 캐스팅 — signalErrs.Count=0 일 때 ForEach-Object 가 $null 을 emit 해
+# JSON 직렬화에서 "{}" (빈 object) 로 떨어지는 PS 4.0 quirk 회피. 항상 [] 또는 [{...}] 보장.
+$top = @($signalErrs | Select-Object -First 5 | ForEach-Object {
     @{
         time = $_.TimeCreated.ToString('s')
         id   = $_.Id
         provider = $_.ProviderName
         message = ($_.Message -split "`n")[0] -replace '\s+',' '
     }
-}
+})
 
 New-CheckResult `
     -Id 'ap.log.system_err' `
