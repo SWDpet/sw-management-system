@@ -2,6 +2,30 @@
 
 점검 대상 서버(Windows Server 2012R2 이상)에서 실행되어 점검 항목을 자동 수집하고, 모니터에 QR 코드로 결과를 표시하는 모듈.
 
+## 빠른 시작 (v0.2.0+)
+
+### 1️⃣ 처음 사용 — 사이트 설정
+```
+setup.bat 더블클릭
+```
+대화형 wizard 가 다음을 물어봄: 지자체명 / 시스템명 / 점검자 / 사이트 코드 / DB 서버 IP·포트·계정·패스워드·OS / 접속 프로토콜(SSH/Telnet).
+- 패스워드는 Windows DPAPI 로 암호화 저장 — 본 사용자 계정만 복호화 가능.
+- 입력 완료 후 1 회 연결 테스트.
+- `config\active.json` + `config\site.{code}.json` 생성.
+
+### 2️⃣ 점검 실행
+```
+inspect.bat 더블클릭
+```
+저장된 `active.json` 으로 자동 점검 → `out\summary.html` 자동 표시 → 갤럭시탭 PWA 로 QR 스캔.
+
+### 재설정 / 다른 사이트
+```
+setup.bat 더블클릭   # 기존 설정 덮어쓰기 확인 후 재진입
+```
+
+> ✏ **v1 호환**: 기존 `config\site.dyg.json` 그대로 사용하려면 `inspect.ps1 -ConfigPath .\config\site.dyg.json`
+
 ## 디렉토리
 ```
 agent-windows/
@@ -157,9 +181,42 @@ inspect-remote.bat gis_unix
 5. `config\site.dyg.json` 의 `remotes.unix_db.enabled = true` 설정
 6. `inspect-remote.bat` 더블클릭으로 확인
 
+## Telnet 환경 점검 (v0.2.0+)
+
+옛 AIX/Solaris/HP-UX 일부 사이트는 SSH 미설치 — Telnet 만 허용. v0.2.0 부터 Telnet 매개 점검 지원.
+
+### 사용
+`setup.bat` 의 "접속 프로토콜" 입력에서 `telnet` 선택. 포트 기본 23.
+이후 `inspect.bat` / `inspect-remote.bat` 가 자동으로 Telnet 라우팅.
+
+### 동작
+- `lib\Telnet.ps1` — `System.Net.Sockets.TcpClient` 로 Telnet protocol 직접 구현 (plink -telnet 의 -pw 미지원 우회)
+- IAC negotiation 자동 처리, login/password 자동 입력
+- 명령 끝에 sentinel 토큰 (`__INSPECT_END_N_$?`) 으로 exit code 추출
+- 파일 회수: SCP 대신 `cat 'path'` stdout 으로 받아 로컬 저장
+
+### 보안 경고
+- ⚠ Telnet 은 패스워드 평문 전송 — SSH 전환 가능 사이트는 SSH 우선.
+- `summary-remote.html` 에 노란색 배너 자동 표시.
+
+## GSS 경로 자동 탐지 (v0.2.0+)
+
+GSS 가 Windows AP 가 아닌 UNIX DB 서버에 설치된 사이트 (사이트마다 경로 다름) 자동 탐지.
+
+탐지 순서:
+1. 로컬 Windows: `Test-Path C:\GeoNURIS_Spatial_Server\logs`
+2. 미존재 + remotes.unix_db 활성 → 원격 SSH/Telnet 매개:
+   - 1차: `ps -ef | grep GSS` → GSS/Spatial_Server/GeoNURIS 키워드 경로 추출
+   - 2차 (1차 빈): `ps -ef | grep java` → `-Dcatalina.home=` Tomcat 경로 추출
+3. 발견된 경로 + `/logs` 가 로그 점검 대상
+
 ## 다음 단계
 - [x] AIX DB 에이전트 (ksh, 동일 컨트랙트)
 - [x] QR 렌더링 자체화 (lib\qrcode.min.js 인라인 SVG)
 - [x] SSH 매개 원격 점검 (Windows → Unix)
+- [x] SW Manager `/api/inspection/qr-batch` 엔드포인트 (2026-05-16 e2e 검증, report.id=5)
+- [x] 대화형 setup wizard + DPAPI 암호화 (v0.2.0)
+- [x] Telnet 매개 점검 + GSS 자동 탐지 (v0.2.0, FR-2/FR-3)
 - [ ] 갤럭시탭 PWA (BarcodeDetector + decode.js 포팅)
-- [ ] SW Manager `/api/inspection/qr-batch` 엔드포인트
+- [ ] Telnet 환경 파일 복사 (tftp/ftp fallback — 후속 sprint)
+- [ ] agent-unix GSS 자동 점검 (후속 sprint)
