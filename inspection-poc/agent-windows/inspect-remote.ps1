@@ -30,9 +30,18 @@ try {
 
 $root = $PSScriptRoot
 . (Join-Path $root 'lib\Common.ps1')
+. (Join-Path $root 'lib\DPAPI.ps1')
 . (Join-Path $root 'lib\Ssh.ps1')
+. (Join-Path $root 'lib\Telnet.ps1')   # v2 — Invoke-Remote 라우터 + Telnet 매개
 
-Write-Log -Level INFO -Msg "===== UPIS 원격 Unix 점검 v0.1.0 ====="
+# v2: -ConfigPath 미지정 시 active.json 우선
+if (-not $ConfigPath) {
+    $activePath = Join-Path $root 'config\active.json'
+    if (Test-Path $activePath) { $ConfigPath = $activePath }
+    else { $ConfigPath = Join-Path $root 'config\site.dyg.json' }
+}
+
+Write-Log -Level INFO -Msg "===== UPIS 원격 Unix 점검 v0.2.0 ====="
 Write-Log -Level INFO -Msg "config:  $ConfigPath"
 Write-Log -Level INFO -Msg "remote:  $RemoteKey"
 
@@ -48,6 +57,21 @@ if (-not $remote.enabled) {
     throw "config.remotes.$RemoteKey.enabled = false. 활성화 후 다시 시도하세요."
 }
 
+# v2: password_dpapi 자동 복호화 (메모리 한정)
+if ($remote.PSObject.Properties['password_dpapi'] -and $remote.password_dpapi -and
+    -not ($remote.PSObject.Properties['password'] -and $remote.password)) {
+    $remote | Add-Member -NotePropertyName 'password' -NotePropertyValue (Unprotect-Password -Encrypted $remote.password_dpapi) -Force
+    if (-not ($remote.PSObject.Properties['auth'] -and $remote.auth)) {
+        $remote | Add-Member -NotePropertyName 'auth' -NotePropertyValue 'password' -Force
+    }
+}
+
+# v2: proto 결정 + 보안 경고
+$proto = if ($remote.PSObject.Properties['proto'] -and $remote.proto) { $remote.proto } else { 'ssh' }
+if ($proto -eq 'telnet') {
+    Write-Log -Level WARN -Msg "Telnet 사용 — 패스워드 평문 전송. SSH 전환 가능 사이트는 SSH 권장."
+}
+
 $agentPath = $remote.agent_path
 if (-not $agentPath) { throw "config.remotes.$RemoteKey.agent_path 미지정" }
 $configName = if ($remote.config_name) { $remote.config_name } else { 'site.dyg.json' }
@@ -56,20 +80,20 @@ $outDir       = Join-Path $root 'out'
 $remoteOutDir = Join-Path $outDir 'remote-unix'
 if (-not (Test-Path $remoteOutDir)) { New-Item -ItemType Directory -Path $remoteOutDir | Out-Null }
 
-# 1) 원격 환경 점검 (perl/sh 가용성)
-Write-Log -Level INFO -Msg "원격 ping 중..."
-$ping = Invoke-RemoteSsh -Remote $remote -Command "echo OK; uname -a; which perl sh" -TimeoutSec 15
+# 1) 원격 환경 점검 (perl/sh 가용성) — SSH/Telnet 자동 라우팅
+Write-Log -Level INFO -Msg ("원격 ping 중 (proto={0})..." -f $proto)
+$ping = Invoke-Remote -Remote $remote -Command "echo OK; uname -a; which perl sh" -TimeoutSec 15
 if (-not $ping.ok) {
     Write-Log -Level ERROR -Msg ("SSH 연결 실패 (exit={0}): {1}" -f $ping.exitCode, $ping.stderr)
     throw "SSH 연결 실패. 키/호스트/방화벽 확인 필요."
 }
 Write-Log -Level INFO -Msg ("원격: {0}" -f ($ping.stdout -split "`n" | Select-Object -First 2 | Out-String).Trim())
 
-# 2) 원격 inspect.sh 실행 (snapshot + frames 동시 생성)
+# 2) 원격 inspect.sh 실행 (snapshot + frames 동시 생성) — SSH/Telnet 라우팅
 $remoteCmd = "cd '$agentPath' && sh ./inspect.sh -c './config/$configName' 2>&1; echo __EC__=`$?"
 Write-Log -Level INFO -Msg "원격 inspect.sh 실행 중..."
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
-$run = Invoke-RemoteSsh -Remote $remote -Command $remoteCmd -TimeoutSec 180
+$run = Invoke-Remote -Remote $remote -Command $remoteCmd -TimeoutSec 180
 $sw.Stop()
 
 # stdout 끝에 __EC__=N 토큰으로 원격 exit code 추출
@@ -84,17 +108,27 @@ if ($ec -ne 0) {
     throw "원격 inspect.sh 실패 (exit=$ec)"
 }
 
-# 3) 결과 회수: snapshot.json + frames.json
+# 3) 결과 회수: snapshot.json + frames.json — proto 분기
 $snapRemote   = "$agentPath/out/snapshot.json"
 $framesRemote = "$agentPath/out/frames.json"
 $snapLocal    = Join-Path $remoteOutDir 'snapshot.json'
 $framesLocal  = Join-Path $remoteOutDir 'frames.json'
 
-Write-Log -Level INFO -Msg "결과 회수 중 (scp)..."
-$c1 = Copy-RemoteFile -Remote $remote -RemotePath $snapRemote   -LocalPath $snapLocal
-if (-not $c1.ok) { throw "snapshot.json 회수 실패: $($c1.stderr)" }
-$c2 = Copy-RemoteFile -Remote $remote -RemotePath $framesRemote -LocalPath $framesLocal
-if (-not $c2.ok) { throw "frames.json 회수 실패: $($c2.stderr)" }
+if ($proto -eq 'telnet') {
+    Write-Log -Level INFO -Msg "결과 회수 중 (Telnet — cat stdout, FR-3)..."
+    $rs = Invoke-Remote -Remote $remote -Command "cat '$snapRemote'" -TimeoutSec 60
+    if (-not $rs.ok) { throw "snapshot.json 회수 실패 (telnet cat): $($rs.stderr)" }
+    [System.IO.File]::WriteAllText($snapLocal, $rs.stdout, (New-Object System.Text.UTF8Encoding($false)))
+    $rf = Invoke-Remote -Remote $remote -Command "cat '$framesRemote'" -TimeoutSec 60
+    if (-not $rf.ok) { throw "frames.json 회수 실패 (telnet cat): $($rf.stderr)" }
+    [System.IO.File]::WriteAllText($framesLocal, $rf.stdout, (New-Object System.Text.UTF8Encoding($false)))
+} else {
+    Write-Log -Level INFO -Msg "결과 회수 중 (scp)..."
+    $c1 = Copy-RemoteFile -Remote $remote -RemotePath $snapRemote   -LocalPath $snapLocal
+    if (-not $c1.ok) { throw "snapshot.json 회수 실패: $($c1.stderr)" }
+    $c2 = Copy-RemoteFile -Remote $remote -RemotePath $framesRemote -LocalPath $framesLocal
+    if (-not $c2.ok) { throw "frames.json 회수 실패: $($c2.stderr)" }
+}
 
 $snapshot = Read-Json -Path $snapLocal
 $frames   = Read-Json -Path $framesLocal
@@ -180,12 +214,14 @@ $html = @"
  .qr-card svg{width:100%;max-width:480px;height:auto}
  .qr-card .info{margin-top:12px;font-size:12px;color:#555}
  .qr-card.header .seq .kind{color:#16a34a}
+ .telnet-banner{background:#fef3c7;border:2px solid #f59e0b;color:#92400e;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:600}
 </style></head><body>
-<h1>UPIS 점검 — $([System.Web.HttpUtility]::HtmlEncode($siteName)) <span class="badge">원격 Unix · SSH</span></h1>
+$(if ($proto -eq 'telnet') { '<div class="telnet-banner">⚠ <b>본 점검은 Telnet 사용</b> — 패스워드 평문 전송. SSH 전환 가능한 사이트는 SSH 사용 권장.</div>' } else { '' })
+<h1>UPIS 점검 — $([System.Web.HttpUtility]::HtmlEncode($siteName)) <span class="badge">원격 Unix · $($proto.ToUpper())</span></h1>
 <div class="meta">
   $round · $($tier.ToUpper()) · 호스트 <b>$hostname</b>
   · 점검자 $([System.Web.HttpUtility]::HtmlEncode($inspector))
-  · SSH $($remote.user)@$($remote.host)
+  · $($proto.ToUpper()) $($remote.user)@$($remote.host)
   · 수집 $takenAt
 </div>
 <div class="summary">
