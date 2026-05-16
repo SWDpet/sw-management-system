@@ -1,23 +1,20 @@
 ﻿<#
 .SYNOPSIS
-  UPIS 점검 자동화 에이전트 — 대화형 사이트 설정 wizard.
+  UPIS inspection agent - interactive site setup wizard (PS 4.0 compatible).
 
 .DESCRIPTION
-  처음 사용 시 (또는 사이트 추가/변경 시) 본 스크립트를 실행해서 사이트 정보를 입력한다.
-  완료 후 config\active.json + config\site.{code}.json 이 생성되고, 다음부터는
-  inspect.bat 더블클릭만으로 점검 가능.
+  On first use, run this wizard to enter site info. Creates config\active.json
+  + config\site.{code}.json. Subsequent runs use the saved config.
 
-  FR-1 (inspection-agent-v2-setup):
-   - Read-Host 로 항목별 입력 + 검증
-   - 패스워드는 DPAPI 암호화 후 저장 (plain text 금지)
-   - 입력 직후 1 회 연결 테스트 (SSH/Telnet)
-   - 한글 입력 안전: chcp 65001 + [Console]::InputEncoding = UTF-8
+  Korean characters in console output cause mojibake on Server 2012 R2 raster fonts
+  and Write-Host 0x1F errors with -ForegroundColor. All prompts/messages are ASCII;
+  user inputs (e.g. site name in Korean) are still accepted and stored UTF-8.
 
 .PARAMETER ConfigDir
-  config 디렉토리 경로. 기본: ./config
+  Config directory. Default: ./config
 
 .PARAMETER NonInteractive
-  자동화 테스트용 — 모든 입력을 환경변수에서 받음. (V-1 검증용)
+  Automation mode - reads all inputs from environment variables.
 #>
 
 [CmdletBinding()]
@@ -28,8 +25,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# PS 4.0 (Server 2012 R2) 함정 회피 — param() default 에서 $PSScriptRoot 가 빈 문자열일 수 있음.
-# 본문에서 안전하게 평가.
+# PS 4.0 (Server 2012 R2) trap - $PSScriptRoot can be empty in param() default.
 if (-not $PSScriptRoot) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 } else {
@@ -39,7 +35,7 @@ if (-not $ConfigDir) {
     $ConfigDir = Join-Path $scriptDir 'config'
 }
 
-# ── 한글 입력 안전화 ────────────────────────────────────────────────────────
+# Console encoding - UTF-8 for input (Korean site names) + output.
 try {
     chcp 65001 | Out-Null
     [Console]::InputEncoding  = New-Object System.Text.UTF8Encoding($false)
@@ -47,26 +43,28 @@ try {
     $OutputEncoding           = [Console]::OutputEncoding
 } catch {}
 
-# ── lib 로드 ───────────────────────────────────────────────────────────────
+# Load libs.
 $root = $scriptDir
 . (Join-Path $root 'lib\DPAPI.ps1')
 . (Join-Path $root 'lib\Ssh.ps1')
 . (Join-Path $root 'lib\Telnet.ps1')
 . (Join-Path $root 'lib\Common.ps1')
 
-# ── 헬퍼 ───────────────────────────────────────────────────────────────────
+# ============================================================================
+# Helpers - use [Console]::WriteLine to avoid Write-Host 0x1F trap (PS 4.0/5.x)
+# ============================================================================
+
+function _Say([string]$msg) { [Console]::WriteLine($msg) }
+
 function _Banner {
-    # PS 4.0/5.x Write-Host 0x1F 함정 회피 — 박스 그리기 문자(BOX DRAWING) + em dash 사용 시
-    # "A device attached to the system is not functioning" 에러 발생. ASCII 만 사용.
-    [Console]::WriteLine("")
-    [Console]::WriteLine("  ============================================================")
-    [Console]::WriteLine("    UPIS Inspection Setup Wizard v0.2.0 (UPIS 점검 사이트 설정)")
-    [Console]::WriteLine("  ============================================================")
-    [Console]::WriteLine("    처음 사용 시 1 회만 진행하면, 다음 실행부터 저장된 설정으로")
-    [Console]::WriteLine("    자동 점검됩니다.")
-    [Console]::WriteLine("    패스워드는 Windows DPAPI 로 암호화 (본 사용자 계정만 복호화).")
-    [Console]::WriteLine("  ============================================================")
-    [Console]::WriteLine("")
+    _Say ""
+    _Say "  ============================================================"
+    _Say "    UPIS Inspection Setup Wizard  v0.2.0"
+    _Say "  ============================================================"
+    _Say "    Run once on first use. Subsequent runs reuse saved config."
+    _Say "    Password is DPAPI-encrypted (only your Win account decrypts)."
+    _Say "  ============================================================"
+    _Say ""
 }
 
 function _AskString {
@@ -77,12 +75,12 @@ function _AskString {
         [string] $PatternHint
     )
     while ($true) {
-        $hint = if ($Default) { " [기본: $Default]" } else { "" }
+        $hint = if ($Default) { " [default: $Default]" } else { "" }
         $raw = Read-Host -Prompt "  $Prompt$hint"
         if (-not $raw) { $raw = $Default }
-        if (-not $raw) { Write-Host "    [!]값 필요" -ForegroundColor Yellow; continue }
+        if (-not $raw) { _Say "    [!] required"; continue }
         if ($Pattern -and ($raw -notmatch $Pattern)) {
-            Write-Host "    [!]형식 안 맞음 -$PatternHint" -ForegroundColor Yellow
+            _Say ("    [!] invalid format - " + $PatternHint)
             continue
         }
         return $raw.Trim()
@@ -93,20 +91,19 @@ function _AskChoice {
     param([string] $Prompt, [string[]] $Choices, [string] $Default)
     $hint = "[" + ($Choices -join '|') + "]"
     while ($true) {
-        $raw = Read-Host -Prompt "  $Prompt $hint [기본: $Default]"
+        $raw = Read-Host -Prompt "  $Prompt $hint [default: $Default]"
         if (-not $raw) { return $Default }
         $raw = $raw.Trim().ToLower()
         if ($Choices -contains $raw) { return $raw }
-        Write-Host "    [!]$hint 중 하나 선택" -ForegroundColor Yellow
+        _Say ("    [!] choose one of " + $hint)
     }
 }
 
 function _AskPassword {
     param([string] $Prompt)
     while ($true) {
-        $sec = Read-Host -Prompt "  $Prompt (입력 시 마스킹됨)" -AsSecureString
-        if ($sec.Length -lt 1) { Write-Host "    [!]빈 패스워드 안 됨" -ForegroundColor Yellow; continue }
-        # SecureString → plain (DPAPI 암호화 함수가 plain string 받음)
+        $sec = Read-Host -Prompt "  $Prompt (masked)" -AsSecureString
+        if ($sec.Length -lt 1) { _Say "    [!] empty not allowed"; continue }
         $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
         try {
             $plain = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
@@ -117,83 +114,91 @@ function _AskPassword {
     }
 }
 
-# 지자체명 → site_code 매핑 hint (사용자가 그대로 받거나 수정 가능)
+# Korean site name -> site_code hint (user can override).
 function _SuggestSiteCode {
     param([string] $SiteNameKo)
     $map = @{
-        '강진군' = 'gangjin'
-        '단양군' = 'danyang'
-        '청주시' = 'cheongju'
-        '부산시' = 'busan'
-        '서울시' = 'seoul'
-        '대전시' = 'daejeon'
-        '광주시' = 'gwangju'
+        'gangjin' = 'gangjin'; 'danyang' = 'danyang'
+        'cheongju' = 'cheongju'; 'busan' = 'busan'
+        'seoul' = 'seoul'; 'daejeon' = 'daejeon'; 'gwangju' = 'gwangju'
     }
-    if ($map.ContainsKey($SiteNameKo)) { return $map[$SiteNameKo] }
-    # 한글 → 단순 transliteration 시도 — 못 하면 빈 string (사용자가 직접 입력)
+    # try lower-cased local match
+    $lc = $SiteNameKo.ToLower()
+    if ($map.ContainsKey($lc)) { return $map[$lc] }
+    # Korean direct hash (no transliteration in PS 4.0 - user types)
+    if ($SiteNameKo -eq ([char]0xAC15 + [char]0xC9C4 + [char]0xAD70)) { return 'gangjin' }   # 강진군
+    if ($SiteNameKo -eq ([char]0xB2E8 + [char]0xC591 + [char]0xAD70)) { return 'danyang' }   # 단양군
     return ''
 }
 
-# ── 메인 흐름 ──────────────────────────────────────────────────────────────
+# ============================================================================
+# Main
+# ============================================================================
 _Banner
 
-# 1. 기존 active.json 확인
+# 1. Existing active.json check
 $activePath = Join-Path $ConfigDir 'active.json'
 if (Test-Path $activePath) {
-    Write-Host "  [!]기존 설정 발견: $activePath" -ForegroundColor Yellow
-    $confirm = Read-Host -Prompt "  덮어쓸까요? [y/N]"
+    _Say ("  [!] existing config found: " + $activePath)
+    $confirm = Read-Host -Prompt "  overwrite? [y/N]"
     if ($confirm -notmatch '^[Yy]$') {
-        Write-Host "`n  취소됨 -기존 설정 유지." -ForegroundColor Yellow
+        _Say ""
+        _Say "  cancelled - keeping existing config."
         exit 0
     }
 }
 
-# 2. 항목별 입력
-Write-Host "[1/3] 사이트 정보" -ForegroundColor Cyan
-$siteNameKo = _AskString -Prompt "지자체명 (예: 강진군)" -Pattern '^.{1,30}$' -PatternHint '1~30자'
-$systemName = _AskString -Prompt "시스템명" -Default 'UPIS' -Pattern '^.{1,30}$' -PatternHint '1~30자'
-$inspector  = _AskString -Prompt "점검자명" -Default $env:USERNAME -Pattern '^.{1,30}$' -PatternHint '1~30자'
+# 2. Inputs
+_Say "[1/3] Site info"
+$siteNameKo = _AskString -Prompt "Local government name (e.g. Gangjin or Korean)" -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
+$systemName = _AskString -Prompt "System name" -Default 'UPIS' -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
+$inspector  = _AskString -Prompt "Inspector name" -Default $env:USERNAME -Pattern '^.{1,30}$' -PatternHint '1-30 chars'
 
 $sitecodeDefault = _SuggestSiteCode -SiteNameKo $siteNameKo
-$siteCode = _AskString -Prompt "사이트 코드 (영문, 예: gangjin)" -Default $sitecodeDefault `
-    -Pattern '^[a-z0-9_-]{1,32}$' -PatternHint '영문소문자/숫자/_/- 1~32자'
+$siteCode = _AskString -Prompt "Site code (lowercase ascii, e.g. gangjin)" -Default $sitecodeDefault `
+    -Pattern '^[a-z0-9_-]{1,32}$' -PatternHint 'a-z 0-9 _- 1-32 chars'
 
-Write-Host ""
-Write-Host "[2/3] DB 서버 접속 정보" -ForegroundColor Cyan
-$dbProto = _AskChoice -Prompt "접속 프로토콜" -Choices @('ssh','telnet') -Default 'ssh'
-$dbHost  = _AskString -Prompt "DB 서버 IP 또는 호스트명" `
-    -Pattern '^([0-9]{1,3}\.){3}[0-9]{1,3}$|^[a-zA-Z0-9.-]{1,253}$' -PatternHint 'IPv4 또는 hostname'
+_Say ""
+_Say "[2/3] DB server access"
+$dbProto = _AskChoice -Prompt "Protocol" -Choices @('ssh','telnet') -Default 'ssh'
+$dbHost  = _AskString -Prompt "DB server IP or hostname" `
+    -Pattern '^([0-9]{1,3}\.){3}[0-9]{1,3}$|^[a-zA-Z0-9.-]{1,253}$' -PatternHint 'IPv4 or hostname'
 $portDefault = if ($dbProto -eq 'telnet') { '23' } else { '22' }
-$dbPort  = _AskString -Prompt "DB 서버 포트" -Default $portDefault -Pattern '^[0-9]{1,5}$' -PatternHint '1~65535'
-$dbUser  = _AskString -Prompt "DB 서버 계정" -Default 'root' -Pattern '^[a-zA-Z0-9._-]{1,30}$' -PatternHint '영문/숫자/._-'
+$dbPort  = _AskString -Prompt "DB server port" -Default $portDefault -Pattern '^[0-9]{1,5}$' -PatternHint '1-65535'
+$dbUser  = _AskString -Prompt "DB server account" -Default 'root' -Pattern '^[a-zA-Z0-9._-]{1,30}$' -PatternHint 'a-z 0-9 ._-'
 
 if ($NonInteractive) {
     $dbPwPlain = $env:SETUP_TEST_PASSWORD
-    if (-not $dbPwPlain) { throw "NonInteractive 모드 - SETUP_TEST_PASSWORD 환경변수 필요" }
+    if (-not $dbPwPlain) { throw "NonInteractive mode - SETUP_TEST_PASSWORD env var required" }
 } else {
-    $dbPwPlain = _AskPassword -Prompt "DB 서버 패스워드"
+    $dbPwPlain = _AskPassword -Prompt "DB server password"
 }
 
-$dbOs = _AskChoice -Prompt "DB 서버 OS" -Choices @('aix','hpux','linux','solaris') -Default 'linux'
+$dbOs = _AskChoice -Prompt "DB server OS" -Choices @('aix','hpux','linux','solaris') -Default 'linux'
 
-# 3. 입력 요약 + 최종 확인
-Write-Host ""
-Write-Host "[3/3] 입력 요약" -ForegroundColor Cyan
-Write-Host "  지자체명     : $siteNameKo"
-Write-Host "  시스템명     : $systemName"
-Write-Host "  점검자       : $inspector"
-Write-Host "  site_code    : $siteCode"
-Write-Host ("  접속         : {0}://{1}@{2}:{3}  ({4})" -f $dbProto, $dbUser, $dbHost, $dbPort, $dbOs)
-Write-Host "  패스워드     : ******** (DPAPI 암호화 후 저장)"
-Write-Host ""
+# 3. Summary
+_Say ""
+_Say "[3/3] Summary"
+_Say ("  site name    : " + $siteNameKo)
+_Say ("  system       : " + $systemName)
+_Say ("  inspector    : " + $inspector)
+_Say ("  site_code    : " + $siteCode)
+_Say ("  access       : {0}://{1}@{2}:{3}  ({4})" -f $dbProto, $dbUser, $dbHost, $dbPort, $dbOs)
+_Say  "  password     : ******** (DPAPI-encrypted on save)"
+_Say ""
 
 if (-not $NonInteractive) {
-    $proceed = Read-Host -Prompt "  연결 테스트 + 저장 진행? [Y/n]"
-    if ($proceed -match '^[Nn]$') { Write-Host "`n  취소됨." -ForegroundColor Yellow; exit 0 }
+    $proceed = Read-Host -Prompt "  Test connection and save? [Y/n]"
+    if ($proceed -match '^[Nn]$') {
+        _Say ""
+        _Say "  cancelled."
+        exit 0
+    }
 }
 
-# 4. 연결 테스트
-Write-Host ("`n  [연결 테스트] {0}://{1}:{2} ..." -f $dbProto, $dbHost, $dbPort) -ForegroundColor Cyan
+# 4. Connection test
+_Say ""
+_Say ("  [test] connecting {0}://{1}:{2} ..." -f $dbProto, $dbHost, $dbPort)
 $testRemote = [PSCustomObject]@{
     proto    = $dbProto
     host     = $dbHost
@@ -205,25 +210,26 @@ $testRemote = [PSCustomObject]@{
 $ping = Invoke-Remote -Remote $testRemote -Command "echo OK; uname -a" -TimeoutSec 15
 
 if (-not $ping.ok) {
-    Write-Host "  [!]연결 실패: $($ping.stderr)" -ForegroundColor Yellow
-    Write-Host "    stdout: $($ping.stdout)" -ForegroundColor DarkYellow
+    _Say ("  [!] connection failed: " + $ping.stderr)
+    _Say ("    stdout: " + $ping.stdout)
     if (-not $NonInteractive) {
-        $retry = Read-Host -Prompt "  그래도 저장? [y/N]"
+        $retry = Read-Host -Prompt "  save anyway? [y/N]"
         if ($retry -notmatch '^[Yy]$') {
-            Write-Host "`n  취소됨 -config 저장 안 함." -ForegroundColor Yellow
+            _Say ""
+            _Say "  cancelled - config not saved."
             $dbPwPlain = $null
             exit 1
         }
     }
 } else {
-    Write-Host "  [OK]연결 OK" -ForegroundColor Green
+    _Say "  [OK] connection OK"
     $unameLine = ($ping.stdout -split "`n" | Where-Object { $_ -notmatch '^OK' -and $_.Trim() } | Select-Object -First 1)
-    if ($unameLine) { Write-Host "    원격: $unameLine" -ForegroundColor DarkGray }
+    if ($unameLine) { _Say ("    remote: " + $unameLine) }
 }
 
-# 5. 저장
+# 5. Save
 $encPw = Protect-Password -Plain $dbPwPlain
-$dbPwPlain = $null  # plain 클리어
+$dbPwPlain = $null
 
 $cfg = [ordered]@{
     site       = $siteCode
@@ -273,7 +279,7 @@ $cfg = [ordered]@{
     }
 }
 
-# 저장 — UTF-8 BOM (NFR-5)
+# Save with UTF-8 BOM (NFR-5)
 if (-not (Test-Path $ConfigDir)) { New-Item -ItemType Directory -Path $ConfigDir | Out-Null }
 $json = $cfg | ConvertTo-Json -Depth 10
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)
@@ -281,13 +287,11 @@ $utf8Bom = New-Object System.Text.UTF8Encoding($true)
 $sitePath = Join-Path $ConfigDir "site.$siteCode.json"
 [System.IO.File]::WriteAllText($sitePath, $json, $utf8Bom)
 
-Write-Host ""
-Write-Host "  [OK]저장 완료:" -ForegroundColor Green
-Write-Host "      $activePath"
-Write-Host "      $sitePath (백업)"
-Write-Host ""
-Write-Host "  다음 실행: " -NoNewline
-Write-Host "inspect.bat 더블클릭" -ForegroundColor Yellow
-Write-Host "  재설정:   " -NoNewline
-Write-Host "setup.bat 더블클릭" -ForegroundColor Yellow
-Write-Host ""
+_Say ""
+_Say "  [OK] saved:"
+_Say ("      " + $activePath)
+_Say ("      " + $sitePath + " (backup)")
+_Say ""
+_Say "  next:    inspect.bat   (double-click)"
+_Say "  reset:   setup.bat     (double-click)"
+_Say ""
