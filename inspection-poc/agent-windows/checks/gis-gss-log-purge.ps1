@@ -102,12 +102,19 @@ if (-not $remoteLogDir) {
 # 2-2) 원격 디렉토리에서 mtime 기준 파일 개수/크기 산출 (read-only)
 #   find -mtime +N -type f → 합산. byte 단위는 du 와 ls 차이 회피 위해 stat 사용.
 $cmd = "find '$remoteLogDir' -type f -mtime +$retain -print 2>/dev/null | wc -l; find '$remoteLogDir' -type f -mtime +$retain -exec ls -l {} \; 2>/dev/null | awk '{s+=\$5} END{print s+0}'"
-$r = Invoke-RemoteSsh -Remote $remote -Command $cmd -TimeoutSec 60
+# v2: Invoke-Remote 라우터 우선 (Telnet/SSH 자동). 미로드 시 Invoke-RemoteSsh fallback.
+if (Get-Command Invoke-Remote -ErrorAction SilentlyContinue) {
+    $r = Invoke-Remote -Remote $remote -Command $cmd -TimeoutSec 60
+} else {
+    $r = Invoke-RemoteSsh -Remote $remote -Command $cmd -TimeoutSec 60
+}
 $lines = ($r.stdout -split "`n") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+# Telnet 출력은 프롬프트/명령에코/sentinel 노이즈 포함 — 숫자만 남긴 줄을 우선 선택
+$numeric = @($lines | Where-Object { $_ -match '^\d+$' })
 
 $count = 0; $bytes = 0
-if ($lines.Count -ge 1) { [void][int]::TryParse($lines[0], [ref]$count) }
-if ($lines.Count -ge 2) { [void][int64]::TryParse($lines[1], [ref]$bytes) }
+if ($numeric.Count -ge 1) { [void][int]::TryParse($numeric[0], [ref]$count) }
+if ($numeric.Count -ge 2) { [void][int64]::TryParse($numeric[1], [ref]$bytes) }
 
 return (New-CheckResult `
     -Id 'gis.gss.log_purge' `

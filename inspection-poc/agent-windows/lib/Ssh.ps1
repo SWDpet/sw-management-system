@@ -210,9 +210,36 @@ function Find-GssPathOnRemote {
         else            { return Invoke-RemoteSsh -Remote $Remote -Command $cmd }
     }
 
+    # UNIX 경로의 상위 디렉토리 (Split-Path 는 Windows 에서 / → \ 변환하므로 직접 처리)
+    function _UnixParent([string]$p) {
+        if (-not $p) { return $null }
+        $idx = $p.LastIndexOf('/')
+        if ($idx -le 0) { return $null }
+        return $p.Substring(0, $idx)
+    }
+    # ps 출력 라인 필터: 프롬프트/sentinel/명령에코 제거 후 진짜 ps row 만 추출
+    function _PsRowFilter($lines) {
+        $out = @()
+        foreach ($ln in $lines) {
+            $t = $ln.Trim()
+            if (-not $t) { continue }
+            if ($t -match '[#$]\s*$')              { continue }   # 프롬프트
+            if ($t -match '__INSPECT_END_')        { continue }   # sentinel
+            if ($t -match '^\s*ps\s+-ef')          { continue }   # 명령 에코
+            if ($t -match '@[\w\-]+\s+[#$]')       { continue }   # prompt-echo 라인 (root@TMS-DB #)
+            # AIX/Linux ps 행: UID PID PPID ... 형태 — PID 가 숫자여야 한다
+            $f = $t -split '\s+'
+            if ($f.Count -lt 8) { continue }
+            if ($f[1] -notmatch '^\d+$') { continue }
+            $out += $t
+        }
+        return $out
+    }
+
     # 1차: GSS grep
     $r1 = _InvokeOne "ps -ef | grep -i GSS | grep -v grep"
-    $lines1 = if ($r1.stdout) { ($r1.stdout -split "`n") | Where-Object { $_.Trim() -ne '' } } else { @() }
+    $lines1Raw = if ($r1.stdout) { ($r1.stdout -split "`n") } else { @() }
+    $lines1 = _PsRowFilter $lines1Raw
     $pids  = @()
     $paths = @()
     $detectedVia = $null
@@ -222,7 +249,7 @@ function Find-GssPathOnRemote {
         $tokens = $ln -split '\s+'
         foreach ($t in $tokens) {
             if ($t -match '^/' -and $t -match 'GSS') {
-                $dir = Split-Path -Parent $t
+                $dir = _UnixParent $t
                 if ($dir -and ($paths -notcontains $dir)) { $paths += $dir }
             }
         }
@@ -233,7 +260,8 @@ function Find-GssPathOnRemote {
     # 2차 fallback: GSS 발견 0건 → java grep (FR-2)
     if ($pids.Count -eq 0 -and $paths.Count -eq 0) {
         $r2 = _InvokeOne "ps -ef | grep java | grep -v grep"
-        $lines2 = if ($r2.stdout) { ($r2.stdout -split "`n") | Where-Object { $_.Trim() -ne '' } } else { @() }
+        $lines2Raw = if ($r2.stdout) { ($r2.stdout -split "`n") } else { @() }
+        $lines2 = _PsRowFilter $lines2Raw
         foreach ($ln in $lines2) {
             $fields = ($ln -split '\s+', 8)
             if ($fields.Count -ge 2) { $pids += $fields[1] }
@@ -246,7 +274,7 @@ function Find-GssPathOnRemote {
             $tokens = $ln -split '\s+'
             foreach ($t in $tokens) {
                 if ($t -match '^/' -and $t -match '(?i)(GSS|spatial_server|GeoNURIS)') {
-                    $dir = Split-Path -Parent $t
+                    $dir = _UnixParent $t
                     if ($dir -and ($paths -notcontains $dir)) { $paths += $dir }
                 }
             }
