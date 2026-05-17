@@ -42,16 +42,26 @@ import java.util.Optional;
 @Slf4j
 public class InspectReportDocxService {
 
-    private static final String TEMPLATE_PATH = "templates/inspection-report/시안D_v5_template.docx";
+    private static final String TEMPLATE_PATH = "templates/inspection-report/시안D_v6_template.docx";
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
 
-    /** 시안D v5 의 점검표 행 수 (sort_order 1..N) */
+    /** v6 점검표 행 수 (sort_order 1..N). GIS 12 = 6 점검표 + 6 P10 카드용 (sort 7~12). */
     private static final Map<String, Integer> SECTION_ROW_COUNT = Map.of(
             "AP",   14,
             "DB",   24,
             "DBMS", 17,
-            "GIS",    6,
+            "GIS",   12,
             "APP",  14
+    );
+
+    /** P10 카드 placeholder 매핑 — section='GIS' sort_order → ${gis.xxx.yyy}. */
+    private static final Map<Integer, String> GIS_CARD_KEY_BY_SORT = Map.of(
+            7,  "gis.uwes.total",         // UWES Store 총 용량
+            8,  "gis.gss.err30",          // GSS 30일 ERROR
+            9,  "gis.gss.warn30",         // GSS 30일 WARN
+            10, "gis.gws.catalina",       // GWS catalina ERROR
+            11, "gis.gws.stdoutMb",       // GWS stdout 로그 크기
+            12, "gis.uwes.demSlop"        // UWES DEM/SLOP 보존
     );
 
     /** 시안D 의 점검표 prefix — placeholder 키와 일치 */
@@ -65,6 +75,7 @@ public class InspectReportDocxService {
 
     private final InspectReportService inspectReportService;
     private final SwProjectRepository swProjectRepository;
+    private final InspectMetricChartService chartService;
 
     /**
      * @param reportId InspectReport.id
@@ -78,9 +89,22 @@ public class InspectReportDocxService {
 
         Map<String, String> vars = buildVars(report, project);
 
+        // v6 — P5 메트릭 추이 차트 PNG 렌더 (30일)
+        Map<String, byte[]> images = new HashMap<>();
+        if (report.getPjtId() != null) {
+            try {
+                byte[] chartPng = chartService.renderChart(report.getPjtId(), 30);
+                if (chartPng != null && chartPng.length > 0) {
+                    images.put("metrics.chart.image", chartPng);
+                }
+            } catch (Exception e) {
+                log.warn("chart 렌더 실패 — placeholder 만 출력: {}", e.getMessage());
+            }
+        }
+
         try (InputStream in = new ClassPathResource(TEMPLATE_PATH).getInputStream();
              XWPFDocument doc = new XWPFDocument(in)) {
-            DocxTemplateProcessor.process(doc, vars);
+            DocxTemplateProcessor.process(doc, vars, images);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             doc.write(out);
             return out.toByteArray();
@@ -241,13 +265,20 @@ public class InspectReportDocxService {
         m.put("dbms.head.os",       "");
         m.put("dbms.head.ip",       blankIfNull(report.getDbmsIp()));
 
-        m.put("gis.note",      "· GIS 엔진 (GSS / GWS) 점검 — 시안D v5.");
+        m.put("gis.note",      "· GIS 엔진 (GSS / GWS) 점검 — 시안D v6.");
         m.put("gis.extraNote", extraNote("GIS", all));
-        m.put("gis.uwesNote",  "· 보조 — UWES Store 자동수집 메트릭.");
+        m.put("gis.uwesNote",  "· 30 일 누적 메트릭 + UWES Store 보존 확인 — agent 자동수집.");
 
         m.put("app.note", "· 표준시스템(UPIS) 메뉴 점검 — 14 개 항목.");
 
         m.put("history.note", "· " + year + "년 점검·장애조치 이력 요약.");
+
+        // ── v6 P5 metrics — KPI 4분할 (실제 30일 차트는 InspectMetricChartService 가 PNG 임베드) ──
+        m.put("metrics.note",  "· agent 수집 누적 — 호스트별 line 분리, 와인/슬레이트/다크 3색 라인.");
+        m.put("metrics.kpi.cpuAvg",      computeMetricKpi(all, "AP", "CPU",     "avg"));
+        m.put("metrics.kpi.memAvg",      computeMetricKpi(all, "AP", "Memory",  "avg"));
+        m.put("metrics.kpi.diskMax",     computeMetricKpi(all, "AP", "Disk",    "max"));
+        m.put("metrics.kpi.collectDays", "—");  // 실측은 InspectMetricSnapshotRepository 에서 별도 조회 (Phase 추후)
 
         // ── NEXT ROUND (수동 입력 — Phase C) ─────────────────────
         m.put("next.scheduleNote",      blankIfNull(report.getNextScheduleNote()));
@@ -278,6 +309,24 @@ public class InspectReportDocxService {
                 m.put(prefix + ".r" + i + ".memo", item != null ? memoOf(item) : "");
             }
         }
+
+        // ── v6 P10 GIS 카드 (sort 7~12 result/memo 를 카드 placeholder 키로 재투영) ──
+        List<InspectCheckResultDTO> gisItems = bySection.getOrDefault("GIS", List.of()).stream()
+                .sorted(Comparator.comparing(c -> Optional.ofNullable(c.getSortOrder()).orElse(0)))
+                .toList();
+        for (Map.Entry<Integer, String> e : GIS_CARD_KEY_BY_SORT.entrySet()) {
+            int idx = e.getKey() - 1;
+            InspectCheckResultDTO item = idx < gisItems.size() ? gisItems.get(idx) : null;
+            m.put(e.getValue(), formatGisCardValue(item));
+        }
+        // 정적 라벨 키 (P10 카드 안 "보존" / "—" 등) — agent 미수집 항목 fallback
+        m.put("gis.gss.proc",       fallback(m.get("gis.gss.proc"),       "정상"));
+        m.put("gis.gss.logPurge",   fallback(m.get("gis.gss.logPurge"),   "수집 대기"));
+        m.put("gis.gss.disk",       "수집 대기");      // 별도 스프린트 (잔여 4건)
+        m.put("gis.gws.http",       fallback(m.get("gis.gws.http"),       "수집 대기"));
+        m.put("gis.uwes.purge",     fallback(m.get("gis.uwes.purge"),     "수집 대기"));
+        m.put("gis.uwes.threshold", thresholdLabel(m.get("gis.uwes.total")));
+        m.put("gis.uwes.trend",     "수집 대기");      // 별도 스프린트 (잔여 4건)
 
         return m;
     }
@@ -314,7 +363,71 @@ public class InspectReportDocxService {
         String r = blankIfNull(c.getResultText());
         String n = blankIfNull(c.getRemarks());
         if (!r.isEmpty() && !n.isEmpty()) return r + " (" + n + ")";
-        return !r.isEmpty() ? r : n;
+        if (!r.isEmpty()) return r;
+        if (!n.isEmpty()) return n;
+        // v6 — 둘 다 빈값: "수집 대기" 명시 (사용자 결정, 디자인팀 R3)
+        return "수집 대기";
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    //  v6 헬퍼 — 메트릭 KPI / GIS 카드 / 임계 라벨
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * 회차별 단일 측정값에서 KPI 추출 — 차트는 별도 누적(InspectMetricSnapshot)에서 30일 평균.
+     * 본 KPI 는 회차 단일값 보조 표시 (차트가 SSoT). collectDays 는 별도 조회 (Phase 추후).
+     */
+    private static String computeMetricKpi(List<InspectCheckResultDTO> all,
+                                            String section, String itemKeyword, String mode) {
+        double agg = ("max".equals(mode)) ? Double.NEGATIVE_INFINITY : 0.0;
+        int count = 0;
+        for (InspectCheckResultDTO c : all) {
+            if (!section.equals(c.getSection())) continue;
+            if (c.getItemName() == null || !c.getItemName().contains(itemKeyword)) continue;
+            String val = blankIfNull(c.getResultText());
+            if (val.isEmpty()) continue;
+            try {
+                double v = parsePercent(val);
+                if ("max".equals(mode)) {
+                    if (v > agg) agg = v;
+                } else {
+                    agg += v;
+                }
+                count++;
+            } catch (Exception ignored) { /* 숫자 아님 */ }
+        }
+        if (count == 0) return "수집 대기";
+        double result = "max".equals(mode) ? agg : (agg / count);
+        return String.format("%.1f %%", result);
+    }
+
+    private static double parsePercent(String s) {
+        String cleaned = s.replaceAll("[^\\d.\\-]", "");
+        if (cleaned.isEmpty()) throw new NumberFormatException(s);
+        return Double.parseDouble(cleaned);
+    }
+
+    /** GIS 카드 값 — null/빈값이면 "수집 대기". */
+    private static String formatGisCardValue(InspectCheckResultDTO item) {
+        if (item == null) return "수집 대기";
+        return memoOf(item);
+    }
+
+    /** UWES Store 임계치(20GB) 평가 — "근접" / "위반" / "정상" 한글 라벨 (디자인팀 W3). */
+    private static String thresholdLabel(String storeValue) {
+        if (storeValue == null || storeValue.isBlank() || "수집 대기".equals(storeValue)) return "수집 대기";
+        try {
+            double gb = parsePercent(storeValue);
+            if (gb >= 20.0) return "위반";
+            if (gb >= 18.0) return "근접";
+            return "정상";
+        } catch (Exception e) {
+            return storeValue;
+        }
+    }
+
+    private static String fallback(String existing, String def) {
+        return (existing == null || existing.isBlank()) ? def : existing;
     }
 
     private static String blankIfNull(String s) { return s == null ? "" : s; }
