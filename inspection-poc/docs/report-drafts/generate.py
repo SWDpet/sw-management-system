@@ -2626,6 +2626,382 @@ def make_annual_filled_v5() -> Path:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 시안 D v6 — inspection-report-d-v6 (2026-05-17)
+#   변경점: P5 메트릭 추이 신규, P9 점검표 / P10 카드 페이지 분할, P11 서명 제거
+#   v5 의 헬퍼·데이터 상수 (FILLED_*, V5_*, _v5_*) 와 v4 의 _annual_log_analysis_cards_filled 재사용
+# ─────────────────────────────────────────────────────────────────────────────
+
+V6_METRICS_KPI = [
+    ("CPU 평균", "22 %", "30일 평균"),
+    ("MEM 평균", "40 %", "30일 평균"),
+    ("DISK 최대", "78 %", "30일 worst"),
+    ("수집 일수", "28 / 30", "agent snapshot"),
+]
+
+V6_GIS_CARDS = [
+    {
+        "eyebrow": "GSS",
+        "title": "Spatial Server",
+        "subtitle": "GeoNURIS Spatial Server",
+        "path": r"\GeoNURIS_Spatial_Server\logs",
+        "rows": [
+            ("프로세스 가동",  "정상"),
+            ("로그 정리량 (월)", "120 MB"),
+            ("30 일 ERROR",   "0 건"),
+            ("30 일 WARN",    "3 건"),
+            ("디스크 점유",    "42 %"),
+        ],
+    },
+    {
+        "eyebrow": "GWS",
+        "title": "GeoWeb Server",
+        "subtitle": "GeoNURIS GeoWeb Server 64",
+        "path": r"C:\Program Files\GeoNURIS_GeoWeb_Server_64\logs",
+        "rows": [
+            ("HTTP 응답",          "200 OK"),
+            ("Tomcat catalina ERR", "2 건"),
+            ("stdout 로그 크기",    "320 MB"),
+            ("UWES DEM/SLOP",      "보존"),
+        ],
+    },
+    {
+        "eyebrow": "STORE",
+        "title": "UWES Store",
+        "subtitle": "WMS/WFS 데이터 저장소",
+        "path": r"...\webapps\uwes\store",
+        "rows": [
+            ("총 용량",              "18.4 GB (임계근접)"),
+            ("DEM / SLOP 제외",      "보존"),
+            ("기타 로그 삭제",       "240 MB"),
+            ("임계치 (20GB) 위반",   "근접"),
+            ("증가 추이 (월)",       "1.2 GB/월"),
+        ],
+    },
+]
+
+
+def _v6_metric_section(doc, font: str, kpis):
+    """P5 신규 — 30일 메트릭 추이. KPI 4분할 + 차트 placeholder(8.0cm, 디자인팀 R6) + 수집 대기 캡션."""
+    _annual_eyebrow_title(doc, "04 · metrics", "메트릭 추이 (30일 CPU·메모리·디스크)", font)
+    add_para(doc, "  · agent 수집 누적 — 호스트별 line 분리, 와인/슬레이트/다크 3색 라인.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _annual_kpi_strip(doc, font, kpis)
+    add_para(doc, "")
+
+    # 차트 placeholder 박스 — 17.4 × 8.0 cm (디자인팀 자문 R6: v4 12cm → -4cm)
+    t = doc.add_table(rows=1, cols=1)
+    set_table_borders(t, sz=4, color=ANNUAL_DIV_HEX, inner_sz=4)
+    c = t.rows[0].cells[0]
+    c.width = Cm(17.4)
+    shade_cell(c, ANNUAL_LIGHT_HEX)
+    c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    c.text = ""
+    p = c.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    set_run(p.add_run("[ 30일 CPU·메모리·디스크 라인 차트 — SW Manager 자동 삽입 (17.4 × 8.0 cm) ]"),
+            font=font, size=10, color=ANNUAL_GREY_RGB)
+    set_row_height(t.rows[0], 8.0)
+
+    # 수집 대기 캡션 (디자인팀 R3 — italic, 향후 PWA UI 에서 dashed border-left 추가)
+    add_para(doc, "")
+    p = doc.add_paragraph()
+    _tight(p, before_pt=2, after_pt=0)
+    run = p.add_run("  ※ 수집 대기 (2 일) — agent 미회신 구간은 차트에 공백으로 표시됨.")
+    run.italic = True
+    set_run(run, font=font, size=9, color=ANNUAL_GREY_RGB)
+
+
+def make_annual_filled_v6() -> Path:
+    """시안 D v6 — v5 기반 + P5 메트릭 신규 + P10 GIS 카드 분할 + P13 서명 제거.
+
+    P1 표지 → P2 summary → P3 history → P4 targets →
+    P5 metrics (신규) → P6 AP → P7 DB → P8 DBMS →
+    P9 GIS 점검표 → P10 GIS 카드 (신규) → P11 application → P12 next round.
+    """
+    doc = Document()
+    set_page(doc, margin_cm=0)
+    s0 = doc.sections[0]
+    s0.header_distance = Cm(0)
+    s0.footer_distance = Cm(0)
+    font = "맑은 고딕"
+
+    # ══ P1 표지 (v5 그대로) ════════════════════════════════════════════════════
+    cover_box = doc.add_table(rows=1, cols=1)
+    cover_box.autofit = False
+    remove_table_borders(cover_box)
+    _set_table_cell_margins(cover_box, left_dxa=850, right_dxa=850,
+                            top_dxa=0, bottom_dxa=0)
+    _set_table_total_width(cover_box, 21.0)
+    cc = cover_box.rows[0].cells[0]
+    cc.width = Cm(21.0)
+    shade_cell(cc, ANNUAL_PAGE_BG_HEX)
+    cc.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    set_row_height(cover_box.rows[0], 29.5, rule="exact")
+    _set_cant_split(cover_box.rows[0])
+    cc.text = ""
+    _tight(cc.paragraphs[0])
+
+    head_eb = cc.add_table(rows=1, cols=2)
+    head_eb.autofit = False
+    remove_table_borders(head_eb)
+    he0 = head_eb.rows[0].cells[0]
+    he0.width = Cm(8.5)
+    he0.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    he0.text = ""
+    p = _tight(he0.paragraphs[0])
+    set_run(p.add_run("INSPECTION REPORT · 점검 내역서"),
+            font=font, size=9, bold=True, color=ANNUAL_WINE_RGB)
+    he1 = head_eb.rows[0].cells[1]
+    he1.width = Cm(8.5)
+    he1.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    he1.text = ""
+    p = _tight(he1.paragraphs[0])
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    set_run(p.add_run(FILLED_DATA["기관"] + "  |  " + FILLED_DATA["수행사"]),
+            font=font, size=9, color=ANNUAL_GREY_RGB)
+    set_row_height(head_eb.rows[0], 0.9)
+
+    line = cc.add_table(rows=1, cols=1)
+    line.autofit = False
+    remove_table_borders(line)
+    lc = line.rows[0].cells[0]
+    lc.width = Cm(17.0)
+    shade_cell(lc, ANNUAL_WINE_HEX)
+    set_row_height(line.rows[0], 0.10, rule="exact")
+    _tight(lc.paragraphs[0])
+    lc.paragraphs[0].text = ""
+
+    p = cc.add_paragraph()
+    _tight(p, before_pt=10, after_pt=0)
+    p = cc.add_paragraph()
+    _tight(p, after_pt=6)
+    set_run(p.add_run("점검 내역서"),
+            font=font, size=72, bold=True, color=ANNUAL_WINE_RGB)
+    p = cc.add_paragraph()
+    _tight(p, after_pt=2)
+    set_run(p.add_run("월간 운영·유지관리 점검 보고"),
+            font=font, size=14, color=ANNUAL_GREY_RGB)
+    p = cc.add_paragraph()
+    _tight(p, after_pt=8)
+    set_run(p.add_run(FILLED_DATA["사업명"]),
+            font=font, size=12, bold=True, color=ANNUAL_DARK_RGB)
+
+    p = cc.add_paragraph()
+    _tight(p, after_pt=8, line_spacing=1.4)
+    set_run(p.add_run(
+        "본 보고서는 단양군청 도시계획정보체계(UPIS) 운영장비의 "
+        "2026년 5월 정기점검 결과를 정리합니다. "
+        "AP 서버 · DB 서버 · GIS 엔진 3 tier 및 표준시스템(UPIS 애플리케이션) 의 "
+        "자동수집 메트릭과 현장 육안 점검을 통합하여 운영 상태와 차회 점검 조치 권고사항을 종합하였습니다."),
+        font=font, size=11, color=ANNUAL_DARK_RGB)
+
+    _annual_meta_rows(cc, font, items=[
+        ("점검 회차", FILLED_DATA["회차"].split("(")[0].strip()),
+        ("작성일",    FILLED_DATA["작성일자"]),
+        ("점검 범위", "AP · DB · GIS · 표준시스템"),
+    ])
+
+    p = cc.add_paragraph()
+    _tight(p, before_pt=8, after_pt=2)
+    set_run(p.add_run("확인자 · 점검자"),
+            font=font, size=10, bold=True, color=ANNUAL_WINE_RGB)
+
+    sig = cc.add_table(rows=4, cols=4)
+    sig.autofit = False
+    set_table_borders(sig, sz=4, color=ANNUAL_DIV_HEX, inner_sz=4)
+    _set_table_cell_margins(sig, left_dxa=80, right_dxa=80)
+    sig_widths = [Cm(1.7), Cm(6.8), Cm(1.7), Cm(6.8)]
+    sig_data = [
+        ("구분", "확인자",                   "구분", "점검자"),
+        ("소속", FILLED_DATA["확인자_소속"], "소속", FILLED_DATA["수행사"]),
+        ("성명", FILLED_DATA["확인자_성명"], "성명", FILLED_DATA["점검자"]),
+        ("서명", "(인)",                     "서명", "(인)"),
+    ]
+    for i, row in enumerate(sig_data):
+        for j, val in enumerate(row):
+            cell = sig.rows[i].cells[j]
+            cell.width = sig_widths[j]
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            p = _tight(cell.paragraphs[0])
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            is_label_cell = (i == 0) or (j % 2 == 0)
+            if is_label_cell:
+                shade_cell(cell, ANNUAL_DARK_HEX)
+                set_run(p.add_run(val),
+                        font=font, size=10, bold=True, color=(0xFF, 0xFF, 0xFF))
+            else:
+                set_run(p.add_run(val),
+                        font=font, size=10, color=ANNUAL_DARK_RGB)
+            if i == 0:    set_row_height(sig.rows[i], 0.9)
+            elif i == 3:  set_row_height(sig.rows[i], 1.5)
+            else:         set_row_height(sig.rows[i], 0.95)
+    for tail_p in cc.paragraphs:
+        _tight(tail_p)
+
+    # section break
+    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
+    new_section.page_width = Cm(21.0)
+    new_section.page_height = Cm(29.7)
+    new_section.top_margin = Cm(1.5)
+    new_section.bottom_margin = Cm(1.5)
+    new_section.left_margin = Cm(1.5)
+    new_section.right_margin = Cm(1.5)
+
+    # ══ P2 summary ════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "01 · summary", "점검 요약", font)
+    add_para(doc, "  · 자동수집 (QR 반출 → PWA 스캐너 → SW Manager) + 현장 육안 점검 결과의 핵심 정리.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _annual_kpi_strip(doc, font, FILLED_KPI)
+    add_para(doc, "")
+    add_para(doc,
+             "  본 회차는 단양군청 도시계획정보체계(UPIS) 운영장비의 5월 정기점검 (제 5 회차) 입니다. "
+             "AP 서버 (Win Server 2012 R2) · DB 서버 (AIX 6.1 + Oracle 11g R2) · GIS 엔진 (GeoNURIS GSS + GWS 64) "
+             "3 tier 와 표준시스템(UPIS 애플리케이션) 14 개 메뉴를 점검하였으며, 자동수집 46 건 중 2 건의 경고 "
+             "(GWS store 18.4 GB → 임계 20 GB 근접 / Oracle UPIS_DATA 78.4 %) 와 8 건의 육안 점검 필요 항목이 식별되었습니다.",
+             font=font, size=10, color=ANNUAL_DARK_RGB)
+    add_para(doc, "")
+    add_para(doc,
+             "  핵심 발견사항은 (1) GWS geowebservice64-stdout 로그 로테이션 미설정, "
+             "(2) UWES store 용량의 점진 증가, (3) Oracle UPIS_DATA 테이블스페이스 사용률 증가 추이입니다. "
+             "세 항목 모두 즉시 장애 위험은 없으나 차회 점검 전까지 조치를 권고합니다 (§10 차회 점검 계획 참조).",
+             font=font, size=10, color=ANNUAL_DARK_RGB)
+    page_break(doc)
+
+    # ══ P3 history ════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "02 · history", "월별 점검·장애조치 이력 요약", font)
+    add_para(doc, "  · 2026년 연간 정기점검 및 장애조치 이력 — 1~5월 점검 완료, 6월 이후 예정.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_history_table(doc, font, V5_HISTORY_ROWS)
+    page_break(doc)
+
+    # ══ P4 targets ════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "03 · targets", "점검대상", font)
+    add_para(doc, "  · DB 서버 / AP 서버 / 소프트웨어 — 본 회차 점검대상 H/W·S/W 사양.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    _v5_target_spec_table(doc, font, "DB 서버", V5_TARGET_DB)
+    _v5_target_spec_table(doc, font, "AP 서버", V5_TARGET_AP)
+    _v5_target_spec_table(doc, font, "소프트웨어", V5_TARGET_SW)
+    page_break(doc)
+
+    # ══ P5 metrics (v6 신규) ══════════════════════════════════════════════════
+    _v6_metric_section(doc, font, V6_METRICS_KPI)
+    page_break(doc)
+
+    # ══ P6 AP ═════════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "05 · ap server", "AP 서버 점검 결과", font)
+    add_para(doc, "  · IBM X3650 M4 / Win Server 2012 R2 / UPIS AP 서버.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_tier_header_table(doc, font, V5_AP_HEADER)
+    add_para(doc, "")
+    _v5_check_table(doc, font, V5_AP_CHECKS, columns=[
+        ("종류",      1.4, "C"),
+        ("점검 항목",  3.4, "L"),
+        ("점검 방법",  5.4, "L"),
+        ("점검 기준",  3.6, "L"),
+        ("결과",      1.2, "C"),
+        ("메모",      2.4, "L"),
+    ])
+    _v5_extra_note(doc, font, V5_AP_EXTRA)
+    page_break(doc)
+
+    # ══ P7 DB (AIX) ═══════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "06 · db server", "DB 서버 (AIX) 점검 결과", font)
+    add_para(doc, "  · IBM P720 / AIX 6.1 / UPIS DB 서버 — 육안·구성·성능·DATA·네트워크·프로세서·로그.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_tier_header_table(doc, font, V5_DB_HEADER)
+    add_para(doc, "")
+    _v5_check_table(doc, font, V5_DB_CHECKS, columns=[
+        ("점검 방법",  1.8, "C"),
+        ("점검 항목",  4.0, "L"),
+        ("명령어",    6.0, "L"),
+        ("결과",      1.2, "C"),
+        ("메모",      4.4, "L"),
+    ])
+    _v5_extra_note(doc, font, V5_DB_EXTRA)
+    page_break(doc)
+
+    # ══ P8 DBMS (Oracle 운영 깊이 — V030 시드와 정합) ═══════════════════════════
+    _annual_eyebrow_title(doc, "07 · dbms", "DBMS (Oracle) 점검 결과", font)
+    add_para(doc, "  · Oracle 운영 점검 — archive · alert · redo · SGA/PGA · tablespace · datafile · 백업 · DG.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_tier_header_table(doc, font, V5_DBMS_HEADER)
+    add_para(doc, "")
+    _v5_check_table(doc, font, V5_DBMS_CHECKS, columns=[
+        ("구분",       1.4, "C"),
+        ("점검 항목",   3.6, "L"),
+        ("명령 / SQL", 7.2, "L"),
+        ("결과",       1.2, "C"),
+        ("메모",       4.0, "L"),
+    ])
+    _v5_extra_note(doc, font, V5_DBMS_EXTRA)
+    page_break(doc)
+
+    # ══ P9 GIS 점검표 (v5 P8 의 표만, 카드는 P10 분할) ════════════════════════
+    _annual_eyebrow_title(doc, "08a · gis engine", "GIS 엔진 점검 결과", font)
+    add_para(doc, "  · GeoNURIS GSS (Spatial Server) / GWS (GeoWeb Server 64) / Desktop Pro 연계.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_check_table(doc, font, V5_GIS_CHECKS, columns=[
+        ("대상",      2.0, "C"),
+        ("점검 항목",  3.6, "L"),
+        ("점검 방법",  7.4, "L"),
+        ("결과",      1.2, "C"),
+        ("메모",      3.2, "L"),
+    ])
+    _v5_extra_note(doc, font, V5_GIS_EXTRA)
+    page_break(doc)
+
+    # ══ P10 GIS 카드 (v6 신규 — GSS/GWS/STORE 3 카드, v4 양식 복원) ═══════════
+    _annual_eyebrow_title(doc, "08b · gis cards", "GIS 엔진 상세 분석 (GSS / GWS / Store)", font)
+    add_para(doc, "  · 30 일 누적 메트릭 + UWES Store 보존 확인 — agent 자동수집.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _annual_log_analysis_cards_filled(doc, font, V6_GIS_CARDS)
+    page_break(doc)
+
+    # ══ P11 APP UPIS 14 메뉴 ══════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "09 · application", "표준시스템 (UPIS 애플리케이션) 점검 결과", font)
+    add_para(doc, "  · 도시계획 / 통계 / 전자심의 / 지구단위계획 / 비정형 / 관리자 / GIS 연동 — 14 개 메뉴.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_check_table(doc, font, V5_APP_CHECKS, columns=[
+        ("분류",        3.0, "C"),
+        ("세부 분류",    3.6, "L"),
+        ("점검 내용",    7.6, "L"),
+        ("결과",        1.2, "C"),
+        ("메모",        2.0, "L"),
+    ])
+    page_break(doc)
+
+    # ══ P12 next round (v5 P10 — 서명 페이지 제거로 마지막) ═══════════════════
+    _annual_eyebrow_title(doc, "10 · next round", "차회 점검 계획", font)
+    add_para(doc, "")
+    for _eyebrow, title, body in FILLED_NEXT_PLAN:
+        p = doc.add_paragraph()
+        _tight(p, after_pt=4)
+        set_run(p.add_run(title),
+                font=font, size=13, bold=True, color=ANNUAL_DARK_RGB)
+        body_lines = [body] if isinstance(body, str) else list(body)
+        for line in body_lines:
+            p = doc.add_paragraph()
+            _tight(p, after_pt=2)
+            set_run(p.add_run(line),
+                    font=font, size=10, color=ANNUAL_DARK_RGB)
+        add_para(doc, "")
+    # ~~v5 P11 signature 제거~~ (갤럭시탭 디지털 서명으로 대체, P1 표지 sig 표는 유지)
+
+    path = OUT_DIR / "점검내역서_시안D_v6.docx"
+    doc.save(path)
+    return path
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import sys
     # PowerShell cp949 회피 — stdout 강제 UTF-8
@@ -2638,6 +3014,7 @@ if __name__ == "__main__":
         ("D (annual report)", make_annual()),
         ("D-filled (단양 UPIS 5월)", make_annual_filled()),
         ("D-v5 (원본 누락 통합)", make_annual_filled_v5()),
+        ("D-v6 (메트릭+카드 분할, 서명 제거)", make_annual_filled_v6()),
     ]
     print("-" * 60)
     for label, path in results:
