@@ -8,7 +8,7 @@
 
   - 1. 사이트 정보 (지자체/시스템/점검자/사이트코드)
   - 2. DB 서버 접속 (proto/ssh_backend/host/port/user/password/db_os)
-  - 3. Oracle 접속 (sid/auth_mode/oracle_home hint)
+  - 3. Oracle 접속 (sid/auth_mode) — ORACLE_HOME 은 원격 자동 탐지 (oratab → find)
   - 임계값은 기본값 자동. 변경 필요시 site.<code>.json 직접 수정.
 
   자동화/CI 는 setup.ps1 (-NonInteractive) 콘솔 진입점 별도 유지.
@@ -44,9 +44,13 @@ try {
     _Log "stage=init  scriptDir=$scriptDir  ConfigDir=$ConfigDir"
     _Log "stage=init  PS=$($PSVersionTable.PSVersion)  Apt=$([Threading.Thread]::CurrentThread.GetApartmentState())"
 
-    _Log "stage=lib-load  DPAPI.ps1 / Common.ps1"
+    _Log "stage=lib-load  DPAPI.ps1 / Common.ps1 / Ssh.ps1 / Telnet.ps1 / UnixCmd.ps1"
     . (Join-Path $scriptDir 'lib\DPAPI.ps1')
     . (Join-Path $scriptDir 'lib\Common.ps1')
+    # Test Connection 버튼이 Invoke-Remote 호출 → ssh/telnet 라우터 lib 필요
+    . (Join-Path $scriptDir 'lib\Ssh.ps1')
+    . (Join-Path $scriptDir 'lib\Telnet.ps1')
+    . (Join-Path $scriptDir 'lib\UnixCmd.ps1')
 
     _Log "stage=add-type  System.Windows.Forms + System.Drawing"
     Add-Type -AssemblyName System.Windows.Forms
@@ -141,26 +145,155 @@ $onProtoChange = {
 $cbProto.Add_SelectedIndexChanged($onProtoChange)
 & $onProtoChange   # 초기 상태 반영
 
-# 3. Oracle 접속
+# 3. Oracle 접속 — ORACLE_HOME 은 원격 자동 탐지 (lib/Oracle.ps1 Resolve-OracleHome).
+# hint 칸은 GUI 에서 제거 (config 직접 수정 시 oracle_home_hint 키로 override 가능).
 $gbOra = New-Object System.Windows.Forms.GroupBox
 $gbOra.Location = New-Object System.Drawing.Point(10, 420)
-$gbOra.Size     = New-Object System.Drawing.Size(605, 120)
-$gbOra.Text     = "3. Oracle 접속 (sysdba 권장, 점검 SQL 은 SELECT 전용 가드)"
+$gbOra.Size     = New-Object System.Drawing.Size(605, 90)
+$gbOra.Text     = "3. Oracle 접속 (sysdba 권장, 점검 SQL 은 SELECT 전용 가드 / ORACLE_HOME 자동탐지)"
 $form.Controls.Add($gbOra)
 _NewLabel $gbOra 15 25 "SID 또는 SERVICE"
 $tbOraSid  = _NewText  $gbOra 155 25 200
 _NewLabel $gbOra 15 55 "Auth mode"
 $cbOraAuth = _NewCombo $gbOra 155 55 200 @('sysdba','normal') 'sysdba'
-_NewLabel $gbOra 15 85 "ORACLE_HOME hint"
-$tbOraHome = _NewText  $gbOra 155 85 420
 
 # status + buttons
 $lblStatus = New-Object System.Windows.Forms.Label
 $lblStatus.Location  = New-Object System.Drawing.Point(15, 555)
 $lblStatus.Size      = New-Object System.Drawing.Size(600, 40)
-$lblStatus.Text      = "Save 누르면 config\active.json + config\site.<code>.json 으로 저장. Password 는 DPAPI 암호화."
+$lblStatus.Text      = "Test 로 연결 사전 확인 → Save 로 config 저장. Password 는 DPAPI 암호화."
 $lblStatus.ForeColor = [System.Drawing.Color]::DimGray
 $form.Controls.Add($lblStatus)
+
+# Test Connection — TCP 확인 → 로그인+명령 확인 → 결과 진단 (IP오류 vs 비번오류 vs 성공 분리).
+$btnTest = New-Object System.Windows.Forms.Button
+$btnTest.Location     = New-Object System.Drawing.Point(15, 605)
+$btnTest.Size         = New-Object System.Drawing.Size(150, 32)
+$btnTest.Text         = "Test Connection"
+$form.Controls.Add($btnTest)
+$btnTest.Add_Click({
+    # 입력 사전 검증 (host/port/user/password 만 있으면 됨, 사이트코드 등은 Save 때 검증)
+    if (-not $tbDbHost.Text.Trim()) {
+        [System.Windows.Forms.MessageBox]::Show("DB Host 비어있음", "Test 검증", 'OK', 'Warning') | Out-Null; return
+    }
+    if ($tbDbPort.Text -notmatch '^[0-9]{1,5}$') {
+        [System.Windows.Forms.MessageBox]::Show("DB Port 1~65535", "Test 검증", 'OK', 'Warning') | Out-Null; return
+    }
+    if (-not $tbDbUser.Text.Trim()) {
+        [System.Windows.Forms.MessageBox]::Show("DB Account 비어있음", "Test 검증", 'OK', 'Warning') | Out-Null; return
+    }
+    if (-not $tbDbPwd.Text) {
+        [System.Windows.Forms.MessageBox]::Show("DB Password 비어있음", "Test 검증", 'OK', 'Warning') | Out-Null; return
+    }
+
+    $dbHostStr = $tbDbHost.Text.Trim()
+    $dbPortNum = [int]$tbDbPort.Text
+    $btnTest.Enabled = $false
+    $btnTest.Text    = "Testing..."
+    $form.Refresh()
+
+    try {
+        # ─── 1단계: TCP 소켓 연결 (IP/port/방화벽 진단) ────────────────
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $tcpOk = $false
+        $tcpErr = ''
+        try {
+            $iar = $tcp.BeginConnect($dbHostStr, $dbPortNum, $null, $null)
+            if ($iar.AsyncWaitHandle.WaitOne(5000)) {
+                $tcp.EndConnect($iar)
+                $tcpOk = $true
+            } else {
+                $tcpErr = "TCP connect timeout (5s)"
+            }
+        } catch {
+            $tcpErr = $_.Exception.Message
+        } finally {
+            $tcp.Close()
+        }
+
+        if (-not $tcpOk) {
+            [System.Windows.Forms.MessageBox]::Show(
+                ("[1] TCP 연결 실패 - 네트워크 / IP / Port 문제`r`n`r`n" +
+                 "대상: " + $dbHostStr + ":" + $dbPortNum + "`r`n" +
+                 "사유: " + $tcpErr + "`r`n`r`n" +
+                 "확인사항:`r`n" +
+                 "  - Host (IP/호스트명) 정확한지`r`n" +
+                 "  - Port 번호 (telnet=23, ssh=22) 맞는지`r`n" +
+                 "  - 방화벽/네트워크 (ping 가능?)`r`n" +
+                 "  - 원격 서버 telnet/ssh 데몬 기동 여부"),
+                "Test 실패: 네트워크", 'OK', 'Error') | Out-Null
+            return
+        }
+
+        # ─── 2단계: 로그인 + 단순 명령 echo ────────────────────────────
+        # 임시 DPAPI 암호화 → Invoke-Remote 가 password_dpapi 를 unprotect 함.
+        # ⚠ PSCustomObject 필수 — lib/Telnet.ps1, lib/Ssh.ps1 의 라우터/백엔드가 $Remote.PSObject.Properties['xxx']
+        #   패턴을 쓰는데, hashtable 은 PSObject.Properties 로 사용자 키를 노출하지 않아서 proto 인식 실패 →
+        #   ssh fallback → Process.Start("") 'file name has not been provided' 발생 (2026-05-17 강진 확인).
+        $encPwTemp = Protect-Password -Plain $tbDbPwd.Text
+        $testRemote = [PSCustomObject]@{
+            enabled        = $true
+            proto          = $cbProto.SelectedItem
+            ssh_backend    = if ($cbProto.SelectedItem -eq 'ssh') { $cbSshBackend.SelectedItem } else { $null }
+            host           = $dbHostStr
+            port           = $dbPortNum
+            user           = $tbDbUser.Text.Trim()
+            password_dpapi = $encPwTemp
+            auth           = 'password'
+            os             = $cbDbOs.SelectedItem
+        }
+
+        $loginErr = ''
+        try {
+            $r = Invoke-Remote -Remote $testRemote -Command "echo UPISPINGOK2026SETUPTEST" -TimeoutSec 15
+        } catch {
+            $loginErr = "Invoke-Remote 예외: " + $_.Exception.Message
+            $r = @{ ok = $false; stdout = ''; stderr = $loginErr }
+        }
+
+        # marker 가 stdout 에 나오면 로그인+명령 실행 성공으로 간주.
+        # `$r.ok` 는 sentinel 파싱 결과라 false positive 가능 (terminal wrap 으로 sentinel regex miss 등) →
+        # marker 단독 검증이 더 신뢰성 높음. underscore 제거된 marker 라 wrap cosmetic 영향 없음.
+        if ($r.stdout -match 'UPISPINGOK2026SETUPTEST') {
+            [System.Windows.Forms.MessageBox]::Show(
+                ("[성공] 모든 단계 정상`r`n`r`n" +
+                 "  1) TCP 연결: OK (" + $dbHostStr + ":" + $dbPortNum + ")`r`n" +
+                 "  2) " + $cbProto.SelectedItem + " 로그인: OK (" + $tbDbUser.Text.Trim() + ")`r`n" +
+                 "  3) 원격 명령 echo: OK`r`n`r`n" +
+                 "Save 누르면 이 설정으로 config 저장됩니다."),
+                "Test OK", 'OK', 'Information') | Out-Null
+        } else {
+            $errMsg = if ($r.stderr) { [string]$r.stderr } else { [string]$r.stdout }
+            $diagnosis = ''
+            if ($errMsg -match '3004-007|invalid (login|username|password)|Login incorrect|Permission denied') {
+                $diagnosis = "비밀번호 / 사용자명 불일치 또는 계정 잠김"
+                $hint = "  - Password 재입력 (대소문자, 공백)`r`n" +
+                        "  - User 명 (보통 root)`r`n" +
+                        "  - AIX 라면 'lsuser -a account_locked unsuccessful_login_count <user>' 로 잠김 확인`r`n" +
+                        "  - 잠겼으면 'chuser account_locked=false unsuccessful_login_count=0 <user>'"
+            } elseif ($errMsg -match 'timeout|timed out|sentinel|prompt') {
+                $diagnosis = "로그인 후 prompt/sentinel 인식 실패 (timeout)"
+                $hint = "  - 비번은 맞을 가능성 — 로그인은 됐으나 prompt 패턴 불일치`r`n" +
+                        "  - 셸이 ksh/bash 가 아닌 경우 prompt 변종일 수 있음`r`n" +
+                        "  - setup-gui.trace.log 와 inspect 로그 확인"
+            } else {
+                $diagnosis = "원인 미상"
+                $hint = "  - 아래 stderr 메시지 확인"
+            }
+
+            $errPreview = if ($errMsg.Length -gt 500) { $errMsg.Substring(0, 500) + " ..." } else { $errMsg }
+            [System.Windows.Forms.MessageBox]::Show(
+                ("[2] TCP 는 OK, 로그인/명령 실패`r`n`r`n" +
+                 "진단: " + $diagnosis + "`r`n`r`n" +
+                 "확인사항:`r`n" + $hint + "`r`n`r`n" +
+                 "stderr / stdout (앞 500자):`r`n" + $errPreview),
+                "Test 실패: 로그인", 'OK', 'Error') | Out-Null
+        }
+    } finally {
+        $btnTest.Enabled = $true
+        $btnTest.Text    = "Test Connection"
+    }
+})
 
 $btnSave = New-Object System.Windows.Forms.Button
 $btnSave.Location     = New-Object System.Drawing.Point(420, 605)
@@ -197,9 +330,9 @@ if (Test-Path $activePath) {
             $tbDbUser.Text = $u.user
             if ($u.os)          { $cbDbOs.SelectedItem = $u.os }
             if ($u.oracle) {
-                if ($u.oracle.sid)              { $tbOraSid.Text  = $u.oracle.sid }
-                if ($u.oracle.auth_mode)        { $cbOraAuth.SelectedItem = $u.oracle.auth_mode }
-                if ($u.oracle.oracle_home_hint) { $tbOraHome.Text = $u.oracle.oracle_home_hint }
+                if ($u.oracle.sid)       { $tbOraSid.Text  = $u.oracle.sid }
+                if ($u.oracle.auth_mode) { $cbOraAuth.SelectedItem = $u.oracle.auth_mode }
+                # oracle_home_hint 은 GUI 미노출 (자동 탐지) — 기존 config 값 있으면 cfg 빌드 시 보존
             }
         }
         $lblStatus.Text      = "기존 config 발견 — 필드 미리 채움. Save 시 덮어씀."
@@ -285,7 +418,9 @@ $cfg = [ordered]@{
             oracle         = [ordered]@{
                 sid              = $tbOraSid.Text.Trim()
                 auth_mode        = $cbOraAuth.SelectedItem
-                oracle_home_hint = if ($tbOraHome.Text.Trim()) { $tbOraHome.Text.Trim() } else { $null }
+                # ORACLE_HOME 은 lib/Oracle.ps1 Resolve-OracleHome 가 원격 탐지 (oratab/find, host 별 캐시).
+                # 자동 탐지 실패 시에만 config 파일에서 수동 override (이 키에 경로 직접 입력).
+                oracle_home_hint = if ($existing -and $existing.remotes -and $existing.remotes.unix_db -and $existing.remotes.unix_db.oracle -and $existing.remotes.unix_db.oracle.oracle_home_hint) { $existing.remotes.unix_db.oracle.oracle_home_hint } else { $null }
             }
             config_name    = "site.$siteCode.json"
         }

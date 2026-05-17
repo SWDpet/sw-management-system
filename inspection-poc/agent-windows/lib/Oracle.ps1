@@ -53,8 +53,9 @@ function Resolve-OracleHome {
             if (-not $t -or $t.StartsWith('#')) { continue }
             $parts = $t -split ':', 3
             if ($parts.Count -ge 2) {
-                $home = $parts[1].Trim()
-                if ($home -and $home -match '^/') { $detected = $home; break }
+                # ⚠ $home 은 PS 자동 read-only 변수 — $oraHome 로 회피.
+                $oraHome = $parts[1].Trim()
+                if ($oraHome -and $oraHome -match '^/') { $detected = $oraHome; break }
             }
         }
     }
@@ -115,15 +116,6 @@ function Invoke-OracleSql {
         $auto
     }
 
-    $connectStr = if ($authMode -eq 'sysdba') {
-        '"/ as sysdba"'
-    } else {
-        if (-not $Remote.oracle.user -or -not $Remote.oracle.password) {
-            return @{ ok=$false; stderr='oracle.auth_mode=normal 인데 user/password 미지정'; stdout=''; exitCode=-1 }
-        }
-        ($Remote.oracle.user + '/' + $Remote.oracle.password)
-    }
-
     # SQL block — WHENEVER 로 에러 시 즉시 exit, SET 으로 출력 정형화, READ ONLY 트랜잭션.
     $sqlBlock = @"
 WHENEVER OSERROR EXIT 9
@@ -141,16 +133,43 @@ EXIT;
     $tmp = "/tmp/upis_ora_$([Guid]::NewGuid().ToString('N').Substring(0,8)).sql"
 
     $envPrefix = if ($homeHint) {
-        "export ORACLE_HOME=$homeHint; export PATH=`$ORACLE_HOME/bin:`$PATH; export ORACLE_SID=$sid; "
+        "export ORACLE_HOME=$homeHint; export PATH=`$ORACLE_HOME/bin:`$PATH; export ORACLE_SID=$sid;"
     } else {
-        "export ORACLE_SID=$sid; "
+        "export ORACLE_SID=$sid;"
     }
 
-    # ⚠ exit $_RC 제거 — Telnet wrapper 가 끝에 echo __INSPECT_END_<rand>_$? 를 자동 append.
+    # base64 디코딩 → /tmp/<uuid>.sql (root 권한, /tmp 는 누구나 쓰기 가능).
+    $decoder = "(echo '$b64' | base64 -d 2>/dev/null || echo '$b64' | perl -MMIME::Base64 -ne 'print decode_base64(`$_)') > $tmp"
+
+    if ($authMode -eq 'sysdba') {
+        # ⚠ AIX/Linux 에서 '/ as sysdba' OS 인증은 dba group 멤버만 허용 (보통 oracle 계정).
+        # root 가 직접 sqlplus 호출하면 ORA-01017 (2026-05-17 강진 라운드 확인).
+        # → su - <oracle_user> -c 로 oracle 계정 전환 후 sqlplus 실행.
+        #   chmod 644 로 oracle 사용자가 /tmp/*.sql 읽을 수 있게.
+        $oraUser = if ($Remote.oracle.os_user) { [string]$Remote.oracle.os_user } else { 'oracle' }
+
+        # ⚠ su -c "INNER" 의 INNER 안의 `$ORACLE_HOME` / `$PATH` 는 oracle 의 shell 이 평가해야 함.
+        # 하지만 outer "..." 를 먼저 parsing 하는 건 root 의 ksh — `$ORACLE_HOME` 이 root 에선 빈값이라
+        # PATH 가 망가져서 'sqlplus not found' (2026-05-17 강진 라운드 확인).
+        # → `\$ORACLE_HOME` / `\$PATH` 로 backslash escape. ksh 가 double-quote 안의 `\$` 를
+        #   literal `$` 로 unescape → su 에 넘어가서 oracle shell 이 비로소 expand.
+        # $envPrefix 와 별도로 sysdba 전용 $envInner 구성 (escape 패턴이 다름).
+        $envInner = "export ORACLE_HOME=$homeHint; export PATH=\`$ORACLE_HOME/bin:\`$PATH;"
+        # ORACLE_SID 는 prefix 문법으로 sqlplus 한 명령에만 적용 — oracle 의 .profile SID 와 충돌 회피.
+        $inner = "$envInner ORACLE_SID=$sid sqlplus -s -L '/ as sysdba' @$tmp"
+        $cmd = "$decoder; chmod 644 $tmp; su - $oraUser -c `"$inner`"; rm -f $tmp"
+    } else {
+        if (-not $Remote.oracle.user -or -not $Remote.oracle.password) {
+            return @{ ok=$false; stderr='oracle.auth_mode=normal 인데 user/password 미지정'; stdout=''; exitCode=-1 }
+        }
+        $connectStr = $Remote.oracle.user + '/' + $Remote.oracle.password
+        # normal mode — sqlplus 가 자체 user/password 인증, root 에서 직접 호출 OK.
+        $cmd = "$envPrefix $decoder; sqlplus -s -L $connectStr @$tmp; rm -f $tmp"
+    }
+
+    # ⚠ exit `$_RC 제거 — Telnet wrapper 가 끝에 echo __INSPECT_END_<rand>_`$? 를 자동 append.
     # exit 가 shell 종료시키면 sentinel echo 가 실행 안 돼서 timeout. sqlplus 결과는
     # stdout 에서 ORA-/SP2- 패턴으로 검출 (아래 에러 라인 검사 참조).
-    $cmd = ("{0}(echo '{1}' | base64 -d 2>/dev/null || echo '{1}' | perl -MMIME::Base64 -ne 'print decode_base64(`$_)') > {2}; sqlplus -s -L {3} @{2}; rm -f {2}" `
-        -f $envPrefix, $b64, $tmp, $connectStr)
 
     $r = Invoke-Remote -Remote $Remote -Command $cmd -TimeoutSec $TimeoutSec
     if (-not $r.ok) {
@@ -172,10 +191,14 @@ EXIT;
     foreach ($line in ($r.stdout -split "`r?`n")) {
         $t = $line.Trim()
         if (-not $t) { continue }
-        if ($t -match '@[\w\-]+\s+[#$]') { continue }    # telnet 프롬프트 echo
+        if ($t -match '@[\w\-]+\s+[#$]') { continue }    # telnet 프롬프트 echo (root@TMS-DB #)
         if ($t -match '^_?_INSPECT_')    { continue }    # telnet sentinel
         if ($t -match '^sqlplus')        { continue }    # 명령 echo
-        if ($t -match '^echo\s+\w+\s')   { continue }    # base64 명령 echo
+        if ($t -match '^echo\s+\w+\s')   { continue }    # echo 명령
+        if ($t -match "^\(echo\s")        { continue }    # (echo '<base64>'...) 명령 echo — 2026-05-17 강진
+        if ($t -match '^\[YOU HAVE')     { continue }    # AIX MOTD [YOU HAVE NEW MAIL]
+        if ($t -match '^Unit:')          { continue }    # svmon 헤더 (defensive)
+        if ($t -match '^-{5,}')          { continue }    # 구분선 ----- (defensive)
 
         $cols = $t -split '\s*\|\s*'
         if ($ColumnNames.Count -gt 0 -and $cols.Count -eq $ColumnNames.Count) {
