@@ -3002,6 +3002,402 @@ def make_annual_filled_v6() -> Path:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# 시안 D v6 template — InspectReportDocxService 가 사용하는 placeholder ${...} 양식
+#   make_annual_filled_v6 와 동일 구조, 데이터만 placeholder 로 교체.
+#   placeholder 키 = InspectReportDocxService.buildVars() 가 채우는 키
+# ─────────────────────────────────────────────────────────────────────────────
+
+_V6_TPL_KPI = [
+    ("점검 항목", "${summary.totalCnt}",     "AP·DB·GIS 합계"),
+    ("정상",      "${summary.okCnt}",        "result = NORMAL"),
+    ("경고/비정상", "${summary.warnCritCnt}",  "PARTIAL + ABNORMAL"),
+    ("육안 점검", "${summary.manualCnt}",    "자동수집 불가"),
+]
+
+_V6_TPL_METRICS_KPI = [
+    ("CPU 평균",   "${metrics.kpi.cpuAvg}",      "30일 평균"),
+    ("MEM 평균",   "${metrics.kpi.memAvg}",      "30일 평균"),
+    ("DISK 최대",  "${metrics.kpi.diskMax}",     "30일 worst"),
+    ("수집 일수",  "${metrics.kpi.collectDays}", "agent snapshot"),
+]
+
+_V6_TPL_GIS_CARDS = [
+    {
+        "eyebrow": "GSS",
+        "title": "Spatial Server",
+        "subtitle": "GeoNURIS Spatial Server",
+        "path": r"\GeoNURIS_Spatial_Server\logs",
+        "rows": [
+            ("프로세스 가동",   "${gis.gss.proc}"),
+            ("로그 정리량 (월)", "${gis.gss.logPurge}"),
+            ("30 일 ERROR",   "${gis.gss.err30}"),
+            ("30 일 WARN",    "${gis.gss.warn30}"),
+            ("디스크 점유",    "${gis.gss.disk}"),
+        ],
+    },
+    {
+        "eyebrow": "GWS",
+        "title": "GeoWeb Server",
+        "subtitle": "GeoNURIS GeoWeb Server 64",
+        "path": r"C:\Program Files\GeoNURIS_GeoWeb_Server_64\logs",
+        "rows": [
+            ("HTTP 응답",          "${gis.gws.http}"),
+            ("Tomcat catalina ERR", "${gis.gws.catalina}"),
+            ("stdout 로그 크기",    "${gis.gws.stdoutMb}"),
+            ("UWES DEM/SLOP",      "${gis.uwes.demSlop}"),
+        ],
+    },
+    {
+        "eyebrow": "STORE",
+        "title": "UWES Store",
+        "subtitle": "WMS/WFS 데이터 저장소",
+        "path": r"...\webapps\uwes\store",
+        "rows": [
+            ("총 용량",              "${gis.uwes.total}"),
+            ("DEM / SLOP 제외",      "${gis.uwes.demSlop}"),
+            ("기타 로그 삭제",       "${gis.uwes.purge}"),
+            ("임계치 (20GB) 위반",   "${gis.uwes.threshold}"),
+            ("증가 추이 (월)",       "${gis.uwes.trend}"),
+        ],
+    },
+]
+
+# 12 개월 history row — (year, month, day, work, symptom, action) 모두 placeholder
+_V6_TPL_HISTORY = [
+    (
+        "${history.M%02d.year}"    % m,
+        "${history.M%02d.month}"   % m,
+        "${history.M%02d.day}"     % m,
+        "${history.M%02d.work}"    % m,
+        "${history.M%02d.symptom}" % m,
+        "${history.M%02d.action}"  % m,
+    )
+    for m in range(1, 13)
+]
+
+# 점검대상 사양 — 라벨은 고정, 값만 placeholder
+_V6_TPL_TARGET_DB = [
+    ("제품명(M/T, S/N)",  "${targets.db.model}"),
+    ("CPU",              "${targets.db.cpu}"),
+    ("메모리",            "${targets.db.memory}"),
+    ("디스크",            "${targets.db.disk}"),
+    ("네트워크",          "${targets.db.network}"),
+    ("전원",              "${targets.db.power}"),
+    ("운영체제",          "${targets.db.os}"),
+]
+_V6_TPL_TARGET_AP = [
+    ("제품명(M/T, S/N)",  "${targets.ap.model}"),
+    ("CPU",              "${targets.ap.cpu}"),
+    ("메모리",            "${targets.ap.memory}"),
+    ("디스크",            "${targets.ap.disk}"),
+    ("네트워크",          "${targets.ap.network}"),
+    ("전원",              "${targets.ap.power}"),
+    ("운영체제",          "${targets.ap.os}"),
+]
+# 소프트웨어 사양은 사이트별 고정값 의존도가 낮아 v5 그대로 유지
+_V6_TPL_TARGET_SW = V5_TARGET_SW
+
+# 헤더 표 — placeholder
+_V6_TPL_AP_HEADER = [
+    ("OS 정보",    "${ap.head.os}"),
+    ("CPU",       "${ap.head.cpu}"),
+    ("지원 업무",  "${ap.head.usage}"),
+    ("Memory",    "${ap.head.memory}"),
+    ("Model",     "${ap.head.model}"),
+    ("Disk",      "${ap.head.disk}"),
+]
+_V6_TPL_DB_HEADER = [
+    ("장 비 명",    "${db.head.model}"),
+    ("운영체제",    "${db.head.os}"),
+    ("호스트이름",  "${db.head.hostname}"),
+    ("사용 용도",   "${db.head.usage}"),
+]
+_V6_TPL_DBMS_HEADER = [
+    ("점검 대상",  "${dbms.head.target}"),
+    ("소프트웨어", "${dbms.head.software}"),
+    ("운영체제",   "${dbms.head.os}"),
+    ("IP",        "${dbms.head.ip}"),
+]
+
+
+def _tpl_check_rows(prefix: str, master: list) -> list:
+    """master 의 마지막 2 컬럼(결과/메모) 을 ${prefix.rN.result} / ${prefix.rN.memo} 로 치환."""
+    out = []
+    for i, row in enumerate(master, start=1):
+        fixed = list(row[:-2])
+        fixed.append("${%s.r%d.result}" % (prefix, i))
+        fixed.append("${%s.r%d.memo}"   % (prefix, i))
+        out.append(tuple(fixed))
+    return out
+
+
+_V6_TPL_AP_CHECKS   = _tpl_check_rows("ap",   V5_AP_CHECKS)
+_V6_TPL_DB_CHECKS   = _tpl_check_rows("db",   V5_DB_CHECKS)
+_V6_TPL_DBMS_CHECKS = _tpl_check_rows("dbms", V5_DBMS_CHECKS)
+_V6_TPL_GIS_CHECKS  = _tpl_check_rows("gis",  V5_GIS_CHECKS)
+_V6_TPL_APP_CHECKS  = _tpl_check_rows("app",  V5_APP_CHECKS)
+
+_V6_TPL_NEXT_PLAN = [
+    ("NEXT DATE",  "차회 점검 일정", "${next.scheduleNote}"),
+    ("RECOMMEND",  "권고사항",      [
+        "${next.recommendation1}",
+        "${next.recommendation2}",
+        "${next.recommendation3}",
+    ]),
+    ("FOLLOW-UP",  "후속 조치",     [
+        "${next.followup1}",
+        "${next.followup2}",
+        "${next.followup3}",
+    ]),
+]
+
+
+def make_annual_v6_template() -> Path:
+    """시안 D v6 template — InspectReportDocxService 용 placeholder ${...} 양식.
+    make_annual_filled_v6 와 동일 페이지 구조, 데이터만 placeholder.
+
+    placeholder 키 명세:
+      cover.* / summary.* / history.MNN.* / targets.{db,ap}.* /
+      metrics.kpi.* / ap|db|dbms|gis|app.{note,extraNote,head.*,rN.result,rN.memo} /
+      gis.{gss,gws,uwes}.* (P10 카드) / next.scheduleNote / next.{recommendation,followup}{1,2,3}
+    """
+    doc = Document()
+    set_page(doc, margin_cm=0)
+    s0 = doc.sections[0]
+    s0.header_distance = Cm(0)
+    s0.footer_distance = Cm(0)
+    font = "맑은 고딕"
+
+    # ══ P1 표지 — 사이트 정보 placeholder, sig 표 유지 ══════════════════════════
+    cover_box = doc.add_table(rows=1, cols=1)
+    cover_box.autofit = False
+    remove_table_borders(cover_box)
+    _set_table_cell_margins(cover_box, left_dxa=850, right_dxa=850, top_dxa=0, bottom_dxa=0)
+    _set_table_total_width(cover_box, 21.0)
+    cc = cover_box.rows[0].cells[0]
+    cc.width = Cm(21.0)
+    shade_cell(cc, ANNUAL_PAGE_BG_HEX)
+    cc.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    set_row_height(cover_box.rows[0], 29.5, rule="exact")
+    _set_cant_split(cover_box.rows[0])
+    cc.text = ""
+    _tight(cc.paragraphs[0])
+
+    head_eb = cc.add_table(rows=1, cols=2)
+    head_eb.autofit = False
+    remove_table_borders(head_eb)
+    he0 = head_eb.rows[0].cells[0]
+    he0.width = Cm(8.5); he0.vertical_alignment = WD_ALIGN_VERTICAL.CENTER; he0.text = ""
+    p = _tight(he0.paragraphs[0])
+    set_run(p.add_run("INSPECTION REPORT · 점검 내역서"),
+            font=font, size=9, bold=True, color=ANNUAL_WINE_RGB)
+    he1 = head_eb.rows[0].cells[1]
+    he1.width = Cm(8.5); he1.vertical_alignment = WD_ALIGN_VERTICAL.CENTER; he1.text = ""
+    p = _tight(he1.paragraphs[0])
+    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    set_run(p.add_run("${cover.headerLine}"),
+            font=font, size=9, color=ANNUAL_GREY_RGB)
+    set_row_height(head_eb.rows[0], 0.9)
+
+    line = cc.add_table(rows=1, cols=1)
+    line.autofit = False
+    remove_table_borders(line)
+    lc = line.rows[0].cells[0]
+    lc.width = Cm(17.0); shade_cell(lc, ANNUAL_WINE_HEX)
+    set_row_height(line.rows[0], 0.10, rule="exact")
+    _tight(lc.paragraphs[0]); lc.paragraphs[0].text = ""
+
+    p = cc.add_paragraph(); _tight(p, before_pt=10, after_pt=0)
+    p = cc.add_paragraph(); _tight(p, after_pt=6)
+    set_run(p.add_run("점검 내역서"), font=font, size=72, bold=True, color=ANNUAL_WINE_RGB)
+    p = cc.add_paragraph(); _tight(p, after_pt=2)
+    set_run(p.add_run("${cover.docSubtitle}"), font=font, size=14, color=ANNUAL_GREY_RGB)
+    p = cc.add_paragraph(); _tight(p, after_pt=8)
+    set_run(p.add_run("${cover.projectFullName}"), font=font, size=12, bold=True, color=ANNUAL_DARK_RGB)
+
+    p = cc.add_paragraph(); _tight(p, after_pt=8, line_spacing=1.4)
+    set_run(p.add_run("${cover.notice}"), font=font, size=11, color=ANNUAL_DARK_RGB)
+
+    _annual_meta_rows(cc, font, items=[
+        ("점검 회차", "${cover.roundLabel}"),
+        ("작성일",    "${cover.reportDate}"),
+        ("점검 범위", "${cover.scope}"),
+    ])
+
+    p = cc.add_paragraph(); _tight(p, before_pt=8, after_pt=2)
+    set_run(p.add_run("확인자 · 점검자"), font=font, size=10, bold=True, color=ANNUAL_WINE_RGB)
+
+    sig = cc.add_table(rows=4, cols=4); sig.autofit = False
+    set_table_borders(sig, sz=4, color=ANNUAL_DIV_HEX, inner_sz=4)
+    _set_table_cell_margins(sig, left_dxa=80, right_dxa=80)
+    sig_widths = [Cm(1.7), Cm(6.8), Cm(1.7), Cm(6.8)]
+    sig_rows = [
+        ("구분", "확인자",                   "구분", "점검자"),
+        ("소속", "${cover.clientOrg}",       "소속", "${cover.inspectorOrg}"),
+        ("성명", "${cover.clientName}",      "성명", "${cover.inspectorName}"),
+        ("서명", "(인)",                     "서명", "(인)"),
+    ]
+    for i, row in enumerate(sig_rows):
+        for j, val in enumerate(row):
+            cell = sig.rows[i].cells[j]
+            cell.width = sig_widths[j]
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            p = _tight(cell.paragraphs[0]); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            is_label_cell = (i == 0) or (j % 2 == 0)
+            if is_label_cell:
+                shade_cell(cell, ANNUAL_DARK_HEX)
+                set_run(p.add_run(val), font=font, size=10, bold=True, color=(0xFF, 0xFF, 0xFF))
+            else:
+                set_run(p.add_run(val), font=font, size=10, color=ANNUAL_DARK_RGB)
+            if i == 0:    set_row_height(sig.rows[i], 0.9)
+            elif i == 3:  set_row_height(sig.rows[i], 1.5)
+            else:         set_row_height(sig.rows[i], 0.95)
+    for tail_p in cc.paragraphs:
+        _tight(tail_p)
+
+    new_section = doc.add_section(WD_SECTION.NEW_PAGE)
+    new_section.page_width = Cm(21.0); new_section.page_height = Cm(29.7)
+    new_section.top_margin = Cm(1.5); new_section.bottom_margin = Cm(1.5)
+    new_section.left_margin = Cm(1.5); new_section.right_margin = Cm(1.5)
+
+    # ══ P2 summary ════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "01 · summary", "점검 요약", font)
+    add_para(doc, "  · 자동수집 (QR 반출 → PWA 스캐너 → SW Manager) + 현장 육안 점검 결과의 핵심 정리.",
+             font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _annual_kpi_strip(doc, font, _V6_TPL_KPI)
+    add_para(doc, "")
+    add_para(doc, "  ${summary.body}", font=font, size=10, color=ANNUAL_DARK_RGB)
+    add_para(doc, "")
+    add_para(doc, "  ${summary.findings}", font=font, size=10, color=ANNUAL_DARK_RGB)
+    page_break(doc)
+
+    # ══ P3 history (12개월 placeholder) ═══════════════════════════════════════
+    _annual_eyebrow_title(doc, "02 · history", "월별 점검·장애조치 이력 요약", font)
+    add_para(doc, "  ${history.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_history_table(doc, font, _V6_TPL_HISTORY)
+    page_break(doc)
+
+    # ══ P4 targets ════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "03 · targets", "점검대상", font)
+    add_para(doc, "  ${targets.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    _v5_target_spec_table(doc, font, "DB 서버", _V6_TPL_TARGET_DB)
+    _v5_target_spec_table(doc, font, "AP 서버", _V6_TPL_TARGET_AP)
+    _v5_target_spec_table(doc, font, "소프트웨어", _V6_TPL_TARGET_SW)
+    page_break(doc)
+
+    # ══ P5 metrics (v6 신규) ══════════════════════════════════════════════════
+    _v6_metric_section(doc, font, _V6_TPL_METRICS_KPI)
+    page_break(doc)
+
+    # ══ P6 AP ═════════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "05 · ap server", "AP 서버 점검 결과", font)
+    add_para(doc, "  ${ap.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_tier_header_table(doc, font, _V6_TPL_AP_HEADER)
+    add_para(doc, "")
+    _v5_check_table(doc, font, _V6_TPL_AP_CHECKS, columns=[
+        ("종류",      1.4, "C"),
+        ("점검 항목",  3.4, "L"),
+        ("점검 방법",  5.4, "L"),
+        ("점검 기준",  3.6, "L"),
+        ("결과",      1.2, "C"),
+        ("메모",      2.4, "L"),
+    ])
+    _v5_extra_note(doc, font, "${ap.extraNote}")
+    page_break(doc)
+
+    # ══ P7 DB ═════════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "06 · db server", "DB 서버 (AIX) 점검 결과", font)
+    add_para(doc, "  ${db.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_tier_header_table(doc, font, _V6_TPL_DB_HEADER)
+    add_para(doc, "")
+    _v5_check_table(doc, font, _V6_TPL_DB_CHECKS, columns=[
+        ("점검 방법",  1.8, "C"),
+        ("점검 항목",  4.0, "L"),
+        ("명령어",    6.0, "L"),
+        ("결과",      1.2, "C"),
+        ("메모",      4.4, "L"),
+    ])
+    _v5_extra_note(doc, font, "${db.extraNote}")
+    page_break(doc)
+
+    # ══ P8 DBMS ═══════════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "07 · dbms", "DBMS (Oracle) 점검 결과", font)
+    add_para(doc, "  ${dbms.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_tier_header_table(doc, font, _V6_TPL_DBMS_HEADER)
+    add_para(doc, "")
+    _v5_check_table(doc, font, _V6_TPL_DBMS_CHECKS, columns=[
+        ("구분",       1.4, "C"),
+        ("점검 항목",   3.6, "L"),
+        ("명령 / SQL", 7.2, "L"),
+        ("결과",       1.2, "C"),
+        ("메모",       4.0, "L"),
+    ])
+    _v5_extra_note(doc, font, "${dbms.extraNote}")
+    page_break(doc)
+
+    # ══ P9 GIS 점검표 ═════════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "08a · gis engine", "GIS 엔진 점검 결과", font)
+    add_para(doc, "  ${gis.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_check_table(doc, font, _V6_TPL_GIS_CHECKS, columns=[
+        ("대상",      2.0, "C"),
+        ("점검 항목",  3.6, "L"),
+        ("점검 방법",  7.4, "L"),
+        ("결과",      1.2, "C"),
+        ("메모",      3.2, "L"),
+    ])
+    _v5_extra_note(doc, font, "${gis.extraNote}")
+    page_break(doc)
+
+    # ══ P10 GIS 카드 (v6 신규) ════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "08b · gis cards", "GIS 엔진 상세 분석 (GSS / GWS / Store)", font)
+    add_para(doc, "  ${gis.uwesNote}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _annual_log_analysis_cards_filled(doc, font, _V6_TPL_GIS_CARDS)
+    page_break(doc)
+
+    # ══ P11 application ══════════════════════════════════════════════════════
+    _annual_eyebrow_title(doc, "09 · application", "표준시스템 (UPIS 애플리케이션) 점검 결과", font)
+    add_para(doc, "  ${app.note}", font=font, size=9, color=ANNUAL_GREY_RGB)
+    add_para(doc, "")
+    _v5_check_table(doc, font, _V6_TPL_APP_CHECKS, columns=[
+        ("분류",        3.0, "C"),
+        ("세부 분류",    3.6, "L"),
+        ("점검 내용",    7.6, "L"),
+        ("결과",        1.2, "C"),
+        ("메모",        2.0, "L"),
+    ])
+    page_break(doc)
+
+    # ══ P12 next round (마지막 — 서명 제거) ═══════════════════════════════════
+    _annual_eyebrow_title(doc, "10 · next round", "차회 점검 계획", font)
+    add_para(doc, "")
+    for _eyebrow, title, body in _V6_TPL_NEXT_PLAN:
+        p = doc.add_paragraph(); _tight(p, after_pt=4)
+        set_run(p.add_run(title), font=font, size=13, bold=True, color=ANNUAL_DARK_RGB)
+        body_lines = [body] if isinstance(body, str) else list(body)
+        for line in body_lines:
+            p = doc.add_paragraph(); _tight(p, after_pt=2)
+            set_run(p.add_run(line), font=font, size=10, color=ANNUAL_DARK_RGB)
+        add_para(doc, "")
+
+    path = OUT_DIR / "시안D_v6_template.docx"
+    doc.save(path)
+
+    # InspectReportDocxService 가 로드하는 resources 경로로 자동 배치
+    import shutil
+    target = Path(__file__).resolve().parents[3] / "src" / "main" / "resources" / "templates" / "inspection-report" / "시안D_v6_template.docx"
+    if target.parent.exists():
+        shutil.copy2(path, target)
+    return path
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     import sys
     # PowerShell cp949 회피 — stdout 강제 UTF-8
@@ -3015,6 +3411,7 @@ if __name__ == "__main__":
         ("D-filled (단양 UPIS 5월)", make_annual_filled()),
         ("D-v5 (원본 누락 통합)", make_annual_filled_v5()),
         ("D-v6 (메트릭+카드 분할, 서명 제거)", make_annual_filled_v6()),
+        ("D-v6-template (placeholder)", make_annual_v6_template()),
     ]
     print("-" * 60)
     for label, path in results:
