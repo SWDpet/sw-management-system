@@ -13,6 +13,7 @@ import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.dto.inspection.InspectionQrBatchRequest;
 import com.swmanager.system.dto.inspection.InspectionQrBatchResponse;
 import com.swmanager.system.repository.InspectCheckResultRepository;
+import com.swmanager.system.repository.InspectMetricSnapshotRepository;
 import com.swmanager.system.repository.InspectQrBatchRepository;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -22,9 +23,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -57,6 +62,7 @@ public class InspectionQrBatchService {
     private final InspectReportRepository reportRepository;
     private final InspectCheckResultRepository checkResultRepository;
     private final SwProjectRepository swProjectRepository;
+    private final InspectMetricSnapshotRepository metricSnapshotRepository;
 
     /**
      * 본 서비스 안에서 hash 보조검증 시 사용. PoC encode.py 의 직렬화와 가능한 한 동일하게
@@ -123,6 +129,14 @@ public class InspectionQrBatchService {
 
         // D. inspect_check_result rows
         ItemStats stats = saveCheckResults(report.getId(), payload.getTiers());
+
+        // D'. v6 — inspect_metric_snapshot 누적 (AP/DB 만, warn-only)
+        try {
+            saveMetricSnapshot(payload, pjt.getProjId());
+        } catch (Exception e) {
+            log.warn("inspect-metric-snapshot 적재 실패 — warn-only (DB팀 D-5): pjt={} payload={} err={}",
+                    pjt.getProjId(), payload.getId(), e.getMessage());
+        }
 
         // E. header hash 보조검증 (warn-only)
         String hashCheck = verifyHash(payload, req.getHeader().getHash());
@@ -198,6 +212,102 @@ public class InspectionQrBatchService {
             }
         }
         return stats;
+    }
+
+    /**
+     * v6 — agent snapshot 의 AP/DB tier 에서 cpu/mem/disk_pct 추출 → inspect_metric_snapshot UPSERT.
+     * GIS 는 시계열 누적 대상 아님 (사용자 결정 D-1). 멱등 적재 (ON CONFLICT DO NOTHING).
+     *
+     * <p>collected_at 은 payload.ts (unix seconds) 우선, 없으면 now(). DB팀 D-4 권고.
+     * <p>실패 정책: warn-only — 호출자가 try/catch 로 감싸 batch upload 자체는 성공 (DB팀 D-5).
+     */
+    private void saveMetricSnapshot(InspectionQrBatchRequest.Payload payload, Long pjtId) {
+        if (payload.getTiers() == null) return;
+
+        OffsetDateTime collectedAt = (payload.getTs() != null)
+                ? OffsetDateTime.ofInstant(Instant.ofEpochSecond(payload.getTs()), ZoneOffset.UTC)
+                : OffsetDateTime.now();
+
+        for (String roleKey : new String[]{"ap", "db"}) {
+            InspectionQrBatchRequest.Tier tier = payload.getTiers().get(roleKey);
+            if (tier == null || tier.getItems() == null) continue;
+
+            String hostName = tier.getH();   // QrBatchPayloadAdapter 가 per-tier host 를 tier.h 로 정규화
+            String hostIp   = null;          // payload schema 에 ip 없음 — 향후 host detail 확장 시 추가
+
+            Double cpu = null, mem = null, disk = null;
+            for (List<Object> metric : tier.getItems()) {
+                if (metric == null || metric.size() < 3) continue;
+                String key   = Objects.toString(metric.get(0), null);
+                Object value = metric.get(2);
+                if (key == null) continue;
+
+                Double num = extractPercent(value);
+                if (num == null) continue;
+
+                // 매핑 — agent ps1 의 실제 ID (manifest.json 참조)
+                //   AP: ap.perf.cpu_pct / ap.perf.mem_pct / ap.os.disk_summary
+                //   DB: db.os.perf_cpu / db.os.perf_mem / db.os.disk
+                if (key.endsWith(".perf.cpu_pct") || key.endsWith(".os.perf_cpu") || key.endsWith(".perf_cpu")) {
+                    cpu = num;
+                } else if (key.endsWith(".perf.mem_pct") || key.endsWith(".os.perf_mem") || key.endsWith(".perf_mem")) {
+                    mem = num;
+                } else if (key.endsWith(".disk_summary") || key.endsWith(".os.disk")) {
+                    disk = num;
+                }
+            }
+
+            if (cpu == null && mem == null && disk == null) {
+                log.debug("metric snapshot skip — no perf data: pjt={} role={}", pjtId, roleKey);
+                continue;
+            }
+
+            String rawJson;
+            try {
+                rawJson = HASH_MAPPER.writeValueAsString(tier);
+            } catch (JsonProcessingException e) {
+                rawJson = "{\"_serialize_error\":\"" + e.getMessage().replace("\"", "'") + "\"}";
+            }
+
+            int affected = metricSnapshotRepository.upsertIgnore(
+                    pjtId,
+                    roleKey.toUpperCase(Locale.ROOT),
+                    hostName,
+                    hostIp,
+                    collectedAt,
+                    cpu  != null ? BigDecimal.valueOf(cpu)  : null,
+                    mem  != null ? BigDecimal.valueOf(mem)  : null,
+                    disk != null ? BigDecimal.valueOf(disk) : null,
+                    rawJson);
+            log.info("metric snapshot pjt={} role={} host={} at={} cpu={} mem={} disk={} affected={}",
+                    pjtId, roleKey, hostName, collectedAt, cpu, mem, disk, affected);
+        }
+    }
+
+    /** value (Number | Map | String) 에서 % 숫자 추출. 못 찾으면 null. */
+    private static Double extractPercent(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number) return ((Number) value).doubleValue();
+        if (value instanceof Map<?, ?> map) {
+            for (String k : new String[]{"used_pct", "pct", "worst_pct"}) {
+                Object v = map.get(k);
+                if (v instanceof Number) return ((Number) v).doubleValue();
+                if (v != null) {
+                    Double d = parseNumeric(v.toString());
+                    if (d != null) return d;
+                }
+            }
+            return null;
+        }
+        return parseNumeric(value.toString());
+    }
+
+    private static Double parseNumeric(String s) {
+        if (s == null) return null;
+        String cleaned = s.replaceAll("[^\\d.\\-]", "");
+        if (cleaned.isEmpty()) return null;
+        try { return Double.parseDouble(cleaned); }
+        catch (Exception e) { return null; }
     }
 
     private InspectQrBatch buildBatch(InspectionQrBatchRequest.Payload payload,
