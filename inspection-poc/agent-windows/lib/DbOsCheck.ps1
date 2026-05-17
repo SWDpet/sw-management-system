@@ -28,7 +28,9 @@ function _GrepFirst {
 function _LastNonEmptyLine {
     param([string]$Text)
     if (-not $Text) { return '' }
-    $lines = $Text -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    # @(...) 강제 array — PS 4.0 은 pipeline single result 를 scalar 로 반환,
+    # 그 경우 [-1] 가 string 의 마지막 char 를 잡음 (2026-05-17 강진 db.os.uptime "5" 버그).
+    $lines = @($Text -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     if ($lines.Count -eq 0) { return '' }
     return $lines[-1]
 }

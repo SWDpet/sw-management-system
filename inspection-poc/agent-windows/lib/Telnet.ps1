@@ -269,26 +269,31 @@ function Invoke-RemoteTelnet {
 
         # 4) 명령 + sentinel
         _TLog 'STAGE' "4/5 send command + sentinel"
-        $sentinel = "__INSPECT_END_$(Get-Random)_"
+        $sentinelNum = Get-Random
+        $sentinel = "__INSPECT_END_${sentinelNum}_"
         $fullCmd = "$Command; echo ${sentinel}`$?`r`n"
         _TelnetWriteString -Stream $stream -Text $fullCmd
 
         # 5) sentinel 매칭
+        # AIX 콘솔이 긴 라인 wrap 할 때 underscore 사이에 공백을 insert 하는 케이스가 관측됨
+        # (raw 에 `_ _INSPECT _END _12345 _$?` 형태). 정규식을 loose 하게 — \s* 와 _+ 허용.
         _TLog 'STAGE' "5/5 wait sentinel"
         $remainingMs = [Math]::Max(1000, $totalTimeoutMs - 20000)
-        $output = _TelnetReadUntil -Stream $stream -UntilRegex "$sentinel(\d+)" -TimeoutMs $remainingMs -Stage 'sentinel'
+        $sentinelPattern = "_+\s*_*INSPECT\s*_+END\s*_+${sentinelNum}\s*_+(\d+)"
+        $output = _TelnetReadUntil -Stream $stream -UntilRegex $sentinelPattern -TimeoutMs $remainingMs -Stage 'sentinel'
 
-        $match = [regex]::Match($output, "$sentinel(\d+)")
+        $match = [regex]::Match($output, $sentinelPattern)
         if (-not $match.Success) {
-            _TLog 'STAGE-FAIL' "sentinel not found - 명령 실행 안 됐거나 너무 느림"
+            _TLog 'STAGE-FAIL' "sentinel not found - 명령 실행 안 됐거나 wrap 변형이 정규식 범위 밖"
             return @{ ok = $false; stdout = $output; stderr = 'sentinel not found (timeout)'; exitCode = -1 }
         }
         $exitCode = [int]$match.Groups[1].Value
         $rawOut = $output.Substring(0, $match.Index)
         $lines = $rawOut -split "[\r\n]+"
+        # cleanup 도 loose 패턴 — wrap 변형된 sentinel 라인까지 제거
         $cleaned = ($lines | Where-Object {
             $_ -notmatch [regex]::Escape($Command) -and
-            $_ -notmatch [regex]::Escape($sentinel) -and
+            $_ -notmatch '_+\s*_*INSPECT\s*_+END' -and
             $_ -ne ''
         }) -join "`n"
 

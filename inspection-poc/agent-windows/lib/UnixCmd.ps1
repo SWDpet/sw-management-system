@@ -31,13 +31,17 @@ $script:UnixCmdTable = @{
         hpux    = 'vmstat 1 2 2>/dev/null | tail -1'
     }
     'perf_mem' = @{
-        aix     = 'svmon -G -O unit=MB 2>/dev/null | head -3'
+        # head -10 으로 늘림 — 'Unit:' 헤더 + dash 구분선 + 컬럼명 + memory 행 + pg space 행
+        # (head -3 은 헤더만 잡고 memory 행 못 잡았음 — 2026-05-17 강진 라운드 확인)
+        aix     = 'svmon -G -O unit=MB 2>/dev/null | head -10'
         linux   = 'free -m 2>/dev/null'
         solaris = 'vmstat 1 2 2>/dev/null | tail -1'
         hpux    = 'swapinfo -m 2>/dev/null'
     }
     'disk' = @{
-        aix     = 'df -gH 2>/dev/null'
+        # AIX 일부 버전에서 'df -gH' 옵션 거부 → 빈 stdout (2026-05-17 강진 라운드 확인).
+        # df -g (GB 단위) 만 사용. -H 는 human-readable 인데 -g 와 충돌. -g 단독으로 충분.
+        aix     = 'df -g 2>/dev/null'
         linux   = 'df -PT 2>/dev/null'
         solaris = 'df -h 2>/dev/null'
         hpux    = 'bdf 2>/dev/null'

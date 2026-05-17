@@ -84,18 +84,24 @@ EXIT;
         "export ORACLE_SID=$sid; "
     }
 
-    $cmd = ("{0}(echo '{1}' | base64 -d 2>/dev/null || echo '{1}' | perl -MMIME::Base64 -ne 'print decode_base64(`$_)') > {2}; sqlplus -s -L {3} @{2}; _RC=`$?; rm -f {2}; exit `$_RC" `
+    # ⚠ exit $_RC 제거 — Telnet wrapper 가 끝에 echo __INSPECT_END_<rand>_$? 를 자동 append.
+    # exit 가 shell 종료시키면 sentinel echo 가 실행 안 돼서 timeout. sqlplus 결과는
+    # stdout 에서 ORA-/SP2- 패턴으로 검출 (아래 에러 라인 검사 참조).
+    $cmd = ("{0}(echo '{1}' | base64 -d 2>/dev/null || echo '{1}' | perl -MMIME::Base64 -ne 'print decode_base64(`$_)') > {2}; sqlplus -s -L {3} @{2}; rm -f {2}" `
         -f $envPrefix, $b64, $tmp, $connectStr)
 
     $r = Invoke-Remote -Remote $Remote -Command $cmd -TimeoutSec $TimeoutSec
     if (-not $r.ok) {
         return @{ ok=$false; stderr=$r.stderr; stdout=$r.stdout; exitCode=-1 }
     }
-    # Oracle 에러 라인 검출 — ORA-/SP2-/ERROR
+    # Oracle 에러 라인 검출 — ORA-/SP2-/ERROR + shell 의 'command not found' (sqlplus PATH 없음)
     foreach ($l in ($r.stdout -split "`r?`n")) {
         $lt = $l.Trim()
         if ($lt -match '^(ORA-|SP2-|ERROR\s)') {
             return @{ ok=$false; stderr=$lt; stdout=$r.stdout; exitCode=1 }
+        }
+        if ($lt -match '(?i)(ksh|bash|sh):\s*sqlplus.*not found') {
+            return @{ ok=$false; stderr=$lt; stdout=$r.stdout; exitCode=127 }
         }
     }
 
