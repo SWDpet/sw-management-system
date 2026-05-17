@@ -64,6 +64,67 @@ $script:UnixCmdTable = @{
         solaris = 'uptime 2>/dev/null'
         hpux    = 'uptime 2>/dev/null'
     }
+    # ── inspect-report-d-v6 Phase A1: DB OS 7건 신규 키 ───────────────────
+    'adapter' = @{
+        aix     = 'lsdev -Cc adapter 2>/dev/null'
+        linux   = 'lspci 2>/dev/null | head -20'
+        solaris = 'cfgadm -a 2>/dev/null | head -20'
+        hpux    = 'ioscan -fn 2>/dev/null | head -30'
+    }
+    'swap' = @{
+        aix     = 'lsps -a 2>/dev/null'
+        linux   = 'free -m 2>/dev/null | grep -i swap'
+        solaris = 'swap -s 2>/dev/null'
+        hpux    = 'swapinfo -m 2>/dev/null'
+    }
+    'iostat' = @{
+        # 1 초 간격 2회 샘플 — 첫 샘플은 평균이라 버리고 마지막 사용
+        aix     = 'iostat 1 2 2>/dev/null | tail -20'
+        linux   = 'iostat 1 2 2>/dev/null | tail -20'
+        solaris = 'iostat 1 2 2>/dev/null | tail -20'
+        hpux    = 'iostat 1 2 2>/dev/null | tail -20'
+    }
+    'netstat_perf' = @{
+        # 인터페이스별 패킷 통계 — Ierrs/Oerrs 컬럼이 네트워크 성능 지표
+        aix     = 'netstat -ni 2>/dev/null'
+        linux   = 'netstat -i 2>/dev/null'
+        solaris = 'netstat -ni 2>/dev/null'
+        hpux    = 'netstat -i 2>/dev/null'
+    }
+    'inode' = @{
+        aix     = 'df -i 2>/dev/null'
+        linux   = 'df -i 2>/dev/null'
+        solaris = 'df -F ufs -o i 2>/dev/null'
+        hpux    = 'bdf -i 2>/dev/null'
+    }
+    'lsvg' = @{
+        # rootvg LV/PV 상태 — AIX 전용. 다른 OS 는 lvdisplay 대체.
+        aix     = 'lsvg -l rootvg 2>/dev/null'
+        linux   = 'lvdisplay 2>/dev/null | head -30'
+        solaris = 'zpool status rpool 2>/dev/null'
+        hpux    = 'vgdisplay -v vg00 2>/dev/null | head -30'
+    }
+    # network-health 는 1 module → 3 row (Link/Ping/Collisions) — ps1 안에서 3개 키 호출
+    'net_link' = @{
+        aix     = 'netstat -na 2>/dev/null | head -20'
+        linux   = 'ss -s 2>/dev/null'
+        solaris = 'netstat -na 2>/dev/null | head -20'
+        hpux    = 'netstat -na 2>/dev/null | head -20'
+    }
+    'net_ping' = @{
+        # gateway IP 자동 추출 후 ping 1회 — 응답시간 확인
+        aix     = 'GW=$(netstat -rn 2>/dev/null | awk "/^default/{print \$2; exit}") && ping -c 1 -w 3 $GW 2>/dev/null || echo "no gateway"'
+        linux   = 'GW=$(ip route show default 2>/dev/null | awk "{print \$3; exit}") && ping -c 1 -w 3 $GW 2>/dev/null || echo "no gateway"'
+        solaris = 'GW=$(netstat -rn 2>/dev/null | awk "/^default/{print \$2; exit}") && ping -s $GW 56 1 2>/dev/null'
+        hpux    = 'GW=$(netstat -rn 2>/dev/null | awk "/^default/{print \$2; exit}") && ping $GW 1 2>/dev/null'
+    }
+    'net_collisions' = @{
+        # Coll 컬럼 (또는 Oerrs/Ierrs) — netstat_perf 와 동일 출력이나 parser 가 다른 컬럼 추출
+        aix     = 'netstat -ni 2>/dev/null'
+        linux   = 'netstat -i 2>/dev/null'
+        solaris = 'netstat -ni 2>/dev/null'
+        hpux    = 'netstat -i 2>/dev/null'
+    }
 }
 
 # vmstat 의 idle 컬럼 — 끝에서 N번째 토큰 위치 (0 = 마지막).

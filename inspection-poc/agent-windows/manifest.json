@@ -49,23 +49,23 @@
       { "sort": 24, "module": "db-os-users.ps1",           "id": "db.os.users",     "label": "접속 로그 (who/lastlog)", "method": "auto" }
     ],
     "DBMS": [
-      { "sort": 1,  "module": "db-oracle.ps1", "id": "db.oracle.hostname",   "label": "호스트네임",           "method": "auto" },
-      { "sort": 2,  "module": "db-oracle.ps1", "id": "db.oracle.oslevel",    "label": "O/S 정보 (oslevel -s)", "method": "auto" },
-      { "sort": 3,  "module": "db-oracle.ps1", "id": "db.oracle.version",    "label": "DB 버전 (sqlplus)",    "method": "auto" },
-      { "sort": 4,  "module": "db-oracle.ps1", "id": "db.oracle.sid",        "label": "SID 확인",             "method": "auto" },
-      { "sort": 5,  "module": "db-oracle.ps1", "id": "db.oracle.alert_log",  "label": "오라클 alert_*.log",   "method": "auto" },
-      { "sort": 6,  "module": "db-oracle.ps1", "id": "db.oracle.archive",    "label": "Archive Mode",         "method": "auto" },
-      { "sort": 7,  "module": "db-oracle.ps1", "id": "db.oracle.redo",       "label": "리두 로그 (v$logfile)", "method": "auto" },
-      { "sort": 8,  "module": "db-oracle.ps1", "id": "db.oracle.control",    "label": "컨트롤 파일 (v$controlfile)", "method": "auto" },
-      { "sort": 9,  "module": "db-oracle.ps1", "id": "db.oracle.sga",        "label": "SGA (show sga)",       "method": "auto" },
-      { "sort": 10, "module": "db-oracle.ps1", "id": "db.oracle.ts_status",  "label": "Tablespace 상태",      "method": "auto" },
-      { "sort": 11, "module": "db-oracle.ps1", "id": "db.oracle.ts_usage",   "label": "Tablespace 용량",      "method": "auto" },
-      { "sort": 12, "module": "db-oracle.ps1", "id": "db.oracle.datafile_status", "label": "Datafile 상태",   "method": "auto" },
-      { "sort": 13, "module": "db-oracle.ps1", "id": "db.oracle.datafile_usage",  "label": "Datafile 용량",   "method": "auto" },
-      { "sort": 14, "module": "db-oracle.ps1", "id": "db.oracle.export",     "label": "Export 백업 (crontab/ls)", "method": "auto" },
-      { "sort": 15, "module": "db-oracle.ps1", "id": "db.oracle.home_size",  "label": "Home size (df -gP)",   "method": "auto" },
-      { "sort": 16, "module": "db-oracle.ps1", "id": "db.oracle.oradata_size", "label": "Oradata Size",       "method": "auto" },
-      { "sort": 17, "module": "db-oracle.ps1", "id": "db.oracle.backup_size", "label": "Backup Size",         "method": "auto" }
+      { "sort": 1,  "module": "db-oracle.ps1", "id": "db.oracle.archive_mode",      "label": "Oracle Archive Log 모드",      "method": "auto", "note": "sql/oracle/01-archive-mode.sql" },
+      { "sort": 2,  "module": "db-oracle.ps1", "id": "db.oracle.alert_errors_24h",  "label": "Oracle Alert Log 에러 (24h)",  "method": "auto" },
+      { "sort": 3,  "module": "db-oracle.ps1", "id": "db.oracle.redo_logs",         "label": "Oracle Redo Log 그룹",         "method": "auto" },
+      { "sort": 4,  "module": "db-oracle.ps1", "id": "db.oracle.sga",               "label": "Oracle SGA 구성",              "method": "auto" },
+      { "sort": 5,  "module": "db-oracle.ps1", "id": "db.oracle.pga",               "label": "Oracle PGA 사용량",            "method": "auto" },
+      { "sort": 6,  "module": "db-oracle.ps1", "id": "db.oracle.tablespace",        "label": "Oracle Tablespace 사용률",     "method": "auto" },
+      { "sort": 7,  "module": "db-oracle.ps1", "id": "db.oracle.datafile_status",   "label": "Oracle Datafile 상태",         "method": "auto" },
+      { "sort": 8,  "module": "db-oracle.ps1", "id": "db.oracle.invalid_objects",   "label": "Oracle INVALID 객체 수",       "method": "auto" },
+      { "sort": 9,  "module": "db-oracle.ps1", "id": "db.oracle.sessions",          "label": "Oracle 세션 사용률",           "method": "auto" },
+      { "sort": 10, "module": "db-oracle.ps1", "id": "db.oracle.wait_events",       "label": "Oracle Top Wait Events",       "method": "auto" },
+      { "sort": 11, "module": "db-oracle.ps1", "id": "db.oracle.rman_backup",       "label": "Oracle RMAN 백업 이력 (7d)",   "method": "auto" },
+      { "sort": 12, "module": "db-oracle.ps1", "id": "db.oracle.export_last",       "label": "Oracle 마지막 Datapump Export", "method": "auto" },
+      { "sort": 13, "module": "db-oracle.ps1", "id": "db.oracle.standby_lag",       "label": "Oracle Standby Lag (Data Guard)", "method": "auto" },
+      { "sort": 14, "module": "db-oracle.ps1", "id": "db.oracle.param_modified",    "label": "Oracle 동적 변경 파라미터 수", "method": "auto" },
+      { "sort": 15, "module": "db-oracle.ps1", "id": "db.oracle.undo",              "label": "Oracle UNDO Tablespace 사용률", "method": "auto" },
+      { "sort": 16, "module": "db-oracle.ps1", "id": "db.oracle.temp",              "label": "Oracle TEMP Tablespace 사용률", "method": "auto" },
+      { "sort": 17, "module": "db-oracle.ps1", "id": "db.oracle.controlfile",       "label": "Oracle Controlfile 다중화",    "method": "auto" }
     ],
     "GIS": [
       { "sort": 1,  "module": "gis-gss-running.ps1",       "id": "gis.gss.running",   "label": "GSS 구동확인",         "method": "auto" },
@@ -85,6 +85,7 @@
   "notes": {
     "manual_modules": "method=manual 모듈은 agent 가 placeholder row 출력 (status='M', value=null). 점검자가 SW Manager UI 에서 채움.",
     "v6_inspect_template_extension": "GIS sort 7~12 (6항목) 은 inspect_template 에 시드 없음 — V030_gis_card_items_extension.sql 신설 필요 (Phase A2 산출물)",
+    "v6_dbms_seed_replacement": "DBMS 17 항목은 db-oracle.ps1 의 운영 깊이 점검과 정합되도록 inspect_template 재시드 필요 — V030_dbms_oracle_modern.sql (Phase 0 산출물). 기존 시드(호스트네임/oslevel 등)는 점검 깊이 부족 — Oracle 운영 점검(archive/RMAN/Standby/UNDO 등)으로 교체",
     "row_count_invariant": "각 section 의 row 개수는 inspect_template 시드 row 수와 일치해야 한다 (현재 AP 14 / DB 24 / DBMS 17 / GIS 12). UPIS APP 14 항목은 모두 UI 입력이므로 manifest 미포함.",
     "module_reuse": "같은 module 이 여러 sort 에 등장하면 그 모듈은 multi-row 출력. Collector.ps1 가 출력 row 의 id 와 manifest 의 id 를 검증."
   }

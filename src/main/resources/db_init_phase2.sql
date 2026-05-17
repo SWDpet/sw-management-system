@@ -280,41 +280,53 @@ INSERT INTO inspect_template (template_type, section, category, item_name, item_
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- UPIS (HW+SW) DBMS (Oracle) 점검결과 - 점검내역서_UPIS_SW_HW샘플.docx Table 17
--- section='DBMS', 칼럼: 종류 | 점검 항목 | 수행 명령/쿼리 | 결과
+-- UPIS DBMS (Oracle) 점검결과 — v6 modern (inspect-report-d-v6 Phase 0, 2026-05-17)
+-- 기존 OS 수준 17 항목(호스트네임/oslevel/SID/Archive Mode 등)에서 운영 깊이로 교체.
+-- 매핑: inspection-poc/agent-windows/checks/db-oracle.ps1 + sql/oracle/*.sql (17 SQL)
+-- 근거: docs/product-specs/inspection-report-d-v6.md §6-3 (DBMS), V030 마이그레이션과 동기화.
 -- ============================================================
 INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
-('UPIS', 'DBMS', '오라클', '호스트네임', '#hostname', 1),
-('UPIS', 'DBMS', '오라클', 'O/S 정보', '#oslevel -s', 2),
-('UPIS', 'DBMS', '오라클', 'DB 버전', '#sqlplus', 3),
-('UPIS', 'DBMS', '오라클', 'SID 확인', '#echo $ORACLE_SID', 4),
-('UPIS', 'DBMS', '오라클', '오라클 로그', '#vi alert_ort.log', 5),
-('UPIS', 'DBMS', '오라클', 'Archive Mode', '>archive log list;', 6),
-('UPIS', 'DBMS', '오라클', '리두 로그', '>select * from v$logfile;', 7),
-('UPIS', 'DBMS', '오라클', '컨트롤 파일', '>select * from v$controlfile;', 8),
-('UPIS', 'DBMS', '오라클', 'SGA', '>show sga;', 9),
-('UPIS', 'DBMS', '오라클', 'Tablespace 상태', '>select status from dba_tablespaces;', 10),
-('UPIS', 'DBMS', '오라클', 'Tablespace 용량', '>select a.tablespace_name ...', 11),
-('UPIS', 'DBMS', '오라클', 'Datafile 상태', '>select d.status, v.status ...', 12),
-('UPIS', 'DBMS', '오라클', 'Datafile 용량', '>select sum from dba_data_files;', 13),
-('UPIS', 'DBMS', '오라클', 'Export 백업', '#crontab -l, ls', 14),
-('UPIS', 'DBMS', '오라클', 'Home size', '#df -gP', 15),
-('UPIS', 'DBMS', '오라클', 'Oradata Size', '#df -gP', 16),
-('UPIS', 'DBMS', '오라클', 'Backup Size', '#df -gP', 17)
+('UPIS', 'DBMS', '오라클', 'Archive Log 모드',                'SELECT log_mode FROM v$database',                                     1),
+('UPIS', 'DBMS', '오라클', 'Alert Log 에러 (24h)',            'alert_*.log tail -n + grep ORA- (24h)',                               2),
+('UPIS', 'DBMS', '오라클', 'Redo Log 그룹',                   'SELECT groups, members, invalid_count FROM v$log',                    3),
+('UPIS', 'DBMS', '오라클', 'SGA 구성',                        'SELECT SUM(value)/1024/1024 FROM v$sga',                              4),
+('UPIS', 'DBMS', '오라클', 'PGA 사용량',                      'SELECT target_mb, allocated_mb FROM v$pgastat',                       5),
+('UPIS', 'DBMS', '오라클', 'Tablespace 사용률',               'SELECT tablespace_name, used_pct FROM dba_tablespace_usage_metrics',  6),
+('UPIS', 'DBMS', '오라클', 'Datafile 상태',                   'SELECT total, offline_count FROM dba_data_files',                     7),
+('UPIS', 'DBMS', '오라클', 'INVALID 객체 수',                 'SELECT COUNT(*) FROM dba_objects WHERE status=''INVALID''',           8),
+('UPIS', 'DBMS', '오라클', '세션 사용률',                     'SELECT active, total, sess_limit FROM v$session + v$resource_limit',  9),
+('UPIS', 'DBMS', '오라클', 'Top Wait Events (Idle 제외 top5)', 'SELECT event, total_waits, time_waited FROM v$system_event',         10),
+('UPIS', 'DBMS', '오라클', 'RMAN 백업 이력 (7d)',             'SELECT last_job, last_success FROM v$rman_status (7d)',               11),
+('UPIS', 'DBMS', '오라클', '마지막 Datapump Export',          '#crontab -l, ls -lt *.dmp',                                           12),
+('UPIS', 'DBMS', '오라클', 'Standby Lag (Data Guard)',        'SELECT apply_lag, transport_lag FROM v$dataguard_stats',              13),
+('UPIS', 'DBMS', '오라클', '동적 변경 파라미터 수',           'SELECT COUNT(*) FROM v$parameter WHERE ismodified<>''FALSE''',        14),
+('UPIS', 'DBMS', '오라클', 'UNDO Tablespace 사용률',          'SELECT tablespace_name, used_pct FROM dba_tablespace_usage_metrics', 15),
+('UPIS', 'DBMS', '오라클', 'TEMP Tablespace 사용률',          'SELECT used_pct FROM v$temp_space_header',                           16),
+('UPIS', 'DBMS', '오라클', 'Controlfile 다중화',              'SELECT COUNT(*) FROM v$controlfile',                                 17)
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
--- UPIS GIS엔진 점검결과 - 6항목 (S1 에서 UPIS_SW 통합)
--- 칼럼: 대상 | 점검 항목 | 점검 내용 및 방법 | 결과
+-- UPIS GIS엔진 점검결과 — v6 (inspect-report-d-v6 Phase 0, 2026-05-17)
+-- 기존 6항목 (sort 1~6, P9 점검표) + 신규 6항목 (sort 7~12, P10 카드)
+-- P10 카드 = UWES Store 총용량 + GSS/GWS 30일 ERROR/WARN/catalina + stdout 크기 + DEM/SLOP 보존
+-- 매핑: inspection-poc/agent-windows/checks/gis-*.ps1, manifest.json GIS
+-- 근거: docs/product-specs/inspection-report-d-v6.md §3-2 §6-3 §6-4
 -- ============================================================
 INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
-('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 구동확인', 'ps -ef | grep GSS 실행 확인', 1),
-('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 로그파일 삭제', '/GeoNURIS_Spatial_Server/log 경로의 로그 중 1달 전 파일 삭제', 2),
-('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'Desktop Pro 데이터저장소 구동확인', 'Desktop Pro 실행 후 데이터저장소에서 GSS 데이터 불러오기', 3),
-('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 구동확인', '윈도우 서비스 "GeoNURIS GeoWeb Server 64bit" 구동 상태 확인', 4),
-('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 로그파일 삭제', 'C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store (DEM/SLOP 제외)', 5),
-('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)', 'GWS 서비스 확인', 'http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출', 6)
--- S1 inspect-comprehensive-redesign (2026-04-21): UPIS_SW 6행은 UPIS 와 중복이라 제거
+-- 기존 6 항목 (sort 1~6 — P9 점검표)
+('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 구동확인',                    'ps -ef | grep GSS 실행 확인',                                                          1),
+('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'GSS 로그파일 삭제',               '/GeoNURIS_Spatial_Server/log 경로의 로그 중 1달 전 파일 삭제',                         2),
+('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', 'Desktop Pro 데이터저장소 구동확인', 'Desktop Pro 실행 후 데이터저장소에서 GSS 데이터 불러오기',                            3),
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'GWS 구동확인',                    '윈도우 서비스 "GeoNURIS GeoWeb Server 64bit" 구동 상태 확인',                          4),
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'GWS 로그파일 삭제',               'C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store (DEM/SLOP 제외)',    5),
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'GWS 서비스 확인',                 'http://웹서버IP:8880/uwes 관리자 접속 → WMS → Preview → 지도 표출',                    6),
+-- 신규 6 항목 (sort 7~12 — P10 카드, v6 추가)
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'UWES Store 총용량',               'Get-ChildItem store -Recurse | Measure-Object Length -Sum',                            7),
+('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', '30일 ERROR 카운트',               'Select-String -Pattern ''ERROR'' catalina.out (30일 누적)',                            8),
+('UPIS', 'GIS', 'GeoNURIS Spatial Server (GSS)', '30일 WARN 카운트',                'Select-String -Pattern ''WARN'' catalina.out (30일 누적)',                             9),
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'catalina ERROR 카운트',           'Select-String -Pattern ''ERROR'' catalina.out',                                       10),
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'stdout 로그 크기 (MB)',           'Get-Item geowebservice64-stdout*.log | Measure Length -Sum',                          11),
+('UPIS', 'GIS', 'GeoNURIS GeoWeb Server (GWS)',  'UWES DEM/SLOP 보존 확인',         'Test-Path store\\DEM, store\\SLOP + Measure 크기',                                    12)
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
