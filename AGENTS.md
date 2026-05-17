@@ -182,7 +182,39 @@ bash server-restart.sh
 
 ---
 
-## 8. 참조 문서
+## 8. 시각 산출물 포맷 원칙
+
+다음 3종 산출물은 **HTML 을 우선 검토**한다 (의사결정 인터페이스 목적):
+
+- **디자인팀 자문** — UI 변경 스프린트의 시안 비교 그리드 + 트레이드오프 라벨
+- **기획서 부속 시안** — 인터랙티브 파라미터 튜닝용 (기획서 본문은 `docs/product-specs/*.md` 유지, HTML 은 부속 시안)
+- **1회용 분류·우선순위 보드** — 드래그 분류 → "Copy as MD" 로 결과 추출
+
+기획서·개발계획서·메모리·아키텍처·가이드라인 등 **AI 반복 로드·git diff 추적·codex review 대상 SSoT 문서는 Markdown 을 유지**한다. HTML 산출물의 최종 결정은 MD SSoT 에 요약 반영한다.
+
+### 작성 원칙
+- HTML 위치: `docs/artifacts/` 분리. 임시 산출물은 `tmp/` 등 git 제외 경로.
+- inline minified HTML 금지. CSS/JS 정돈 블록. 타임스탬프·랜덤 id·불필요한 해시 금지.
+- HTML 상단에 "결정 요약" 섹션 — 사람이 빠르게 판단할 수 있게.
+- 컨텍스트 재투입 시 HTML 원문 대신 MD 요약본 사용 (토큰 절약).
+- 발주처 제출용은 HTML + PDF 병행. **제출본은 PDF 우선** (브라우저·폰트·인쇄 설정 의존성 회피).
+
+### 트리거 단어
+- "산출물로 줘" / "보고서로 줘" / "시안으로 보여줘" → HTML 우선 검토
+- "메모해" / "기록해" / "기획서·개발계획서로 남겨" → MD 유지
+
+### 명시적 보류 (HTML 전환 X)
+- `CLAUDE.md`, `AGENTS.md`, `memory/*.md`
+- `docs/product-specs/*.md`, `docs/exec-plans/*.md`
+- `docs/design-docs/*.md` 결정 완료 문서
+- `docs/generated/erd.md` 등 자동 생성 참조 문서
+- 자주 수정되는 운영 체크리스트·룰
+
+**근거**: 2026-05-17 영상 "Anthropic 엔지니어가 마크다운 버린 5가지 이유 — Karpathy 동조" + codex 검토 (시각 산출물 = 문서 포맷이 아니라 의사결정 인터페이스).
+
+---
+
+## 9. 참조 문서
 
 - `CLAUDE.md` — Claude Code 전용 (본 문서 요약)
 - `ARCHITECTURE.md` — 시스템 구조
@@ -192,4 +224,4 @@ bash server-restart.sh
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 sprint P1*
+*Last updated: 2026-05-17 · §8 시각 산출물 포맷 원칙 신설 (HTML 우선 3종 + 작성 원칙·트리거·보류 명시)*
