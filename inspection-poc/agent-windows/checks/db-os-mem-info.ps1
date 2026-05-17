@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 $parser = {

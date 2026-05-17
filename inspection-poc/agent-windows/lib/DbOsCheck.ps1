@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   DB(Unix) OS 점검 공통 invoker. checks/db.os.*.ps1 가 dot-source 해서 사용.
 

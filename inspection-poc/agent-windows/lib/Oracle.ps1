@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Oracle 점검 SQL 실행 lib — sqlplus 라우팅 + read-only 가드 + sysdba 접속.
 

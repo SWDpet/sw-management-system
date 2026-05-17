@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # IP/인터페이스 정보 — 정규화 우선순위 낮음. raw 결과의 inet 라인만 추출해서 보여줌.

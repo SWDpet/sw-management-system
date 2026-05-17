@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Unix DB 서버 점검용 OS 별 명령 lookup 테이블.
 

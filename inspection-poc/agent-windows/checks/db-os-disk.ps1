@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # df 출력 — 마운트포인트별 사용률. 결과는 단일 New-CheckResult 의 value.filesystems 배열.

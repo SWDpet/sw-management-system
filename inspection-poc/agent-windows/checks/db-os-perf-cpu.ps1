@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # vmstat 1 2 의 마지막 라인에서 idle 컬럼 추출 → 사용률 = 100 - idle.

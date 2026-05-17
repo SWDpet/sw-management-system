@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # who — 현재 로그인 세션 (점검 시점 활성 사용자).

@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Oracle.ps1')
 
 # sql/oracle/*.sql 폴더의 .sql 파일을 차례로 실행. 새 항목 추가는 sql 파일 + sqlMeta 한 줄.

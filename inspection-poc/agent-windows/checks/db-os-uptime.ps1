@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # uptime — "10:23am up 31 days, 4:12, 2 users, load average: 0.12, 0.08, 0.05"
