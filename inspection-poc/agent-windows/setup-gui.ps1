@@ -56,7 +56,9 @@ try {
 # ─── helper ─────────────────────────────────────────────────────
 function _NewLabel($Parent, [int]$X, [int]$Y, [string]$Text, [int]$W = 130) {
     $l = New-Object System.Windows.Forms.Label
-    $l.Location = New-Object System.Drawing.Point($X, $Y + 3)
+    # ($Y + 3) 명시 grouping — PS 4.0 은 '$X, $Y + 3' 을 @($X, $Y, 3) 3-element array 로 파싱해
+    # Point 의 3-arg constructor 찾고 'Cannot find overload' 에러. PS 5+ 는 우연히 통과.
+    $l.Location = New-Object System.Drawing.Point($X, ($Y + 3))
     $l.Size     = New-Object System.Drawing.Size($W, 20)
     $l.Text     = $Text
     $Parent.Controls.Add($l)
