@@ -117,6 +117,10 @@ inspection-poc/agent-windows/snapshots/
 inspection-poc/agent-windows/out/
 inspection-poc/out_unix_encoded/
 
+# === inspector agent 진단 로그 (현장 진단 + 자체 trace) ===
+inspection-poc/agent-windows/*.log
+inspection-poc/agent-windows/*.trace.log
+
 # === inspector agent 외부 바이너리 (현장 동봉) ===
 # tools/README.md 만 commit, 실 exe 는 폐쇄망 반입 절차로 별도 동봉
 inspection-poc/agent-windows/tools/*.exe

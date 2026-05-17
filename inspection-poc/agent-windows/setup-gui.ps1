@@ -27,11 +27,31 @@ $ErrorActionPreference = 'Stop'
 if (-not $PSScriptRoot) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path } else { $scriptDir = $PSScriptRoot }
 if (-not $ConfigDir)    { $ConfigDir = Join-Path $scriptDir 'config' }
 
-. (Join-Path $scriptDir 'lib\DPAPI.ps1')
-. (Join-Path $scriptDir 'lib\Common.ps1')
+# ─── trace 로그 (PS 자체 출력 + setup-gui.trace.log 이중) ──────────────
+# bat 의 redirect 가 PowerShell GUI hang 단계에서 못 잡을 가능성 대비.
+$script:TraceLogPath = Join-Path $scriptDir 'setup-gui.trace.log'
+function _Log {
+    param([string]$msg)
+    $ts = (Get-Date).ToString('HH:mm:ss.fff')
+    $line = "[$ts] $msg"
+    try { [System.Console]::WriteLine($line) } catch {}
+    try { [System.IO.File]::AppendAllText($script:TraceLogPath, $line + "`r`n", (New-Object System.Text.UTF8Encoding($false))) } catch {}
+}
+# 새 run 마다 trace 로그 truncate
+try { [System.IO.File]::WriteAllText($script:TraceLogPath, "=== setup-gui.ps1 start ($(Get-Date -Format 'o')) ===`r`n", (New-Object System.Text.UTF8Encoding($false))) } catch {}
 
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+try {
+    _Log "stage=init  scriptDir=$scriptDir  ConfigDir=$ConfigDir"
+    _Log "stage=init  PS=$($PSVersionTable.PSVersion)  Apt=$([Threading.Thread]::CurrentThread.GetApartmentState())"
+
+    _Log "stage=lib-load  DPAPI.ps1 / Common.ps1"
+    . (Join-Path $scriptDir 'lib\DPAPI.ps1')
+    . (Join-Path $scriptDir 'lib\Common.ps1')
+
+    _Log "stage=add-type  System.Windows.Forms + System.Drawing"
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    _Log "stage=add-type  done"
 
 # ─── helper ─────────────────────────────────────────────────────
 function _NewLabel($Parent, [int]$X, [int]$Y, [string]$Text, [int]$W = 130) {
@@ -189,9 +209,11 @@ if (Test-Path $activePath) {
 }
 
 # 폼 띄움
+_Log "stage=show-dialog  calling form.ShowDialog()  (여기서 hang 이면 GUI 가 init 단계에서 멈춤)"
 $result = $form.ShowDialog()
+_Log "stage=show-dialog  returned: $result"
 if ($result -ne 'OK') {
-    [System.Console]::WriteLine("[cancel] form closed without save")
+    _Log "stage=cancel  form closed without save"
     exit 0
 }
 
@@ -282,7 +304,18 @@ $json = $cfg | ConvertTo-Json -Depth 10
 $sitePath = Join-Path $ConfigDir "site.$siteCode.json"
 [System.IO.File]::WriteAllText($sitePath, $json, $utf8Bom)
 
+_Log "stage=save  writing cfg to $activePath and $sitePath"
 [System.Windows.Forms.MessageBox]::Show(
     ("저장 완료`r`n`r`n  " + $activePath + "`r`n  " + $sitePath + "`r`n`r`n다음: inspect.bat 더블클릭"),
     "Setup OK", 'OK', 'Information'
 ) | Out-Null
+
+    _Log "stage=done  exit 0"
+} catch {
+    _Log ("[FATAL] " + $_.Exception.GetType().FullName + ": " + $_.Exception.Message)
+    _Log ($_.ScriptStackTrace)
+    try {
+        [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, "Setup ERROR", 'OK', 'Error') | Out-Null
+    } catch {}
+    throw
+}
