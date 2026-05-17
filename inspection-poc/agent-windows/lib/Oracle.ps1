@@ -22,6 +22,58 @@
 # 라인에 이 키워드가 있으면 reject. 대소문자 무시.
 $script:OracleDenyPattern = '(?i)\b(INSERT|UPDATE|DELETE|MERGE|TRUNCATE|DROP|ALTER|CREATE|GRANT|REVOKE|COMMIT|ROLLBACK|LOCK|RENAME|FLASHBACK|EXEC|EXECUTE|CALL)\b'
 
+# ORACLE_HOME 자동 탐지 캐시 — key=remote.host, value=경로 (또는 $null=탐지실패).
+# 한 inspect 라운드의 17개 SQL 호출 중 첫 번째만 탐지 비용, 나머지는 cache hit.
+$script:OracleHomeCache = @{}
+
+function Resolve-OracleHome {
+    <#
+    .SYNOPSIS
+      원격 Unix DB 서버에서 ORACLE_HOME 자동 탐지.
+    .DESCRIPTION
+      탐지 순서 (빠른 것부터):
+        1) /etc/oratab — Linux/AIX 표준
+        2) /var/opt/oracle/oratab — Solaris/HPUX/AIX 변형
+        3) find /oracle /u01 /opt /app /home/oracle -name sqlplus (범위 한정, ~3-5s)
+      결과는 host 별 캐싱. 탐지 실패시 $null.
+    #>
+    param($Remote)
+    $key = [string]$Remote.host
+    if ($script:OracleHomeCache.ContainsKey($key)) {
+        return $script:OracleHomeCache[$key]
+    }
+
+    $detected = $null
+
+    # 1) oratab 두 위치 한 번에 조회
+    $r1 = Invoke-Remote -Remote $Remote -Command "cat /etc/oratab 2>/dev/null; cat /var/opt/oracle/oratab 2>/dev/null" -TimeoutSec 10
+    if ($r1.ok) {
+        foreach ($line in ($r1.stdout -split "`r?`n")) {
+            $t = $line.Trim()
+            if (-not $t -or $t.StartsWith('#')) { continue }
+            $parts = $t -split ':', 3
+            if ($parts.Count -ge 2) {
+                $home = $parts[1].Trim()
+                if ($home -and $home -match '^/') { $detected = $home; break }
+            }
+        }
+    }
+
+    # 2) find — oratab 못 찾았을 때만, 범위 한정
+    if (-not $detected) {
+        $r2 = Invoke-Remote -Remote $Remote -Command "find /oracle /u01 /opt /app /home/oracle -name sqlplus -type f -path '*/bin/sqlplus' 2>/dev/null | head -3" -TimeoutSec 30
+        if ($r2.ok) {
+            foreach ($line in ($r2.stdout -split "`r?`n")) {
+                $t = $line.Trim()
+                if ($t -match '^(/.+)/bin/sqlplus$') { $detected = $matches[1]; break }
+            }
+        }
+    }
+
+    $script:OracleHomeCache[$key] = $detected
+    return $detected
+}
+
 function Test-OracleSqlReadOnly {
     param([Parameter(Mandatory)][string]$Script)
     # 주석 제거 — -- 라인주석 / /* ... */ 멀티라인주석
@@ -51,7 +103,17 @@ function Invoke-OracleSql {
     }
     $sid      = [string]$Remote.oracle.sid
     $authMode = if ($Remote.oracle.auth_mode) { [string]$Remote.oracle.auth_mode } else { 'sysdba' }
-    $homeHint = if ($Remote.oracle.oracle_home_hint) { [string]$Remote.oracle.oracle_home_hint } else { '' }
+    # ORACLE_HOME — config hint 우선, 없으면 원격 자동 탐지 (host 별 cache).
+    $homeHint = if ($Remote.oracle.oracle_home_hint) {
+        [string]$Remote.oracle.oracle_home_hint
+    } else {
+        $auto = Resolve-OracleHome -Remote $Remote
+        if (-not $auto) {
+            return @{ ok=$false; stdout=''; exitCode=-1;
+                stderr='ORACLE_HOME 자동 탐지 실패 — /etc/oratab, /var/opt/oracle/oratab 에도 없고 /oracle /u01 /opt /app 에 sqlplus 도 없음. setup-gui 의 ORACLE_HOME hint 에 수동 입력 필요.' }
+        }
+        $auto
+    }
 
     $connectStr = if ($authMode -eq 'sysdba') {
         '"/ as sysdba"'
