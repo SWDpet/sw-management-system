@@ -135,6 +135,13 @@
             <version>1.0.10</version>
         </dependency>
 
+        <!-- JFreeChart — inspect-report-d-v6 Phase D: 30일 메트릭 추이 차트 PNG 렌더 -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.4</version>
+        </dependency>
+
     </dependencies>
 
     <build>
