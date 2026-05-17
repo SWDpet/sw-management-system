@@ -133,3 +133,6 @@ inspection-poc/agent-windows/tools/*.exe
 /login2.html
 /sample_texts_*.txt
 /schedule_existing_dump.txt
+
+# HTTPS dev keystore (local cert with known password — never commit)
+keystore-dev.p12

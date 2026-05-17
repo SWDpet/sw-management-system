@@ -439,18 +439,53 @@
         </table>
     </div>
 
-    <!-- =========== STEP 2 — QR 자동수집 대기 (신규) =========== -->
+    <!-- =========== STEP 2 — QR 자동수집 (인라인 카메라 + 폴백 폴링) =========== -->
     <div class="form-section" id="section-q" data-step="2">
-        <h3 class="section-title"><i class="fas fa-qrcode"></i> QR 자동수집 대기</h3>
-        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">현장 점검 대상 서버에서 자동화 모듈을 실행한 뒤 QR 코드를 PWA 스캐너로 캡처하면, 본 회차에 자동수집 결과가 적재됩니다.</p>
-        <div id="qrWaitCard" style="background:#fff7ed;border:2px dashed #fb923c;border-radius:12px;padding:30px;text-align:center;">
-            <div style="font-size:48px;color:#fb923c;"><i class="fas fa-satellite-dish"></i></div>
-            <h2 style="margin:10px 0 4px;color:#9a3412;">QR 데이터 대기 중...</h2>
-            <p id="qrWaitMsg" style="color:#7c2d12;margin:0;font-size:0.95em;">5초마다 확인합니다. 자동수집된 점검 결과가 도착하면 자동으로 진행됩니다.</p>
-            <div id="qrPollSpinner" style="margin-top:12px;font-size:24px;color:#fb923c;">
+        <h3 class="section-title"><i class="fas fa-qrcode"></i> QR 자동수집</h3>
+        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">현장 점검 대상 서버에서 생성된 QR 을 본 카메라로 직접 스캔하거나, 별도 PWA 스캐너 업로드를 5초마다 자동 확인합니다.</p>
+
+        <!-- 인라인 카메라 카드 -->
+        <div id="qrCamCard" style="background:#0b1220;border-radius:12px;padding:14px;color:#e5e7eb;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+                <div style="font-size:0.92em;font-weight:700;color:#fff;">
+                    <i class="fas fa-camera"></i> 인라인 QR 스캐너
+                    <span id="qrEnginePill" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.72em;margin-left:6px;">engine: …</span>
+                </div>
+                <div>
+                    <button type="button" id="qrBtnStart" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;">
+                        <i class="fas fa-play"></i> 시작
+                    </button>
+                    <button type="button" id="qrBtnStop" style="background:#374151;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;" disabled>
+                        <i class="fas fa-stop"></i> 정지
+                    </button>
+                    <button type="button" id="qrBtnReset" style="background:#374151;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;">
+                        <i class="fas fa-undo"></i> 초기화
+                    </button>
+                </div>
+            </div>
+            <div id="qrCamWrap" style="position:relative;aspect-ratio:4/3;background:#000;border-radius:8px;overflow:hidden;">
+                <video id="qrCamVideo" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover;"></video>
+                <div style="position:absolute;inset:0;background:linear-gradient(transparent 45%, rgba(37,99,235,0.4) 50%, transparent 55%);pointer-events:none;opacity:0.4;"></div>
+                <div id="qrCamStatus" style="position:absolute;left:8px;top:8px;background:rgba(0,0,0,0.55);color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;">대기 중</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;">
+                <span id="qrPillHeader" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">헤더 대기</span>
+                <span id="qrPillProgress" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">청크 0/?</span>
+                <span id="qrPillStatus" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">대기 중</span>
+            </div>
+            <div id="qrChunks" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;"></div>
+            <div id="qrCamErr" style="display:none;margin-top:8px;background:#7f1d1d;color:#fecaca;padding:8px 10px;border-radius:6px;font-size:0.8em;"></div>
+        </div>
+
+        <!-- 폴백 폴링 안내 (PWA 스캐너 업로드도 동시 감시) -->
+        <div id="qrWaitCard" style="background:#fff7ed;border:1px dashed #fb923c;border-radius:10px;padding:14px;text-align:center;margin-top:12px;">
+            <span style="color:#9a3412;font-weight:600;font-size:0.92em;"><i class="fas fa-satellite-dish"></i> PWA 스캐너 업로드도 5초마다 감시</span>
+            <p id="qrWaitMsg" style="color:#7c2d12;margin:6px 0 0;font-size:0.85em;">자동수집 결과가 도착하면 자동으로 진행됩니다.</p>
+            <div id="qrPollSpinner" style="margin-top:6px;font-size:16px;color:#fb923c;">
                 <i class="fas fa-spinner fa-spin"></i>
             </div>
         </div>
+
         <div id="qrResultCard" style="display:none;background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:20px;margin-top:14px;">
             <h3 style="margin:0 0 10px;color:#166534;"><i class="fas fa-check-circle"></i> QR 자동수집 적재 완료</h3>
             <div id="qrResultSummary" style="color:#374151;font-size:0.95em;"></div>
@@ -681,8 +716,13 @@ function goStep(n) {
     if (next) next.style.display = (n < WIZARD_TOTAL_STEPS) ? '' : 'none';
     if (ind)  ind.textContent = 'STEP ' + n + ' / ' + WIZARD_TOTAL_STEPS;
     // Step 별 진입 hook
-    if (n === 2) startQrPolling();
-    else stopQrPolling();
+    if (n === 2) {
+        startQrPolling();
+        if (typeof window.startQrCamera === 'function') window.startQrCamera();
+    } else {
+        stopQrPolling();
+        if (typeof window.stopQrCamera === 'function') window.stopQrCamera();
+    }
     if (n === 3) {
         // 약간 delay — 템플릿 항목 로드 후 readonly 적용
         setTimeout(applyAutoReadonlyIfNeeded, 300);
@@ -1803,7 +1843,7 @@ function loadReport(id) {
 
                         // 3) 점검결과 복원 (템플릿 로딩 완료 대기 후)
                         if (data.checkResults && data.checkResults.length > 0) {
-                            setTimeout(function() { restoreCheckResults(data.checkResults); }, 800);
+                            restoreCheckResultsWhenReady(data.checkResults);
                         }
 
                         startAutoDraft();
@@ -1816,11 +1856,40 @@ function loadReport(id) {
                     onSysTypeChange();
                 }
                 if (data.checkResults && data.checkResults.length > 0) {
-                    setTimeout(function() { restoreCheckResults(data.checkResults); }, 800);
+                    restoreCheckResultsWhenReady(data.checkResults);
                 }
                 startAutoDraft();
             }
         });
+}
+
+// 템플릿 렌더 완료(=섹션 tbody 에 tr 존재)될 때까지 폴링 후 restoreCheckResults 호출.
+// 기존 setTimeout(800) 고정 대기로는 fetch 응답 늦으면 빈 표에 적용 시도 → 실패.
+function restoreCheckResultsWhenReady(results, maxMs) {
+    if (!results || results.length === 0) return;
+    var deadline = Date.now() + (maxMs || 8000);
+    var sections = new Set();
+    results.forEach(function(r) { if (r && r.section) sections.add(r.section); });
+    var bodies = { DB: 'dbCheckBody', AP: 'apCheckBody', DBMS: 'dbmsCheckBody', GIS: 'gisCheckBody', APP: 'appCheckBody' };
+    var sectionToBody = function(s) { return bodies[s]; };
+
+    var attempt = function() {
+        var allReady = true;
+        sections.forEach(function(sec) {
+            var bid = sectionToBody(sec);
+            if (!bid) return; // _USAGE/_ETC 등은 input id 직접 대상 — tr 없어도 OK
+            var rows = document.querySelectorAll('#' + bid + ' tr').length;
+            if (rows === 0) allReady = false;
+        });
+        if (allReady) { restoreCheckResults(results); return; }
+        if (Date.now() > deadline) {
+            console.warn('[restoreCheckResults] 템플릿 행 생성 대기 타임아웃 — 부분 적용 시도');
+            restoreCheckResults(results);
+            return;
+        }
+        setTimeout(attempt, 150);
+    };
+    attempt();
 }
 
 function restoreCheckResults(results) {
@@ -1990,5 +2059,270 @@ function signComplete() {
     }, 300);
 }
 </script>
+
+<!-- ============= QR 인라인 카메라 (STEP 2) ============= -->
+<script type="module">
+import { FrameAccumulator } from '/js/inspection/decoder.js';
+
+const $ = (id) => document.getElementById(id);
+let camStream = null;
+let camScanning = false;
+let camRafId = null;
+let camDetector = null;
+let camJsqr = null;
+let camCanvas = null;
+let camCtx = null;
+let camBootPromise = null;
+let lastDecodedTexts = new Set();
+let uploaded = false;
+
+function log(level, msg) {
+    if (level === 'err') console.error('[qr-cam]', msg);
+    else console.log('[qr-cam]', msg);
+}
+
+const acc = new FrameAccumulator(async (ev) => {
+    const camErr = $('qrCamErr');
+    if (ev.kind === 'header') {
+        $('qrPillHeader').textContent = '헤더 ✓';
+        $('qrPillHeader').style.background = '#dcfce7';
+        $('qrPillHeader').style.color = '#15803d';
+        renderChunkSlots(ev.frame.total);
+        renderProgress(ev.progress);
+    } else if (ev.kind === 'chunk') {
+        renderProgress(ev.progress);
+    } else if (ev.kind === 'complete') {
+        $('qrPillStatus').textContent = '디코드 완료 ✓';
+        $('qrPillStatus').style.background = '#dcfce7';
+        $('qrPillStatus').style.color = '#15803d';
+        stopQrCamera();
+        await uploadBatch(ev);
+    } else if (ev.kind === 'error') {
+        camErr.style.display = 'block';
+        camErr.textContent = ev.message || '디코드 오류';
+    }
+});
+
+function renderChunkSlots(total) {
+    const wrap = $('qrChunks');
+    wrap.innerHTML = '';
+    const h = document.createElement('div');
+    h.textContent = 'H';
+    h.title = 'header';
+    h.style.cssText = 'width:24px;height:24px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;';
+    wrap.appendChild(h);
+    for (let i = 1; i <= total; i++) {
+        const c = document.createElement('div');
+        c.dataset.seq = String(i);
+        c.textContent = String(i);
+        c.style.cssText = 'width:24px;height:24px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;background:#1f2937;color:#9ca3af;border:1px solid #374151;';
+        wrap.appendChild(c);
+    }
+}
+
+function renderProgress(p) {
+    if (p.total) {
+        $('qrPillProgress').textContent = `청크 ${p.received}/${p.total}`;
+        if (p.received === p.total) {
+            $('qrPillProgress').style.background = '#dcfce7';
+            $('qrPillProgress').style.color = '#15803d';
+        } else {
+            $('qrPillProgress').style.background = '#fef3c7';
+            $('qrPillProgress').style.color = '#92400e';
+        }
+        if (p.missing && p.missing.length) {
+            $('qrPillStatus').textContent = `대기: ${p.missing.slice(0, 6).join(',')}${p.missing.length > 6 ? '…' : ''}`;
+            $('qrPillStatus').style.background = '#fef3c7';
+            $('qrPillStatus').style.color = '#92400e';
+        } else {
+            $('qrPillStatus').textContent = '조립 중';
+        }
+    }
+    for (const seq of acc.chunks.keys()) {
+        const el = $('qrChunks').querySelector(`[data-seq="${seq}"]`);
+        if (el) {
+            el.style.background = '#dcfce7';
+            el.style.color = '#15803d';
+            el.style.borderColor = '#86efac';
+        }
+    }
+}
+
+async function pickEngine() {
+    if (camDetector || camJsqr) return;
+    if ('BarcodeDetector' in window) {
+        try {
+            const formats = await window.BarcodeDetector.getSupportedFormats();
+            if (formats.includes('qr_code')) {
+                camDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                $('qrEnginePill').textContent = 'engine: BarcodeDetector';
+                $('qrEnginePill').style.background = '#065f46';
+                $('qrEnginePill').style.color = '#a7f3d0';
+                return;
+            }
+        } catch (e) {
+            log('err', 'BarcodeDetector 실패: ' + e.message);
+        }
+    }
+    try {
+        const mod = await import('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm');
+        camJsqr = mod.default;
+        camCanvas = document.createElement('canvas');
+        camCtx = camCanvas.getContext('2d', { willReadFrequently: true });
+        $('qrEnginePill').textContent = 'engine: jsQR';
+        $('qrEnginePill').style.background = '#92400e';
+        $('qrEnginePill').style.color = '#fde68a';
+    } catch (e) {
+        $('qrEnginePill').textContent = 'engine: 없음';
+        $('qrEnginePill').style.background = '#7f1d1d';
+        $('qrEnginePill').style.color = '#fecaca';
+        showErr('QR 인식 엔진 로드 실패 (오프라인?): ' + e.message);
+    }
+}
+
+function showErr(msg) {
+    const el = $('qrCamErr');
+    if (!el) return;
+    el.style.display = 'block';
+    el.textContent = msg;
+}
+
+async function startQrCamera() {
+    if (camScanning) return;
+    uploaded = false;
+    $('qrCamErr').style.display = 'none';
+    if (!camBootPromise) camBootPromise = pickEngine();
+    await camBootPromise;
+    if (!camDetector && !camJsqr) return;
+
+    const videoEl = $('qrCamVideo');
+    try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false,
+        });
+    } catch (e) {
+        $('qrCamStatus').textContent = '카메라 거부';
+        showErr('카메라 접근 실패: ' + e.message + ' (HTTPS / 권한 확인)');
+        return;
+    }
+    videoEl.srcObject = camStream;
+    try { await videoEl.play(); } catch (_) { /* autoplay block tolerated */ }
+    camScanning = true;
+    $('qrBtnStart').disabled = true;
+    $('qrBtnStop').disabled = false;
+    $('qrCamStatus').textContent = '스캔 중…';
+    scanLoop();
+}
+
+function stopQrCamera() {
+    camScanning = false;
+    if (camRafId) cancelAnimationFrame(camRafId);
+    camRafId = null;
+    if (camStream) {
+        for (const t of camStream.getTracks()) t.stop();
+        camStream = null;
+    }
+    const videoEl = $('qrCamVideo');
+    if (videoEl) videoEl.srcObject = null;
+    $('qrBtnStart').disabled = false;
+    $('qrBtnStop').disabled = true;
+    $('qrCamStatus').textContent = '정지';
+}
+
+function resetQrCamera() {
+    stopQrCamera();
+    acc.reset();
+    lastDecodedTexts = new Set();
+    uploaded = false;
+    $('qrPillHeader').textContent = '헤더 대기';
+    $('qrPillHeader').style.background = '#374151';
+    $('qrPillHeader').style.color = '#cbd5e1';
+    $('qrPillProgress').textContent = '청크 0/?';
+    $('qrPillProgress').style.background = '#374151';
+    $('qrPillProgress').style.color = '#cbd5e1';
+    $('qrPillStatus').textContent = '대기 중';
+    $('qrPillStatus').style.background = '#374151';
+    $('qrPillStatus').style.color = '#cbd5e1';
+    $('qrChunks').innerHTML = '';
+    $('qrCamErr').style.display = 'none';
+}
+
+async function scanLoop() {
+    if (!camScanning) return;
+    const videoEl = $('qrCamVideo');
+    try {
+        if (camDetector) {
+            const codes = await camDetector.detect(videoEl);
+            for (const c of codes) await handleDecoded(c.rawValue);
+        } else if (camJsqr) {
+            const w = videoEl.videoWidth, h = videoEl.videoHeight;
+            if (w && h) {
+                camCanvas.width = w; camCanvas.height = h;
+                camCtx.drawImage(videoEl, 0, 0, w, h);
+                const imgData = camCtx.getImageData(0, 0, w, h);
+                const code = camJsqr(imgData.data, w, h, { inversionAttempts: 'dontInvert' });
+                if (code) await handleDecoded(code.data);
+            }
+        }
+    } catch (e) {
+        log('err', 'scanLoop: ' + e.message);
+    }
+    camRafId = requestAnimationFrame(scanLoop);
+}
+
+async function handleDecoded(text) {
+    if (lastDecodedTexts.has(text)) return;
+    lastDecodedTexts.add(text);
+    await acc.ingest(text);
+}
+
+async function uploadBatch(ev) {
+    if (uploaded) return;
+    uploaded = true;
+    $('qrCamStatus').textContent = '서버 업로드 중…';
+    console.log('[qr-cam] decoded payload =', ev.payload);
+    console.log('[qr-cam] decoded header  =', ev.header);
+    try {
+        const csrf = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrf && csrfHeader) headers[csrfHeader] = csrf;
+        const res = await fetch('/api/inspection/qr-batch', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ payload: ev.payload, header: ev.header }),
+        });
+        if (!res.ok) {
+            const t = await res.text();
+            showErr('업로드 실패 (' + res.status + '): ' + t.slice(0, 200));
+            uploaded = false;
+            return;
+        }
+        const body = await res.json().catch(() => null);
+        const reportId = body && (body.reportId || (body.data && body.data.reportId));
+        $('qrCamStatus').textContent = '업로드 완료 — 회차 로드 중…';
+        if (reportId && typeof window.loadReport === 'function') {
+            // STEP 1 비어 있어도 폴링 우회 — 응답 reportId 로 바로 회차 로드.
+            // 템플릿/체크표 prefill 은 loadReport 내부 setTimeout 으로 비동기 진행.
+            window.loadReport(reportId);
+        } else if (typeof window.startQrPolling === 'function') {
+            window.startQrPolling();
+        }
+    } catch (e) {
+        showErr('업로드 오류: ' + e.message);
+        uploaded = false;
+    }
+}
+
+$('qrBtnStart').addEventListener('click', () => startQrCamera());
+$('qrBtnStop').addEventListener('click', () => stopQrCamera());
+$('qrBtnReset').addEventListener('click', () => resetQrCamera());
+
+window.startQrCamera = startQrCamera;
+window.stopQrCamera = stopQrCamera;
+window.resetQrCamera = resetQrCamera;
+</script>
+
 </body>
 </html>

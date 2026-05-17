@@ -15,9 +15,11 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.slf4j.MDC;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.ConstraintViolationException;
 import java.io.IOException;
 
 /**
@@ -167,17 +169,23 @@ public class GlobalExceptionHandler {
             HttpServletResponse response) throws IOException {
         
         // [감사 P2 5-3] rejected value 등 민감 입력 노출 방지 — 원문 메시지 제거
-        log.error("ValidationException 발생 (path={})", request.getRequestURI());
-        
+        // (단, 서버 로그에는 필드명만 남겨 디버깅 가능하게 — 값은 제외)
         String errorMessage = "입력값이 올바르지 않습니다.";
-        
+        String fieldsForLog = "";
+        org.springframework.validation.BindingResult br = null;
         if (e instanceof MethodArgumentNotValidException) {
-            MethodArgumentNotValidException ex = (MethodArgumentNotValidException) e;
-            errorMessage = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+            br = ((MethodArgumentNotValidException) e).getBindingResult();
         } else if (e instanceof BindException) {
-            BindException ex = (BindException) e;
-            errorMessage = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+            br = ((BindException) e).getBindingResult();
         }
+        if (br != null) {
+            errorMessage = br.getAllErrors().get(0).getDefaultMessage();
+            fieldsForLog = br.getFieldErrors().stream()
+                    .map(fe -> fe.getField() + "(" + fe.getCode() + ")")
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse("(no field errors)");
+        }
+        log.error("ValidationException 발생 (path={}, fields=[{}])", request.getRequestURI(), fieldsForLog);
         
         if (isApiRequest(request)) {
             return ResponseEntity
@@ -191,6 +199,38 @@ public class GlobalExceptionHandler {
         return null;
     }
     
+    /**
+     * 수동 validator.validate() 결과 — 예: InspectionQrBatchController 의
+     * Adapter 정규화 후 검증 흐름. 응답/로그 정책은 위 handleValidationException 와 동일.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Object handleConstraintViolation(
+            ConstraintViolationException e,
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+
+        String fieldsForLog = e.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath().toString() + "("
+                        + v.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName() + ")")
+                .collect(Collectors.joining(", "));
+        log.error("ConstraintViolationException 발생 (path={}, fields=[{}])",
+                request.getRequestURI(), fieldsForLog.isEmpty() ? "(no violations)" : fieldsForLog);
+
+        String errorMessage = e.getConstraintViolations().isEmpty()
+                ? "입력값이 올바르지 않습니다."
+                : e.getConstraintViolations().iterator().next().getMessage();
+
+        if (isApiRequest(request)) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("G001", errorMessage));
+        }
+        response.setStatus(400);
+        response.setContentType("text/html; charset=UTF-8");
+        response.getWriter().write(getErrorHtml(400, "VALIDATION_ERROR", errorMessage));
+        return null;
+    }
+
     /**
      * 정적 리소스 없음 예외 (favicon.ico 등) - 무시
      */
