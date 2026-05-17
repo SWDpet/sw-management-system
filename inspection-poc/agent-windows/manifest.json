@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "description": "agent-windows checks dispatch manifest — inspect_template.sort_order 와 정합 보장. Collector.ps1 가 본 manifest 기반으로 모듈 실행 순서를 강제한다. 신규 모듈 추가 시 본 파일에 반드시 등록.",
+  "sources": {
+    "inspect_template_seed": "src/main/resources/db_init_phase2.sql line 233~364",
+    "docx_placeholder_map": "docs/product-specs/inspection-report-d-v6.md §6-3"
+  },
+  "sections": {
+    "AP": [
+      { "sort": 1,  "module": "ap-led-manual.ps1",      "id": "ap.led.system",   "label": "시스템 LED",        "method": "manual" },
+      { "sort": 2,  "module": "ap-led-manual.ps1",      "id": "ap.led.psu",      "label": "Power Supply LED",  "method": "manual" },
+      { "sort": 3,  "module": "ap-led-manual.ps1",      "id": "ap.led.disk",     "label": "Disk LED",          "method": "manual" },
+      { "sort": 4,  "module": "ap-cpu-info.ps1",        "id": "ap.hw.cpu",       "label": "CPU",               "method": "auto" },
+      { "sort": 5,  "module": "ap-mem-info.ps1",        "id": "ap.hw.memory",    "label": "Memory",            "method": "auto" },
+      { "sort": 6,  "module": "ap-adapter.ps1",         "id": "ap.hw.adapter",   "label": "Adapter + Cable",   "method": "auto" },
+      { "sort": 7,  "module": "ap-event-system.ps1",    "id": "ap.log.system_err",   "label": "로그 점검 (eventlog System)", "method": "auto" },
+      { "sort": 8,  "module": "ap-event-security.ps1",  "id": "ap.log.security_err", "label": "Security log",  "method": "auto" },
+      { "sort": 9,  "module": "ap-disk.ps1",            "id": "ap.os.disk_summary",  "label": "Disk 여유공간 (종합)", "method": "auto", "note": "drive 별 다중 row 출력 → 종합 1 row 로 압축 필요 (Phase 0 보정)" },
+      { "sort": 10, "module": "ap-network-routes.ps1",  "id": "ap.net.routes",   "label": "Network 점검 (routes/errors)", "method": "auto" },
+      { "sort": 11, "module": "ap-network-ip.ps1",      "id": "ap.net.ip",       "label": "IP 정보 (ipconfig /all)", "method": "auto" },
+      { "sort": 12, "module": "ap-users.ps1",           "id": "ap.security.users",   "label": "사용자 계정",   "method": "auto" },
+      { "sort": 13, "module": "ap-perf-cpu.ps1",        "id": "ap.perf.cpu_pct", "label": "CPU 사용률",        "method": "auto" },
+      { "sort": 14, "module": "ap-perf-mem.ps1",        "id": "ap.perf.mem_pct", "label": "Memory 사용률",     "method": "auto" }
+    ],
+    "DB": [
+      { "sort": 1,  "module": "db-led-manual.ps1",         "id": "db.led.hw",       "label": "H/W LED 상태 점검", "method": "manual" },
+      { "sort": 2,  "module": "db-led-manual.ps1",         "id": "db.led.disk",     "label": "디스크 LED 상태",   "method": "manual" },
+      { "sort": 3,  "module": "db-led-manual.ps1",         "id": "db.led.fan",      "label": "FAN LED 상태",      "method": "manual" },
+      { "sort": 4,  "module": "db-led-manual.ps1",         "id": "db.led.power",    "label": "전원 LED 상태",     "method": "manual" },
+      { "sort": 5,  "module": "db-led-manual.ps1",         "id": "db.led.cable",    "label": "케이블 연결상태",   "method": "manual" },
+      { "sort": 6,  "module": "db-os-cpu-info.ps1",        "id": "db.os.cpu_info",  "label": "CPU 점검",          "method": "auto" },
+      { "sort": 7,  "module": "db-os-mem-info.ps1",        "id": "db.os.mem_info",  "label": "MEMORY 점검",       "method": "auto" },
+      { "sort": 8,  "module": "db-os-adapter.ps1",         "id": "db.os.adapter",   "label": "Adapter 점검",      "method": "auto", "newInV6": true },
+      { "sort": 9,  "module": "db-os-disk.ps1",            "id": "db.os.disk",      "label": "DISK 점검",         "method": "auto" },
+      { "sort": 10, "module": "db-os-network-ip.ps1",      "id": "db.os.network_ip", "label": "Network 점검 (netstat -a)", "method": "auto" },
+      { "sort": 11, "module": "db-os-perf-cpu.ps1",        "id": "db.os.perf_cpu",  "label": "CPU 사용률",        "method": "auto" },
+      { "sort": 12, "module": "db-os-perf-mem.ps1",        "id": "db.os.perf_mem",  "label": "MEMORY 사용률",     "method": "auto" },
+      { "sort": 13, "module": "db-os-swap.ps1",            "id": "db.os.swap_pct",  "label": "SWAP 사용률",       "method": "auto", "newInV6": true },
+      { "sort": 14, "module": "db-os-iostat.ps1",          "id": "db.os.iostat",    "label": "I/O 사용률",        "method": "auto", "newInV6": true },
+      { "sort": 15, "module": "db-os-netstat-perf.ps1",    "id": "db.os.netstat_perf", "label": "네트워크 사용률", "method": "auto", "newInV6": true },
+      { "sort": 16, "module": "db-os-disk.ps1",            "id": "db.os.disk_data", "label": "디스크 사용량 (df -gH)", "method": "auto", "note": "sort 9 와 동일 모듈, view 변형 — Phase B 에서 모듈 재사용 또는 분리" },
+      { "sort": 17, "module": "db-os-inode.ps1",           "id": "db.os.inode",     "label": "I-node 사용량",     "method": "auto", "newInV6": true },
+      { "sort": 18, "module": "db-os-lsvg.ps1",            "id": "db.os.lsvg_rootvg", "label": "미러 상태 (lsvg -l rootvg)", "method": "auto", "newInV6": true },
+      { "sort": 19, "module": "db-os-network-health.ps1",  "id": "db.os.net_link",  "label": "Link 상태",         "method": "auto", "newInV6": true, "note": "1 모듈 3 row 출력 (Link/Ping/Collisions)" },
+      { "sort": 20, "module": "db-os-network-health.ps1",  "id": "db.os.net_ping",  "label": "Ping 상태",         "method": "auto", "newInV6": true },
+      { "sort": 21, "module": "db-os-network-health.ps1",  "id": "db.os.net_collisions", "label": "Collisions",   "method": "auto", "newInV6": true },
+      { "sort": 22, "module": "db-os-perf-cpu.ps1",        "id": "db.os.processor", "label": "각 프로세서 상태",  "method": "auto", "note": "sort 11 재사용" },
+      { "sort": 23, "module": "db-os-log-system.ps1",      "id": "db.os.log_system", "label": "시스템 로그 (errpt)", "method": "auto", "note": "현 모듈 검증 필요 — agent-unix 에 존재" },
+      { "sort": 24, "module": "db-os-users.ps1",           "id": "db.os.users",     "label": "접속 로그 (who/lastlog)", "method": "auto" }
+    ],
+    "DBMS": [
+      { "sort": 1,  "module": "db-oracle.ps1", "id": "db.oracle.hostname",   "label": "호스트네임",           "method": "auto" },
+      { "sort": 2,  "module": "db-oracle.ps1", "id": "db.oracle.oslevel",    "label": "O/S 정보 (oslevel -s)", "method": "auto" },
+      { "sort": 3,  "module": "db-oracle.ps1", "id": "db.oracle.version",    "label": "DB 버전 (sqlplus)",    "method": "auto" },
+      { "sort": 4,  "module": "db-oracle.ps1", "id": "db.oracle.sid",        "label": "SID 확인",             "method": "auto" },
+      { "sort": 5,  "module": "db-oracle.ps1", "id": "db.oracle.alert_log",  "label": "오라클 alert_*.log",   "method": "auto" },
+      { "sort": 6,  "module": "db-oracle.ps1", "id": "db.oracle.archive",    "label": "Archive Mode",         "method": "auto" },
+      { "sort": 7,  "module": "db-oracle.ps1", "id": "db.oracle.redo",       "label": "리두 로그 (v$logfile)", "method": "auto" },
+      { "sort": 8,  "module": "db-oracle.ps1", "id": "db.oracle.control",    "label": "컨트롤 파일 (v$controlfile)", "method": "auto" },
+      { "sort": 9,  "module": "db-oracle.ps1", "id": "db.oracle.sga",        "label": "SGA (show sga)",       "method": "auto" },
+      { "sort": 10, "module": "db-oracle.ps1", "id": "db.oracle.ts_status",  "label": "Tablespace 상태",      "method": "auto" },
+      { "sort": 11, "module": "db-oracle.ps1", "id": "db.oracle.ts_usage",   "label": "Tablespace 용량",      "method": "auto" },
+      { "sort": 12, "module": "db-oracle.ps1", "id": "db.oracle.datafile_status", "label": "Datafile 상태",   "method": "auto" },
+      { "sort": 13, "module": "db-oracle.ps1", "id": "db.oracle.datafile_usage",  "label": "Datafile 용량",   "method": "auto" },
+      { "sort": 14, "module": "db-oracle.ps1", "id": "db.oracle.export",     "label": "Export 백업 (crontab/ls)", "method": "auto" },
+      { "sort": 15, "module": "db-oracle.ps1", "id": "db.oracle.home_size",  "label": "Home size (df -gP)",   "method": "auto" },
+      { "sort": 16, "module": "db-oracle.ps1", "id": "db.oracle.oradata_size", "label": "Oradata Size",       "method": "auto" },
+      { "sort": 17, "module": "db-oracle.ps1", "id": "db.oracle.backup_size", "label": "Backup Size",         "method": "auto" }
+    ],
+    "GIS": [
+      { "sort": 1,  "module": "gis-gss-running.ps1",       "id": "gis.gss.running",   "label": "GSS 구동확인",         "method": "auto" },
+      { "sort": 2,  "module": "gis-gss-log-purge.ps1",     "id": "gis.gss.log_purge", "label": "GSS 로그파일 삭제",    "method": "auto" },
+      { "sort": 3,  "module": "gis-desktop-manual.ps1",    "id": "gis.desktop.gss_store", "label": "Desktop Pro 데이터저장소 구동확인", "method": "manual" },
+      { "sort": 4,  "module": "gis-gws-running.ps1",       "id": "gis.gws.running",   "label": "GWS 구동확인",         "method": "auto" },
+      { "sort": 5,  "module": "gis-gws-log-purge.ps1",     "id": "gis.gws.log_purge", "label": "GWS 로그파일 삭제 (DEM/SLOP 제외)", "method": "auto" },
+      { "sort": 6,  "module": "gis-gws-http.ps1",          "id": "gis.gws.http",      "label": "GWS 서비스 확인 (WMS preview)", "method": "auto" },
+      { "sort": 7,  "module": "gis-store-size.ps1",        "id": "gis.gws.store_size", "label": "UWES Store 총용량",   "method": "auto", "note": "P10 카드용 (inspect_template 시드 없음 — V030 추가 필요)" },
+      { "sort": 8,  "module": "gis-gss-log-error.ps1",     "id": "gis.gss.err_30days", "label": "GSS 30일 ERROR 카운트", "method": "auto", "newInV6": true, "note": "P10 카드용" },
+      { "sort": 9,  "module": "gis-gss-log-warn.ps1",      "id": "gis.gss.warn_30days", "label": "GSS 30일 WARN 카운트", "method": "auto", "newInV6": true, "note": "P10 카드용" },
+      { "sort": 10, "module": "gis-gws-catalina-error.ps1","id": "gis.gws.catalina_err", "label": "GWS catalina ERROR", "method": "auto", "newInV6": true, "note": "P10 카드용" },
+      { "sort": 11, "module": "gis-gws-stdout-size.ps1",   "id": "gis.gws.stdout_log_size", "label": "GWS stdout 로그 크기 (MB)", "method": "auto", "newInV6": true, "note": "P10 카드용" },
+      { "sort": 12, "module": "gis-store-dem-slop.ps1",    "id": "gis.uwes.dem_slop_preserved", "label": "UWES DEM/SLOP 보존 확인", "method": "auto", "newInV6": true, "note": "P10 카드용" }
+    ]
+  },
+  "notes": {
+    "manual_modules": "method=manual 모듈은 agent 가 placeholder row 출력 (status='M', value=null). 점검자가 SW Manager UI 에서 채움.",
+    "v6_inspect_template_extension": "GIS sort 7~12 (6항목) 은 inspect_template 에 시드 없음 — V030_gis_card_items_extension.sql 신설 필요 (Phase A2 산출물)",
+    "row_count_invariant": "각 section 의 row 개수는 inspect_template 시드 row 수와 일치해야 한다 (현재 AP 14 / DB 24 / DBMS 17 / GIS 12). UPIS APP 14 항목은 모두 UI 입력이므로 manifest 미포함.",
+    "module_reuse": "같은 module 이 여러 sort 에 등장하면 그 모듈은 multi-row 출력. Collector.ps1 가 출력 row 의 id 와 manifest 의 id 를 검증."
+  }
+}
