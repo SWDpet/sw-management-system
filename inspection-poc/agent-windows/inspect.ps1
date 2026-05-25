@@ -124,6 +124,8 @@ if ($prev) {
 }
 
 # 4) QR 페이로드 + frames
+# PS 4.0: OrderedDictionary → PSCustomObject 변환 (JSON 왕복) — QrPayload 프로퍼티 접근 호환
+$snapshot = ($snapshot | ConvertTo-Json -Depth 20 -Compress | ConvertFrom-Json)
 $qrPayload = ConvertTo-QrPayload -Snapshot $snapshot
 $qr = Build-QrFrames -QrPayload $qrPayload -MaxChunkChars 1800
 $framesPath = Join-Path $outDir 'frames.json'
