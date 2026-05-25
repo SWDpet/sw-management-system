@@ -294,7 +294,11 @@ public class InspectionQrBatchService {
                 row.setResultCode(code != null ? code.name() : InspectResultCode.NORMAL.name());
 
                 ResultText resultText = formatValueWithContext(key, value);
-                row.setResultText(resultText.text);
+                String rtText = resultText.text;
+                if (rtText != null && rtText.length() > RESULT_TEXT_MAX) {
+                    rtText = rtText.substring(0, RESULT_TEXT_MAX);
+                }
+                row.setResultText(rtText);
                 row.setRemarks(buildRemarks(status, code, resultText.truncated));
                 row.setSortOrder(sortOrder);
 
@@ -304,6 +308,11 @@ public class InspectionQrBatchService {
                 else if ("warn".equalsIgnoreCase(status)) stats.warn++;
 
                 // db.os.disk: mounts 데이터 → DB_USAGE 행 생성
+                if ("db.os.disk".equals(key)) {
+                    log.info("[disk진단] key={} valueType={} value={}", key,
+                            value != null ? value.getClass().getSimpleName() : "null",
+                            value != null ? String.valueOf(value).substring(0, Math.min(200, String.valueOf(value).length())) : "null");
+                }
                 if ("db.os.disk".equals(key) && value instanceof Map) {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> mounts = (Map<String, Object>) value;
@@ -328,26 +337,35 @@ public class InspectionQrBatchService {
                         InspectCheckResult usage = new InspectCheckResult();
                         usage.setReportId(reportId);
                         usage.setSection("DB_USAGE");
-                        usage.setCategory(cat);
+                        usage.setItemName(cat);
                         usage.setResultText(usageText);
                         usage.setSortOrder(usageSort++);
                         checkResultRepository.save(usage);
                     }
                 }
-                // ap.disk: AP_USAGE 행 생성
-                if (key != null && key.startsWith("ap.disk.") && value instanceof Map) {
+                // ap.os.disk_summary: drives 맵 → AP_USAGE 행 생성
+                if ("ap.os.disk_summary".equals(key) && value instanceof Map) {
                     @SuppressWarnings("unchecked")
-                    Map<String, Object> dm = (Map<String, Object>) value;
-                    String diskLabel = key.equals("ap.disk.c") ? "Disk C:" : key.equals("ap.disk.d") ? "Disk D:" : key;
-                    Object t = dm.get("t"); Object f = dm.get("f");
-                    String diskText = (t != null && f != null) ? t + "GB / " + f + "GB 여유" : dm.get("p") + "%";
-                    InspectCheckResult usage = new InspectCheckResult();
-                    usage.setReportId(reportId);
-                    usage.setSection("AP_USAGE");
-                    usage.setCategory(diskLabel);
-                    usage.setResultText(diskText);
-                    usage.setSortOrder(key.equals("ap.disk.c") ? 2 : 3);
-                    checkResultRepository.save(usage);
+                    Map<String, Object> drives = (Map<String, Object>) value;
+                    Map<String, String> driveLabels = Map.of("c", "Disk C:", "d", "Disk D:");
+                    int diskSort = 2;
+                    for (var dEntry : drives.entrySet()) {
+                        String label = driveLabels.getOrDefault(dEntry.getKey(), "Disk " + dEntry.getKey().toUpperCase() + ":");
+                        String diskText = "";
+                        if (dEntry.getValue() instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> dd = (Map<String, Object>) dEntry.getValue();
+                            Object t = dd.get("t"); Object f = dd.get("f");
+                            diskText = (t != null && f != null) ? t + "GB / " + f + "GB 여유" : dd.get("p") + "%";
+                        }
+                        InspectCheckResult usage = new InspectCheckResult();
+                        usage.setReportId(reportId);
+                        usage.setSection("AP_USAGE");
+                        usage.setItemName(label);
+                        usage.setResultText(diskText);
+                        usage.setSortOrder(diskSort++);
+                        checkResultRepository.save(usage);
+                    }
                 }
             }
         }
@@ -557,8 +575,20 @@ public class InspectionQrBatchService {
         // 객체(Map) 형태의 value 처리
         if (key != null && value instanceof Map) {
             Map<String, Object> m = (Map<String, Object>) value;
-            // QR 축약 disk: {t=total_gb, f=free_gb, p=pct}
-            if (key.startsWith("ap.disk.") || key.equals("ap.os.disk_summary")) {
+            // QR 축약 disk
+            if (key.equals("ap.os.disk_summary")) {
+                // drives 맵: {c:{t,f,p}, d:{t,f,p}}
+                StringBuilder sb = new StringBuilder();
+                for (var de : m.entrySet()) {
+                    if (de.getValue() instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> dd = (Map<String, Object>) de.getValue();
+                        sb.append(de.getKey().toUpperCase()).append(": ").append(dd.get("p")).append("% ");
+                    }
+                }
+                return new ResultText(sb.toString().trim(), false);
+            }
+            if (key.startsWith("ap.disk.")) {
                 Object t = m.get("t"); Object f = m.get("f");
                 if (t == null) t = m.get("total_gb");
                 if (f == null) f = m.get("free_gb");
@@ -568,6 +598,13 @@ public class InspectionQrBatchService {
                 if (p != null) return new ResultText(p + "%", false);
             }
             if (key.equals("db.os.disk")) {
+                // mounts 맵: {"/":{p:52,t:5,f:2.4}, "/oracle":{...}, ...}
+                Object rootMount = m.get("/");
+                if (rootMount instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> rm = (Map<String, Object>) rootMount;
+                    return new ResultText("worst " + m.size() + "개 마운트", false);
+                }
                 Object fsList = m.get("filesystems");
                 if (fsList instanceof List && !((List<?>) fsList).isEmpty()) {
                     return new ResultText(((List<?>) fsList).size() + "개 파일시스템", false);
@@ -580,6 +617,25 @@ public class InspectionQrBatchService {
             if (count != null) {
                 String unit = key != null ? UNIT_LABELS.getOrDefault(key, "개") : "개";
                 return new ResultText(count + unit, false);
+            }
+            // 범용: Map에서 노이즈 키 제외 후 스칼라 값 자동 추출
+            var skip = java.util.Set.of("os","output","raw","sid","rows","stderr","sample",
+                    "cmd","method","note","excluded_rules","excluded_count","recent","since_days",
+                    "threshold","remote_host","remote_user","source","path","config_name",
+                    "dry_run","retain_days","exclude_patterns","window_days","rotation_hint");
+            StringBuilder memo = new StringBuilder();
+            for (var e : m.entrySet()) {
+                if (skip.contains(e.getKey())) continue;
+                Object v = e.getValue();
+                if (v == null || v instanceof List || v instanceof Map) continue;
+                String vs = String.valueOf(v);
+                if (vs.length() > 50) continue;
+                if (memo.length() > 0) memo.append(" / ");
+                memo.append(e.getKey()).append(":").append(vs);
+                if (memo.length() > 80) break;
+            }
+            if (memo.length() > 0) {
+                return new ResultText(memo.toString(), false);
             }
         }
 

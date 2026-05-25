@@ -1653,11 +1653,11 @@ function collectFormData(status) {
 
     // DB 사용율
     var dbUsageFields = ['cpu','memory','root','backup','oracle','oradata','archive'];
-    var dbUsageLabels = ['CPU','Memory','/','\/backup','oracle','Oradata','archive'];
+    var dbUsageLabels = ['CPU','Memory','/','/backup','/oracle','/oradata','/archive'];
     dbUsageFields.forEach(function(f, i) {
         var el = document.getElementById('db_usage_' + f);
         if (el && el.value) {
-            checkResults.push({ section: 'DB_USAGE', category: dbUsageLabels[i], itemName: '', itemMethod: '', result: el.value, sortOrder: i });
+            checkResults.push({ section: 'DB_USAGE', itemName: dbUsageLabels[i], itemMethod: '', result: el.value, sortOrder: i });
         }
     });
 
@@ -1667,7 +1667,7 @@ function collectFormData(status) {
     apUsageFields.forEach(function(f, i) {
         var el = document.getElementById('ap_usage_' + f);
         if (el && el.value) {
-            checkResults.push({ section: 'AP_USAGE', category: apUsageLabels[i], itemName: '', itemMethod: '', result: el.value, sortOrder: i });
+            checkResults.push({ section: 'AP_USAGE', itemName: apUsageLabels[i], itemMethod: '', result: el.value, sortOrder: i });
         }
     });
 
@@ -2017,19 +2017,21 @@ function restoreCheckResults(results) {
 
     // DB_USAGE, AP_USAGE, DBMS_ETC 필드 매핑
     var dbUsageMap = { 'CPU': 'db_usage_cpu', 'Memory': 'db_usage_memory', '/': 'db_usage_root',
-        '/backup': 'db_usage_backup', '\\/backup': 'db_usage_backup', 'oracle': 'db_usage_oracle', 'Oradata': 'db_usage_oradata', 'archive': 'db_usage_archive' };
+        '/backup': 'db_usage_backup', '/oracle': 'db_usage_oracle', '/oradata': 'db_usage_oradata', '/archive': 'db_usage_archive' };
     var apUsageMap = { 'CPU': 'ap_usage_cpu', 'Memory': 'ap_usage_memory', 'Disk C:': 'ap_usage_diskC', 'Disk D:': 'ap_usage_diskD' };
 
     results.forEach(function(r) {
-        // 사용율/기타 복원
+        // 사용율/기타 복원 (category 또는 itemName 으로 매핑)
         if (r.section === 'DB_USAGE') {
-            var elId = dbUsageMap[r.category];
-            if (elId) { var el = document.getElementById(elId); if (el) el.value = r.result || ''; }
+            var key = r.itemName || r.category;
+            var elId = dbUsageMap[key];
+            if (elId) { var el = document.getElementById(elId); if (el) el.value = r.resultText || r.result || ''; }
             return;
         }
         if (r.section === 'AP_USAGE') {
-            var elId2 = apUsageMap[r.category];
-            if (elId2) { var el2 = document.getElementById(elId2); if (el2) el2.value = r.result || ''; }
+            var key2 = r.itemName || r.category;
+            var elId2 = apUsageMap[key2];
+            if (elId2) { var el2 = document.getElementById(elId2); if (el2) el2.value = r.resultText || r.result || ''; }
             return;
         }
         if (r.section === 'DBMS_ETC') {

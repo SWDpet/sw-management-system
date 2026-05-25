@@ -74,9 +74,14 @@ function ConvertTo-QrPayload {
         # value가 객체면 대표 숫자 추출 (PS 4.0 호환: try/catch로 키 접근)
         $extracted = $false
         if ($v -ne $null) {
-            try { if ($v.total_gb -ne $null -and $v.free_gb -ne $null) {
-                $v = [ordered]@{ t = [math]::Round($v.total_gb, 1); f = [math]::Round($v.free_gb, 1); p = $v.pct }; $extracted = $true
+            try { if ($v.drives -ne $null) {
+                # AP disk_summary: drives 배열 → 개별 drive {t,f,p} 축약
+                $drvs = @{}; foreach ($d in $v.drives) { $drvs[$d.letter] = [ordered]@{ t=[math]::Round($d.total_gb,1); f=[math]::Round($d.free_gb,1); p=$d.pct } }
+                $v = $drvs; $extracted = $true
             }} catch {}
+            if (-not $extracted) { try { if ($v.total_gb -ne $null -and $v.free_gb -ne $null) {
+                $v = [ordered]@{ t = [math]::Round($v.total_gb, 1); f = [math]::Round($v.free_gb, 1); p = $v.pct }; $extracted = $true
+            }} catch {} }
             if (-not $extracted) { try { if ($v.mounts -ne $null) {
                 $v = $v.mounts; $extracted = $true
             }} catch {} }
