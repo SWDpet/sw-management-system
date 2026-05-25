@@ -16,17 +16,20 @@ function Invoke-Checks {
     $manifestPath = Join-Path (Split-Path -Parent $ChecksDir) 'manifest.json'
     $manifestModules = $null
 
-    if ($tier -and (Test-Path $manifestPath)) {
+    if (Test-Path $manifestPath) {
         try {
             $manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-            if ($manifest.sections.PSObject.Properties[$tier]) {
-                $manifestModules = $manifest.sections.$tier
-                Write-Log -Level INFO -Msg ("manifest dispatch: tier={0}, rows={1}" -f $tier, $manifestModules.Count)
-            } else {
-                Write-Log -Level WARN -Msg ("manifest 에 tier '{0}' 섹션 없음 — alphabetical fallback" -f $tier)
+            # AP 서버에서 전 섹션(AP/DB/DBMS/GIS) 수집 — DB/DBMS는 Telnet 원격, GIS는 로컬
+            $allModules = New-Object System.Collections.ArrayList
+            foreach ($sec in $manifest.sections.PSObject.Properties) {
+                foreach ($m in $sec.Value) { [void]$allModules.Add($m) }
+            }
+            if ($allModules.Count -gt 0) {
+                $manifestModules = $allModules.ToArray()
+                Write-Log -Level INFO -Msg ("manifest dispatch: all sections, rows={0}" -f $manifestModules.Count)
             }
         } catch {
-            Write-Log -Level WARN -Msg ("manifest 로드 실패: {0} — alphabetical fallback" -f $_.Exception.Message)
+            Write-Log -Level WARN -Msg ("manifest load failed: {0} — alphabetical fallback" -f $_.Exception.Message)
         }
     }
 
