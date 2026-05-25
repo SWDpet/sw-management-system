@@ -834,7 +834,7 @@
             if (!dist) { sysSel.innerHTML = '<option value="">-- 시군구 먼저 선택 --</option>'; return; }
 
             // 수신자 자동 세팅 (orgNm은 프로젝트 로드 시 반영)
-            document.getElementById('letter_to').value = buildRecipient(city, dist, null);
+            document.getElementById('letter_to').value = buildRecipient(null);
 
             fetch('/document/api/project-systems?year=' + year + '&cityNm=' + encodeURIComponent(city) + '&distNm=' + encodeURIComponent(dist))
                 .then(function(r) { return r.json(); })
@@ -885,29 +885,16 @@
                 });
         }
 
-        function buildRecipient(city, dist, orgNm) {
-            if (!city) return '';
-            if (orgNm) return orgNm;
-            var isSejong = city.indexOf('세종') >= 0;
-            var isMetro = city.indexOf('광역시') >= 0 || city.indexOf('특별시') >= 0;
-            var isSpecialDo = city.indexOf('특별자치도') >= 0 || city.indexOf('특별자치시') >= 0;
-            if (isSejong) return '세종특별자치시청';
-            if (isSpecialDo && city.indexOf('시') >= 0) return city + '청';
-            if (isMetro) return dist ? (city + ' ' + dist + '청') : (city + '청');
-            return dist ? (dist + '청') : (city + '청');
+        function buildRecipient(orgNm) {
+            // sw_pjt.org_nm 단일 소스. 값 없으면 빈 문자열.
+            if (!orgNm) return '';
+            return orgNm;
         }
 
-        function buildRecipientHead(city, dist, orgNm) {
-            if (!city && !dist) return '';
-            // 군 → 군수, 시 → 시장, 구 → 구청장, 그 외 → ~장
-            if (dist) {
-                if (dist.endsWith('군')) return dist + '수 귀하';
-                if (dist.endsWith('구')) return dist + '청장 귀하';
-                if (dist.endsWith('시')) return dist + '장 귀하';
-            }
-            // 광역시/특별시 (dist 없는 경우)
-            if (city.endsWith('시')) return city.replace(/시$/, '시장') + ' 귀하';
-            return (dist || city) + '장 귀하';
+        function buildRecipientHead(orgLghNm) {
+            // sw_pjt.org_lgh_nm 단일 소스. 값 없으면 빈 문자열.
+            if (!orgLghNm) return '';
+            return orgLghNm + ' 귀하';
         }
 
         function formatContDt(dtStr) {
@@ -954,8 +941,8 @@
                 .then(function(p) {
                     currentProject = p;
                     var projName = p.projNm || p.sysNm || '';
-                    var recip = buildRecipient(p.cityNm, p.distNm, p.orgNm);
-                    var recipHead = buildRecipientHead(p.cityNm, p.distNm, p.orgNm);
+                    var recip = buildRecipient(p.orgNm);
+                    var recipHead = buildRecipientHead(p.orgLghNm);
 
                     // ① 공문
                     document.getElementById('letter_to').value = recip;

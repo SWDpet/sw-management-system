@@ -101,48 +101,21 @@ public class HwpxExportService {
     }
 
     /**
-     * 수신처 두목(Head) 생성
-     * 가평군 -> "가평군수 귀하"
-     * 강릉시 -> "강릉시장 귀하"
-     * 동대문구 -> "동대문구청장 귀하"
+     * 수신 두목(Head) 생성 — sw_pjt.org_lgh_nm 단일 소스
+     * 값 없으면 빈 문자열 (담당자에게 미입력 인지시키기 위함)
      */
-    public static String buildRecipientHead(String cityNm, String distNm) {
-        String target = (distNm != null && !distNm.isEmpty()) ? distNm : cityNm;
-        if (target == null || target.isEmpty()) return "";
-
-        String title;
-        if (target.endsWith("군")) {
-            title = target + "수";
-        } else if (target.endsWith("시")) {
-            title = target + "장";
-        } else if (target.endsWith("구")) {
-            title = target + "청장";
-        } else {
-            title = target + "장";
-        }
-        return title + " 귀하";
+    public static String buildRecipientHead(String orgLghNm) {
+        if (orgLghNm == null || orgLghNm.isEmpty()) return "";
+        return orgLghNm + " 귀하";
     }
 
     /**
-     * 수신처 기관명 생성
-     * 가평군 -> "가평군청"
-     * 강릉시 -> "강릉시청"
-     * orgNm이 있으면 우선 사용
+     * 수신처 기관명 — sw_pjt.org_nm 단일 소스
+     * 값 없으면 빈 문자열 (담당자에게 미입력 인지시키기 위함)
      */
-    public static String buildRecipientOrg(String cityNm, String distNm, String orgNm) {
-        if (orgNm != null && !orgNm.isEmpty()) {
-            return orgNm;
-        }
-
-        String target = (distNm != null && !distNm.isEmpty()) ? distNm : cityNm;
-        if (target == null || target.isEmpty()) return "";
-
-        if (target.endsWith("군") || target.endsWith("시")) {
-            return target + "청";
-        } else if (target.endsWith("구")) {
-            return target + "청";
-        }
-        return target;
+    public static String buildRecipientOrg(String orgNm) {
+        if (orgNm == null || orgNm.isEmpty()) return "";
+        return orgNm;
     }
 
     /**
@@ -242,12 +215,13 @@ public class HwpxExportService {
         String cityNm = (proj != null && proj.getCityNm() != null) ? proj.getCityNm() : "";
         String distNm = (proj != null && proj.getDistNm() != null) ? proj.getDistNm() : "";
         String orgNm = (proj != null && proj.getOrgNm() != null) ? proj.getOrgNm() : "";
+        String orgLghNm = (proj != null && proj.getOrgLghNm() != null) ? proj.getOrgLghNm() : "";
         String docNo = doc.getDocNo() != null ? doc.getDocNo() : "";
 
         if ("letter".equals(templateType)) {
             Map<String, Object> letterData = getSectionData(doc, "letter");
 
-            map.put("{{수신}}", buildRecipientOrg(cityNm, distNm, orgNm));
+            map.put("{{수신}}", buildRecipientOrg(orgNm));
             map.put("{{담당}}", getStr(letterData, "manager", ""));
             map.put("{{연락처}}", getStr(letterData, "tel", ""));
             map.put("{{시행일자}}", getStr(letterData, "date", ""));
@@ -283,7 +257,7 @@ public class HwpxExportService {
 
         if ("inspector".equals(templateType)) {
             map.put("{{용역명}}", projNm);
-            map.put("{{수신}}", buildRecipientHead(cityNm, distNm));
+            map.put("{{수신}}", buildRecipientHead(orgLghNm));
 
             Long contAmt = (proj != null && proj.getContAmt() != null) ? proj.getContAmt() : 0L;
             map.put("{{계약금액}}", "금" + String.format("%,d", contAmt) + "원");
@@ -353,7 +327,7 @@ public class HwpxExportService {
 
         if ("commence_body".equals(templateType)) {
             map.put("{{용역명}}", projNm);
-            map.put("{{수신}}", buildRecipientHead(cityNm, distNm));
+            map.put("{{수신}}", buildRecipientHead(orgLghNm));
 
             Long contAmt = (proj != null && proj.getContAmt() != null && proj.getContAmt() > 0) ? proj.getContAmt() : null;
             map.put("{{계약금액}}", contAmt != null
@@ -762,7 +736,7 @@ public class HwpxExportService {
 
         if ("completion_body_upis".equals(templateType)) {
             map.put("{{용역명}}", projNm);
-            map.put("{{수신}}", buildRecipientHead(cityNm, distNm));
+            map.put("{{수신}}", buildRecipientHead(orgLghNm));
 
             Long contAmt = (proj != null && proj.getContAmt() != null) ? proj.getContAmt() : 0L;
             map.put("{{계약금액}}", "금" + String.format("%,d", contAmt) + "원(금" + convertToKoreanAmount(contAmt) + "원)");
@@ -804,7 +778,7 @@ public class HwpxExportService {
             map.put("{{용역명_앞}}", projNm);
             map.put("{{용역명_뒤}}", "");
             map.put("{{용역명}}", projNm);
-            map.put("{{수신}}", buildRecipientHead(cityNm, distNm));
+            map.put("{{수신}}", buildRecipientHead(orgLghNm));
 
             Long contAmt = (proj != null && proj.getContAmt() != null) ? proj.getContAmt() : 0L;
             map.put("{{계약금액}}", "금" + String.format("%,d", contAmt) + "원");
@@ -850,7 +824,7 @@ public class HwpxExportService {
         if ("completion_full".equals(templateType)) {
             // 통합 준공계 템플릿 (v1) - 페이지 1·2 placeholder
             map.put("{{용역명}}", projNm);
-            map.put("{{수신처}}", buildRecipientHead(cityNm, distNm));
+            map.put("{{수신처}}", buildRecipientHead(orgLghNm));
 
             Long contAmt = (proj != null && proj.getContAmt() != null) ? proj.getContAmt() : 0L;
             map.put("{{계약금액}}", String.format("%,d", contAmt));
