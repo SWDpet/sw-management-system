@@ -266,6 +266,7 @@ public class DocumentController {
         // doc-split-ops: INSPECT 는 DocumentType enum 에서 제거됐지만 점검내역서 작성 화면
         // (doc-inspect.html) 은 90% 완성된 InspectReport 흐름을 그대로 사용. 직접 라우팅.
         if ("INSPECT".equalsIgnoreCase(docType)) {
+            model.addAttribute("isAdmin", isAdmin());
             return "document/doc-inspect";
         }
 
@@ -1538,6 +1539,14 @@ public class DocumentController {
         Map<String, Object> result = new LinkedHashMap<>();
         try {
             InspectReportDTO dto = inspectReportService.findById(id);
+            log.info("[Phase J 진단] report_id={} checkResults={} visits={}", id,
+                    dto.getCheckResults() != null ? dto.getCheckResults().size() : 0,
+                    dto.getVisits() != null ? dto.getVisits().size() : 0);
+            if (dto.getCheckResults() != null && !dto.getCheckResults().isEmpty()) {
+                var sample = dto.getCheckResults().get(0);
+                log.info("[Phase J 진단] 샘플 row: section={} itemName={} resultCode={} resultText={}",
+                        sample.getSection(), sample.getItemName(), sample.getResultCode(), sample.getResultText());
+            }
             result.put("success", true);
             result.put("data", dto);
         } catch (Exception e) {
@@ -1598,14 +1607,14 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
-    /** DELETE /document/api/inspect-report/{id} - 삭제 — 감사 P1-2 조치: EDIT 권한 체크 (2026-04-18) */
+    /** DELETE /document/api/inspect-report/{id} - soft delete — Phase J: 관리자(ADMIN) 전용 */
     @DeleteMapping("/api/inspect-report/{id}")
     @ResponseBody
     public ResponseEntity<?> deleteInspectReport(@PathVariable Long id) {
-        if (!"EDIT".equals(getAuth())) {
+        if (!isAdmin()) {
             Map<String, Object> forbidden = new LinkedHashMap<>();
             forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "관리자만 삭제할 수 있습니다"));
             return ResponseEntity.status(403).body(forbidden);
         }
         Map<String, Object> result = new LinkedHashMap<>();
@@ -1770,11 +1779,11 @@ public class DocumentController {
                 model.addAttribute("infraList", infraList);
             }
 
+            model.addAttribute("isAdmin", isAdmin());
             return "document/inspect-detail";
         } catch (Exception e) {
             log.error("점검내역서 상세 조회 실패: {}", e.getMessage(), e);
-            model.addAttribute("errorMessage", "점검내역서를 찾을 수 없습니다.");
-            return "redirect:/document/list";
+            return "redirect:/ops-doc/list";
         }
     }
 

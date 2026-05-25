@@ -10,10 +10,10 @@ import java.util.Optional;
 @Repository
 public interface InspectReportRepository extends JpaRepository<InspectReport, Long> {
 
-    List<InspectReport> findByPjtIdOrderByCreatedAtDesc(Long pjtId);
+    List<InspectReport> findByPjtIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long pjtId);
 
-    Optional<InspectReport> findByPjtIdAndInspectMonth(Long pjtId, String inspectMonth);
+    Optional<InspectReport> findByPjtIdAndInspectMonthAndDeletedAtIsNull(Long pjtId, String inspectMonth);
 
     /** inspection-qr-batch sprint: 멱등 응답용 — batch_id 는 UNIQUE (partial index where not null). */
-    Optional<InspectReport> findByBatchId(String batchId);
+    Optional<InspectReport> findByBatchIdAndDeletedAtIsNull(String batchId);
 }

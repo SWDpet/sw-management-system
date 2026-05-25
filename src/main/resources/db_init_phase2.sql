@@ -793,3 +793,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_inspect_report_batch_id
 ALTER TABLE sw_pjt ADD COLUMN IF NOT EXISTS site_code VARCHAR(32);
 CREATE UNIQUE INDEX IF NOT EXISTS uq_sw_pjt_site_code
     ON sw_pjt(site_code) WHERE site_code IS NOT NULL;
+
+-- inspection-report-d-v6 Phase J: soft delete (V031)
+ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_inspect_report_active
+    ON inspect_report (pjt_id, created_at DESC) WHERE deleted_at IS NULL;
+
+-- V029: inspect_metric_snapshot (Phase A)
+CREATE TABLE IF NOT EXISTS inspect_metric_snapshot (
+    snapshot_id     BIGSERIAL    PRIMARY KEY,
+    pjt_id          BIGINT       NOT NULL REFERENCES sw_pjt(proj_id) ON DELETE CASCADE,
+    server_role     VARCHAR(16)  NOT NULL,
+    host_name       VARCHAR(64)  DEFAULT '',
+    host_ip         VARCHAR(45),
+    collected_at    TIMESTAMPTZ  NOT NULL,
+    cpu_pct         NUMERIC(5,2),
+    mem_pct         NUMERIC(5,2),
+    disk_pct        NUMERIC(5,2),
+    raw_payload     JSONB,
+    created_at      TIMESTAMPTZ  DEFAULT now() NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_metric_pjt_role_host_time ON inspect_metric_snapshot (pjt_id, server_role, COALESCE(host_name, ''), collected_at);
+CREATE INDEX IF NOT EXISTS idx_metric_pjt_role_time ON inspect_metric_snapshot (pjt_id, server_role, collected_at DESC);
+
+-- Phase J 일회성 정리: 모든 inspect 관련 ops_doc + report 전부 초기화
+DELETE FROM inspect_check_result;
+DELETE FROM inspect_visit_log;
+DELETE FROM tb_ops_doc WHERE doc_type = 'INSPECT';
+DELETE FROM inspect_qr_batch;
+DELETE FROM inspect_metric_snapshot;
+DELETE FROM inspect_report;

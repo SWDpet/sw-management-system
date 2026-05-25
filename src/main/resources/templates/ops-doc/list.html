@@ -109,6 +109,7 @@
                         <th>상태</th>
                         <th>작성자</th>
                         <th>작성일</th>
+                        <th th:if="${isAdmin}" style="width:60px;text-align:center;">관리</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -128,13 +129,54 @@
                         </td>
                         <td th:text="${d.author?.username ?: '-'}">-</td>
                         <td th:text="${d.createdAt != null ? #temporals.format(d.createdAt, 'yyyy-MM-dd') : '-'}">-</td>
+                        <td th:if="${isAdmin}" style="text-align:center;" onclick="event.stopPropagation();">
+                            <button th:if="${d.docType?.name() == 'INSPECT'}"
+                                    th:data-docno="${d.docNo}" th:data-docid="${d.docId}"
+                                    onclick="deleteInspectDoc(this.dataset.docno, this.dataset.docid); event.stopPropagation();"
+                                    style="padding:4px 10px;background:#e74a3b;color:white;border:none;border-radius:4px;font-size:0.78em;cursor:pointer;"
+                                    title="삭제"><i class="fas fa-trash-alt"></i></button>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(documents)}" class="empty-row">
-                        <td colspan="9"><i class="fas fa-inbox"></i> 등록된 운영문서가 없습니다. 점검내역서는 점검 보고서 작성 후 자동 연계됩니다.</td>
+                        <td th:attr="colspan=${isAdmin ? 10 : 9}"><i class="fas fa-inbox"></i> 등록된 운영문서가 없습니다. 점검내역서는 점검 보고서 작성 후 자동 연계됩니다.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+
+<script th:if="${isAdmin}">
+function deleteInspectDoc(docNo, opsDocId) {
+    if (!confirm('이 점검내역서를 삭제하시겠습니까?')) return;
+    var reportId = null;
+    if (docNo) {
+        var lastDash = docNo.lastIndexOf('-');
+        if (lastDash >= 0 && lastDash < docNo.length - 1) {
+            reportId = parseInt(docNo.substring(lastDash + 1));
+        }
+    }
+    if (!reportId || isNaN(reportId)) { alert('Report ID를 추출할 수 없습니다: docNo=' + docNo); return; }
+    fetch('/document/api/inspect-report/' + reportId, { method: 'DELETE' })
+        .then(function(r) {
+            if (r.redirected || r.url.indexOf('/login') >= 0) {
+                alert('세션 만료 — 다시 로그인해주세요.');
+                location.href = '/login';
+                return null;
+            }
+            return r.text();
+        })
+        .then(function(text) {
+            if (!text) return;
+            try { var resp = JSON.parse(text); } catch(pe) { alert('응답 파싱 실패: ' + text.substring(0, 200)); return; }
+            if (resp.success) {
+                alert('삭제되었습니다.');
+                location.reload();
+            } else {
+                alert('삭제 실패: ' + (resp.error && resp.error.message ? resp.error.message : JSON.stringify(resp.error) || ''));
+            }
+        })
+        .catch(function(e) { alert('삭제 오류: ' + e.message); });
+}
+</script>
 </body>
 </html>

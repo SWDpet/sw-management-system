@@ -57,7 +57,16 @@ public class OpsDocController {
         model.addAttribute("status", status);
         model.addAttribute("keyword", keyword);
         model.addAttribute("activeMenu", "ops");
+        model.addAttribute("isAdmin", isAdmin());
         return "ops-doc/list";
+    }
+
+    private boolean isAdmin() {
+        try {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            return auth != null && auth.getAuthorities().contains(
+                    new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_ADMIN"));
+        } catch (Exception e) { return false; }
     }
 
     /** 신규 작성 폼 (4 종). */

@@ -98,6 +98,9 @@ public class InspectReport {
     @Column(name = "next_schedule_note", length = 300)
     private String nextScheduleNote;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "created_by", length = 50)
     private String createdBy;
 

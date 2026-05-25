@@ -10,8 +10,10 @@ import com.swmanager.system.dto.InspectReportDTO;
 import com.swmanager.system.dto.InspectVisitLogDTO;
 import com.swmanager.system.repository.InspectCheckResultRepository;
 import com.swmanager.system.repository.InspectReportRepository;
+import com.swmanager.system.repository.InspectQrBatchRepository;
 import com.swmanager.system.repository.InspectTemplateRepository;
 import com.swmanager.system.repository.InspectVisitLogRepository;
+import com.swmanager.system.repository.ops.OpsDocumentRepository;
 import com.swmanager.system.service.ops.OpsDocLinkService;
 import com.swmanager.system.i18n.MessageResolver;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -31,6 +36,8 @@ public class InspectReportService {
     private final InspectVisitLogRepository visitLogRepository;
     private final InspectCheckResultRepository checkResultRepository;
     private final InspectTemplateRepository templateRepository;
+    private final InspectQrBatchRepository qrBatchRepository;
+    private final OpsDocumentRepository opsDocumentRepository;
     private final OpsDocLinkService opsDocLinkService;  // doc-split-ops: tb_ops_doc 연계 (codex 권고로 별도 bean)
     private final MessageResolver messages;
 
@@ -39,35 +46,66 @@ public class InspectReportService {
     @Transactional
     public InspectReportDTO save(InspectReportDTO dto) {
         String user = currentUser();
+        Set<String> protectedSections = Set.of();
 
         InspectReport report = dto.toEntity();
 
         if (report.getId() == null) {
-            // 신규
             report.setCreatedBy(user);
             report.setUpdatedBy(user);
         } else {
-            // 수정: 기존 레코드에서 createdBy 유지
             InspectReport existing = reportRepository.findById(report.getId())
                     .orElseThrow(() -> new IllegalArgumentException(messages.get("error.inspect_report.not_found", report.getId())));
             report.setCreatedBy(existing.getCreatedBy());
             report.setCreatedAt(existing.getCreatedAt());
             report.setUpdatedBy(user);
 
-            // 기존 하위 데이터 삭제
             visitLogRepository.deleteByReportId(report.getId());
-            checkResultRepository.deleteByReportId(report.getId());
+
+            // QR 적재(resultCode 있는) 섹션 보호: incoming 에 resultCode 없으면 기존 데이터 보존
+            Set<String> qrSections = new HashSet<>();
+            for (InspectCheckResult c : checkResultRepository.findByReportIdOrderBySectionAscSortOrderAsc(report.getId())) {
+                if (c.getResultCode() != null && !c.getResultCode().isEmpty()) {
+                    qrSections.add(c.getSection());
+                }
+            }
+            Set<String> incomingWithCode = new HashSet<>();
+            if (dto.getCheckResults() != null) {
+                for (InspectCheckResultDTO cr : dto.getCheckResults()) {
+                    if (cr.getResultCode() != null && !cr.getResultCode().isEmpty()) {
+                        incomingWithCode.add(cr.getSection());
+                    }
+                }
+            }
+            Set<String> toProtect = new HashSet<>();
+            for (String s : qrSections) {
+                if (!incomingWithCode.contains(s)) toProtect.add(s);
+            }
+            protectedSections = toProtect;
+
+            if (protectedSections.isEmpty()) {
+                checkResultRepository.deleteByReportId(report.getId());
+            } else {
+                Set<String> allSections = new HashSet<>();
+                for (InspectCheckResult c : checkResultRepository.findByReportIdOrderBySectionAscSortOrderAsc(report.getId())) {
+                    allSections.add(c.getSection());
+                }
+                allSections.removeAll(protectedSections);
+                if (!allSections.isEmpty()) {
+                    checkResultRepository.deleteByReportIdAndSectionIn(report.getId(), List.copyOf(allSections));
+                }
+                log.info("QR 적재 데이터 보호: sections={}", protectedSections);
+            }
         }
 
         InspectReport saved = reportRepository.save(report);
         Long reportId = saved.getId();
 
-        // 방문이력 저장
         if (dto.getVisits() != null) {
             int order = 0;
             for (InspectVisitLogDTO visitDto : dto.getVisits()) {
                 InspectVisitLog visitLog = visitDto.toEntity(reportId);
-                visitLog.setId(null); // 항상 신규 삽입
+                visitLog.setId(null);
                 if (visitLog.getSortOrder() == null || visitLog.getSortOrder() == 0) {
                     visitLog.setSortOrder(++order);
                 }
@@ -75,11 +113,14 @@ public class InspectReportService {
             }
         }
 
-        // 점검결과 저장
+        final Set<String> skipSections = protectedSections;
         if (dto.getCheckResults() != null) {
             for (InspectCheckResultDTO checkDto : dto.getCheckResults()) {
+                if (!skipSections.isEmpty() && skipSections.contains(checkDto.getSection())) {
+                    continue;
+                }
                 InspectCheckResult checkResult = checkDto.toEntity(reportId);
-                checkResult.setId(null); // 항상 신규 삽입
+                checkResult.setId(null);
                 checkResultRepository.save(checkResult);
             }
         }
@@ -101,6 +142,7 @@ public class InspectReportService {
     @Transactional(readOnly = true)
     public InspectReportDTO findById(Long id) {
         InspectReport report = reportRepository.findById(id)
+                .filter(r -> r.getDeletedAt() == null)
                 .orElseThrow(() -> new IllegalArgumentException(messages.get("error.inspect_report.not_found", id)));
 
         InspectReportDTO dto = InspectReportDTO.fromEntity(report);
@@ -151,7 +193,7 @@ public class InspectReportService {
 
     @Transactional(readOnly = true)
     public List<InspectReportDTO> findByProject(Long pjtId) {
-        return reportRepository.findByPjtIdOrderByCreatedAtDesc(pjtId)
+        return reportRepository.findByPjtIdAndDeletedAtIsNullOrderByCreatedAtDesc(pjtId)
                 .stream()
                 .map(InspectReportDTO::fromEntity)
                 .toList();
@@ -164,20 +206,34 @@ public class InspectReportService {
     @Transactional(readOnly = true)
     public InspectReportDTO findByProjectAndMonth(Long pjtId, String inspectMonth) {
         if (pjtId == null || inspectMonth == null || inspectMonth.isEmpty()) return null;
-        return reportRepository.findByPjtIdAndInspectMonth(pjtId, inspectMonth)
+        return reportRepository.findByPjtIdAndInspectMonthAndDeletedAtIsNull(pjtId, inspectMonth)
                 .map(r -> findById(r.getId()))   // 풀 DTO (visits+checkResults 포함) 가져오기
                 .orElse(null);
     }
 
-    // ===== 삭제 =====
+    // ===== 삭제 (soft delete) =====
 
     @Transactional
     public void delete(Long id) {
         InspectReport report = reportRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(messages.get("error.inspect_report.not_found", id)));
-        visitLogRepository.deleteByReportId(id);
-        checkResultRepository.deleteByReportId(id);
-        reportRepository.delete(report);
+        report.setDeletedAt(LocalDateTime.now());
+        report.setBatchId(null);
+        reportRepository.save(report);
+        qrBatchRepository.deleteByReportId(id);
+
+        // tb_ops_doc 연계 레코드 삭제 (INSP-yyyy-{id} 등 3 포맷)
+        String month = report.getInspectMonth();
+        String yyyy = month != null && month.length() >= 4 ? month.substring(0, 4)
+                : String.valueOf(java.time.LocalDate.now().getYear());
+        for (String docNo : List.of("INSP-" + yyyy + "-" + id, "INSP-" + id)) {
+            opsDocumentRepository.findByDocNo(docNo).ifPresent(opsDocumentRepository::delete);
+        }
+        if (month != null && month.length() >= 7) {
+            String mm = month.substring(5, 7);
+            opsDocumentRepository.findByDocNo("INSP-" + yyyy + "-" + mm + "-" + id)
+                    .ifPresent(opsDocumentRepository::delete);
+        }
     }
 
     // ===== 템플릿 항목 조회 =====

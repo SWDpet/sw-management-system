@@ -42,9 +42,10 @@
         .check-table tbody td { vertical-align: middle; }
         .check-table .cat-cell { background: #f8f9fc; font-weight: 600; text-align: center; white-space: nowrap; }
 
-        .result-cell { text-align: center; white-space: nowrap; }
-        .result-cell label { margin: 0 6px; cursor: pointer; font-size: 0.92em; }
+        .result-cell { text-align: center; white-space: normal; }
+        .result-cell label { margin: 0 6px; cursor: pointer; font-size: 0.92em; white-space: nowrap; }
         .result-cell input[type="checkbox"] { margin-right: 2px; cursor: pointer; transform: scale(1.1); vertical-align: middle; }
+        .qr-memo { font-size: 0.75em; color: #1e40af; margin-top: 5px; word-break: break-all; white-space: normal; line-height: 1.3; background: #dbeafe; border: 1px solid #93c5fd; border-radius: 4px; padding: 3px 7px; display: block; text-align: left; font-weight: 600; }
 
         /* inspect-report-d-v6 Phase H — 자동 영역인데 QR 수집값이 없는 행 시각 단서.
            applyAutoReadonlyIfNeeded() / restoreCheckResults() 이후 markAwaitingCollection() 가
@@ -133,6 +134,7 @@
             <button onclick="openSignModal()" class="btn-save" style="background:#0F766E;"><i class="fas fa-signature"></i> 서명 요청</button>
             <a href="/ops-doc/list" class="btn-load" style="background:#36b9cc;"><i class="fas fa-list"></i> 목록</a>
             <a href="/ops-doc/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
+            <button th:if="${isAdmin}" onclick="openDeleteModal()" id="btnDeleteReport" class="btn-save" style="background:#e74a3b;display:none;"><i class="fas fa-trash-alt"></i> 삭제</button>
             </div>
     </div>
 
@@ -324,9 +326,9 @@
                     <td style="width:14%;">Memory</td><td style="width:19%;"><input type="text" id="db_usage_memory"></td>
                     <td style="width:14%;">/</td><td style="width:19%;"><input type="text" id="db_usage_root"></td></tr>
                 <tr><td>/backup</td><td><input type="text" id="db_usage_backup"></td>
-                    <td>oracle</td><td><input type="text" id="db_usage_oracle"></td>
-                    <td>Oradata</td><td><input type="text" id="db_usage_oradata"></td></tr>
-                <tr><td>archive</td><td><input type="text" id="db_usage_archive"></td>
+                    <td>/oracle</td><td><input type="text" id="db_usage_oracle"></td>
+                    <td>/oradata</td><td><input type="text" id="db_usage_oradata"></td></tr>
+                <tr><td>/archive</td><td><input type="text" id="db_usage_archive"></td>
                     <td colspan="4"></td></tr>
             </tbody>
         </table>
@@ -595,6 +597,18 @@
         <div id="reportListBody"><div style="color:#999;">사업을 먼저 선택해주세요.</div></div>
         <div style="text-align:right;margin-top:12px;">
             <button onclick="document.getElementById('reportListModal').style.display='none'" class="btn-cancel" style="padding:6px 16px;border:none;border-radius:4px;cursor:pointer;">닫기</button>
+        </div>
+    </div>
+</div>
+
+<!-- 삭제 확인 모달 (Phase J: 관리자 전용) -->
+<div class="report-list-modal" id="deleteConfirmModal" onclick="if(event.target===this)this.style.display='none'" th:if="${isAdmin}">
+    <div class="report-list-content" style="max-width:440px;text-align:center;">
+        <h3 style="color:#e74a3b;"><i class="fas fa-exclamation-triangle"></i> 점검내역서 삭제</h3>
+        <p style="margin:16px 0;font-size:0.92em;color:#555;">이 점검내역서를 삭제하시겠습니까?<br>삭제된 데이터는 관리자에 의해 복구될 수 있습니다.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+            <button onclick="document.getElementById('deleteConfirmModal').style.display='none'" class="btn-cancel" style="padding:10px 24px;border:none;border-radius:6px;cursor:pointer;font-size:0.88em;">취소</button>
+            <button onclick="confirmDeleteReport()" style="padding:10px 24px;border:none;border-radius:6px;cursor:pointer;font-size:0.88em;background:#e74a3b;color:white;font-weight:600;">삭제</button>
         </div>
     </div>
 </div>
@@ -876,29 +890,31 @@ function applyAutoReadonlyIfNeeded() {
 // applyAutoReadonlyIfNeeded() 와 restoreCheckResults() 양쪽에서 호출되며 idempotent.
 function markAwaitingCollection() {
     var autoBodies = ['dbCheckBody', 'apCheckBody', 'dbmsCheckBody', 'gisCheckBody'];
+    var manualPatterns = /육안 확인|LED.*점검|케이블.*점검|desktop pro|서비스 확인|관리자/i;
     autoBodies.forEach(function(bid) {
         document.querySelectorAll('#' + bid + ' tr').forEach(function(tr) {
-            // GIS 수동 행은 제외 (Desktop Pro / 관리자 페이지) — applyAutoReadonlyIfNeeded 와 동일 규칙
-            if (bid === 'gisCheckBody' && /desktop pro|서비스 확인|관리자/i.test(tr.textContent || '')) {
-                tr.classList.remove('awaiting-collection');
-                return;
-            }
             var cell = tr.querySelector('.result-cell');
             if (!cell) return;
             var anyChecked = false;
             cell.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
                 if (cb.checked) anyChecked = true;
             });
-            // 기존 태그 제거 (재호출 대비)
             var oldTag = cell.querySelector('.awaiting-tag');
             if (oldTag) oldTag.remove();
             if (anyChecked) {
                 tr.classList.remove('awaiting-collection');
             } else {
+                var isManual = manualPatterns.test(tr.textContent || '');
                 tr.classList.add('awaiting-collection');
                 var tag = document.createElement('span');
                 tag.className = 'awaiting-tag';
-                tag.textContent = '수집 대기';
+                if (isManual) {
+                    tag.textContent = '수동 점검';
+                    tag.style.color = '#6b21a8';
+                    tag.style.borderColor = '#a855f7';
+                } else {
+                    tag.textContent = '수집 대기';
+                }
                 cell.appendChild(tag);
             }
         });
@@ -1696,7 +1712,7 @@ function collectCheckResults(results, bodyId, section) {
         var startIdx = catCell ? 1 : 0;
         var itemName = tds[startIdx] ? tds[startIdx].textContent.trim() : '';
         var itemMethod = tds[startIdx + 1] ? tds[startIdx + 1].textContent.trim() : '';
-        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, sortOrder: sortIdx++ });
+        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, resultCode: labelToResultCode(result), sortOrder: sortIdx++ });
     });
 }
 
@@ -1713,7 +1729,7 @@ function collectApCheckResults(results, bodyId, section) {
         var content = tds[startIdx + 1] ? tds[startIdx + 1].textContent.trim() : '';
         var criteria = tds[startIdx + 2] ? tds[startIdx + 2].textContent.trim() : '';
         var itemMethod = content + (criteria ? '||' + criteria : '');
-        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, sortOrder: sortIdx++ });
+        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, resultCode: labelToResultCode(result), sortOrder: sortIdx++ });
     });
 }
 
@@ -1732,7 +1748,7 @@ function collectAppCheckResults(results, bodyId, section) {
         var startIdx = catCell ? 1 : 0;
         var itemName = tds[startIdx] ? tds[startIdx].textContent.trim() : '';
         var itemMethod = tds[startIdx + 1] ? tds[startIdx + 1].textContent.trim() : '';
-        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, sortOrder: sortIdx++ });
+        results.push({ section: section, category: category, itemName: itemName, itemMethod: itemMethod, result: result, resultCode: labelToResultCode(result), sortOrder: sortIdx++ });
     });
 }
 
@@ -1743,6 +1759,12 @@ function getCheckboxResult(cell) {
         if (checkboxes[i].checked) return checkboxes[i].value;
     }
     return '';
+}
+
+function labelToResultCode(label) {
+    if (label === '정상') return 'NORMAL';
+    if (label === '점검') return 'ABNORMAL';
+    return null;
 }
 
 // === 저장 ===
@@ -1770,6 +1792,34 @@ function saveReport(status) {
             }
         })
         .catch(function(e) { alert('저장 오류: ' + e.message); });
+}
+
+// === 삭제 (Phase J: 관리자 전용) ===
+function openDeleteModal() {
+    var reportId = document.getElementById('reportId').value;
+    if (!reportId) { alert('저장된 점검내역서가 없습니다.'); return; }
+    document.getElementById('deleteConfirmModal').style.display = 'block';
+}
+
+function confirmDeleteReport() {
+    var reportId = document.getElementById('reportId').value;
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+    var csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+    var headers = { 'Content-Type': 'application/json' };
+    headers[csrfHeader] = csrfToken;
+
+    fetch('/document/api/inspect-report/' + reportId, { method: 'DELETE', headers: headers })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success) {
+                alert('삭제되었습니다.');
+                location.href = '/ops-doc/list';
+            } else {
+                alert('삭제 실패: ' + (resp.error && resp.error.message ? resp.error.message : resp.error || '알 수 없는 오류'));
+            }
+        })
+        .catch(function(e) { alert('삭제 오류: ' + e.message); });
 }
 
 // === 불러오기 ===
@@ -1809,6 +1859,8 @@ function loadReport(id) {
 
             // 1) 기본 필드 복원
             document.getElementById('reportId').value = data.id;
+            var btnDel = document.getElementById('btnDeleteReport');
+            if (btnDel) btnDel.style.display = '';
             document.getElementById('cover_month').value = data.inspectMonth || '';
             document.getElementById('cover_title').value = data.docTitle || '';
             document.getElementById('cover_inspCompany').value = data.inspCompany || '';
@@ -1982,17 +2034,46 @@ function restoreCheckResults(results) {
 
         var bodyId = sectionBodies[r.section];
         if (!bodyId) return;
-        var idx = sectionCounters[r.section]++;
+        var idx = (r.sortOrder != null && r.sortOrder < 100) ? r.sortOrder : sectionCounters[r.section]++;
         var rows = document.querySelectorAll('#' + bodyId + ' tr');
         if (idx < rows.length) {
             var cell = rows[idx].querySelector('.result-cell');
-            if (cell && r.result) {
-                cell.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
-                    cb.checked = (cb.value === r.result);
-                });
+            if (cell) {
+                var codeToLabel = { NORMAL: '정상', PARTIAL: '점검', ABNORMAL: '점검', NOT_APPLICABLE: '' };
+                var label = r.resultCode ? (codeToLabel[r.resultCode] || r.resultCode) : r.result;
+                if (label) {
+                    cell.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+                        cb.checked = (cb.value === label);
+                    });
+                }
+                // 수집값(resultText) 표시
+                var memo = r.resultText || r.result || '';
+                if (memo) {
+                    var memoEl = cell.querySelector('.qr-memo');
+                    if (!memoEl) {
+                        memoEl = document.createElement('div');
+                        memoEl.className = 'qr-memo';
+                        cell.appendChild(memoEl);
+                    }
+                    memoEl.textContent = memo.length > 60 ? memo.substring(0, 60) + '…' : memo;
+                }
             }
         }
     });
+
+    // QR 수집 데이터에서 사용율 필드 자동 채움 (서버에서 포맷 완료된 값)
+    var usageMap = {
+        'ap.perf.cpu_pct': 'ap_usage_cpu', 'ap.perf.mem_pct': 'ap_usage_memory',
+        'ap.disk.c': 'ap_usage_diskC', 'ap.disk.d': 'ap_usage_diskD',
+        'db.os.perf_cpu': 'db_usage_cpu', 'db.os.perf_mem': 'db_usage_memory',
+        'db.os.disk': 'db_usage_root'
+    };
+    results.forEach(function(r) {
+        if (!r.itemName || !r.resultText) return;
+        var elId = usageMap[r.itemName];
+        if (elId) { var el = document.getElementById(elId); if (el && !el.value) el.value = r.resultText; }
+    });
+
     // inspect-report-d-v6 Phase H — QR 데이터 적재 후 수집 대기 상태 갱신
     if (typeof markAwaitingCollection === 'function') markAwaitingCollection();
 }
@@ -2243,6 +2324,10 @@ function showErr(msg) {
 }
 
 async function startQrCamera() {
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        location.href = 'https://' + location.hostname + ':8443' + location.pathname + location.search + location.hash;
+        return;
+    }
     if (camScanning) return;
     uploaded = false;
     $('qrCamErr').style.display = 'none';

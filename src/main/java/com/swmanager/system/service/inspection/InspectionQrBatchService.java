@@ -104,7 +104,7 @@ public class InspectionQrBatchService {
         //    회차를 먼저 만들어두고 STEP 2 에서 QR 적재를 기다리는 흐름 지원.)
         InspectReport report;
         Optional<InspectReport> existingReport = reportRepository
-                .findByPjtIdAndInspectMonth(pjt.getProjId(), payload.getRound());
+                .findByPjtIdAndInspectMonthAndDeletedAtIsNull(pjt.getProjId(), payload.getRound());
         if (existingReport.isPresent()) {
             report = existingReport.get();
             // batch_id 가 비어있을 때만 기록 (이미 다른 QR 가 머지된 회차면 보존)
@@ -179,19 +179,112 @@ public class InspectionQrBatchService {
         return report;
     }
 
+    /**
+     * manifest.json ID → (section, sort) 매핑.
+     * inspect_template seed 의 sort_order 와 정합 — UI 행 위치 결정.
+     */
+    private static final Map<String, int[]> MANIFEST_SORT = new java.util.LinkedHashMap<>();
+    static {
+        // AP 14 항목 (sort 0-based for UI row index)
+        MANIFEST_SORT.put("ap.led.system",       new int[]{0});
+        MANIFEST_SORT.put("ap.led.psu",           new int[]{1});
+        MANIFEST_SORT.put("ap.led.disk",          new int[]{2});
+        MANIFEST_SORT.put("ap.hw.cpu",            new int[]{3});
+        MANIFEST_SORT.put("ap.hw.memory",         new int[]{4});
+        MANIFEST_SORT.put("ap.hw.adapter",        new int[]{5});
+        MANIFEST_SORT.put("ap.log.system_err",    new int[]{6});
+        MANIFEST_SORT.put("ap.log.security_err",  new int[]{7});
+        MANIFEST_SORT.put("ap.os.disk_summary",   new int[]{8});
+        MANIFEST_SORT.put("ap.disk.c",            new int[]{8});  // alias
+        MANIFEST_SORT.put("ap.disk.d",            new int[]{8});  // alias
+        MANIFEST_SORT.put("ap.net.routes",        new int[]{9});
+        MANIFEST_SORT.put("ap.net.ip",            new int[]{10});
+        MANIFEST_SORT.put("ap.security.users",    new int[]{11});
+        MANIFEST_SORT.put("ap.perf.cpu_pct",      new int[]{12});
+        MANIFEST_SORT.put("ap.perf.mem_pct",      new int[]{13});
+        MANIFEST_SORT.put("ap.cable",             new int[]{5});  // adapter alias
+        // DB 24 항목
+        MANIFEST_SORT.put("db.led.hw",            new int[]{0});
+        MANIFEST_SORT.put("db.led.disk",          new int[]{1});
+        MANIFEST_SORT.put("db.led.fan",           new int[]{2});
+        MANIFEST_SORT.put("db.led.power",         new int[]{3});
+        MANIFEST_SORT.put("db.led.cable",         new int[]{4});
+        MANIFEST_SORT.put("db.os.cpu_info",       new int[]{5});
+        MANIFEST_SORT.put("db.os.mem_info",       new int[]{6});
+        MANIFEST_SORT.put("db.os.adapter",        new int[]{7});
+        MANIFEST_SORT.put("db.os.disk",           new int[]{8});
+        MANIFEST_SORT.put("db.os.network_ip",     new int[]{9});
+        MANIFEST_SORT.put("db.os.perf_cpu",       new int[]{10});
+        MANIFEST_SORT.put("db.os.perf_mem",       new int[]{11});
+        MANIFEST_SORT.put("db.os.swap_pct",       new int[]{12});
+        MANIFEST_SORT.put("db.os.iostat",         new int[]{13});
+        MANIFEST_SORT.put("db.os.netstat_perf",   new int[]{14});
+        MANIFEST_SORT.put("db.os.disk_data",      new int[]{15});
+        MANIFEST_SORT.put("db.os.inode",          new int[]{16});
+        MANIFEST_SORT.put("db.os.lsvg_rootvg",    new int[]{17});
+        MANIFEST_SORT.put("db.os.net_link",       new int[]{18});
+        MANIFEST_SORT.put("db.os.net_ping",       new int[]{19});
+        MANIFEST_SORT.put("db.os.net_collisions", new int[]{20});
+        MANIFEST_SORT.put("db.os.processor",      new int[]{21});
+        MANIFEST_SORT.put("db.os.log_system",     new int[]{22});
+        MANIFEST_SORT.put("db.os.uptime",         new int[]{22}); // 프로세서 상태 대체
+        MANIFEST_SORT.put("db.os.users",          new int[]{23});
+        // DBMS 17 항목
+        MANIFEST_SORT.put("db.oracle.archive_mode",     new int[]{0});
+        MANIFEST_SORT.put("db.oracle.alert_errors_24h", new int[]{1});
+        MANIFEST_SORT.put("db.oracle.redo_logs",        new int[]{2});
+        MANIFEST_SORT.put("db.oracle.sga",              new int[]{3});
+        MANIFEST_SORT.put("db.oracle.pga",              new int[]{4});
+        MANIFEST_SORT.put("db.oracle.tablespace",       new int[]{5});
+        MANIFEST_SORT.put("db.oracle.datafile_status",   new int[]{6});
+        MANIFEST_SORT.put("db.oracle.invalid_objects",   new int[]{7});
+        MANIFEST_SORT.put("db.oracle.sessions",          new int[]{8});
+        MANIFEST_SORT.put("db.oracle.wait_events",       new int[]{9});
+        MANIFEST_SORT.put("db.oracle.rman_backup",       new int[]{10});
+        MANIFEST_SORT.put("db.oracle.export_last",       new int[]{11});
+        MANIFEST_SORT.put("db.oracle.standby_lag",       new int[]{12});
+        MANIFEST_SORT.put("db.oracle.param_modified",    new int[]{13});
+        MANIFEST_SORT.put("db.oracle.undo",              new int[]{14});
+        MANIFEST_SORT.put("db.oracle.temp",              new int[]{15});
+        MANIFEST_SORT.put("db.oracle.controlfile",       new int[]{16});
+        // GIS 12 항목
+        MANIFEST_SORT.put("gis.gss.running",             new int[]{0});
+        MANIFEST_SORT.put("gis.gss.log_purge",           new int[]{1});
+        MANIFEST_SORT.put("gis.desktop.gss_store",       new int[]{2});
+        MANIFEST_SORT.put("gis.gws.running",             new int[]{3});
+        MANIFEST_SORT.put("gis.gws.log_purge",           new int[]{4});
+        MANIFEST_SORT.put("gis.gws.http",                new int[]{5});
+        MANIFEST_SORT.put("gis.gws.store_size",          new int[]{6});
+        MANIFEST_SORT.put("gis.gss.err_30days",          new int[]{7});
+        MANIFEST_SORT.put("gis.gss.warn_30days",         new int[]{8});
+        MANIFEST_SORT.put("gis.gws.catalina_err",        new int[]{9});
+        MANIFEST_SORT.put("gis.gws.stdout_log_size",     new int[]{10});
+        MANIFEST_SORT.put("gis.uwes.dem_slop_preserved", new int[]{11});
+    }
+
     private ItemStats saveCheckResults(Long reportId, Map<String, InspectionQrBatchRequest.Tier> tiers) {
         ItemStats stats = new ItemStats();
-        List<String> tierKeys = new ArrayList<>(tiers.keySet());
-        for (String tierKey : tierKeys) {
+        Map<String, Integer> fallbackCounters = new java.util.LinkedHashMap<>();
+
+        for (String tierKey : new ArrayList<>(tiers.keySet())) {
             InspectionQrBatchRequest.Tier tier = tiers.get(tierKey);
             if (tier == null || tier.getItems() == null) continue;
-            String section = tierKey.toUpperCase(Locale.ROOT);
-            int sortOrder = 0;
             for (List<Object> metric : tier.getItems()) {
                 if (metric == null || metric.size() < 2) continue;
                 String key = Objects.toString(metric.get(0), null);
                 String status = Objects.toString(metric.get(1), null);
                 Object value = metric.size() >= 3 ? metric.get(2) : null;
+
+                String section = resolveSection(key);
+                int[] mapped = key != null ? MANIFEST_SORT.get(key) : null;
+                int sortOrder;
+                if (mapped != null) {
+                    sortOrder = mapped[0];
+                } else {
+                    sortOrder = fallbackCounters.merge(section, 100, (a, b) -> a);
+                    fallbackCounters.put(section, sortOrder + 1);
+                    log.warn("manifest 매핑 없음 — fallback sort: section={} key={} sort={}", section, key, sortOrder);
+                }
 
                 InspectCheckResult row = new InspectCheckResult();
                 row.setReportId(reportId);
@@ -200,10 +293,10 @@ public class InspectionQrBatchService {
                 InspectResultCode code = InspectResultCode.fromPoCStatus(status);
                 row.setResultCode(code != null ? code.name() : InspectResultCode.NORMAL.name());
 
-                ResultText resultText = formatValue(value);
+                ResultText resultText = formatValueWithContext(key, value);
                 row.setResultText(resultText.text);
                 row.setRemarks(buildRemarks(status, code, resultText.truncated));
-                row.setSortOrder(sortOrder++);
+                row.setSortOrder(sortOrder);
 
                 checkResultRepository.save(row);
                 stats.total++;
@@ -212,6 +305,14 @@ public class InspectionQrBatchService {
             }
         }
         return stats;
+    }
+
+    private static String resolveSection(String itemId) {
+        if (itemId == null) return "AP";
+        if (itemId.startsWith("db.oracle.")) return "DBMS";
+        if (itemId.startsWith("db."))        return "DB";
+        if (itemId.startsWith("gis."))       return "GIS";
+        return "AP";
     }
 
     /**
@@ -379,6 +480,71 @@ public class InspectionQrBatchService {
         String raw = String.valueOf(value);
         if (raw.length() <= RESULT_TEXT_MAX) return new ResultText(raw, false);
         return new ResultText(raw.substring(0, RESULT_TEXT_MAX), true);
+    }
+
+    private static final Map<String, String> UNIT_LABELS = Map.ofEntries(
+        Map.entry("ap.hw.cpu", "코어"), Map.entry("ap.hw.memory", "GB"),
+        Map.entry("ap.hw.adapter", "개"), Map.entry("ap.cable", "개"),
+        Map.entry("ap.log.system_err", "건"), Map.entry("ap.log.security_err", "건"),
+        Map.entry("ap.security.users", "계정"),
+        Map.entry("ap.net.routes", "개"), Map.entry("ap.net.ip", "개"),
+        Map.entry("db.os.cpu_info", "코어"), Map.entry("db.os.mem_info", "GB"),
+        Map.entry("db.os.adapter", "개"), Map.entry("db.os.disk", "개"),
+        Map.entry("db.os.network_ip", "개"), Map.entry("db.os.users", "계정"),
+        Map.entry("db.os.uptime", "일"),
+        Map.entry("db.oracle.alert_errors_24h", "건"), Map.entry("db.oracle.invalid_objects", "개"),
+        Map.entry("db.oracle.sessions", "세션"), Map.entry("db.oracle.wait_events", "건"),
+        Map.entry("db.oracle.rman_backup", "건"), Map.entry("db.oracle.export_last", "건"),
+        Map.entry("db.oracle.redo_logs", "그룹"), Map.entry("db.oracle.controlfile", "개"),
+        Map.entry("db.oracle.param_modified", "개"),
+        Map.entry("gis.gss.running", "프로세스"), Map.entry("gis.gws.running", "서비스"),
+        Map.entry("gis.gss.log_purge", "파일 삭제"), Map.entry("gis.gws.log_purge", "파일 삭제"),
+        Map.entry("gis.gss.err_30days", "건"), Map.entry("gis.gss.warn_30days", "건"),
+        Map.entry("gis.gws.catalina_err", "건"), Map.entry("gis.gws.stdout_log_size", "MB")
+    );
+
+    @SuppressWarnings("unchecked")
+    private static ResultText formatValueWithContext(String key, Object value) {
+        if (value == null) return new ResultText("", false);
+
+        // 객체(Map) 형태의 value 처리
+        if (key != null && value instanceof Map) {
+            Map<String, Object> m = (Map<String, Object>) value;
+            if (key.startsWith("ap.disk.")) {
+                Object total = m.get("total_gb"); Object free = m.get("free_gb");
+                if (total != null && free != null) return new ResultText(total + "GB / " + free + "GB 여유", false);
+            }
+            if (key.equals("db.os.disk")) {
+                Object fsList = m.get("filesystems");
+                if (fsList instanceof List && !((List<?>) fsList).isEmpty()) {
+                    return new ResultText(((List<?>) fsList).size() + "개 파일시스템", false);
+                }
+            }
+            Object pct = m.get("pct");
+            if (pct == null) pct = m.get("used_pct");
+            if (pct != null) return new ResultText(pct + "%", false);
+            Object count = m.get("count");
+            if (count != null) {
+                String unit = key != null ? UNIT_LABELS.getOrDefault(key, "개") : "개";
+                return new ResultText(count + unit, false);
+            }
+        }
+
+        // 퍼센트 항목 (QR 축약 시 pct 값만 전달되는 항목들)
+        if (key != null && (key.contains(".perf.cpu") || key.contains(".perf.mem")
+                || key.contains(".perf_cpu") || key.contains(".perf_mem")
+                || key.contains(".swap_pct") || key.startsWith("ap.disk.")
+                || key.endsWith(".sga") || key.endsWith(".pga")
+                || key.endsWith(".tablespace") || key.endsWith(".undo") || key.endsWith(".temp"))) {
+            return new ResultText(value + "%", false);
+        }
+
+        // 단위 레이블이 있는 항목
+        if (key != null && UNIT_LABELS.containsKey(key)) {
+            return new ResultText(value + UNIT_LABELS.get(key), false);
+        }
+
+        return formatValue(value);
     }
 
     private static String buildRemarks(String status, InspectResultCode code, boolean truncated) {

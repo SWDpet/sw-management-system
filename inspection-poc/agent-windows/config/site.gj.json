@@ -4,7 +4,18 @@
   "inspector": "박욱진",
   "tier": "ap",
   "hosts": {
-    "ap": { "expected_hostname": "UPIS-AP", "ip_hint": "110.15.1.171" }
+    "ap": { "expected_hostname": "UPIS-AP", "ip_hint": "110.15.1.171" },
+    "db": { "expected_hostname": "UPIS-DB", "ip_hint": "110.15.1.172" }
+  },
+  "remotes": {
+    "unix_db": {
+      "enabled": true,
+      "host": "110.15.1.172",
+      "port": 23,
+      "protocol": "telnet",
+      "user": "oracle",
+      "os": "aix"
+    }
   },
   "thresholds": {
     "perf.cpu_pct":   { "warn": 70, "crit": 85 },
