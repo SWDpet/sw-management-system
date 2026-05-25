@@ -1,4 +1,4 @@
-{
+﻿{
   "version": 1,
   "description": "agent-windows checks dispatch manifest — inspect_template.sort_order 와 정합 보장. Collector.ps1 가 본 manifest 기반으로 모듈 실행 순서를 강제한다. 신규 모듈 추가 시 본 파일에 반드시 등록.",
   "sources": {

@@ -1,4 +1,4 @@
-# UTF-8 BOM 인코딩 변환 — AP 서버 (Windows Server 2012 R2 / PS 4.0) 용
+﻿# UTF-8 BOM 인코딩 변환 — AP 서버 (Windows Server 2012 R2 / PS 4.0) 용
 # 사용: D:\GJ\inspection-poc\agent-windows 에서 .\fix-encoding.ps1 실행
 $base = Split-Path -Parent $MyInvocation.MyCommand.Path
 $utf8Bom = New-Object System.Text.UTF8Encoding($true)

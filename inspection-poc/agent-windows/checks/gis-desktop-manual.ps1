@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 
 # GIS Desktop Pro 데이터저장소 구동확인 — inspect_template GIS sort 3 (육안 점검).

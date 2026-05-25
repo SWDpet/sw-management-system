@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # inspect_template DB sort 15 '네트워크 사용률' — netstat -ni (인터페이스별 패킷 + Err).

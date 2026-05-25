@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # inspect_template DB sort 18 '미러 상태' — AIX lsvg -l rootvg.

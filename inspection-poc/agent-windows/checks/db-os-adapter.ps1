@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # inspect_template DB sort 8 'Adapter 점검' — AIX lsdev -Cc adapter.

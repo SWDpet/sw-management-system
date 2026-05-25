@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\DbOsCheck.ps1')
 
 # inspect_template DB sort 19~21 — 1 module 3 row (Link / Ping / Collisions).

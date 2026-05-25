@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 
 # inspect_template GIS sort 12 'UWES DEM/SLOP 보존 확인' — P10 카드용.

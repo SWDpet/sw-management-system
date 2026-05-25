@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 
 # inspect_template GIS sort 10 'GWS catalina ERROR 카운트' — P10 카드용.

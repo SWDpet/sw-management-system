@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 . (Join-Path $PSScriptRoot '..\lib\Ssh.ps1')
 . (Join-Path $PSScriptRoot '..\lib\Telnet.ps1')

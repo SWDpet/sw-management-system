@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 
 # inspect_template AP sort 9 'Disk 여유공간' 1 행에 매핑 — drive 별 다중 row → 종합 row 1개로 압축.

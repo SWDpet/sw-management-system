@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 
 # inspect_template GIS sort 11 'GWS stdout 로그 크기 (MB)' — P10 카드용.

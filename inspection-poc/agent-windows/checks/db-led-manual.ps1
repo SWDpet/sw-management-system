@@ -1,4 +1,4 @@
-param($Config)
+﻿param($Config)
 . (Join-Path $PSScriptRoot '..\lib\Common.ps1')
 
 # DB 서버 (AIX) 육안점검 5 항목 — inspect_template DB sort 1~5.
