@@ -51,12 +51,18 @@
            applyAutoReadonlyIfNeeded() / restoreCheckResults() 이후 markAwaitingCollection() 가
            '정상'/'점검' 어느 체크박스도 안 켜진 자동 행에 awaiting-collection 클래스를 붙임. */
         tr.awaiting-collection { background: #fffbeb !important; }
+        tr.awaiting-collection.manual-row { background: #faf5ff !important; }
         tr.awaiting-collection .result-cell label { color: #b45309; }
+        tr.awaiting-collection.manual-row .result-cell label { color: #7c3aed; }
         tr.awaiting-collection .result-cell { border: 1px dashed #d97706 !important; }
+        tr.awaiting-collection.manual-row .result-cell { border: 1px dashed #a855f7 !important; }
         tr.awaiting-collection .awaiting-tag {
             display: inline-block; margin-left: 6px; padding: 2px 8px;
             font-size: 0.78em; font-style: italic; color: #92400e;
             border: 1px dashed #d97706; border-radius: 10px; background: #fff;
+        }
+        tr.awaiting-collection .awaiting-tag.manual-check {
+            color: #6b21a8; border-color: #a855f7; background: #faf5ff; font-style: normal; font-weight: 600;
         }
 
         .server-card { border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
@@ -861,9 +867,15 @@ var AUTO_READONLY_APPLIED = false;
 function applyAutoReadonlyIfNeeded() {
     if (AUTO_READONLY_APPLIED) return;
     var autoBodies = ['dbCheckBody', 'apCheckBody', 'dbmsCheckBody'];
+    var manualRowPattern = /육안 확인|LED.*점검|케이블.*점검|pending_manual/i;
     autoBodies.forEach(function(bid) {
         document.querySelectorAll('#' + bid + ' tr').forEach(function(tr) {
-            markRowReadonly(tr, true);
+            if (manualRowPattern.test(tr.textContent || '')) {
+                tr.style.background = '#faf5ff';
+                tr.title = '👤 수동 점검 필요';
+            } else {
+                markRowReadonly(tr, true);
+            }
         });
         addAutoBadgeBefore(bid, '🤖 QR 자동수집 (읽기전용)');
     });
@@ -904,15 +916,17 @@ function markAwaitingCollection() {
             if (anyChecked) {
                 tr.classList.remove('awaiting-collection');
             } else {
-                var isManual = manualPatterns.test(tr.textContent || '');
+                var rowText = tr.textContent || '';
+                var isManual = manualPatterns.test(rowText);
                 tr.classList.add('awaiting-collection');
                 var tag = document.createElement('span');
-                tag.className = 'awaiting-tag';
                 if (isManual) {
+                    tr.classList.add('manual-row');
+                    tag.className = 'awaiting-tag manual-check';
                     tag.textContent = '수동 점검';
-                    tag.style.color = '#6b21a8';
-                    tag.style.borderColor = '#a855f7';
                 } else {
+                    tr.classList.remove('manual-row');
+                    tag.className = 'awaiting-tag';
                     tag.textContent = '수집 대기';
                 }
                 cell.appendChild(tag);
