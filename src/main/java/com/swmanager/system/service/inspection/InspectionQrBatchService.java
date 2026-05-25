@@ -618,25 +618,60 @@ public class InspectionQrBatchService {
                 String unit = key != null ? UNIT_LABELS.getOrDefault(key, "개") : "개";
                 return new ResultText(count + unit, false);
             }
-            // 범용: Map에서 노이즈 키 제외 후 스칼라 값 자동 추출
+            // 항목별 핵심값 + 단위 추출
+            String memo = null;
+            if (key != null) {
+                memo = switch (key) {
+                    case "ap.hw.cpu" -> { Object c=m.get("cores"); Object n=m.get("name"); yield (n!=null?n+" ":"")+(c!=null?c+"코어":""); }
+                    case "ap.hw.memory" -> { Object g=m.get("installed_gb"); yield g!=null?g+"GB":"-"; }
+                    case "ap.hw.adapter" -> { Object u=m.get("up"); Object t=m.get("total"); yield u+"개 UP / "+t+"개"; }
+                    case "ap.os.disk_summary" -> { Object s=m.get("summary"); yield s!=null?String.valueOf(s):"-"; }
+                    case "db.os.cpu_info" -> { Object c=m.get("cores"); Object g=m.get("clock_ghz"); yield (c!=null?c+"코어":"")+(g!=null?" "+g+"GHz":""); }
+                    case "db.os.mem_info" -> { Object g=m.get("total_gb"); yield g!=null?g+"GB":"-"; }
+                    case "db.os.adapter" -> { Object a=m.get("adapter_count"); yield a!=null?a+"개":"-"; }
+                    case "db.os.network_ip" -> { Object ip = m.get("ipv4"); yield ip instanceof List && !((List<?>)ip).isEmpty() ? String.valueOf(((List<?>)ip).get(0)) : "-"; }
+                    case "ap.net.ip" -> { Object ip = m.get("ips"); yield ip instanceof List && !((List<?>)ip).isEmpty() ? String.valueOf(((Map<?,?>)((List<?>)ip).get(0)).get("IPAddress")) : "-"; }
+                    case "db.os.netstat_perf" -> m.get("total_errs") + "건";
+                    case "db.os.iostat" -> m.get("stderr") != null ? "error" : "정상";
+                    case "db.os.net_ping" -> { Object o=m.get("note"); yield o != null && String.valueOf(o).contains("not found") ? "정상 (ping OK)" : "-"; }
+                    case "db.os.net_link" -> m.get("established") + "건";
+                    case "db.os.net_collisions" -> m.get("total_coll") + "건";
+                    case "db.os.lsvg_rootvg" -> m.get("stale_count") + "건";
+                    case "db.oracle.wait_events" -> { Object te=m.get("top_events"); yield te instanceof List ? ((List<?>)te).size()+"건" : "-"; }
+                    case "db.oracle.export_last" -> m.get("last_export") != null ? String.valueOf(m.get("last_export")) : "없음";
+                    case "db.oracle.standby_lag" -> m.get("apply_lag") != null ? String.valueOf(m.get("apply_lag")) : "N/A";
+                    case "db.oracle.datafile_status" -> m.get("total") + "개";
+                    case "gis.gws.running" -> String.valueOf(m.getOrDefault("status", "-"));
+                    case "gis.gws.http" -> m.get("http_status") + "";
+                    case "gis.gws.store_size" -> m.get("total_gb") + "GB";
+                    case "gis.gws.stdout_log_size" -> m.get("total_mb") + "MB";
+                    case "gis.uwes.dem_slop_preserved" -> Boolean.TRUE.equals(m.get("both_exist")) ? "보존" : "누락";
+                    case "ap.log.system_err", "ap.log.security_err" -> m.get("error_count") + "건";
+                    case "ap.net.routes" -> m.get("routes") + "개";
+                    case "ap.security.users" -> m.get("enabled") + "계정";
+                    case "gis.gss.log_purge", "gis.gws.log_purge" -> m.get("purged_count") + "파일";
+                    default -> null;
+                };
+            }
+            if (memo != null) return new ResultText(memo, false);
+            // 범용 fallback: 첫 번째 짧은 스칼라
             var skip = java.util.Set.of("os","output","raw","sid","rows","stderr","sample",
                     "cmd","method","note","excluded_rules","excluded_count","recent","since_days",
                     "threshold","remote_host","remote_user","source","path","config_name",
-                    "dry_run","retain_days","exclude_patterns","window_days","rotation_hint");
-            StringBuilder memo = new StringBuilder();
+                    "dry_run","retain_days","exclude_patterns","window_days","rotation_hint",
+                    "entries","interfaces","lvs","tablespaces","top_events","users","ips",
+                    "adapters","discovered_paths","pids","active_users");
             for (var e : m.entrySet()) {
                 if (skip.contains(e.getKey())) continue;
                 Object v = e.getValue();
                 if (v == null || v instanceof List || v instanceof Map) continue;
                 String vs = String.valueOf(v);
-                if (vs.length() > 50) continue;
-                if (memo.length() > 0) memo.append(" / ");
-                memo.append(e.getKey()).append(":").append(vs);
-                if (memo.length() > 80) break;
+                if (vs.length() > 30) continue;
+                String unit = UNIT_LABELS.getOrDefault(key, "");
+                return new ResultText(vs + unit, false);
             }
-            if (memo.length() > 0) {
-                return new ResultText(memo.toString(), false);
-            }
+            // 아무것도 못 찾으면 빈 메모
+            return new ResultText("", false);
         }
 
         // 퍼센트 항목 (QR 축약 시 pct 값만 전달되는 항목들)

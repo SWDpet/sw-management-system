@@ -2090,6 +2090,21 @@ function restoreCheckResults(results) {
         if (elId) { var el = document.getElementById(elId); if (el && !el.value) el.value = r.resultText; }
     });
 
+    // QR 수집 데이터에서 장비 정보 카드 자동 채움
+    var fillCard = function(id, val) { var el = document.getElementById(id); if (el && (el.textContent === '-' || el.textContent === '')) el.textContent = val; };
+    results.forEach(function(r) {
+        if (!r.itemName) return;
+        switch (r.itemName) {
+            case 'ap.hw.cpu': fillCard('ap_cpu', r.resultText || '-'); break;
+            case 'ap.hw.memory': fillCard('ap_memory', r.resultText || '-'); break;
+            case 'ap.os.disk_summary': fillCard('ap_disk', r.resultText || '-'); break;
+            case 'ap.perf.cpu_pct': fillCard('ap_os', document.getElementById('ap_os')?.textContent !== '-' ? '' : 'Windows'); break;
+            case 'db.os.cpu_info': fillCard('db_os', 'AIX'); fillCard('db_hostName', 'UPIS-DB'); fillCard('db_serverName', r.resultText || '-'); break;
+            case 'db.os.mem_info': break;
+            case 'db.oracle.archive_mode': fillCard('dbms_os', 'AIX 6.0'); break;
+        }
+    });
+
     // inspect-report-d-v6 Phase H — QR 데이터 적재 후 수집 대기 상태 갱신
     if (typeof markAwaitingCollection === 'function') markAwaitingCollection();
 }
@@ -2458,9 +2473,14 @@ async function uploadBatch(ev) {
         const body = await res.json().catch(() => null);
         const reportId = body && (body.reportId || (body.data && body.data.reportId));
         $('qrCamStatus').textContent = '업로드 완료 — 회차 로드 중…';
+
+        // QR payload에서 AP 서버 장비 정보 추출
+        if (ev.header && ev.header.host) {
+            var apName = document.getElementById('ap_serverName');
+            if (apName && apName.textContent === '-') apName.textContent = ev.header.host;
+        }
+
         if (reportId && typeof window.loadReport === 'function') {
-            // STEP 1 비어 있어도 폴링 우회 — 응답 reportId 로 바로 회차 로드.
-            // 템플릿/체크표 prefill 은 loadReport 내부 setTimeout 으로 비동기 진행.
             window.loadReport(reportId);
         } else if (typeof window.startQrPolling === 'function') {
             window.startQrPolling();
