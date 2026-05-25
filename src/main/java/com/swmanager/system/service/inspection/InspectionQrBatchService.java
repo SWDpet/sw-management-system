@@ -302,6 +302,53 @@ public class InspectionQrBatchService {
                 stats.total++;
                 if ("M".equalsIgnoreCase(status)) stats.manual++;
                 else if ("warn".equalsIgnoreCase(status)) stats.warn++;
+
+                // db.os.disk: mounts 데이터 → DB_USAGE 행 생성
+                if ("db.os.disk".equals(key) && value instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> mounts = (Map<String, Object>) value;
+                    Map<String, String> mountToCategory = Map.of(
+                        "/", "/", "/backup", "/backup", "/oracle", "/oracle",
+                        "/oradata", "/oradata", "/archive", "/archive");
+                    int usageSort = 0;
+                    for (var entry : mounts.entrySet()) {
+                        String mount = entry.getKey();
+                        String cat = mountToCategory.get(mount);
+                        if (cat == null) continue;
+                        Object mval = entry.getValue();
+                        String usageText = "";
+                        if (mval instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> md = (Map<String, Object>) mval;
+                            Object p = md.get("p");
+                            usageText = p != null ? p + "%" : "";
+                        } else {
+                            usageText = String.valueOf(mval) + "%";
+                        }
+                        InspectCheckResult usage = new InspectCheckResult();
+                        usage.setReportId(reportId);
+                        usage.setSection("DB_USAGE");
+                        usage.setCategory(cat);
+                        usage.setResultText(usageText);
+                        usage.setSortOrder(usageSort++);
+                        checkResultRepository.save(usage);
+                    }
+                }
+                // ap.disk: AP_USAGE 행 생성
+                if (key != null && key.startsWith("ap.disk.") && value instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> dm = (Map<String, Object>) value;
+                    String diskLabel = key.equals("ap.disk.c") ? "Disk C:" : key.equals("ap.disk.d") ? "Disk D:" : key;
+                    Object t = dm.get("t"); Object f = dm.get("f");
+                    String diskText = (t != null && f != null) ? t + "GB / " + f + "GB 여유" : dm.get("p") + "%";
+                    InspectCheckResult usage = new InspectCheckResult();
+                    usage.setReportId(reportId);
+                    usage.setSection("AP_USAGE");
+                    usage.setCategory(diskLabel);
+                    usage.setResultText(diskText);
+                    usage.setSortOrder(key.equals("ap.disk.c") ? 2 : 3);
+                    checkResultRepository.save(usage);
+                }
             }
         }
         return stats;
@@ -510,9 +557,15 @@ public class InspectionQrBatchService {
         // 객체(Map) 형태의 value 처리
         if (key != null && value instanceof Map) {
             Map<String, Object> m = (Map<String, Object>) value;
-            if (key.startsWith("ap.disk.")) {
-                Object total = m.get("total_gb"); Object free = m.get("free_gb");
-                if (total != null && free != null) return new ResultText(total + "GB / " + free + "GB 여유", false);
+            // QR 축약 disk: {t=total_gb, f=free_gb, p=pct}
+            if (key.startsWith("ap.disk.") || key.equals("ap.os.disk_summary")) {
+                Object t = m.get("t"); Object f = m.get("f");
+                if (t == null) t = m.get("total_gb");
+                if (f == null) f = m.get("free_gb");
+                if (t != null && f != null) return new ResultText(t + "GB / " + f + "GB 여유", false);
+                Object p = m.get("p");
+                if (p == null) p = m.get("pct");
+                if (p != null) return new ResultText(p + "%", false);
             }
             if (key.equals("db.os.disk")) {
                 Object fsList = m.get("filesystems");

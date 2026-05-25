@@ -78,6 +78,13 @@ $parser = {
 
     $h['filesystems'] = @($fsList)
     $h['worst_pct'] = $worstPct
+    $h['pct'] = $worstPct
+    # 마운트별 사용률 축약 (QR payload 에서 참조)
+    $mounts = [ordered]@{}
+    foreach ($fs in $fsList) {
+        $mounts[$fs.mount] = [ordered]@{ p = $fs.used_pct; t = $fs.size_gb; f = [math]::Round($fs.size_gb - $fs.used_gb, 1) }
+    }
+    $h['mounts'] = $mounts
     return $h
 }
 

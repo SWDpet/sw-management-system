@@ -71,8 +71,16 @@ function ConvertTo-QrPayload {
     # 풀 스냅샷 → 축약 페이로드 (raw/cmd/label 제거, [id,status,value] 튜플)
     $i = foreach ($it in $Snapshot.items) {
         $v = $it.value
-        # value가 객체면 대표 숫자만 추출
-        if ($v -and $v.PSObject -and $v.PSObject.Properties['pct']) { $v = $v.pct }
+        # value가 객체면 대표 숫자 추출
+        if ($v -and $v.PSObject -and $v.PSObject.Properties['total_gb'] -and $v.PSObject.Properties['free_gb']) {
+            # AP disk: total/free/pct 보존
+            $v = [ordered]@{ t = [math]::Round($v.total_gb, 1); f = [math]::Round($v.free_gb, 1); p = $v.pct }
+        }
+        elseif ($v -and $v.PSObject -and $v.PSObject.Properties['mounts']) {
+            # DB disk: 마운트별 사용률 보존
+            $v = $v.mounts
+        }
+        elseif ($v -and $v.PSObject -and $v.PSObject.Properties['pct']) { $v = $v.pct }
         elseif ($v -and $v.PSObject -and $v.PSObject.Properties['used_pct']) { $v = $v.used_pct }
         elseif ($v -and $v.PSObject -and $v.PSObject.Properties['count']) { $v = $v.count }
         ,@($it.id, $it.status, $v)
