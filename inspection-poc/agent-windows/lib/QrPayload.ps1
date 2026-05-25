@@ -71,18 +71,19 @@ function ConvertTo-QrPayload {
     # 풀 스냅샷 → 축약 페이로드 (raw/cmd/label 제거, [id,status,value] 튜플)
     $i = foreach ($it in $Snapshot.items) {
         $v = $it.value
-        # value가 객체면 대표 숫자 추출
-        if ($v -and $v.PSObject -and $v.PSObject.Properties['total_gb'] -and $v.PSObject.Properties['free_gb']) {
-            # AP disk: total/free/pct 보존
-            $v = [ordered]@{ t = [math]::Round($v.total_gb, 1); f = [math]::Round($v.free_gb, 1); p = $v.pct }
+        # value가 객체면 대표 숫자 추출 (PS 4.0 호환: try/catch로 키 접근)
+        $extracted = $false
+        if ($v -ne $null) {
+            try { if ($v.total_gb -ne $null -and $v.free_gb -ne $null) {
+                $v = [ordered]@{ t = [math]::Round($v.total_gb, 1); f = [math]::Round($v.free_gb, 1); p = $v.pct }; $extracted = $true
+            }} catch {}
+            if (-not $extracted) { try { if ($v.mounts -ne $null) {
+                $v = $v.mounts; $extracted = $true
+            }} catch {} }
+            if (-not $extracted) { try { if ($v.pct -ne $null) { $v = $v.pct; $extracted = $true }} catch {} }
+            if (-not $extracted) { try { if ($v.used_pct -ne $null) { $v = $v.used_pct; $extracted = $true }} catch {} }
+            if (-not $extracted) { try { if ($v.count -ne $null) { $v = $v.count; $extracted = $true }} catch {} }
         }
-        elseif ($v -and $v.PSObject -and $v.PSObject.Properties['mounts']) {
-            # DB disk: 마운트별 사용률 보존
-            $v = $v.mounts
-        }
-        elseif ($v -and $v.PSObject -and $v.PSObject.Properties['pct']) { $v = $v.pct }
-        elseif ($v -and $v.PSObject -and $v.PSObject.Properties['used_pct']) { $v = $v.used_pct }
-        elseif ($v -and $v.PSObject -and $v.PSObject.Properties['count']) { $v = $v.count }
         ,@($it.id, $it.status, $v)
     }
     return [ordered]@{
