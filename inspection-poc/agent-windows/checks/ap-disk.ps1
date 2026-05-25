@@ -26,7 +26,7 @@ foreach ($d in $drives) {
 }
 
 $status = if ($driveInfo.Count -eq 0) { 'n/a' } else { Resolve-Status -Value $worstPct -Threshold $th }
-$summary = if ($driveInfo.Count -eq 0) { '드라이브 미발견' } else {
+$summary = if ($driveInfo.Count -eq 0) { 'no drives' } else {
     ($driveInfo | ForEach-Object { ("{0}: {1}%" -f $_.letter.ToUpper(), $_.pct) }) -join ' / '
 }
 
