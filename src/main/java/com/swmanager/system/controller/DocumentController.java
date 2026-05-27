@@ -76,6 +76,7 @@ public class DocumentController {
     @Autowired private InspectReportService inspectReportService;
     @Autowired private InspectPdfService inspectPdfService;
     @Autowired private InspectReportDocxService inspectReportDocxService;
+    @Autowired private com.swmanager.system.service.InspectMetricChartService inspectMetricChartService;
 
     // === 권한 ===
 
@@ -1747,6 +1748,25 @@ public class DocumentController {
         } catch (Exception e) {
             log.error("점검내역서 DOCX 생성 실패: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /** GET /document/api/inspect-chart/preview?pjtId={pjtId} — v6 P5 메트릭 차트 미리보기 PNG */
+    @GetMapping("/api/inspect-chart/preview")
+    @ResponseBody
+    public ResponseEntity<byte[]> inspectChartPreview(@RequestParam Long pjtId) {
+        try {
+            byte[] png = inspectMetricChartService.renderChart(pjtId, 30);
+            if (png == null || png.length == 0) {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok()
+                    .header("Content-Type", "image/png")
+                    .header("Cache-Control", "no-cache")
+                    .body(png);
+        } catch (Exception e) {
+            log.warn("inspect-chart preview 실패: pjt={} err={}", pjtId, e.getMessage());
+            return ResponseEntity.noContent().build();
         }
     }
 
