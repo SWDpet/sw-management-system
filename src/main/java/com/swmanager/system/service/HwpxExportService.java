@@ -278,10 +278,13 @@ public class HwpxExportService {
             } else {
                 map.put("{{착수년}}", ""); map.put("{{착수월}}", ""); map.put("{{착수일}}", "");
             }
-            // 준공예정일은 수기 입력 — 라벨만 출력 (proj.endDt 자동 채움 안 함)
-            map.put("{{준공년}}", "년");
-            map.put("{{준공월}}", "월");
-            map.put("{{준공일}}", "일");
+            if (proj != null && proj.getEndDt() != null) {
+                map.put("{{준공년}}", proj.getEndDt().getYear() + "년");
+                map.put("{{준공월}}", String.format("%02d", proj.getEndDt().getMonthValue()) + "월");
+                map.put("{{준공일}}", String.format("%02d", proj.getEndDt().getDayOfMonth()) + "일");
+            } else {
+                map.put("{{준공년}}", ""); map.put("{{준공월}}", ""); map.put("{{준공일}}", "");
+            }
 
             // 기성 관련 - inspector 섹션 데이터에서 가져옴 (프론트 키: paymentAmount, paymentRate, interimDate)
             Map<String, Object> inspData = getSectionData(doc, "inspector");
@@ -755,8 +758,12 @@ public class HwpxExportService {
                 map.put("{{계약기간}}", "");
             }
 
-            // 준공예정일은 수기 입력 — 라벨만 출력 (proj.endDt 자동 채움 안 함)
-            map.put("{{준공예정일}}", "년    월    일");
+            // 준공예정일
+            if (proj != null && proj.getEndDt() != null) {
+                map.put("{{준공예정일}}", formatDateKorean(proj.getEndDt()));
+            } else {
+                map.put("{{준공예정일}}", "");
+            }
 
             // 준공일
             Map<String, Object> compUpisData = getSectionData(doc, "completion");
@@ -791,9 +798,14 @@ public class HwpxExportService {
                 map.put("{{계약일자}}", "");
             }
 
-            // 준공예정일은 수기 입력 — 라벨만 출력 (proj.endDt 자동 채움 안 함)
-            map.put("{{준공예정일}}", "년    월    일");
-            map.put("{{준공예정일2}}", "년    월    일");
+            // 준공예정일 (endDt)
+            if (proj != null && proj.getEndDt() != null) {
+                map.put("{{준공예정일}}", formatDateKorean(proj.getEndDt()));
+                map.put("{{준공예정일2}}", formatDateKorean(proj.getEndDt()));
+            } else {
+                map.put("{{준공예정일}}", "");
+                map.put("{{준공예정일2}}", "");
+            }
 
             // 준공일 - completion 섹션에서 가져오거나 현재 날짜
             Map<String, Object> compData = getSectionData(doc, "completion");
@@ -837,8 +849,8 @@ public class HwpxExportService {
                 map.put("{{계약년월일}}", "");
             }
 
-            // 준공예정일은 수기 입력 — 라벨만 출력 (proj.endDt 자동 채움 안 함). 실제준공일/제출일은 그대로.
-            String scheduledDate = "년    월    일";
+            // 준공예정일 / 실제준공일 / 제출일 (page1·2 동일)
+            String scheduledDate = (proj != null && proj.getEndDt() != null) ? formatDateKoreanPadded(proj.getEndDt()) : "";
             Map<String, Object> compFullData = getSectionData(doc, "completion");
             String actualDateStr = getStr(compFullData, "actualDate", "");
             String submitDateStr = getStr(compFullData, "submitDate", "");
