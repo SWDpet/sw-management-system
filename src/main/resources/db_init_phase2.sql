@@ -815,11 +815,3 @@ CREATE TABLE IF NOT EXISTS inspect_metric_snapshot (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_metric_pjt_role_host_time ON inspect_metric_snapshot (pjt_id, server_role, COALESCE(host_name, ''), collected_at);
 CREATE INDEX IF NOT EXISTS idx_metric_pjt_role_time ON inspect_metric_snapshot (pjt_id, server_role, collected_at DESC);
-
--- Phase J 일회성 정리: 모든 inspect 관련 ops_doc + report 전부 초기화
-DELETE FROM inspect_check_result;
-DELETE FROM inspect_visit_log;
-DELETE FROM tb_ops_doc WHERE doc_type = 'INSPECT';
-DELETE FROM inspect_qr_batch;
-DELETE FROM inspect_metric_snapshot;
-DELETE FROM inspect_report;

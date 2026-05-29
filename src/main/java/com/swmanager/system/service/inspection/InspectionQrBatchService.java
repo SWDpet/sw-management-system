@@ -308,11 +308,6 @@ public class InspectionQrBatchService {
                 else if ("warn".equalsIgnoreCase(status)) stats.warn++;
 
                 // db.os.disk: mounts 데이터 → DB_USAGE 행 생성
-                if ("db.os.disk".equals(key)) {
-                    log.info("[disk진단] key={} valueType={} value={}", key,
-                            value != null ? value.getClass().getSimpleName() : "null",
-                            value != null ? String.valueOf(value).substring(0, Math.min(200, String.valueOf(value).length())) : "null");
-                }
                 if ("db.os.disk".equals(key) && value instanceof Map) {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> mounts = (Map<String, Object>) value;

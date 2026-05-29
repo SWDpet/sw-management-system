@@ -1576,14 +1576,6 @@ public class DocumentController {
         Map<String, Object> result = new LinkedHashMap<>();
         try {
             InspectReportDTO dto = inspectReportService.findById(id);
-            log.info("[Phase J 진단] report_id={} checkResults={} visits={}", id,
-                    dto.getCheckResults() != null ? dto.getCheckResults().size() : 0,
-                    dto.getVisits() != null ? dto.getVisits().size() : 0);
-            if (dto.getCheckResults() != null && !dto.getCheckResults().isEmpty()) {
-                var sample = dto.getCheckResults().get(0);
-                log.info("[Phase J 진단] 샘플 row: section={} itemName={} resultCode={} resultText={}",
-                        sample.getSection(), sample.getItemName(), sample.getResultCode(), sample.getResultText());
-            }
             result.put("success", true);
             result.put("data", dto);
         } catch (Exception e) {
