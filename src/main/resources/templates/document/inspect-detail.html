@@ -203,7 +203,7 @@
                             <thead><tr><th colspan="6">사용율</th></tr></thead>
                             <tbody>
                                 <tr th:each="u : ${dbUsage}">
-                                    <td th:text="${u.category}"></td><td th:text="${u.result}"></td>
+                                    <td th:text="${u.itemName}"></td><td th:text="${u.result}"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -233,7 +233,7 @@
                             <thead><tr><th colspan="4">사용율</th></tr></thead>
                             <tbody>
                                 <tr th:each="u : ${apUsage}">
-                                    <td th:text="${u.category}"></td><td th:text="${u.result}"></td>
+                                    <td th:text="${u.itemName}"></td><td th:text="${u.result}"></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -261,7 +261,7 @@
                         <table class="usage-table">
                             <thead><tr><th>기타</th></tr></thead>
                             <tbody>
-                                <tr th:each="u : ${dbmsEtc}"><td th:text="${u.result}"></td></tr>
+                                <tr th:each="u : ${dbmsEtc}"><td th:text="${u.result}" style="white-space: pre-wrap; word-break: break-word;"></td></tr>
                             </tbody>
                         </table>
                     </th:block>
