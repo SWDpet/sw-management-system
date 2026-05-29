@@ -1658,6 +1658,29 @@ public class DocumentController {
         return ResponseEntity.ok(result);
     }
 
+    /** POST /document/api/inspect/reset-all - 점검 테스트 데이터 일괄 초기화 (관리자 전용 hard delete) */
+    @PostMapping("/api/inspect/reset-all")
+    @ResponseBody
+    public ResponseEntity<?> resetAllInspect() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (!isAdmin()) {
+            result.put("success", false);
+            result.put("error", Map.of("code", "FORBIDDEN", "message", "관리자만 초기화할 수 있습니다"));
+            return ResponseEntity.status(403).body(result);
+        }
+        try {
+            Map<String, Long> deleted = inspectReportService.resetAllInspectData();
+            logService.log(MenuName.DOCUMENT, AccessActionType.DELETE, "점검 데이터 일괄 초기화: " + deleted);
+            result.put("success", true);
+            result.put("deleted", deleted);
+        } catch (Exception e) {
+            log.error("점검 데이터 일괄 초기화 실패: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+        return ResponseEntity.ok(result);
+    }
+
     /** GET /document/api/inspect-template?type={templateType} - 템플릿 조회 */
     @GetMapping("/api/inspect-template")
     @ResponseBody

@@ -69,6 +69,11 @@
                         <a href="/ops-doc/patch/form"><i class="fas fa-puzzle-piece"></i> 패치내역서</a>
                     </div>
                 </div>
+                <button th:if="${isAdmin}" type="button" onclick="openResetModal()"
+                        style="background:#e74a3b;color:white;"
+                        title="모든 점검 데이터 영구 삭제 (테스트용)">
+                    <i class="fas fa-trash-can"></i> 테스트 데이터 초기화
+                </button>
             </div>
         </div>
 
@@ -145,6 +150,27 @@
         </div>
     </div>
 
+    <!-- 테스트 데이터 일괄 초기화 모달 (관리자 전용) -->
+    <div th:if="${isAdmin}" id="resetModal"
+         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:12px; padding:28px; max-width:480px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.25);">
+            <h3 style="margin:0 0 14px; color:#e74a3b; font-size:1.1em;"><i class="fas fa-triangle-exclamation"></i> 점검 데이터 일괄 초기화</h3>
+            <p style="font-size:0.88em; color:#555; line-height:1.7; margin:0 0 6px;">
+                모든 <b>점검내역서·점검결과·방문이력·QR배치·메트릭 스냅샷·운영문서(점검)</b> 가
+                <b style="color:#e74a3b;">영구 삭제</b>됩니다. 되돌릴 수 없습니다.
+            </p>
+            <p style="font-size:0.88em; color:#555; margin:0 0 6px;">계속하려면 아래에 <b>초기화</b> 를 입력하세요.</p>
+            <input type="text" id="resetConfirmInput" placeholder="초기화" autocomplete="off"
+                   style="width:100%; padding:9px 11px; border:1px solid #d1d3e2; border-radius:5px; margin:8px 0 18px; box-sizing:border-box;">
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" onclick="closeResetModal()"
+                        style="padding:8px 16px; background:#858796; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">취소</button>
+                <button type="button" onclick="doReset()"
+                        style="padding:8px 16px; background:#e74a3b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">초기화 실행</button>
+            </div>
+        </div>
+    </div>
+
 <script th:if="${isAdmin}">
 function deleteInspectDoc(docNo, opsDocId) {
     if (!confirm('이 점검내역서를 삭제하시겠습니까?')) return;
@@ -176,6 +202,42 @@ function deleteInspectDoc(docNo, opsDocId) {
             }
         })
         .catch(function(e) { alert('삭제 오류: ' + e.message); });
+}
+
+function openResetModal() {
+    document.getElementById('resetConfirmInput').value = '';
+    document.getElementById('resetModal').style.display = 'flex';
+    setTimeout(function(){ document.getElementById('resetConfirmInput').focus(); }, 50);
+}
+function closeResetModal() {
+    document.getElementById('resetModal').style.display = 'none';
+}
+function doReset() {
+    var v = document.getElementById('resetConfirmInput').value.trim();
+    if (v !== '초기화') { alert('"초기화" 를 정확히 입력해야 실행됩니다.'); return; }
+    fetch('/document/api/inspect/reset-all', { method: 'POST' })
+        .then(function(r) {
+            if (r.redirected || r.url.indexOf('/login') >= 0) {
+                alert('세션 만료 — 다시 로그인해주세요.'); location.href = '/login'; return null;
+            }
+            return r.text();
+        })
+        .then(function(text) {
+            if (!text) return;
+            var resp;
+            try { resp = JSON.parse(text); } catch(pe) { alert('응답 파싱 실패: ' + text.substring(0, 200)); return; }
+            if (resp.success) {
+                var d = resp.deleted || {};
+                alert('초기화 완료\n점검결과 ' + (d.checkResult||0) + ' / 방문 ' + (d.visitLog||0)
+                    + ' / QR배치 ' + (d.qrBatch||0) + ' / 스냅샷 ' + (d.metricSnapshot||0)
+                    + ' / 운영문서 ' + (d.opsDocInspect||0) + ' / 점검내역서 ' + (d.report||0) + ' 건 삭제');
+                location.reload();
+            } else {
+                var msg = resp.error && resp.error.message ? resp.error.message : (resp.error || '알 수 없는 오류');
+                alert('초기화 실패: ' + msg);
+            }
+        })
+        .catch(function(e) { alert('초기화 오류: ' + e.message); });
 }
 </script>
 </body>

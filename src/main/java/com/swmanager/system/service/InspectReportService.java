@@ -1,6 +1,7 @@
 package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.domain.InspectCheckResult;
 import com.swmanager.system.domain.InspectReport;
 import com.swmanager.system.domain.InspectTemplate;
@@ -11,6 +12,7 @@ import com.swmanager.system.dto.InspectVisitLogDTO;
 import com.swmanager.system.repository.InspectCheckResultRepository;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.InspectQrBatchRepository;
+import com.swmanager.system.repository.InspectMetricSnapshotRepository;
 import com.swmanager.system.repository.InspectTemplateRepository;
 import com.swmanager.system.repository.InspectVisitLogRepository;
 import com.swmanager.system.repository.ops.OpsDocumentRepository;
@@ -24,7 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -38,6 +42,7 @@ public class InspectReportService {
     private final InspectTemplateRepository templateRepository;
     private final InspectQrBatchRepository qrBatchRepository;
     private final OpsDocumentRepository opsDocumentRepository;
+    private final InspectMetricSnapshotRepository metricSnapshotRepository;
     private final OpsDocLinkService opsDocLinkService;  // doc-split-ops: tb_ops_doc 연계 (codex 권고로 별도 bean)
     private final MessageResolver messages;
 
@@ -234,6 +239,34 @@ public class InspectReportService {
             opsDocumentRepository.findByDocNo("INSP-" + yyyy + "-" + mm + "-" + id)
                     .ifPresent(opsDocumentRepository::delete);
         }
+    }
+
+    /**
+     * 테스트 데이터 일괄 초기화 — 점검 관련 전체 hard delete.
+     * 매 부팅 cleanup SQL 을 대체하는 수동 초기화. 호출부(컨트롤러)에서 관리자 권한 확인 필수.
+     * 삭제 순서: 자식(check_result/visit_log/qr_batch) → metric_snapshot → ops_doc(INSPECT) → report.
+     */
+    @Transactional
+    public Map<String, Long> resetAllInspectData() {
+        var inspectDocs = opsDocumentRepository.findByDocTypeOrderByCreatedAtDesc(OpsDocType.INSPECT);
+
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("checkResult", checkResultRepository.count());
+        counts.put("visitLog", visitLogRepository.count());
+        counts.put("qrBatch", qrBatchRepository.count());
+        counts.put("metricSnapshot", metricSnapshotRepository.count());
+        counts.put("opsDocInspect", (long) inspectDocs.size());
+        counts.put("report", reportRepository.count());
+
+        checkResultRepository.deleteAllInBatch();
+        visitLogRepository.deleteAllInBatch();
+        qrBatchRepository.deleteAllInBatch();
+        metricSnapshotRepository.deleteAllInBatch();
+        opsDocumentRepository.deleteAll(inspectDocs);
+        reportRepository.deleteAllInBatch();
+
+        log.info("점검 데이터 일괄 초기화 완료: {}", counts);
+        return counts;
     }
 
     // ===== 템플릿 항목 조회 =====
