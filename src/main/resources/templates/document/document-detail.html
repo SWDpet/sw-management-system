@@ -68,12 +68,6 @@
             <div class="header-actions">
                 <th:block th:if="${userAuth == 'EDIT'}">
                     <a th:href="@{/document/create(docType=${doc.docType}, infraId=${doc.infraId}, docId=${doc.docId})}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
-                    <th:block th:if="${doc.status == 'DRAFT'}">
-                        <button onclick="changeStatus('COMPLETED')" class="btn-complete"><i class="fas fa-check"></i> 작성완료</button>
-                    </th:block>
-                    <th:block th:if="${doc.status == 'COMPLETED'}">
-                        <button onclick="changeStatus('DRAFT')" class="btn-draft"><i class="fas fa-undo"></i> 작성중으로</button>
-                    </th:block>
                     <form th:action="@{'/document/delete/' + ${doc.docId}}" method="post" style="display:inline;" onsubmit="return confirm('삭제하시겠습니까?');">
                         <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> 삭제</button>
                     </form>
@@ -118,10 +112,7 @@
                     <th>시스템</th><td th:text="${doc.sysNm != null ? doc.sysNm : (doc.sysType != null ? doc.sysType : '-')}">-</td>
                 </tr>
                 <tr>
-                    <th>작성자</th><td th:text="${doc.authorName}">-</td>
-                    <th>상태</th>
-                    <td><span th:class="'badge badge-' + ${#strings.toLowerCase(doc.status)}"
-                              th:text="${T(com.swmanager.system.dto.DocumentDTO).getStatusLabel(doc.status)}">-</span></td>
+                    <th>작성자</th><td colspan="3" th:text="${doc.authorName}">-</td>
                 </tr>
                 <tr>
                     <th>작성일</th><td th:text="${doc.createdAt != null ? #strings.substring(doc.createdAt, 0, 16) : '-'}">-</td>
@@ -179,27 +170,6 @@
             document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
             document.getElementById('tab-' + tabName).classList.add('active');
             event.target.closest('.tab-btn').classList.add('active');
-        }
-
-        function changeStatus(newStatus) {
-            var msg = newStatus === 'COMPLETED' ? '작성완료 처리하시겠습니까?' : '작성중으로 변경하시겠습니까?';
-            if (!confirm(msg)) return;
-
-            var csrfToken = document.querySelector('meta[name="_csrf"]').content;
-            var csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
-
-            var formData = new FormData();
-            formData.append('status', newStatus);
-
-            var headers = {};
-            headers[csrfHeader] = csrfToken;
-
-            fetch('/document/api/status/[[${doc.docId}]]', { method: 'POST', headers: headers, body: formData })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.success) location.reload();
-                    else alert(data.error || '변경 실패');
-                });
         }
     </script>
 </body>

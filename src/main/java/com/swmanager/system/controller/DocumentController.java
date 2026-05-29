@@ -109,7 +109,6 @@ public class DocumentController {
 
     @GetMapping("/list")
     public String documentList(@RequestParam(name = "docType", required = false) String docType,
-                                @RequestParam(name = "status", required = false) String status,
                                 @RequestParam(name = "cityNm", required = false) String cityNm,
                                 @RequestParam(name = "distNm", required = false) String distNm,
                                 @RequestParam(name = "keyword", required = false) String keyword,
@@ -124,7 +123,7 @@ public class DocumentController {
         Long authorId = null; // 관리자는 전체 조회
 
         Page<DocumentDTO> documents = documentService.searchDocuments(
-                docType, status, cityNm, distNm, authorId, null, null, keyword, pageable);
+                docType, null, cityNm, distNm, authorId, null, null, keyword, pageable);
 
         // 시도 목록 (드롭다운용), 시군구 목록 (선택된 시도 기준)
         List<String> cityList = documentService.getCityNames();
@@ -136,7 +135,6 @@ public class DocumentController {
         model.addAttribute("cityList", cityList);
         model.addAttribute("distList", distList);
         model.addAttribute("docType", docType);
-        model.addAttribute("status", status);
         model.addAttribute("cityNm", cityNm);
         model.addAttribute("distNm", distNm);
         model.addAttribute("keyword", keyword);
@@ -151,6 +149,44 @@ public class DocumentController {
     @ResponseBody
     public List<String> getDistList(@RequestParam String cityNm) {
         return documentService.getDistNamesByCity(cityNm);
+    }
+
+    /** D-01 검색 결과 Excel 다운로드 — 화면 필터(문서유형/상태/시도/시군구/검색) 그대로 적용한 전체 목록 */
+    @ResponseBody
+    @GetMapping("/excel-list")
+    public ResponseEntity<byte[]> downloadDocumentListExcel(
+            @RequestParam(name = "docType", required = false) String docType,
+            @RequestParam(name = "cityNm", required = false) String cityNm,
+            @RequestParam(name = "distNm", required = false) String distNm,
+            @RequestParam(name = "keyword", required = false) String keyword) {
+        if ("NONE".equals(getAuth())) {
+            return ResponseEntity.status(403).build();
+        }
+        try {
+            Page<DocumentDTO> documents = documentService.searchDocuments(
+                    docType, null, cityNm, distNm, null, null, null, keyword,
+                    org.springframework.data.domain.PageRequest.of(0, 100000));
+            byte[] excelBytes = excelExportService.generateDocumentList(documents.getContent());
+
+            // 문서유형 선택 시 해당 유형 라벨(착수계/기성계/준공계)을 파일명 prefix 로, 전체면 "사업문서목록"
+            String prefix = "사업문서목록";
+            if (docType != null && !docType.isBlank()) {
+                try {
+                    prefix = DocumentType.fromString(docType).label();
+                } catch (IllegalArgumentException ignore) {}
+            }
+            String filename = prefix + "_" + java.time.LocalDate.now() + ".xlsx";
+            String encodedFilename = java.net.URLEncoder.encode(filename, "UTF-8").replace("+", "%20");
+
+            logService.log(MenuName.DOCUMENT, AccessActionType.VIEW, "문서 목록 Excel 다운로드");
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(excelBytes);
+        } catch (Exception e) {
+            log.error("문서 목록 Excel 생성 실패", e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     // === D-10: 문서 상세/이력 ===

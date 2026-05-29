@@ -22,6 +22,8 @@
         .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.82em; }
         .filter-bar label { font-size: 0.82em; font-weight: 600; color: #5a5c69; }
         .btn-search { padding: 7px 15px; background: #0F766E; color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .btn-excel { padding: 7px 15px; background: #1cc88a; color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .btn-excel:hover { background: #17a673; }
 
         /* 문서 생성 드롭다운 */
         .dropdown { position: relative; display: inline-block; }
@@ -80,19 +82,13 @@
         </div>
 
         <!-- 필터 -->
-        <form class="filter-bar" action="/document/list" method="get">
+        <form class="filter-bar" id="filterForm" action="/document/list" method="get">
             <label>문서유형</label>
             <select name="docType">
                 <option value="">전체</option>
                 <option value="COMMENCE" th:selected="${docType == 'COMMENCE'}">착수계</option>
                 <option value="INTERIM" th:selected="${docType == 'INTERIM'}">기성계</option>
                 <option value="COMPLETION" th:selected="${docType == 'COMPLETION'}">준공계</option>
-            </select>
-            <label>상태</label>
-            <select name="status">
-                <option value="">전체</option>
-                <option value="DRAFT" th:selected="${status == 'DRAFT'}">작성중</option>
-                <option value="COMPLETED" th:selected="${status == 'COMPLETED'}">작성완료</option>
             </select>
             <label>시도</label>
             <select name="cityNm" id="filterCity" onchange="onCityChange()">
@@ -107,9 +103,15 @@
             <label>검색</label>
             <input type="text" name="keyword" th:value="${keyword}" placeholder="문서번호/제목 검색">
             <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
+            <button type="button" class="btn-excel" onclick="downloadDocListExcel()"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
         </form>
 
         <script>
+            function downloadDocListExcel() {
+                var form = document.getElementById('filterForm');
+                var params = new URLSearchParams(new FormData(form)).toString();
+                window.location.href = '/document/excel-list?' + params;
+            }
             function onCityChange() {
                 var city = document.getElementById('filterCity').value;
                 var distSel = document.getElementById('filterDist');
@@ -138,10 +140,11 @@
                         <th>No</th>
                         <th>문서번호</th>
                         <th>문서유형</th>
-                        <th>대상</th>
+                        <th>시도</th>
+                        <th>시군구</th>
+                        <th>시스템</th>
                         <th>제목</th>
                         <th>작성자</th>
-                        <th>상태</th>
                         <th>작성일</th>
                     </tr>
                 </thead>
@@ -155,24 +158,15 @@
                                   style="display:inline-block; margin-left:4px; padding:2px 6px; background:#0F766E; color:white; border-radius:3px; font-size:0.72em; font-weight:600;"
                                   th:text="${d.inspectMonth}">04월</span>
                         </td>
-                        <td>
-                            <!-- [스프린트 5 FR-2-F] 업무지원 INTERNAL 시 조직 표시, 그 외 지자체 fallback -->
-                            <span th:if="${d.docType?.name() == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
-                                  style="color:#00897b; font-weight:600;"
-                                  th:text="${'[내부] ' + (d.orgUnitPath != null ? d.orgUnitPath : (d.orgUnitName != null ? d.orgUnitName : '-'))}">-</span>
-                            <span th:unless="${d.docType?.name() == 'SUPPORT' and d.supportTargetType == 'INTERNAL'}"
-                                  th:text="${d.targetDisplay != null and !d.targetDisplay.isEmpty() ? d.targetDisplay : '-'}">-</span>
-                        </td>
+                        <td th:text="${d.cityNm != null and !d.cityNm.isEmpty() ? d.cityNm : '-'}">-</td>
+                        <td th:text="${d.distNm != null and !d.distNm.isEmpty() ? d.distNm : '-'}">-</td>
+                        <td th:text="${d.sysNm != null and !d.sysNm.isEmpty() ? d.sysNm : '-'}">-</td>
                         <td th:text="${d.title}">제목</td>
                         <td th:text="${d.authorName}">-</td>
-                        <td>
-                            <span th:class="'badge badge-' + ${#strings.toLowerCase(d.status)}"
-                                  th:text="${T(com.swmanager.system.dto.DocumentDTO).getStatusLabel(d.status)}">상태</span>
-                        </td>
                         <td th:text="${d.createdAt != null ? #strings.substring(d.createdAt, 0, 10) : '-'}">-</td>
                     </tr>
                     <tr th:if="${documents.totalElements == 0}" class="empty-row">
-                        <td colspan="8"><i class="fas fa-inbox"></i> 등록된 문서가 없습니다.</td>
+                        <td colspan="9"><i class="fas fa-inbox"></i> 등록된 문서가 없습니다.</td>
                     </tr>
                 </tbody>
             </table>
@@ -180,7 +174,7 @@
             <!-- 페이지네이션 -->
             <div th:if="${documents.totalPages > 1}" class="pagination">
                 <a th:each="i : ${#numbers.sequence(0, documents.totalPages - 1)}"
-                   th:href="@{/document/list(page=${i}, docType=${docType}, status=${status}, cityNm=${cityNm}, distNm=${distNm}, keyword=${keyword})}"
+                   th:href="@{/document/list(page=${i}, docType=${docType}, cityNm=${cityNm}, distNm=${distNm}, keyword=${keyword})}"
                    th:class="${documents.number == i} ? 'active' : ''"
                    th:text="${i + 1}">1</a>
             </div>

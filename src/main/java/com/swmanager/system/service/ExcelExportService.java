@@ -3,6 +3,7 @@ package com.swmanager.system.service;
 import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.domain.workplan.PerformanceSummary;
+import com.swmanager.system.dto.DocumentDTO;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -2389,5 +2390,72 @@ public class ExcelExportService {
     private int toInt(Object obj) {
         if (obj instanceof Number) return ((Number) obj).intValue();
         return 0;
+    }
+
+    // =====================================================
+    // 사업문서 목록 Excel (D-01 검색 결과 다운로드)
+    // =====================================================
+
+    /** 문서 목록(검색 결과) 을 화면 컬럼 구성 그대로 xlsx 로 출력. */
+    public byte[] generateDocumentList(List<DocumentDTO> docs) throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("사업문서 목록");
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setFontName("맑은 고딕");
+            headerFont.setBold(true);
+            headerFont.setColor(IndexedColors.WHITE.getIndex());
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+
+            CellStyle bodyStyle = workbook.createCellStyle();
+            Font bodyFont = workbook.createFont();
+            bodyFont.setFontName("맑은 고딕");
+            bodyStyle.setFont(bodyFont);
+            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            bodyStyle.setBorderBottom(BorderStyle.THIN);
+            bodyStyle.setBorderLeft(BorderStyle.THIN);
+            bodyStyle.setBorderRight(BorderStyle.THIN);
+
+            String[] headers = {"No", "문서번호", "문서유형", "시도", "시군구", "시스템", "제목", "작성자", "작성일"};
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = headerRow.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(headerStyle);
+            }
+
+            int total = docs.size();
+            int rowIdx = 1;
+            for (int i = 0; i < docs.size(); i++) {
+                DocumentDTO d = docs.get(i);
+                Row row = sheet.createRow(rowIdx++);
+                createDataCell(row, 0, total - i, bodyStyle);
+                createDataCell(row, 1, d.getDocNo(), bodyStyle);
+                createDataCell(row, 2, DocumentDTO.getDocTypeLabel(d.getDocType()), bodyStyle);
+                createDataCell(row, 3, d.getCityNm(), bodyStyle);
+                createDataCell(row, 4, d.getDistNm(), bodyStyle);
+                createDataCell(row, 5, d.getSysNm(), bodyStyle);
+                createDataCell(row, 6, d.getTitle(), bodyStyle);
+                createDataCell(row, 7, d.getAuthorName(), bodyStyle);
+                String created = d.getCreatedAt();
+                createDataCell(row, 8, (created != null && created.length() >= 10) ? created.substring(0, 10) : created, bodyStyle);
+            }
+
+            int[] widths = {1500, 5500, 3000, 3000, 3500, 6000, 12000, 3000, 3500};
+            for (int i = 0; i < widths.length; i++) sheet.setColumnWidth(i, widths[i]);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            workbook.write(baos);
+            return baos.toByteArray();
+        }
     }
 }

@@ -354,6 +354,9 @@
                             <th>PMS코드</th>
                             <th>사업명</th>
                             <th>발주처</th>
+                            <th>계약일</th>
+                            <th>착수일</th>
+                            <th>종료일</th>
                             <th>계약금액</th>
                             <th>계약상태</th>
                         </tr>
@@ -370,6 +373,9 @@
                                    th:text="${p.projNm}" class="proj-link">사업명</a>
                             </td>
                             <td th:text="${p.client}">-</td>
+                            <td th:text="${p.contDt != null ? p.contDt : '-'}">-</td>
+                            <td th:text="${p.startDt != null ? p.startDt : '-'}">-</td>
+                            <td th:text="${p.endDt != null ? p.endDt : '-'}">-</td>
                             <td class="amt" th:text="${p.contAmt != null ? #numbers.formatInteger(p.contAmt, 0, 'COMMA') : '0'}">0</td>
                             <td>
                                 <span th:if="${p.stat == '1'}" class="status-1">진행중</span>
@@ -378,7 +384,7 @@
                             </td>
                         </tr>
                         <tr th:if="${paging.totalElements == 0}">
-                            <td colspan="9" style="padding: 0;">
+                            <td colspan="12" style="padding: 0;">
                                 <div style="padding:72px 24px; text-align:center;">
                                     <div style="width:72px; height:72px; margin:0 auto 18px; border-radius:16px; background:#F5F5F4; color:#A8A29E; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem;">
                                         <i class="fas fa-folder-open"></i>
