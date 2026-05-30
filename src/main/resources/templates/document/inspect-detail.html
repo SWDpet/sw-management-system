@@ -9,7 +9,7 @@
         body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: #0f766e; font-size: 1.2em; }
         .header-actions { display: flex; gap: 8px; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
         .btn-edit { background: #0F766E; color: white; }
@@ -24,19 +24,37 @@
         .alert-error { background: #f8d7da; color: #721c24; }
 
         .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        .card-title { font-size: 1em; font-weight: 700; color: #134E4A; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #e8eaf6; }
+        .card-title { font-size: 1em; font-weight: 700; color: #0f766e; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #f0fdfa; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 30px; }
         .info-item { display: flex; gap: 10px; }
         .info-label { font-weight: 600; color: #5a5c69; min-width: 90px; font-size: 0.88em; }
         .info-value { font-size: 0.88em; }
 
-        .section-header { background: #134E4A; color: white; padding: 8px 14px; font-weight: 700; font-size: 0.92em; margin-top: 0; border-radius: 4px 4px 0 0; }
+        .section-header { background: #0f766e; color: white; padding: 8px 14px; font-weight: 700; font-size: 0.92em; margin-top: 0; border-radius: 4px 4px 0 0; }
         table.dt { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
         table.dt th, table.dt td { padding: 7px 10px; border: 1px solid #ddd; }
-        table.dt thead th { background: #e8eaf6; color: #134E4A; font-weight: 700; text-align: center; }
+        table.dt thead th { background: #f0fdfa; color: #0f766e; font-weight: 700; text-align: center; }
         table.dt .cat { background: #f8f9fc; font-weight: 600; text-align: center; }
         .result-ok { color: #155724; font-weight: 700; }
         .result-check { color: #856404; font-weight: 700; }
+        /* 점검내역서 v2 와 동일한 상태 배지 팔레트 */
+        .rbadge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 0.75em; font-weight: 700; color: #fff; }
+        .rb-ok { background: #10b981; } .rb-warn { background: #f59e0b; }
+        .rb-bad { background: #ef4444; } .rb-na { background: #94a3b8; }
+        /* 요약 스트립 (보고서 대시보드와 동일 톤) */
+        .sumstrip { display: flex; gap: 10px; margin-bottom: 18px; }
+        .sumstrip .tile { flex: 1; text-align: center; border-radius: 12px; padding: 14px 6px; }
+        .sumstrip .num { font-size: 1.8em; font-weight: 800; line-height: 1.1; }
+        .sumstrip .lab { font-size: 0.82em; font-weight: 600; margin-top: 3px; }
+        .sumstrip .t-ok { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .sumstrip .t-ok .num { color: #059669; } .sumstrip .t-ok .lab { color: #047857; }
+        .sumstrip .t-warn { background: #fffbeb; border: 1px solid #fde68a; }
+        .sumstrip .t-warn .num { color: #d97706; } .sumstrip .t-warn .lab { color: #b45309; }
+        .sumstrip .t-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .sumstrip .t-bad .num { color: #dc2626; } .sumstrip .t-bad .lab { color: #b91c1c; }
+        .sumstrip .t-na { background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .sumstrip .t-na .num { color: #64748b; } .sumstrip .t-na .lab { color: #64748b; }
+        @media (max-width: 900px) { .sumstrip { flex-wrap: wrap; } .sumstrip .tile { min-width: 40%; } }
 
         .sub-header { font-weight: 700; font-size: 0.9em; margin: 14px 0 6px; padding-left: 8px; border-left: 3px solid #4caf50; }
         table.spec { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-bottom: 10px; }
@@ -91,9 +109,16 @@
                 <a th:href="@{'/document/create?docType=INSPECT&reportId=' + ${report.id}}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
                 <a th:href="@{'/document/inspect-preview/' + ${report.id}}" class="btn-preview"><i class="fas fa-eye"></i> 미리보기</a>
                 <a th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-file-pdf"></i> PDF 다운로드</a>
-                <a th:href="@{'/document/api/inspect-docx/' + ${report.id}}" class="btn-pdf" style="background:#2b6cb0;"><i class="fas fa-file-word"></i> DOCX 다운로드</a>
                 <a href="/ops-doc/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>
             </div>
+        </div>
+
+        <!-- 점검 결과 요약 스트립 -->
+        <div class="sumstrip">
+            <div class="tile t-ok"><div class="num" th:text="${cntNormal} ?: 0">0</div><div class="lab">정상</div></div>
+            <div class="tile t-warn"><div class="num" th:text="${cntCaution} ?: 0">0</div><div class="lab">주의</div></div>
+            <div class="tile t-bad"><div class="num" th:text="${cntViolation} ?: 0">0</div><div class="lab">조치필요</div></div>
+            <div class="tile t-na"><div class="num" th:text="${cntManual} ?: 0">0</div><div class="lab">수동·해당없음</div></div>
         </div>
 
         <!-- 기본 정보 -->
@@ -193,7 +218,11 @@
                                 <td class="cat" th:text="${item.category}"></td>
                                 <td th:text="${item.itemName}"></td>
                                 <td th:text="${item.itemMethod}"></td>
-                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                                <td style="text-align:center;" th:with="rc=${item.resultCode}">
+                                    <span class="rbadge"
+                                          th:classappend="${rc == 'NORMAL' ? 'rb-ok' : (rc == 'PARTIAL' ? 'rb-warn' : (rc == 'ABNORMAL' ? 'rb-bad' : 'rb-na'))}"
+                                          th:text="${rc == 'NORMAL' ? '정상' : (rc == 'PARTIAL' ? '주의' : (rc == 'ABNORMAL' ? '조치필요' : (rc == 'NOT_APPLICABLE' ? '수동' : (item.result != null and !item.result.isEmpty() ? item.result : '대기'))))}"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -223,7 +252,11 @@
                                 <td th:text="${item.itemName}"></td>
                                 <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? #strings.substringBefore(item.itemMethod, '||') : (item.itemMethod ?: '')}"></td>
                                 <td th:text="${item.itemMethod != null and item.itemMethod.contains('||') ? #strings.substringAfter(item.itemMethod, '||') : ''}"></td>
-                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                                <td style="text-align:center;" th:with="rc=${item.resultCode}">
+                                    <span class="rbadge"
+                                          th:classappend="${rc == 'NORMAL' ? 'rb-ok' : (rc == 'PARTIAL' ? 'rb-warn' : (rc == 'ABNORMAL' ? 'rb-bad' : 'rb-na'))}"
+                                          th:text="${rc == 'NORMAL' ? '정상' : (rc == 'PARTIAL' ? '주의' : (rc == 'ABNORMAL' ? '조치필요' : (rc == 'NOT_APPLICABLE' ? '수동' : (item.result != null and !item.result.isEmpty() ? item.result : '대기'))))}"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -252,7 +285,11 @@
                                 <td class="cat" th:text="${item.category}"></td>
                                 <td th:text="${item.itemName}"></td>
                                 <td th:text="${item.itemMethod}"></td>
-                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                                <td style="text-align:center;" th:with="rc=${item.resultCode}">
+                                    <span class="rbadge"
+                                          th:classappend="${rc == 'NORMAL' ? 'rb-ok' : (rc == 'PARTIAL' ? 'rb-warn' : (rc == 'ABNORMAL' ? 'rb-bad' : 'rb-na'))}"
+                                          th:text="${rc == 'NORMAL' ? '정상' : (rc == 'PARTIAL' ? '주의' : (rc == 'ABNORMAL' ? '조치필요' : (rc == 'NOT_APPLICABLE' ? '수동' : (item.result != null and !item.result.isEmpty() ? item.result : '대기'))))}"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -279,7 +316,11 @@
                                 <td class="cat" th:text="${item.category}"></td>
                                 <td th:text="${item.itemName}"></td>
                                 <td th:text="${item.itemMethod}"></td>
-                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                                <td style="text-align:center;" th:with="rc=${item.resultCode}">
+                                    <span class="rbadge"
+                                          th:classappend="${rc == 'NORMAL' ? 'rb-ok' : (rc == 'PARTIAL' ? 'rb-warn' : (rc == 'ABNORMAL' ? 'rb-bad' : 'rb-na'))}"
+                                          th:text="${rc == 'NORMAL' ? '정상' : (rc == 'PARTIAL' ? '주의' : (rc == 'ABNORMAL' ? '조치필요' : (rc == 'NOT_APPLICABLE' ? '수동' : (item.result != null and !item.result.isEmpty() ? item.result : '대기'))))}"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -315,7 +356,11 @@
                                 <td class="cat" th:text="${item.category}"></td>
                                 <td th:text="${item.itemName}"></td>
                                 <td th:text="${item.itemMethod}"></td>
-                                <td style="text-align:center;" th:classappend="${item.result != null and item.result == '정상' ? 'result-ok' : 'result-check'}" th:text="${item.result}"></td>
+                                <td style="text-align:center;" th:with="rc=${item.resultCode}">
+                                    <span class="rbadge"
+                                          th:classappend="${rc == 'NORMAL' ? 'rb-ok' : (rc == 'PARTIAL' ? 'rb-warn' : (rc == 'ABNORMAL' ? 'rb-bad' : 'rb-na'))}"
+                                          th:text="${rc == 'NORMAL' ? '정상' : (rc == 'PARTIAL' ? '주의' : (rc == 'ABNORMAL' ? '조치필요' : (rc == 'NOT_APPLICABLE' ? '수동' : (item.result != null and !item.result.isEmpty() ? item.result : '대기'))))}"></span>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

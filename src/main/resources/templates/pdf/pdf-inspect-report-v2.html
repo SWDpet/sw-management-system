@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page { size: A4; margin: 15mm 13mm 15mm 13mm; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Malgun Gothic', sans-serif; font-size: 9pt; color: #334155; line-height: 1.5; }
+
+        /* ── 모던 팔레트 토큰 (trendy refresh) ──
+           ink #0f172a · accent(teal) #0f766e/#0d9488 · muted #64748b · line #e2e8f0 · surface #f8fafc
+           ok #10b981 · warn #f59e0b · bad #ef4444 · na #94a3b8 */
+
+        /* ════════ P1. 표지 (3분할: 상단 정보 · 중간 날짜 · 하단 서명) ════════ */
+        .cover { position: relative; height: 252mm; page-break-after: always; }
+
+        .hero { background: #0f766e; color: #fff; text-align: center; padding: 17mm 0 15mm;
+                border-radius: 0 0 16px 16px; }
+        .hero .hero-title { font-size: 33pt; font-weight: 800; letter-spacing: 8px; }
+        .hero .hero-rule { width: 46mm; height: 3px; background: rgba(255,255,255,0.55); margin: 6mm auto 0; border-radius: 2px; }
+
+        .info-card { margin: 16mm auto 0; width: 84%; border: 1px solid #e2e8f0; border-radius: 12px;
+                     background: #ffffff; overflow: hidden; }
+        .info-card table { width: 100%; border-collapse: collapse; }
+        .info-card td { padding: 11px 16px; border-bottom: 1px solid #eef2f6; font-size: 11pt; vertical-align: middle; }
+        .info-card tr:last-child td { border-bottom: 0; }
+        .info-card .lab { width: 30%; color: #0f766e; font-weight: 800; letter-spacing: 5px;
+                          background: #f0fdfa; text-align: center; }
+        .info-card .val { color: #0f172a; font-weight: 600; }
+
+        .cover .date { position: absolute; top: 150mm; left: 0; right: 0; text-align: center; white-space: nowrap; }
+        .cover .date .d-line { display: inline-block; width: 22mm; height: 1px; background: #cbd5e1; vertical-align: middle; }
+        .cover .date .d-val { display: inline-block; margin: 0 7mm; font-size: 19pt; font-weight: 800;
+                              color: #0f172a; letter-spacing: 5px; vertical-align: middle; white-space: nowrap; }
+
+        .cover .sign-wrap { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; }
+        .cover .sign { width: 84%; margin: 0 auto; border-collapse: collapse; }
+        .cover .sign > tbody > tr > td { vertical-align: top; }
+        .cover .sign .gap { width: 6%; }
+        .cover .sign .scell { width: 47%; }
+        .cover .srole { color: #0f766e; font-weight: 800; font-size: 11pt; letter-spacing: 7px;
+                        text-align: center; margin-bottom: 7px; }
+        .cover .sgrid { width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; border-collapse: separate; overflow: hidden; }
+        .cover .sgrid th { background: #f8fafc; color: #475569; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #eef2f6;
+                           padding: 9px 6px; width: 30%; font-weight: 700; font-size: 10pt; text-align: center; }
+        .cover .sgrid td { border-bottom: 1px solid #eef2f6; padding: 9px 12px; font-size: 10.5pt;
+                           vertical-align: middle; text-align: center; color: #0f172a; }
+        .cover .sgrid tr:last-child th, .cover .sgrid tr:last-child td { border-bottom: 0; }
+        .cover .sgrid .sigcell { height: 22mm; padding: 4px 10px; }
+        /* 셀 안쪽(여백 제외)보다 작게 → 표지에서 서명이 절대 잘리지 않음 */
+        .cover .sgrid .sign-img { max-height: 15mm; max-width: 40mm; vertical-align: middle; display: inline-block; }
+
+        /* ════════ 공통 ════════ */
+        .h2 { font-size: 13pt; font-weight: 800; color: #0f172a; padding: 0 0 7px 12px; margin: 0 0 12px;
+              border-left: 5px solid #0f766e; border-bottom: 1px solid #e2e8f0; }
+        .h2 .ey { font-size: 8.5pt; font-weight: 700; color: #0d9488; letter-spacing: 2px; margin-left: 4px; }
+        .page { page-break-before: always; }
+        .muted { color: #94a3b8; }
+
+        /* ── 집계 타일 ── */
+        .stat { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 13px; }
+        .stat td { width: 25%; text-align: center; border-radius: 12px; padding: 13px 4px; }
+        .stat .num { font-size: 23pt; font-weight: 800; line-height: 1.05; }
+        .stat .lab { font-size: 9pt; font-weight: 600; margin-top: 3px; }
+        .stat .s-ok  { background: #ecfdf5; border: 1px solid #a7f3d0; }
+        .stat .s-warn{ background: #fffbeb; border: 1px solid #fde68a; }
+        .stat .s-bad { background: #fef2f2; border: 1px solid #fecaca; }
+        .stat .s-na  { background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .n-ok{color:#059669;} .n-warn{color:#d97706;} .n-bad{color:#dc2626;} .n-na{color:#64748b;}
+        .l-ok{color:#047857;} .l-warn{color:#b45309;} .l-bad{color:#b91c1c;} .l-na{color:#64748b;}
+
+        /* ── KPI 타일 ── */
+        .kpi { width: 100%; border-collapse: separate; border-spacing: 8px 0; margin-bottom: 13px; }
+        .kpi td { width: 25%; text-align: center; border: 1px solid #e2e8f0; border-radius: 12px;
+                  padding: 11px 4px; background: #f8fafc; }
+        .kpi .k-num { font-size: 18pt; font-weight: 800; color: #0f766e; }
+        .kpi .k-lab { font-size: 8.5pt; color: #64748b; margin-top: 3px; }
+
+        /* ── 차트 ── */
+        .chart-wrap { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; margin-bottom: 13px; text-align: center; background:#fff; }
+        .chart-wrap img { width: 100%; max-width: 182mm; }
+        .chart-cap { font-size: 8.5pt; color: #94a3b8; margin-top: 5px; }
+        .nodata { color: #94a3b8; font-size: 9pt; padding: 20px; text-align: center; }
+
+        /* ── 패널 (발견사항/권고) ── */
+        .panel { border: 1px solid #e2e8f0; border-left: 4px solid #0f766e; border-radius: 10px;
+                 padding: 11px 14px; margin-bottom: 12px; background: #fff; }
+        .panel .pt { font-weight: 800; color: #0f172a; margin-bottom: 7px; font-size: 10.5pt; }
+        .issue-line { padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+        .issue-line:last-child { border-bottom: 0; }
+
+        /* ── 배지 (pill) ── */
+        .bdg { display: inline-block; padding: 2px 10px; border-radius: 11px; font-size: 8pt; font-weight: 700; color: #fff; vertical-align: middle; }
+        .bdg-ok{background:#10b981;} .bdg-warn{background:#f59e0b;} .bdg-bad{background:#ef4444;} .bdg-na{background:#94a3b8;}
+
+        /* ── 섹션 카드 (상태 좌측 액센트) ── */
+        .card { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+                page-break-inside: avoid; background: #fff; }
+        .card-hd { background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-left: 4px solid #94a3b8;
+                   padding: 9px 13px; color: #0f172a; font-weight: 800; font-size: 10.5pt; }
+        .card.ok   .card-hd { border-left-color: #10b981; }
+        .card.warn .card-hd { border-left-color: #f59e0b; }
+        .card.bad  .card-hd { border-left-color: #ef4444; }
+        .card.na   .card-hd { border-left-color: #94a3b8; }
+        .card-bd { padding: 3px 13px 9px; }
+        .row { width: 100%; border-collapse: collapse; }
+        .row tr, .apx tr { page-break-inside: avoid; }
+        .row td { padding: 6px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 9pt; }
+        .row tr:last-child td { border-bottom: 0; }
+        .row .c-item { width: 36%; font-weight: 600; color: #0f172a; }
+        .row .c-bdg  { width: 12%; text-align: center; }
+        .row .c-val  { width: 52%; color: #475569; }
+        .gauge { background: #eef2f6; border-radius: 6px; height: 8px; width: 100%; margin-bottom: 3px; }
+        .gauge-fill { height: 8px; border-radius: 6px; }
+        .gf-ok{background:#10b981;} .gf-warn{background:#f59e0b;} .gf-bad{background:#ef4444;} .gf-na{background:#94a3b8;}
+        .gv { font-size: 8.5pt; color: #64748b; }
+
+        /* ── 점검대상 사양 ── */
+        .spec { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 10px; page-break-inside: avoid;
+                border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .spec th, .spec td { padding: 7px 10px; border-bottom: 1px solid #eef2f6; }
+        .spec th { background: #f8fafc; color: #475569; width: 96px; font-weight: 700; text-align: left; border-right: 1px solid #eef2f6; }
+        .spec tr:last-child th, .spec tr:last-child td { border-bottom: 0; }
+        .spec-h { font-weight: 800; color: #0f172a; margin: 10px 0 5px; padding-left: 8px; border-left: 3px solid #0d9488; }
+
+        /* ── 부록 상세표 (zebra) ── */
+        .apx { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 12px; page-break-inside: avoid;
+               border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .apx th, .apx td { padding: 5px 8px; border-bottom: 1px solid #eef2f6; }
+        .apx thead th { background: #0f766e; color: #fff; text-align: center; font-weight: 700; border-bottom: 0; }
+        .apx tbody tr:nth-child(even) td { background: #f8fafc; }
+        .apx tbody tr:last-child td { border-bottom: 0; }
+        .apx .a-item { font-weight: 600; color: #0f172a; }
+        .apx-grp { page-break-inside: avoid; }
+        /* 점검 대상 사양: 제목 + 사양 표들을 한 묶음으로 (페이지 경계에서 함께 이동) */
+        .spec-grp { page-break-inside: avoid; }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════ P1. 표지 ════════════════ -->
+<div class="cover">
+    <!-- 상단: 히어로 + 정보 -->
+    <div class="hero">
+        <div class="hero-title">점검내역서</div>
+        <div class="hero-rule"></div>
+    </div>
+
+    <div class="info-card">
+        <table>
+            <tr><td class="lab">사 업 명</td>
+                <td class="val" style="line-height: 1.55;"><th:block
+                    th:if="${project != null and project.projNm != null and !project.projNm.isEmpty()}"><th:block
+                    th:each="w,it : ${project.projNm.split(' ')}"><span style="white-space:nowrap;" th:text="${w}">강진군</span><th:block th:unless="${it.last}"> </th:block></th:block></th:block><span
+                    th:unless="${project != null and project.projNm != null and !project.projNm.isEmpty()}">-</span></td></tr>
+            <tr><td class="lab">지자체명</td><td class="val" th:text="${project != null ? project.distNm : '-'}">강진군</td></tr>
+            <tr><td class="lab">점 검 월</td><td class="val" th:text="${inspectMonthKo}">2026년 5월</td></tr>
+            <tr><td class="lab">시 스 템</td><td class="val" th:text="${report.sysType != null ? report.sysType : 'UPIS'}">UPIS</td></tr>
+        </table>
+    </div>
+
+    <!-- 중간: 날짜 -->
+    <div class="date">
+        <span class="d-line"></span>
+        <span class="d-val" th:text="${report.inspectMonth != null ? #strings.replace(report.inspectMonth,'-','. ') + '.' : ''}">2026. 05.</span>
+        <span class="d-line"></span>
+    </div>
+
+    <!-- 하단: 점검자 / 확인자 -->
+    <div class="sign-wrap">
+    <table class="sign">
+        <tr>
+            <td class="scell">
+                <div class="srole">점 검 자</div>
+                <table class="sgrid">
+                    <tr><th>이 름</th>
+                        <td th:text="${report.inspectorUsername != null and !report.inspectorUsername.isEmpty() ? report.inspectorUsername : ''}">박욱진</td></tr>
+                    <tr><th>서 명</th>
+                        <td class="sigcell">
+                            <img th:if="${report.inspSign != null and !report.inspSign.isEmpty()}" th:src="${report.inspSign}" class="sign-img"/>
+                            <span th:unless="${report.inspSign != null and !report.inspSign.isEmpty()}" style="color:#cbd5e1;">(인)</span>
+                        </td></tr>
+                </table>
+            </td>
+            <td class="gap"></td>
+            <td class="scell">
+                <div class="srole">확 인 자</div>
+                <table class="sgrid">
+                    <tr><th>이 름</th>
+                        <td th:text="${report.confirmerName != null and !report.confirmerName.isEmpty() ? report.confirmerName : ''}"></td></tr>
+                    <tr><th>서 명</th>
+                        <td class="sigcell">
+                            <img th:if="${report.confSign != null and !report.confSign.isEmpty()}" th:src="${report.confSign}" class="sign-img"/>
+                            <span th:unless="${report.confSign != null and !report.confSign.isEmpty()}" style="color:#cbd5e1;">(인)</span>
+                        </td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    </div>
+</div>
+
+<!-- ════════════════ P2. 월별 점검 및 장애조치 이력 ════════════════ -->
+<div class="h2">월별 점검 및 장애조치 이력 <span class="ey">VISIT LOG</span></div>
+<table class="apx hist">
+    <thead><tr><th style="width:92px;">일자</th><th>업무</th><th>증상</th><th>조치내용</th></tr></thead>
+    <tbody>
+        <tr th:each="v : ${report.previousVisits}">
+            <td style="text-align:center;" th:text="${v.visitYear}+'-'+${v.visitMonth}+'-'+${v.visitDay}"></td>
+            <td th:text="${v.task}"></td><td th:text="${v.symptom}"></td><td th:text="${v.action}"></td>
+        </tr>
+        <tr th:each="v : ${report.visits}">
+            <td style="text-align:center;" th:text="${v.visitYear}+'-'+${v.visitMonth}+'-'+${v.visitDay}"></td>
+            <td th:text="${v.task}"></td><td th:text="${v.symptom}"></td><td th:text="${v.action}"></td>
+        </tr>
+        <tr th:if="${(report.visits == null or report.visits.isEmpty())
+                     and (report.previousVisits == null or report.previousVisits.isEmpty())}">
+            <td colspan="4" style="text-align:center;color:#94a3b8;">이력 없음</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- ════════════════ P3. 요약 대시보드 ════════════════ -->
+<div class="h2 page">점검 결과 요약 <span class="ey">SUMMARY</span></div>
+
+<table class="stat">
+    <tr>
+        <td class="s-ok"><div class="num n-ok" th:text="${cntNormal}">58</div><div class="lab l-ok">정상</div></td>
+        <td class="s-warn"><div class="num n-warn" th:text="${cntCaution}">4</div><div class="lab l-warn">주의</div></td>
+        <td class="s-bad"><div class="num n-bad" th:text="${cntViolation}">2</div><div class="lab l-bad">조치필요</div></td>
+        <td class="s-na"><div class="num n-na" th:text="${cntManual}">3</div><div class="lab l-na">수동·해당없음</div></td>
+    </tr>
+</table>
+
+<table class="kpi">
+    <tr>
+        <td><div class="k-num" th:text="${kpi.cpu}">21%</div><div class="k-lab">CPU 30일 평균</div></td>
+        <td><div class="k-num" th:text="${kpi.mem}">76%</div><div class="k-lab">Memory 30일 평균</div></td>
+        <td><div class="k-num" th:text="${kpi.disk}">47%</div><div class="k-lab">Disk 30일 최대</div></td>
+        <td><div class="k-num" th:text="${kpi.days}">30</div><div class="k-lab">수집 일수</div></td>
+    </tr>
+</table>
+
+<div class="chart-wrap">
+    <img th:if="${chartImg != null}" th:src="${chartImg}" alt="30일 추이"/>
+    <div th:if="${chartImg == null}" class="nodata">메트릭 추이 — 수집 대기</div>
+    <div class="chart-cap">최근 30일 CPU · Memory · Disk 사용률 추이 (호스트별)</div>
+</div>
+
+<div class="panel">
+    <div class="pt">핵심 발견사항</div>
+    <div th:if="${report.keyFindings != null and !report.keyFindings.isEmpty()}"
+         th:text="${report.keyFindings}" style="margin-bottom:6px;">요약…</div>
+    <div th:if="${issues == null or issues.isEmpty()}" class="muted">위반·주의 항목 없음 — 전체 정상</div>
+    <div th:each="iss : ${issues}" class="issue-line">
+        <span class="bdg" th:classappend="'bdg-'+${iss.codeClass}" th:text="${iss.codeLabel}">주의</span>
+        <span style="font-weight:600;color:#0f172a;" th:text="${iss.label}">[AP 서버] CPU 사용률</span>
+        <span class="muted" th:if="${iss.text != null and !iss.text.isEmpty()}" th:text="' — '+${iss.text}"></span>
+    </div>
+</div>
+
+<div class="panel" th:if="${(report.recommendation1 != null and !report.recommendation1.isEmpty())
+                           or (report.followup1 != null and !report.followup1.isEmpty())}">
+    <div class="pt">권고 / 후속조치</div>
+    <div th:if="${report.recommendation1 != null and !report.recommendation1.isEmpty()}">• <span th:text="${report.recommendation1}"></span></div>
+    <div th:if="${report.recommendation2 != null and !report.recommendation2.isEmpty()}">• <span th:text="${report.recommendation2}"></span></div>
+    <div th:if="${report.recommendation3 != null and !report.recommendation3.isEmpty()}">• <span th:text="${report.recommendation3}"></span></div>
+    <div th:if="${report.followup1 != null and !report.followup1.isEmpty()}" class="muted">↳ <span th:text="${report.followup1}"></span></div>
+    <div th:if="${report.followup2 != null and !report.followup2.isEmpty()}" class="muted">↳ <span th:text="${report.followup2}"></span></div>
+    <div th:if="${report.followup3 != null and !report.followup3.isEmpty()}" class="muted">↳ <span th:text="${report.followup3}"></span></div>
+</div>
+
+<!-- 점검대상 사양 — 인프라(tb_infra_master/server/software)에 저장된 정보에서 추출 -->
+<th:block th:if="${infraList != null and !infraList.isEmpty()}">
+    <div class="spec-grp">
+    <div class="spec-h">점검 대상 사양</div>
+    <th:block th:each="infra : ${infraList}">
+        <th:block th:each="srv : ${infra.servers}">
+            <table class="spec">
+                <tr><th th:text="${srv.serverType == 'DB' ? 'DB 서버' : 'AP 서버'}">AP 서버</th>
+                    <td th:text="${srv.serverModel}"></td></tr>
+                <tr><th>CPU</th><td th:text="${srv.cpuSpec}"></td></tr>
+                <tr><th>메모리</th><td th:text="${srv.memorySpec}"></td></tr>
+                <tr><th>디스크</th><td th:text="${srv.diskSpec}"></td></tr>
+                <tr><th>네트워크</th><td th:text="${srv.networkSpec}"></td></tr>
+                <tr><th>전원</th><td th:text="${srv.powerSpec}"></td></tr>
+                <tr><th>운영체제</th><td th:text="${srv.osDetail != null and !srv.osDetail.isEmpty() ? srv.osDetail : srv.osNm}"></td></tr>
+                <tr th:if="${srv.softwares != null and !srv.softwares.isEmpty()}">
+                    <th>소프트웨어</th>
+                    <td><th:block th:each="sw,it : ${srv.softwares}"><span
+                            th:text="${sw.swNm + (sw.swVer != null and !sw.swVer.isEmpty() ? ' ' + sw.swVer : '')}"></span><span th:unless="${it.last}"> · </span></th:block></td>
+                </tr>
+            </table>
+        </th:block>
+    </th:block>
+    </div>
+</th:block>
+
+<!-- ════════════════ P4~. 섹션 카드 ════════════════ -->
+<div class="h2 page">점검 내용 <span class="ey">DETAILS</span></div>
+
+<div class="card" th:each="card : ${cards}" th:classappend="${card.statusClass}">
+    <div class="card-hd">
+        <table style="width:100%; border-collapse:collapse;"><tr>
+            <td style="border:0; padding:0; vertical-align:middle;" th:text="${card.title}">AP 서버</td>
+            <td style="border:0; padding:0; vertical-align:middle; text-align:right;">
+                <span class="bdg" th:classappend="'bdg-'+${card.statusClass}" th:text="${card.statusLabel}">정상</span>
+            </td>
+        </tr></table>
+    </div>
+    <div class="card-bd">
+        <table class="row">
+            <tr th:each="r : ${card.rows}">
+                <td class="c-item" th:text="${r.label}">CPU 사용률</td>
+                <td class="c-bdg"><span class="bdg" th:classappend="'bdg-'+${r.codeClass}" th:text="${r.codeLabel}">정상</span></td>
+                <td class="c-val">
+                    <th:block th:if="${r.pct != null}">
+                        <div class="gauge"><div class="gauge-fill" th:classappend="'gf-'+${r.codeClass}"
+                             th:style="'width:'+${r.pct}+'%;'"></div></div>
+                        <span class="gv" th:text="${r.text}">21 %</span>
+                    </th:block>
+                    <span th:if="${r.pct == null}" th:text="${r.text}">정상</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- ════════════════ 부록. 전체 점검 상세 ════════════════ -->
+<div class="h2 page">부록 A. 전체 점검 상세 <span class="ey">APPENDIX</span></div>
+<div class="apx-grp" th:each="card : ${cards}">
+    <div class="spec-h" th:text="${card.title}">AP 서버</div>
+    <table class="apx">
+        <thead><tr><th style="width:42%;">점검 항목</th><th style="width:12%;">상태</th><th>결과</th></tr></thead>
+        <tbody>
+            <tr th:each="r : ${card.rows}">
+                <td class="a-item" th:text="${r.label}"></td>
+                <td style="text-align:center;"><span class="bdg" th:classappend="'bdg-'+${r.codeClass}" th:text="${r.codeLabel}"></span></td>
+                <td th:text="${r.text}"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

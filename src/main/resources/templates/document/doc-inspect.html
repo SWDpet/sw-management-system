@@ -11,7 +11,7 @@
         body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
         .container { max-width: 1200px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: #0f766e; font-size: 1.2em; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
         .btn-save { background: #1cc88a; color: white; }
         .btn-load { background: #0F766E; color: white; }
@@ -21,24 +21,24 @@
 
         .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; transition: 0.2s; }
-        .tab-nav button.active { background: white; color: #1565c0; border-bottom-color: #1565c0; }
+        .tab-nav button.active { background: white; color: #0f766e; border-bottom-color: #0f766e; }
 
         .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-section.active { display: block; }
-        .section-title { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+        .section-title { margin: 0 0 18px; font-size: 1em; font-weight: 800; color: #0f766e; border-left: 5px solid #0f766e; border-bottom: 1px solid #e1e5ec; padding: 0 0 7px 10px; }
         .sub-title { margin: 24px 0 12px; font-weight: 700; font-size: 0.9em; color: #333; border-left: 3px solid #4caf50; padding-left: 8px; }
 
         .form-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
         .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
         .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 140px; white-space: nowrap; }
         .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; box-sizing: border-box; }
-        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
+        .form-table input:focus, .form-table select:focus { border-color: #0f766e; outline: none; }
         .form-table input[readonly] { background: #f8f9fc; color: #666; }
         .required { color: #f08a7e; }
 
         .check-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
         .check-table th, .check-table td { padding: 8px 10px; border: 1px solid #e3e6f0; }
-        .check-table thead th { background: #e8eaf6; color: #283593; font-weight: 700; text-align: center; }
+        .check-table thead th { background: #f0fdfa; color: #0f766e; font-weight: 700; text-align: center; }
         .check-table tbody td { vertical-align: middle; }
         .check-table .cat-cell { background: #f8f9fc; font-weight: 600; text-align: center; white-space: nowrap; }
 
@@ -76,14 +76,14 @@
 
         .report-list-modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; }
         .report-list-content { background:white; margin:80px auto; max-width:700px; border-radius:12px; padding:24px; max-height:70vh; overflow-y:auto; }
-        .report-list-content h3 { margin:0 0 16px; color:#1565c0; }
+        .report-list-content h3 { margin:0 0 16px; color:#0f766e; }
         .report-item { padding:12px; border:1px solid #e3e6f0; border-radius:6px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
         .report-item:hover { background:#f0f4ff; }
         .report-item .info { font-size:0.88em; }
         .report-item .status { font-size:0.75em; padding:3px 8px; border-radius:10px; }
         .report-item .status.draft { background:#fff3cd; color:#856404; }
         .report-item .status.completed { background:#d4edda; color:#155724; }
-        .type-badge { font-size: 0.72em; padding: 2px 8px; border-radius: 10px; background: #e8eaf6; color: #283593; margin-left: 8px; font-weight: 600; }
+        .type-badge { font-size: 0.72em; padding: 2px 8px; border-radius: 10px; background: #f0fdfa; color: #0f766e; margin-left: 8px; font-weight: 600; }
 
         .sign-box { flex:1; min-width:280px; }
         .sign-label { font-weight:700; font-size:0.88em; color:#333; margin-bottom:6px; }
@@ -134,7 +134,6 @@
             <span class="draft-indicator" id="draftIndicator"><i class="fas fa-circle"></i> 자동저장됨</span>
         </div>
         <div class="header-actions">
-            <button onclick="openReportList()" class="btn-load"><i class="fas fa-folder-open"></i> 불러오기</button>
             <button onclick="saveReport('DRAFT')" class="btn-save" style="background:#f6c23e;color:#333;"><i class="fas fa-edit"></i> 임시저장</button>
             <button onclick="saveReport('COMPLETED')" class="btn-save"><i class="fas fa-save"></i> 저장</button>
             <button onclick="openSignModal()" class="btn-save" style="background:#0F766E;"><i class="fas fa-signature"></i> 서명 요청</button>
@@ -146,8 +145,8 @@
 
     <!-- Step Wizard Navigator (inspection-report-d-v5 wizard) -->
     <div class="step-nav" id="stepNav" style="display:flex;gap:6px;margin:0 0 14px;padding:10px;background:#f8fafc;border-radius:10px;flex-wrap:wrap;">
-        <div class="step-nav-item active" data-step="1" onclick="goStep(1)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #1565c0;text-align:center;font-size:0.92em;">
-            <div style="font-weight:700;color:#1565c0;">STEP 1</div>
+        <div class="step-nav-item active" data-step="1" onclick="goStep(1)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #0f766e;text-align:center;font-size:0.92em;">
+            <div style="font-weight:700;color:#0f766e;">STEP 1</div>
             <div>표지 / 대상 작성</div>
         </div>
         <div class="step-nav-item" data-step="2" onclick="goStep(2)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
@@ -171,8 +170,8 @@
     <style>
         .step-nav-item.completed { background:#dcfce7 !important; border-color:#16a34a !important; color:#166534 !important; }
         .step-nav-item.completed div:first-child { color:#16a34a !important; }
-        .step-nav-item.active { background:#fff !important; border-color:#1565c0 !important; color:#1565c0 !important; }
-        .step-nav-item.active div:first-child { color:#1565c0 !important; }
+        .step-nav-item.active { background:#fff !important; border-color:#0f766e !important; color:#0f766e !important; }
+        .step-nav-item.active div:first-child { color:#0f766e !important; }
     </style>
 
     <!-- =========== ① 표지 =========== -->
@@ -217,14 +216,14 @@
             <div class="sign-box">
                 <div class="sign-label">점검자 서명 (인)</div>
                 <div class="sign-canvas-wrap">
-                    <canvas id="inspSignCanvas" width="320" height="140"></canvas>
+                    <canvas id="inspSignCanvas" width="540" height="200"></canvas>
                     <button class="sign-clear-btn" onclick="clearSign('inspSignCanvas')" title="지우기"><i class="fas fa-eraser"></i></button>
                 </div>
             </div>
             <div class="sign-box">
                 <div class="sign-label">확인자 서명 (인)</div>
                 <div class="sign-canvas-wrap">
-                    <canvas id="confSignCanvas" width="320" height="140"></canvas>
+                    <canvas id="confSignCanvas" width="540" height="200"></canvas>
                     <button class="sign-clear-btn" onclick="clearSign('confSignCanvas')" title="지우기"><i class="fas fa-eraser"></i></button>
                 </div>
             </div>
@@ -364,8 +363,8 @@
         <!-- v6 T-H2: 30일 메트릭 추이 차트 미리보기 (P5 docx 임베드 미리보기) -->
         <div id="chartPreviewCard" style="display:none; margin-top:20px; border:1px solid #e3e6f0; border-radius:8px; padding:16px; background:#fafbfc;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-weight:700; font-size:0.9em; color:#1565c0;"><i class="fas fa-chart-line"></i> 30일 메트릭 추이 (P5 차트)</span>
-                <button type="button" onclick="refreshChartPreview()" style="background:#e3f2fd; color:#1565c0; border:none; border-radius:4px; padding:4px 10px; font-size:0.78em; cursor:pointer;">
+                <span style="font-weight:700; font-size:0.9em; color:#0f766e;"><i class="fas fa-chart-line"></i> 30일 메트릭 추이 (P5 차트)</span>
+                <button type="button" onclick="refreshChartPreview()" style="background:#e3f2fd; color:#0f766e; border:none; border-radius:4px; padding:4px 10px; font-size:0.78em; cursor:pointer;">
                     <i class="fas fa-sync-alt"></i> 새로고침
                 </button>
             </div>
@@ -548,7 +547,7 @@
             </div>
         </div>
         <div style="text-align:center;">
-            <button type="button" onclick="openSignModal()" style="background:#1565c0;color:#fff;border:none;border-radius:8px;padding:14px 32px;font-size:1em;font-weight:700;cursor:pointer;margin-right:8px;">
+            <button type="button" onclick="openSignModal()" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:14px 32px;font-size:1em;font-weight:700;cursor:pointer;margin-right:8px;">
                 <i class="fas fa-signature"></i> 서명 캡처
             </button>
         </div>
@@ -560,7 +559,7 @@
             <i class="fas fa-arrow-left"></i> 이전
         </button>
         <div style="color:#6b7280;font-size:0.9em;" id="stepIndicator">STEP 1 / 5</div>
-        <button type="button" id="btnNextStep" onclick="nextStep()" style="background:#1565c0;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
+        <button type="button" id="btnNextStep" onclick="nextStep()" style="background:#0f766e;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
             다음 <i class="fas fa-arrow-right"></i>
         </button>
     </div>
@@ -570,7 +569,7 @@
 <div id="signModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background: #FAFAF9;z-index:2000;overflow-y:auto;">
     <div style="max-width:600px;margin:0 auto;padding:30px 20px;">
         <div style="text-align:center;margin-bottom:24px;">
-            <h2 style="color:#1565c0;margin:0 0 6px;"><i class="fas fa-signature"></i> 점검내역서 서명</h2>
+            <h2 style="color:#0f766e;margin:0 0 6px;"><i class="fas fa-signature"></i> 점검내역서 서명</h2>
             <p style="color:#666;font-size:0.88em;margin:0;" id="signModalInfo"></p>
         </div>
 
@@ -580,11 +579,11 @@
                 <h3 style="margin:0;font-size:1em;color:#333;"><span style="background:#1cc88a;color:#fff;padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 1</span> 점검자 서명</h3>
                 <button onclick="clearSign('modalInspCanvas')" style="background:#f08a7e;color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
             </div>
-            <div style="border:2px solid #1565c0;border-radius:10px;background:#fff;overflow:hidden;">
-                <canvas id="modalInspCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;"></canvas>
+            <div style="border:2px solid #0f766e;border-radius:10px;background:#fff;overflow:hidden;">
+                <canvas id="modalInspCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;border:2px dashed #94a3b8;border-radius:8px;background:#fff;box-sizing:border-box;"></canvas>
             </div>
             <div style="text-align:center;margin-top:16px;">
-                <button onclick="signStepNext()" style="background:#1565c0;color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-arrow-right"></i> 다음: 확인자 서명</button>
+                <button onclick="signStepNext()" style="background:#0f766e;color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-arrow-right"></i> 다음: 확인자 서명</button>
             </div>
         </div>
 
@@ -596,7 +595,7 @@
             </div>
             <p style="color:#666;font-size:0.85em;margin:0 0 10px;text-align:center;">확인자에게 태블릿을 전달하여 아래에 서명해주세요.</p>
             <div style="border:2px solid #f6c23e;border-radius:10px;background:#fff;overflow:hidden;">
-                <canvas id="modalConfCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;"></canvas>
+                <canvas id="modalConfCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;border:2px dashed #94a3b8;border-radius:8px;background:#fff;box-sizing:border-box;"></canvas>
             </div>
             <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
                 <button onclick="signStepBack()" style="background:#858796;color:#fff;border:none;border-radius:6px;padding:12px 30px;font-size:0.95em;font-weight:600;cursor:pointer;"><i class="fas fa-arrow-left"></i> 이전</button>
@@ -610,16 +609,7 @@
     </div>
 </div>
 
-<!-- 불러오기 모달 -->
-<div class="report-list-modal" id="reportListModal" onclick="if(event.target===this)this.style.display='none'">
-    <div class="report-list-content">
-        <h3><i class="fas fa-folder-open"></i> 저장된 점검내역서</h3>
-        <div id="reportListBody"><div style="color:#999;">사업을 먼저 선택해주세요.</div></div>
-        <div style="text-align:right;margin-top:12px;">
-            <button onclick="document.getElementById('reportListModal').style.display='none'" class="btn-cancel" style="padding:6px 16px;border:none;border-radius:4px;cursor:pointer;">닫기</button>
-        </div>
-    </div>
-</div>
+<!-- 불러오기 모달 제거 (2026-05-30): 운영문서 목록→상세→수정 경로로 일원화. loadReport 는 ?reportId/QR 자동로드에 계속 사용 -->
 
 <!-- 삭제 확인 모달 (Phase J: 관리자 전용) -->
 <div class="report-list-modal" id="deleteConfirmModal" onclick="if(event.target===this)this.style.display='none'" th:if="${isAdmin}">
@@ -702,15 +692,17 @@ function clearSign(canvasId) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+// 서명 박스(고정 크기 캔버스)를 그대로 캡처 — 서명자가 박스 안에 채워 서명하면 그대로 표출됨.
+// 모든 서명 캔버스가 동일 크기(540×200)라 복사/저장/표시에서 잘림·왜곡 없음.
 function getSignData(canvasId) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return '';
     var ctx = canvas.getContext('2d');
     var pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     for (var i = 3; i < pixels.length; i += 4) {
-        if (pixels[i] > 0) return canvas.toDataURL('image/png');
+        if (pixels[i] > 0) return canvas.toDataURL('image/png');   // 잉크 있으면 박스 그대로 반환
     }
-    return '';
+    return '';                                                      // 빈 서명
 }
 
 function loadSignData(canvasId, dataUrl) {
@@ -1190,39 +1182,39 @@ function loadSystemDiagram(sysType) {
     if (!area) return;
 
     // UPIS 구성도 (시군구청 DB/AP Server + 국토교통부 + 연계시스템)
-    var upisDiagram = '<div style="font-weight:700;color:#1565c0;margin-bottom:14px;font-size:0.95em;">UPIS 시스템 구성도</div>' +
+    var upisDiagram = '<div style="font-weight:700;color:#0f766e;margin-bottom:14px;font-size:0.95em;">UPIS 시스템 구성도</div>' +
         '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;font-size:0.82em;">' +
         // 업무담당자
         '<div style="flex:0 0 130px;border:1px solid #ccc;border-radius:8px;padding:12px;text-align:center;background:#f9f9f9;">' +
-        '<div style="font-weight:700;color:#1565c0;border:2px solid #1565c0;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">업무 담당자</div>' +
+        '<div style="font-weight:700;color:#0f766e;border:2px solid #0f766e;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">업무 담당자</div>' +
         '<div style="border:1px solid #aaa;border-radius:6px;padding:8px;margin-top:6px;background:#fff;">' +
-        '<div style="font-weight:600;color:#1565c0;margin-bottom:4px;">표준UPIS (Client)</div>' +
+        '<div style="font-weight:600;color:#0f766e;margin-bottom:4px;">표준UPIS (Client)</div>' +
         '<div style="font-size:0.9em;color:#555;">Web브라우저<br/>Windows</div></div></div>' +
         // 화살표
         '<div style="display:flex;align-items:center;font-size:1.5em;color:#999;">⇄</div>' +
         // 시군구청 서버
         '<div style="flex:1;min-width:200px;border:1px solid #999;border-radius:8px;padding:14px;background: #FAFAF9;">' +
-        '<div style="text-align:center;font-weight:700;color:#1565c0;border:2px solid #1565c0;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:10px;">시군구청</div>' +
+        '<div style="text-align:center;font-weight:700;color:#0f766e;border:2px solid #0f766e;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:10px;">시군구청</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;">' +
         '<div style="flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center;">' +
         '<div style="font-weight:700;margin-bottom:4px;">DB Server</div><div style="font-size:0.9em;color:#555;">GeoNURIS Spatial Server<br/>Oracle DBMS</div></div>' +
         '<div style="flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center;">' +
         '<div style="font-weight:700;margin-bottom:4px;">AP Server</div><div style="font-size:0.9em;color:#555;">GeoNURIS GeoWeb Server<br/>Tomcat WAS</div></div></div>' +
-        '<div style="text-align:center;margin-top:8px;font-weight:600;background:#134E4A;color:#fff;padding:6px;border-radius:4px;">UPIS 표준시스템</div></div>' +
+        '<div style="text-align:center;margin-top:8px;font-weight:600;background:#0f766e;color:#fff;padding:6px;border-radius:4px;">UPIS 표준시스템</div></div>' +
         // 화살표
         '<div style="display:flex;align-items:center;font-size:1.5em;color:#999;">⇄</div>' +
         // 국토교통부
         '<div style="flex:0 0 150px;border:1px solid #999;border-radius:8px;padding:12px;background: #FAFAF9;text-align:center;">' +
-        '<div style="font-weight:700;color:#1565c0;border:2px solid #1565c0;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">국토교통부</div>' +
+        '<div style="font-weight:700;color:#0f766e;border:2px solid #0f766e;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">국토교통부</div>' +
         '<div style="font-size:0.85em;color:#555;">AP Server<br/>대시민 서비스<br/>DB Server</div>' +
-        '<div style="margin-top:6px;font-weight:600;background:#134E4A;color:#fff;padding:5px;border-radius:4px;font-size:0.85em;">국토교통부<br/>UPIS 표준시스템</div></div></div>' +
+        '<div style="margin-top:6px;font-weight:600;background:#0f766e;color:#fff;padding:5px;border-radius:4px;font-size:0.85em;">국토교통부<br/>UPIS 표준시스템</div></div></div>' +
         // 연계시스템
         '<div style="margin-top:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px;text-align:center;font-size:0.82em;">' +
         '<span style="font-weight:700;color:#2e7d32;">연계시스템</span>&nbsp;&nbsp;' +
         '부동산종합공부시스템 | 건축행정정보시스템 | 새올 지적정보시스템 | 전자결재시스템 | 새올 민원정보시스템 | 토지이용규제정보시스템 | GPKI 로그인</div>';
 
     // KRAS 구성도 (Client → AP → DB 3단 구조)
-    var krasDiagram = '<div style="font-weight:700;color:#1565c0;margin-bottom:14px;font-size:0.95em;">KRAS 시스템 구성도</div>' +
+    var krasDiagram = '<div style="font-weight:700;color:#0f766e;margin-bottom:14px;font-size:0.95em;">KRAS 시스템 구성도</div>' +
         '<div style="display:flex;gap:0;font-size:0.82em;align-items:stretch;">' +
         // Client
         '<div style="flex:1;background:#666;border-radius:8px 0 0 8px;padding:3px;">' +
@@ -1871,34 +1863,11 @@ function confirmDeleteReport() {
         .catch(function(e) { alert('삭제 오류: ' + e.message); });
 }
 
-// === 불러오기 ===
-function openReportList() {
-    var projId = document.getElementById('projId').value;
-    if (!projId) { alert('사업을 먼저 선택해주세요.'); return; }
-    document.getElementById('reportListModal').style.display = 'block';
+// === 불러오기 함수(openReportList) 제거 (2026-05-30): 폼 내 불러오기 폐지. 진입은 운영문서 목록→상세→수정. ===
 
-    fetch('/document/api/inspect-reports?pjtId=' + projId)
-        .then(function(r) { return r.json(); })
-        .then(function(resp) {
-            var list = resp.data || resp || [];
-            if (!list || list.length === 0) {
-                document.getElementById('reportListBody').innerHTML = '<div style="color:#999;padding:20px;text-align:center;">저장된 점검내역서가 없습니다.</div>';
-                return;
-            }
-            var html = '';
-            list.forEach(function(r) {
-                var statusClass = (r.status === 'COMPLETED') ? 'completed' : 'draft';
-                var statusText = (r.status === 'COMPLETED') ? '완료' : '임시저장';
-                html += '<div class="report-item" onclick="loadReport(' + r.id + ')">' +
-                    '<div class="info"><b>' + (r.inspectMonth || '-') + '</b> ' + (r.docTitle || '') + '</div>' +
-                    '<span class="status ' + statusClass + '">' + statusText + '</span></div>';
-            });
-            document.getElementById('reportListBody').innerHTML = html;
-        });
-}
-
+// loadReport: ?reportId 자동로드 / QR 적재 후 prefill 에 계속 사용
 function loadReport(id) {
-    var modal = document.getElementById('reportListModal');
+    var modal = document.getElementById('reportListModal');   // 제거됨 — null 가드 유지
     if (modal) modal.style.display = 'none';
 
     fetch('/document/api/inspect-report/' + id)
@@ -2170,10 +2139,11 @@ function startAutoDraft() {
 
 function showDraftSaved() {
     var indicator = document.getElementById('draftIndicator');
+    if (!indicator) return;
+    // 마지막 저장 시각을 지속 표시 (자동저장·수동 임시저장 공통). 5초 후 사라지지 않음.
     indicator.style.display = 'inline';
     indicator.className = 'draft-indicator saved';
-    indicator.innerHTML = '<i class="fas fa-check-circle"></i> 자동저장됨 (' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) + ')';
-    setTimeout(function() { indicator.style.display = 'none'; }, 5000);
+    indicator.innerHTML = '<i class="fas fa-check-circle"></i> 임시저장됨 (' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit'}) + ')';
 }
 
 // === 서명 요청 모달 ===

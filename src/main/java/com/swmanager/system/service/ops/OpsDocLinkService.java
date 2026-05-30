@@ -77,9 +77,20 @@ public class OpsDocLinkService {
             // 점검 본 데이터(InspectReport)는 infra 와 직접 연결되지 않으므로 infra_id 매핑 없음.
             // sw_pjt → infra 의 자동 매핑은 후속 스프린트로 분리.
 
-            User author = userRepository.findByUserid(report.getCreatedBy()).orElse(null);
-            if (author == null) {
-                author = userRepository.findAll().stream().findFirst().orElse(null);
+            // 작성자 해석: QR 자동생성은 createdBy 에 숫자 user_id(PK), 수동 저장은 로그인 userid 를 저장 → 둘 다 처리.
+            // 못 찾으면 점검자(inspUserId)로 보조. 기존 '첫 사용자 폴백' 은 박상현 등 엉뚱한 귀속을 유발해 제거.
+            User author = null;
+            String cb = report.getCreatedBy();
+            if (cb != null && !cb.isBlank()) {
+                if (cb.matches("\\d+")) {
+                    author = userRepository.findById(Long.valueOf(cb)).orElse(null);
+                }
+                if (author == null) {
+                    author = userRepository.findByUserid(cb).orElse(null);
+                }
+            }
+            if (author == null && report.getInspUserId() != null) {
+                author = userRepository.findById(report.getInspUserId()).orElse(null);
             }
             if (author != null) doc.setAuthor(author);
 

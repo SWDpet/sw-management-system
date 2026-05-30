@@ -24,7 +24,6 @@ import com.swmanager.system.service.ExcelExportService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.service.InspectReportService;
 import com.swmanager.system.service.InspectPdfService;
-import com.swmanager.system.service.InspectReportDocxService;
 import com.swmanager.system.dto.InspectReportDTO;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.domain.workplan.ProcessMaster;
@@ -75,7 +74,6 @@ public class DocumentController {
     @Autowired private com.swmanager.system.repository.PjtScheduleRepository pjtScheduleRepository;
     @Autowired private InspectReportService inspectReportService;
     @Autowired private InspectPdfService inspectPdfService;
-    @Autowired private InspectReportDocxService inspectReportDocxService;
     @Autowired private com.swmanager.system.service.InspectMetricChartService inspectMetricChartService;
 
     // === 권한 ===
@@ -1784,23 +1782,7 @@ public class DocumentController {
         }
     }
 
-    /** GET /document/api/inspect-docx/{reportId} - 점검내역서 시안D v5 DOCX 다운로드 (inspection-report-d-v5) */
-    @GetMapping("/api/inspect-docx/{reportId}")
-    @ResponseBody
-    public ResponseEntity<byte[]> downloadInspectDocx(@PathVariable Long reportId) {
-        try {
-            byte[] docx = inspectReportDocxService.generate(reportId);
-            String filename = inspectReportDocxService.fileName(reportId);
-            String encoded = java.net.URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
-            return ResponseEntity.ok()
-                    .header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                    .header("Content-Disposition", "attachment; filename*=UTF-8''" + encoded)
-                    .body(docx);
-        } catch (Exception e) {
-            log.error("점검내역서 DOCX 생성 실패: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
-        }
-    }
+    // DOCX 다운로드 제거 (2026-05-30): PDF(v2) 단일 출력으로 통일. InspectReportDocxService 는 미사용.
 
     /** GET /document/api/inspect-chart/preview?pjtId={pjtId} — v6 P5 메트릭 차트 미리보기 PNG */
     @GetMapping("/api/inspect-chart/preview")
@@ -1850,6 +1832,23 @@ public class DocumentController {
                 model.addAttribute("infraList", infraList);
             }
 
+            // 요약 집계 (보고서 대시보드와 동일: 정상/주의/조치필요/수동)
+            int cN = 0, cC = 0, cV = 0, cM = 0;
+            if (report.getCheckResults() != null) {
+                for (InspectCheckResultDTO r : report.getCheckResults()) {
+                    String code = r.getResultCode();
+                    if ("NORMAL".equals(code)) cN++;
+                    else if ("PARTIAL".equals(code)) cC++;
+                    else if ("ABNORMAL".equals(code)) cV++;
+                    else cM++;
+                }
+            }
+            model.addAttribute("cntNormal", cN);
+            model.addAttribute("cntCaution", cC);
+            model.addAttribute("cntViolation", cV);
+            model.addAttribute("cntManual", cM);
+            model.addAttribute("cntTotal", cN + cC + cV + cM);
+
             model.addAttribute("isAdmin", isAdmin());
             return "document/inspect-detail";
         } catch (Exception e) {
@@ -1858,47 +1857,30 @@ public class DocumentController {
         }
     }
 
-    /** GET /document/inspect-preview/{reportId} - 점검내역서 미리보기 */
-    @GetMapping("/inspect-preview/{reportId}")
-    public String inspectPreview(@PathVariable Long reportId, Model model) {
+    /** GET /document/inspect-preview/{reportId} - 점검내역서 미리보기 (v2 보고서 HTML 그대로 표출 → PDF 와 동일 디자인) */
+    @GetMapping(value = "/inspect-preview/{reportId}", produces = "text/html; charset=UTF-8")
+    @ResponseBody
+    public String inspectPreview(@PathVariable Long reportId) {
         try {
-            InspectReportDTO report = inspectReportService.findById(reportId);
-            model.addAttribute("report", report);
-
-            // 점검결과를 섹션별로 분리하여 모델에 추가
-            if (report.getCheckResults() != null) {
-                model.addAttribute("dbItems", report.getCheckResults().stream().filter(r -> "DB".equals(r.getSection())).toList());
-                model.addAttribute("apItems", report.getCheckResults().stream().filter(r -> "AP".equals(r.getSection())).toList());
-                model.addAttribute("dbmsItems", report.getCheckResults().stream().filter(r -> "DBMS".equals(r.getSection())).toList());
-                model.addAttribute("gisItems", report.getCheckResults().stream().filter(r -> "GIS".equals(r.getSection())).toList());
-                model.addAttribute("appItems", report.getCheckResults().stream().filter(r -> "APP".equals(r.getSection())).toList());
-                model.addAttribute("dbUsage", report.getCheckResults().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList());
-                model.addAttribute("apUsage", report.getCheckResults().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList());
-                model.addAttribute("dbmsEtc", report.getCheckResults().stream().filter(r -> "DBMS_ETC".equals(r.getSection())).toList());
-                model.addAttribute("appEtc", report.getCheckResults().stream().filter(r -> "APP_ETC".equals(r.getSection())).toList());
-            }
-
-            // 프로젝트 정보
-            var project = swProjectRepository.findById(report.getPjtId()).orElse(null);
-            model.addAttribute("project", project);
-
-            // 인프라 서버 정보
-            if (project != null) {
-                var infraList = infraRepository.findByDistNmAndSysNmEn(
-                        project.getDistNm(), project.getSysNmEn());
-                model.addAttribute("infraList", infraList);
-            }
-
-            // 점검 템플릿 (섹션별 그룹핑용)
-            String templateType = report.getSysType() != null ? report.getSysType() : "UPIS";
-            List<InspectCheckResultDTO> templateItems = inspectReportService.getTemplateItems(templateType);
-            model.addAttribute("templateItems", templateItems);
-
-            return "document/inspect-preview";
+            String html = inspectPdfService.renderToHtmlV2(reportId);
+            // 미리보기 전용 상단 네비게이션 툴바를 주입 (보고서/PDF 본문에는 포함 안 됨)
+            String bar =
+                "<style>@media print{.preview-bar,.preview-spacer{display:none!important;}}</style>"
+              + "<div class=\"preview-bar\" style=\"position:fixed;top:0;left:0;right:0;height:52px;background:#0f766e;"
+              + "display:flex;align-items:center;gap:16px;padding:0 18px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.18);"
+              + "font-family:'Malgun Gothic',sans-serif;\">"
+              + "<a href=\"javascript:history.back()\" style=\"color:#fff;text-decoration:none;font-weight:600;font-size:14px;\">← 이전</a>"
+              + "<a href=\"/document/inspect-detail/" + reportId + "\" style=\"color:#fff;text-decoration:none;font-weight:600;font-size:14px;\">상세</a>"
+              + "<a href=\"/ops-doc/list\" style=\"color:#fff;text-decoration:none;font-weight:600;font-size:14px;\">목록</a>"
+              + "<a href=\"/document/api/inspect-pdf/" + reportId + "\" style=\"margin-left:auto;color:#0f766e;background:#fff;"
+              + "text-decoration:none;font-weight:700;font-size:13px;padding:7px 16px;border-radius:6px;\">PDF 다운로드</a>"
+              + "</div><div class=\"preview-spacer\" style=\"height:52px;\"></div>";
+            return html.replace("<body>", "<body>" + bar);
         } catch (Exception e) {
             log.error("점검내역서 미리보기 실패: {}", e.getMessage(), e);
-            model.addAttribute("errorMessage", "점검내역서를 찾을 수 없습니다.");
-            return "redirect:/document/list";
+            return "<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"UTF-8\"></head>"
+                 + "<body style=\"font-family:'Malgun Gothic',sans-serif;padding:48px;color:#475569;\">"
+                 + "점검내역서를 찾을 수 없습니다. <a href=\"/ops-doc/list\">목록으로</a></body></html>";
         }
     }
 }
