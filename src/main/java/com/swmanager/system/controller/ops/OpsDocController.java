@@ -2,8 +2,12 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
+import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
+import com.swmanager.system.repository.InspectReportRepository;
+import com.swmanager.system.repository.SigunguCodeRepository;
+import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.ops.OpsDocService;
 import com.swmanager.system.service.ops.OpsDocSignatureService;
@@ -16,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,29 +41,113 @@ public class OpsDocController {
     private final OpsDocService opsDocService;
     private final OpsDocAttachmentService attachmentService;
     private final OpsDocSignatureService signatureService;
+    private final SigunguCodeRepository sigunguCodeRepository;
+    private final InspectReportRepository inspectReportRepository;
+    private final SwProjectRepository swProjectRepository;
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String docType,
                        @RequestParam(required = false) String status,
                        @RequestParam(required = false) String keyword,
+                       @RequestParam(required = false) String sido,
+                       @RequestParam(required = false) String sigungu,
+                       @RequestParam(required = false) String sysType,
                        Model model) {
-        List<OpsDocument> docs = opsDocService.findAll().stream()
+        // 지역 마스터(sigungu_code) 로드 → admSectC / sggNm 인덱스
+        Map<String, SigunguCode> byCode = new HashMap<>();
+        Map<String, List<SigunguCode>> bySgg = new HashMap<>();
+        for (SigunguCode s : sigunguCodeRepository.findAll()) {
+            if (s.getAdmSectC() != null) byCode.put(s.getAdmSectC(), s);
+            if (s.getSggNm() != null) bySgg.computeIfAbsent(s.getSggNm(), k -> new ArrayList<>()).add(s);
+        }
+
+        List<OpsDocument> all = opsDocService.findAll();
+        // 문서별 시도/시군구 해석 (regionCode → 코드, INSPECT → 연계 사업)
+        Map<Long, String> sidoByDoc = new HashMap<>();
+        Map<Long, String> sggByDoc = new HashMap<>();
+        for (OpsDocument d : all) {
+            String[] r = resolveRegion(d, byCode, bySgg);
+            sidoByDoc.put(d.getDocId(), r[0]);
+            sggByDoc.put(d.getDocId(), r[1]);
+        }
+
+        List<OpsDocument> docs = all.stream()
                 .filter(d -> docType == null || docType.isBlank()
                         || (d.getDocType() != null && d.getDocType().name().equals(docType)))
                 .filter(d -> status == null || status.isBlank()
                         || (d.getStatus() != null && d.getStatus().name().equals(status)))
+                .filter(d -> sysType == null || sysType.isBlank() || sysType.equals(d.getSysType()))
+                .filter(d -> sido == null || sido.isBlank() || sido.equals(sidoByDoc.get(d.getDocId())))
+                .filter(d -> sigungu == null || sigungu.isBlank() || sigungu.equals(sggByDoc.get(d.getDocId())))
                 .filter(d -> keyword == null || keyword.isBlank()
                         || (d.getDocNo() != null && d.getDocNo().contains(keyword))
                         || (d.getTitle() != null && d.getTitle().contains(keyword)))
                 .toList();
+
         model.addAttribute("documents", docs);
+        model.addAttribute("sidoByDoc", sidoByDoc);
+        model.addAttribute("sggByDoc", sggByDoc);
         model.addAttribute("docType", docType);
         model.addAttribute("status", status);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("sido", sido);
+        model.addAttribute("sigungu", sigungu);
+        model.addAttribute("sysType", sysType);
+        model.addAttribute("sidoOptions", sigunguCodeRepository.findDistinctSidoNm());
+        // 시스템 옵션은 실제 문서의 sysType distinct → 필터 값/데이터 정확 일치
+        model.addAttribute("systemOptions", all.stream()
+                .map(OpsDocument::getSysType)
+                .filter(s -> s != null && !s.isBlank())
+                .distinct().sorted().toList());
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("isAdmin", isAdmin());
         return "ops-doc/list";
+    }
+
+    /** 문서의 시도/시군구 해석. [sido, sigungu] 반환 (없으면 "-"). */
+    private String[] resolveRegion(OpsDocument d,
+                                   Map<String, SigunguCode> byCode,
+                                   Map<String, List<SigunguCode>> bySgg) {
+        // 1) regionCode(행정구역코드) 직접 매핑
+        if (d.getRegionCode() != null && byCode.containsKey(d.getRegionCode())) {
+            SigunguCode s = byCode.get(d.getRegionCode());
+            return new String[]{ nz(s.getSidoNm()), nz(s.getSggNm()) };
+        }
+        // 2) 점검내역서(INSPECT) → 연계 사업(SwProject)의 시도/시군구
+        if (d.getDocType() == OpsDocType.INSPECT) {
+            Long reportId = parseReportId(d.getDocNo());
+            if (reportId != null) {
+                var report = inspectReportRepository.findById(reportId).orElse(null);
+                if (report != null && report.getPjtId() != null) {
+                    var pj = swProjectRepository.findById(report.getPjtId()).orElse(null);
+                    if (pj != null) {
+                        String sgg = pj.getDistNm();
+                        String sido = pj.getCityNm();
+                        List<SigunguCode> cand = sgg != null ? bySgg.get(sgg) : null;
+                        if (cand != null && !cand.isEmpty()) {
+                            SigunguCode pick = cand.get(0);
+                            if (cand.size() > 1 && sido != null) {
+                                for (SigunguCode c : cand) {
+                                    if (sido.equals(c.getSidoNm())) { pick = c; break; }
+                                }
+                            }
+                            return new String[]{ nz(pick.getSidoNm()), nz(pick.getSggNm()) };
+                        }
+                        return new String[]{ nz(sido), nz(sgg) };
+                    }
+                }
+            }
+        }
+        return new String[]{ "-", "-" };
+    }
+
+    private static String nz(String s) { return (s == null || s.isBlank()) ? "-" : s; }
+
+    private static Long parseReportId(String docNo) {
+        if (docNo == null) return null;
+        try { return Long.valueOf(docNo.substring(docNo.lastIndexOf('-') + 1)); }
+        catch (Exception e) { return null; }
     }
 
     private boolean isAdmin() {

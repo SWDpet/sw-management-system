@@ -78,7 +78,7 @@
         </div>
 
         <!-- 필터 -->
-        <form class="filter-bar" action="/ops-doc/list" method="get">
+        <form class="filter-bar" action="/ops-doc/list" method="get" id="filterForm">
             <label>문서유형</label>
             <select name="docType">
                 <option value="">전체</option>
@@ -95,6 +95,21 @@
                 <option value="IN_REVIEW" th:selected="${status == 'IN_REVIEW'}">검토중</option>
                 <option value="COMPLETED" th:selected="${status == 'COMPLETED'}">작성완료</option>
             </select>
+            <label>시도</label>
+            <select name="sido" id="fSido" th:data-selected="${sigungu}">
+                <option value="">전체</option>
+                <option th:each="sd : ${sidoOptions}" th:value="${sd}" th:text="${sd}" th:selected="${sido == sd}"></option>
+            </select>
+            <label>시군구</label>
+            <select name="sigungu" id="fSigungu">
+                <option value="">전체</option>
+                <!-- 시도 선택 시 JS 캐스케이드로 채움 -->
+            </select>
+            <label>시스템</label>
+            <select name="sysType">
+                <option value="">전체</option>
+                <option th:each="sys : ${systemOptions}" th:value="${sys}" th:text="${sys}" th:selected="${sysType == sys}"></option>
+            </select>
             <label>검색</label>
             <input type="text" name="keyword" th:value="${keyword}" placeholder="문서번호/제목 검색">
             <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
@@ -109,8 +124,9 @@
                         <th>문서번호</th>
                         <th>문서유형</th>
                         <th>제목</th>
+                        <th>시도</th>
+                        <th>시군구</th>
                         <th>시스템</th>
-                        <th>지역</th>
                         <th>상태</th>
                         <th>작성자</th>
                         <th>작성일</th>
@@ -126,8 +142,9 @@
                             <span th:class="'badge type-' + ${d.docType?.name()}" th:text="${d.docType?.label()}">유형</span>
                         </td>
                         <td th:text="${d.title}">제목</td>
+                        <td th:text="${sidoByDoc.get(d.docId) ?: '-'}">-</td>
+                        <td th:text="${sggByDoc.get(d.docId) ?: '-'}">-</td>
                         <td th:text="${d.sysType ?: '-'}">-</td>
-                        <td th:text="${d.regionCode ?: '-'}">-</td>
                         <td>
                             <span th:class="'badge badge-' + ${#strings.toLowerCase(d.status?.name() ?: 'draft')}"
                                   th:text="${d.status?.name() == 'COMPLETED' ? '작성완료' : (d.status?.name() == 'IN_REVIEW' ? '검토중' : '작성중')}">상태</span>
@@ -143,7 +160,7 @@
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(documents)}" class="empty-row">
-                        <td th:attr="colspan=${isAdmin ? 10 : 9}"><i class="fas fa-inbox"></i> 등록된 운영문서가 없습니다. 점검내역서는 점검 보고서 작성 후 자동 연계됩니다.</td>
+                        <td th:attr="colspan=${isAdmin ? 11 : 10}"><i class="fas fa-inbox"></i> 등록된 운영문서가 없습니다. 점검내역서는 점검 보고서 작성 후 자동 연계됩니다.</td>
                     </tr>
                 </tbody>
             </table>
@@ -170,6 +187,33 @@
             </div>
         </div>
     </div>
+
+<!-- 시도 → 시군구 캐스케이드 (검색 필터) -->
+<script>
+(function(){
+    var sido = document.getElementById('fSido');
+    var sgg = document.getElementById('fSigungu');
+    if (!sido || !sgg) return;
+    var savedSgg = sido.getAttribute('data-selected') || '';
+    function loadSigungu(sidoNm, selectVal){
+        sgg.innerHTML = '<option value="">전체</option>';
+        if (!sidoNm) return;
+        fetch('/document/api/region-sigungus?sidoNm=' + encodeURIComponent(sidoNm))
+            .then(function(r){ return r.json(); })
+            .then(function(list){
+                (list||[]).forEach(function(it){
+                    var o = document.createElement('option');
+                    o.value = it.sggNm; o.textContent = it.sggNm;
+                    if (selectVal && selectVal === it.sggNm) o.selected = true;
+                    sgg.appendChild(o);
+                });
+            })
+            .catch(function(){});
+    }
+    if (sido.value) loadSigungu(sido.value, savedSgg);
+    sido.addEventListener('change', function(){ loadSigungu(sido.value, ''); });
+})();
+</script>
 
 <script th:if="${isAdmin}">
 function deleteInspectDoc(docNo, opsDocId) {
