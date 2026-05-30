@@ -101,6 +101,13 @@ public class QuotationController {
         return "ROLE_ADMIN".equals(user.getUser().getUserRole());
     }
 
+    /** 현재 사용자가 해당 견적서의 작성자인지 (createdBy = 작성자 실명) */
+    private boolean isAuthorOf(Long id) {
+        var q = quotationService.getQuotation(id);
+        return q != null && q.getCreatedBy() != null
+                && q.getCreatedBy().equals(getCurrentUserName());
+    }
+
     /** 폼에 관리자용 작성자 선택 데이터 추가 */
     private void addCreatorSelectData(Model model) {
         model.addAttribute("isAdmin", isAdmin());
@@ -166,13 +173,19 @@ public class QuotationController {
     @GetMapping("/quotation/{id}")
     public String viewQuotation(@PathVariable Long id, Model model) {
         checkViewAuth();
-        model.addAttribute("quotation", quotationService.getQuotation(id));
-        // 편집 권한 여부 전달
+        var quotation = quotationService.getQuotation(id);
+        model.addAttribute("quotation", quotation);
+        // 편집/삭제 권한 전달: 수정=작성자|관리자, 삭제=관리자만
         CustomUserDetails currentUser = getCurrentUser();
         String role = currentUser.getUser().getUserRole();
         String authQ = currentUser.getUser().getAuthQuotation();
-        boolean canEdit = "ROLE_ADMIN".equals(role) || "EDIT".equals(authQ);
+        boolean isAdminUser = "ROLE_ADMIN".equals(role);
+        boolean canEdit = isAdminUser || "EDIT".equals(authQ);
+        boolean isAuthor = quotation.getCreatedBy() != null
+                && quotation.getCreatedBy().equals(getCurrentUserName());
         model.addAttribute("canEdit", canEdit);
+        model.addAttribute("isAdmin", isAdminUser);
+        model.addAttribute("isAuthor", isAuthor);
         return "quotation/quotation-detail";
     }
 
@@ -237,6 +250,9 @@ public class QuotationController {
     @GetMapping("/quotation/{id}/edit")
     public String editQuotation(@PathVariable Long id, Model model) {
         checkEditAuth();
+        if (!isAdmin() && !isAuthorOf(id)) {
+            throw new InsufficientPermissionException("견적서 수정(작성자 전용)");
+        }
         model.addAttribute("quotation", quotationService.getQuotation(id));
         model.addAttribute("patterns", quotationService.getPatterns(null));
         addCreatorSelectData(model);
@@ -378,6 +394,10 @@ public class QuotationController {
     public ResponseEntity<Map<String, Object>> updateQuotation(
             @PathVariable Long id, @RequestBody QuotationDTO dto) {
         checkEditAuth();
+        if (!isAdmin() && !isAuthorOf(id)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false, "error", "작성자만 수정할 수 있습니다."));
+        }
         try {
             dto.setQuoteId(id);
             quotationService.updateQuotation(dto);
@@ -393,7 +413,11 @@ public class QuotationController {
     @DeleteMapping("/api/quotation/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteQuotation(@PathVariable Long id) {
-        checkEditAuth();
+        // 삭제는 관리자만 가능 (작성자 포함 일반 사용자 불가)
+        if (!isAdmin()) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false, "error", "삭제 권한이 없습니다. 관리자에게 문의하세요."));
+        }
         try {
             quotationService.deleteQuotation(id);
             logService.log(MenuName.QUOTATION, AccessActionType.DELETE, "견적서 삭제: ID " + id);
