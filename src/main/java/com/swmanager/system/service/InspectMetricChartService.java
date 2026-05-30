@@ -31,7 +31,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 /**
- * 30일 메트릭 추이 차트 — InspectReportDocxService 의 P5 ${metrics.chart.image} 용 PNG byte[] 렌더.
+ * 30일 메트릭 추이 차트 — InspectPdfService(v2) 의 대시보드 추이 차트용 PNG byte[] 렌더.
  *
  * <p>기획서: docs/product-specs/inspection-report-d-v6.md §3-1
  * <p>색 정책 (디자인팀 자문 R6/D2):

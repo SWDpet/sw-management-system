@@ -1782,7 +1782,7 @@ public class DocumentController {
         }
     }
 
-    // DOCX 다운로드 제거 (2026-05-30): PDF(v2) 단일 출력으로 통일. InspectReportDocxService 는 미사용.
+    // DOCX 다운로드/서비스 제거 (2026-05-30): 점검내역서는 PDF(v2) 단일 출력으로 통일.
 
     /** GET /document/api/inspect-chart/preview?pjtId={pjtId} — v6 P5 메트릭 차트 미리보기 PNG */
     @GetMapping("/api/inspect-chart/preview")
