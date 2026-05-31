@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 개인 성과 대시보드 (S-01) BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legend{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legend code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#FAFAF9; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ background:#fff; border-radius:12px; padding:14px 18px; margin-bottom:14px; box-shadow:0 2px 12px rgba(58,59,69,0.12); display:flex; justify-content:space-between; align-items:center; }
+  .page-header h2{ margin:0; font-size:1.05em; }
+  .header-actions{ display:flex; gap:6px; }
+  .btn{ padding:7px 13px; border:none; border-radius:5px; font-size:.78em; cursor:pointer; font-weight:600; color:#fff; }
+  .summary-cards{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:16px; }
+  .summary-card{ background:#fff; border-radius:10px; padding:14px 8px; box-shadow:0 1px 8px rgba(58,59,69,0.1); border-left:4px solid #ddd; text-align:center; }
+  .summary-card .card-label{ font-size:.7em; font-weight:600; text-transform:uppercase; margin-bottom:6px; }
+  .summary-card .card-value{ font-size:1.5em; font-weight:700; }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .chip{ display:flex; align-items:center; gap:6px; font-size:.76em; }
+  .chip b{ width:16px; height:16px; border-radius:4px; display:inline-block; }
+  .chart-box{ background:#fff; border-radius:12px; padding:14px 16px; box-shadow:0 2px 12px rgba(58,59,69,0.12); }
+  .chart-box h4{ margin:0 0 8px; font-size:.92em; }
+
+  /* BEFORE category palette */
+  .before .page-header h2{ color:#1565c0; }
+  .before .btn-primary{ background:#1565c0; } .before .btn-secondary{ background:#858796; } .before .btn-success{ background:#1cc88a; }
+  .before .chart-box h4{ color:#333; }
+  .before .c-install{ border-left-color:#0F766E; } .before .c-install .card-value{ color:#0F766E; }
+  .before .c-patch{ border-left-color:#1cc88a; }   .before .c-patch .card-value{ color:#1cc88a; }
+  .before .c-fault{ border-left-color:#f08a7e; }    .before .c-fault .card-value{ color:#f08a7e; }
+  .before .c-support{ border-left-color:#f6c23e; }  .before .c-support .card-value{ color:#f6c23e; }
+  .before .c-inspect{ border-left-color:#36b9cc; }  .before .c-inspect .card-value{ color:#36b9cc; }
+  .before .c-total{ border-left-color:#5a5c69; }    .before .c-total .card-value{ color:#5a5c69; }
+  .before .card-label{ color:#888; }
+  .before .s-install{ background:#0F766E; } .before .s-patch{ background:#1cc88a; } .before .s-fault{ background:#f08a7e; }
+  .before .s-support{ background:#f6c23e; } .before .s-inspect{ background:#36b9cc; }
+
+  /* AFTER category palette = tokens */
+  .after .page-header h2{ color:var(--primary); }
+  .after .btn-primary{ background:var(--primary); } .after .btn-secondary{ background:var(--text2); } .after .btn-success{ background:var(--success); }
+  .after .chart-box h4{ color:var(--text); }
+  .after .c-install{ border-left-color:var(--primary); } .after .c-install .card-value{ color:var(--primary); }
+  .after .c-patch{ border-left-color:var(--success); }   .after .c-patch .card-value{ color:var(--success); }
+  .after .c-fault{ border-left-color:var(--danger); }    .after .c-fault .card-value{ color:var(--danger); }
+  .after .c-support{ border-left-color:var(--warning); } .after .c-support .card-value{ color:var(--warning); }
+  .after .c-inspect{ border-left-color:var(--info); }    .after .c-inspect .card-value{ color:var(--info); }
+  .after .c-total{ border-left-color:var(--text2); }     .after .c-total .card-value{ color:var(--text2); }
+  .after .card-label{ color:var(--muted); }
+  .after .s-install{ background:var(--primary); } .after .s-patch{ background:var(--success); } .after .s-fault{ background:var(--danger); }
+  .after .s-support{ background:var(--warning); } .after .s-inspect{ background:var(--info); }
+
+  .note{ font-size:.78rem; color:#166534; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 개인 성과 대시보드 (S-01)</h1>
+  <div class="sub">업무유형 6종 카테고리색을 카드·막대·도넛 3곳 모두 토큰으로 통일 (유형당 1색).</div>
+  <div class="legend">
+    <b>업무유형 매핑</b> · 설치→<code>--primary</code> · 패치→<code>--success</code> · 장애→<code>--danger</code>(완벽) · 지원→<code>--warning</code> · 점검→<code>--info</code>(완벽) · 합계→<code>--text2</code><br>
+    <b>그 외</b> · 제목/버튼 <code>#1565c0</code>→<code>--primary</code> · 회색 <code>#888/#5a5c69</code>→<code>--muted/--text2</code> · 테두리 <code>#e3e6f0</code>→<code>--border</code>
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header">
+          <h2><i class="fas fa-chart-line"></i> 개인 성과 대시보드 (S-01)</h2>
+          <div class="header-actions"><button class="btn btn-primary">조회</button><button class="btn btn-secondary">리포트</button><button class="btn btn-success">부서현황</button></div>
+        </div>
+        <div class="summary-cards">
+          <div class="summary-card c-install"><div class="card-label">설치</div><div class="card-value">12</div></div>
+          <div class="summary-card c-patch"><div class="card-label">패치</div><div class="card-value">34</div></div>
+          <div class="summary-card c-fault"><div class="card-label">장애</div><div class="card-value">5</div></div>
+          <div class="summary-card c-support"><div class="card-label">지원</div><div class="card-value">28</div></div>
+          <div class="summary-card c-inspect"><div class="card-label">점검</div><div class="card-value">9</div></div>
+          <div class="summary-card c-total"><div class="card-label">일정준수</div><div class="card-value">92%</div></div>
+        </div>
+        <div class="chart-box">
+          <h4><i class="fas fa-chart-doughnut"></i> 업무 유형별 비중 (차트 색)</h4>
+          <div class="chips">
+            <span class="chip"><b class="s-install"></b>설치</span><span class="chip"><b class="s-patch"></b>패치</span>
+            <span class="chip"><b class="s-fault"></b>장애</span><span class="chip"><b class="s-support"></b>지원</span>
+            <span class="chip"><b class="s-inspect"></b>점검</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame">
+        <div class="page-header">
+          <h2><i class="fas fa-chart-line"></i> 개인 성과 대시보드 (S-01)</h2>
+          <div class="header-actions"><button class="btn btn-primary">조회</button><button class="btn btn-secondary">리포트</button><button class="btn btn-success">부서현황</button></div>
+        </div>
+        <div class="summary-cards">
+          <div class="summary-card c-install"><div class="card-label">설치</div><div class="card-value">12</div></div>
+          <div class="summary-card c-patch"><div class="card-label">패치</div><div class="card-value">34</div></div>
+          <div class="summary-card c-fault"><div class="card-label">장애</div><div class="card-value">5</div></div>
+          <div class="summary-card c-support"><div class="card-label">지원</div><div class="card-value">28</div></div>
+          <div class="summary-card c-inspect"><div class="card-label">점검</div><div class="card-value">9</div></div>
+          <div class="summary-card c-total"><div class="card-label">일정준수</div><div class="card-value">92%</div></div>
+        </div>
+        <div class="chart-box">
+          <h4><i class="fas fa-chart-doughnut"></i> 업무 유형별 비중 (차트 색)</h4>
+          <div class="chips">
+            <span class="chip"><b class="s-install"></b>설치</span><span class="chip"><b class="s-patch"></b>패치</span>
+            <span class="chip"><b class="s-fault"></b>장애</span><span class="chip"><b class="s-support"></b>지원</span>
+            <span class="chip"><b class="s-inspect"></b>점검</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ 6종이 의미 토큰 6개(primary/success/danger/warning/info/text2)에 서로 구분되게 매핑되어 구분 손실 없음. 카드 CSS·Chart.js(막대 rgba·도넛 hex) 모두 동일 토큰값으로 정렬해 "유형당 1색"을 화면 전체에서 보장.</div>
+</body>
+</html>
