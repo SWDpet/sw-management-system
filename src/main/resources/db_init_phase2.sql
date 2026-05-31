@@ -168,6 +168,10 @@ ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS followup_2         TEXT;
 ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS followup_3         TEXT;
 ALTER TABLE inspect_report ADD COLUMN IF NOT EXISTS next_schedule_note VARCHAR(300);
 
+-- [site-setup-revamp 2026-05-31] 신 site_code 규칙({adm_sect_c}_{sys_nm_en}) 전환에 따른
+-- 구 site_code 별칭 컬럼 (예: 'gangjin'). findBySiteCode 미스 시 별칭으로 폴백. 멱등.
+ALTER TABLE sw_pjt ADD COLUMN IF NOT EXISTS site_code_alias VARCHAR(64);
+
 CREATE INDEX IF NOT EXISTS idx_inspect_report_pjt ON inspect_report(pjt_id);
 CREATE INDEX IF NOT EXISTS idx_inspect_report_month ON inspect_report(inspect_month);
 

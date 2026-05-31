@@ -101,8 +101,12 @@ public class SwProject {
     @Column(name = "person_id") private Long personId;
     @Column(name = "org_lgh_nm") private String orgLghNm;
 
-    // inspection-qr-batch sprint: 점검 PoC payload.site → pjt_id 매핑용 코드 (예: "dyg" = 단양군)
+    // inspection-qr-batch sprint: 점검 PoC payload.site → pjt_id 매핑용 코드.
+    // 신규 규칙: {adm_sect_c}_{sys_nm_en} (예: "46810_UPIS"). 기획서 site-setup-revamp.md
     @Column(name = "site_code", length = 32) private String siteCode;
+
+    // 구 site_code 호환용 별칭 (예: "gangjin"). findBySiteCode 가 본코드 미스 시 별칭으로 재조회.
+    @Column(name = "site_code_alias", length = 64) private String siteCodeAlias;
 
     @PrePersist
     public void prePersist() {

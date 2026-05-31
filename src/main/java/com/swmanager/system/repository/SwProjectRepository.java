@@ -189,4 +189,10 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
      * payload.site → pjt_id 매핑. site_code 는 UNIQUE (partial index where not null).
      */
     Optional<SwProject> findBySiteCode(String siteCode);
+
+    /**
+     * 구 site_code 호환 — 신코드(site_code) 미스 시 별칭으로 재조회 (예: "gangjin").
+     * 별칭은 UNIQUE 보장 없음 → findFirst 로 안전 처리. 기획서 site-setup-revamp.md D5.
+     */
+    Optional<SwProject> findFirstBySiteCodeAlias(String siteCodeAlias);
 }

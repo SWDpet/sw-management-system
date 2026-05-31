@@ -89,33 +89,108 @@ function _NewCombo($Parent, [int]$X, [int]$Y, [int]$W = 200, [string[]]$Items, [
 
 # ─── form ───────────────────────────────────────────────────────
 $form = New-Object System.Windows.Forms.Form
-$form.Text            = "UPIS Inspection Setup  v0.3.0"
-$form.Size            = New-Object System.Drawing.Size(640, 700)
+$form.Text            = "UPIS Inspection Setup  v0.4.0"
+$form.Size            = New-Object System.Drawing.Size(640, 790)
 $form.StartPosition   = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox     = $false
 $form.Font            = New-Object System.Drawing.Font("Segoe UI", 9)
 
-# 1. 사이트 정보
+# 자동 생성 필드(시스템영문·사이트코드) 시각 강조용 색
+$autoBack = [System.Drawing.Color]::FromArgb(240, 253, 250)   # 연한 teal
+$autoFore = [System.Drawing.Color]::FromArgb(15, 118, 110)    # teal
+
+# ─── 폐쇄망 코드 번들 로드 (config/codes.json) — DB 접근 없이 드롭다운 공급 ───
+# (기획서 site-setup-revamp.md §4. 빌드 시 tools/export-codes.py 로 추출·동봉)
+$sidoList = @(); $sggBySido = @{}; $admByKey = @{}; $sysKoList = @(); $enByKo = @{}
+$codesPath = Join-Path $ConfigDir 'codes.json'
+if (Test-Path $codesPath) {
+    try {
+        $codes = Get-Content $codesPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        foreach ($r in $codes.sigungu) {
+            if (-not $sggBySido.ContainsKey($r.sido)) { $sggBySido[$r.sido] = New-Object System.Collections.ArrayList }
+            [void]$sggBySido[$r.sido].Add($r.sgg)
+            $admByKey[("{0}|{1}" -f $r.sido, $r.sgg)] = $r.adm
+        }
+        $sidoList = @($sggBySido.Keys | Sort-Object)
+        foreach ($s in $codes.systems) { $sysKoList += $s.ko; $enByKo[[string]$s.ko] = $s.en }
+        _Log ("stage=codes-load  sigungu={0} systems={1}" -f $codes.sigungu.Count, $codes.systems.Count)
+    } catch {
+        _Log ("stage=codes-load  FAIL: {0}" -f $_.Exception.Message)
+    }
+} else {
+    _Log "stage=codes-load  codes.json 없음 — 드롭다운 비어있음 (export-codes.py 로 생성 필요)"
+}
+
+# 1. 사이트 정보 — 시도/시군구/시스템 선택 → 영문·사이트코드 자동 조합
 $gbSite = New-Object System.Windows.Forms.GroupBox
 $gbSite.Location = New-Object System.Drawing.Point(10, 10)
-$gbSite.Size     = New-Object System.Drawing.Size(605, 150)
+$gbSite.Size     = New-Object System.Drawing.Size(605, 210)
 $gbSite.Text     = "1. 사이트 정보"
 $form.Controls.Add($gbSite)
-_NewLabel $gbSite 15 25 "지자체 이름 (한글)"
-$tbSiteNameKo = _NewText $gbSite 155 25 420
-_NewLabel $gbSite 15 55 "시스템 명"
-$tbSystemName = _NewText $gbSite 155 55 420 'UPIS'
-_NewLabel $gbSite 15 85 "점검자 이름 (한글)"
-$tbInspector  = _NewText $gbSite 155 85 420 $env:USERNAME
-_NewLabel $gbSite 15 115 "사이트 코드 (ascii)"
-$tbSiteCode   = _NewText $gbSite 155 115 200
+_NewLabel $gbSite 15 25  "시도"
+$cbSido       = _NewCombo $gbSite 155 25 220 $sidoList $null
+_NewLabel $gbSite 15 55  "시군구"
+$cbSgg        = _NewCombo $gbSite 155 55 220 @() $null
+_NewLabel $gbSite 15 85  "시스템 (한글)"
+$cbSys        = _NewCombo $gbSite 155 85 300 $sysKoList $null
+_NewLabel $gbSite 15 115 "시스템 영문"
+$tbSysEn      = _NewText  $gbSite 155 115 200
+$tbSysEn.ReadOnly = $true; $tbSysEn.BackColor = $autoBack; $tbSysEn.ForeColor = $autoFore
+$tbSysEn.Font = New-Object System.Drawing.Font($form.Font, [System.Drawing.FontStyle]::Bold)
+_NewLabel $gbSite 15 145 "점검자 이름 (한글)"
+$tbInspector  = _NewText  $gbSite 155 145 420 $env:USERNAME
+_NewLabel $gbSite 15 175 "사이트 코드 (자동)"
+$tbSiteCode   = _NewText  $gbSite 155 175 220
+$tbSiteCode.ReadOnly = $true; $tbSiteCode.BackColor = $autoBack; $tbSiteCode.ForeColor = $autoFore
+$tbSiteCode.Font = New-Object System.Drawing.Font($form.Font, [System.Drawing.FontStyle]::Bold)
 
-# 2. DB 서버 접속
+# 시도→시군구 종속 + 시스템→영문 + 사이트코드(adm_시스템영문) 자동 재계산
+$recomputeSiteCode = {
+    $sido = [string]$cbSido.SelectedItem
+    $sgg  = [string]$cbSgg.SelectedItem
+    $ko   = [string]$cbSys.SelectedItem
+    $en   = if ($ko -and $enByKo.ContainsKey($ko)) { [string]$enByKo[$ko] } else { '' }
+    $tbSysEn.Text = $en
+    $adm  = if ($sido -and $sgg -and $admByKey.ContainsKey("$sido|$sgg")) { [string]$admByKey["$sido|$sgg"] } else { '' }
+    if ($adm -and $en) { $tbSiteCode.Text = ("{0}_{1}" -f $adm, $en) } else { $tbSiteCode.Text = '' }
+}
+$cbSido.Add_SelectedIndexChanged({
+    $cbSgg.Items.Clear()
+    $sel = [string]$cbSido.SelectedItem
+    if ($sel -and $sggBySido.ContainsKey($sel)) {
+        foreach ($g in ($sggBySido[$sel] | Sort-Object)) { [void]$cbSgg.Items.Add($g) }
+    }
+    & $recomputeSiteCode
+})
+$cbSgg.Add_SelectedIndexChanged($recomputeSiteCode)
+$cbSys.Add_SelectedIndexChanged($recomputeSiteCode)
+
+# 2. 수집 대상 (점검 섹션) — site.json.sections (maint_type 프로파일과 연동). 기본 전체 체크.
+$gbSec = New-Object System.Windows.Forms.GroupBox
+$gbSec.Location = New-Object System.Drawing.Point(10, 230)
+$gbSec.Size     = New-Object System.Drawing.Size(605, 55)
+$gbSec.Text     = "2. 수집 대상 (점검 섹션)"
+$form.Controls.Add($gbSec)
+$secDefs = @(@('AP','AP 서버'), @('DB','DB 서버(OS)'), @('DBMS','DBMS(Oracle)'), @('GIS','GIS 엔진'))
+$secChecks = @{}
+$sx = 20
+foreach ($sd in $secDefs) {
+    $cb = New-Object System.Windows.Forms.CheckBox
+    $cb.Location = New-Object System.Drawing.Point($sx, 22)
+    $cb.Size     = New-Object System.Drawing.Size(140, 22)
+    $cb.Text     = $sd[1]
+    $cb.Checked  = $true
+    $gbSec.Controls.Add($cb)
+    $secChecks[$sd[0]] = $cb
+    $sx += 145
+}
+
+# 3. DB 서버 접속
 $gbDb = New-Object System.Windows.Forms.GroupBox
-$gbDb.Location = New-Object System.Drawing.Point(10, 170)
+$gbDb.Location = New-Object System.Drawing.Point(10, 295)
 $gbDb.Size     = New-Object System.Drawing.Size(605, 240)
-$gbDb.Text     = "2. DB 서버 접속"
+$gbDb.Text     = "3. DB 서버 접속"
 $form.Controls.Add($gbDb)
 _NewLabel  $gbDb 15 25 "Protocol"
 $cbProto      = _NewCombo $gbDb 155 25 150 @('ssh','telnet') 'telnet'
@@ -148,9 +223,9 @@ $cbProto.Add_SelectedIndexChanged($onProtoChange)
 # 3. Oracle 접속 — ORACLE_HOME 은 원격 자동 탐지 (lib/Oracle.ps1 Resolve-OracleHome).
 # hint 칸은 GUI 에서 제거 (config 직접 수정 시 oracle_home_hint 키로 override 가능).
 $gbOra = New-Object System.Windows.Forms.GroupBox
-$gbOra.Location = New-Object System.Drawing.Point(10, 420)
+$gbOra.Location = New-Object System.Drawing.Point(10, 545)
 $gbOra.Size     = New-Object System.Drawing.Size(605, 90)
-$gbOra.Text     = "3. Oracle 접속 (sysdba 권장, 점검 SQL 은 SELECT 전용 가드 / ORACLE_HOME 자동탐지)"
+$gbOra.Text     = "4. Oracle 접속 (sysdba 권장, 점검 SQL 은 SELECT 전용 가드 / ORACLE_HOME 자동탐지)"
 $form.Controls.Add($gbOra)
 _NewLabel $gbOra 15 25 "SID 또는 SERVICE"
 $tbOraSid  = _NewText  $gbOra 155 25 200
@@ -159,7 +234,7 @@ $cbOraAuth = _NewCombo $gbOra 155 55 200 @('sysdba','normal') 'sysdba'
 
 # status + buttons
 $lblStatus = New-Object System.Windows.Forms.Label
-$lblStatus.Location  = New-Object System.Drawing.Point(15, 555)
+$lblStatus.Location  = New-Object System.Drawing.Point(15, 645)
 $lblStatus.Size      = New-Object System.Drawing.Size(600, 40)
 $lblStatus.Text      = "Test 로 연결 사전 확인 → Save 로 config 저장. Password 는 DPAPI 암호화."
 $lblStatus.ForeColor = [System.Drawing.Color]::DimGray
@@ -167,7 +242,7 @@ $form.Controls.Add($lblStatus)
 
 # Test Connection — TCP 확인 → 로그인+명령 확인 → 결과 진단 (IP오류 vs 비번오류 vs 성공 분리).
 $btnTest = New-Object System.Windows.Forms.Button
-$btnTest.Location     = New-Object System.Drawing.Point(15, 605)
+$btnTest.Location     = New-Object System.Drawing.Point(15, 695)
 $btnTest.Size         = New-Object System.Drawing.Size(150, 32)
 $btnTest.Text         = "Test Connection"
 $form.Controls.Add($btnTest)
@@ -296,15 +371,18 @@ $btnTest.Add_Click({
 })
 
 $btnSave = New-Object System.Windows.Forms.Button
-$btnSave.Location     = New-Object System.Drawing.Point(420, 605)
+$btnSave.Location     = New-Object System.Drawing.Point(420, 695)
 $btnSave.Size         = New-Object System.Drawing.Size(90, 32)
 $btnSave.Text         = "Save"
 $btnSave.DialogResult = 'OK'
+$btnSave.BackColor    = $autoFore
+$btnSave.ForeColor    = [System.Drawing.Color]::White
+$btnSave.FlatStyle    = 'Flat'
 $form.Controls.Add($btnSave)
 $form.AcceptButton = $btnSave
 
 $btnCancel = New-Object System.Windows.Forms.Button
-$btnCancel.Location     = New-Object System.Drawing.Point(525, 605)
+$btnCancel.Location     = New-Object System.Drawing.Point(525, 695)
 $btnCancel.Size         = New-Object System.Drawing.Size(90, 32)
 $btnCancel.Text         = "Cancel"
 $btnCancel.DialogResult = 'Cancel'
@@ -316,11 +394,18 @@ $activePath = Join-Path $ConfigDir 'active.json'
 if (Test-Path $activePath) {
     try {
         $existing = Get-Content $activePath -Raw -Encoding UTF8 | ConvertFrom-Json
-        $parts = ($existing.site_name -split ' ', 2)
-        if ($parts.Count -eq 2) { $tbSiteNameKo.Text = $parts[0]; $tbSystemName.Text = $parts[1] }
-        else                    { $tbSiteNameKo.Text = $existing.site_name }
+        # 사이트 정보 복원 — region(신규) 우선. 시도 선택 시 시군구 목록 자동 채워짐(이벤트).
+        if ($existing.region) {
+            if ($existing.region.sido)   { $cbSido.SelectedItem = [string]$existing.region.sido }
+            if ($existing.region.sgg)    { $cbSgg.SelectedItem  = [string]$existing.region.sgg }
+            if ($existing.region.sys_ko) { $cbSys.SelectedItem  = [string]$existing.region.sys_ko }
+        }
         $tbInspector.Text = $existing.inspector
-        $tbSiteCode.Text  = $existing.site
+        & $recomputeSiteCode
+        # 수집 대상 복원 (없으면 기본 전체 체크 유지)
+        if ($existing.sections) {
+            foreach ($k in @($secChecks.Keys)) { $secChecks[$k].Checked = ($existing.sections -contains $k) }
+        }
         if ($existing.remotes -and $existing.remotes.unix_db) {
             $u = $existing.remotes.unix_db
             if ($u.proto)       { $cbProto.SelectedItem = $u.proto }
@@ -354,10 +439,13 @@ if ($result -ne 'OK') {
 
 # 입력 검증
 function _Validate {
-    if (-not $tbSiteNameKo.Text.Trim()) { return "지자체 이름 비어있음" }
-    if (-not $tbSystemName.Text.Trim()) { return "시스템 명 비어있음" }
+    if (-not $cbSido.SelectedItem) { return "시도를 선택하세요" }
+    if (-not $cbSgg.SelectedItem)  { return "시군구를 선택하세요" }
+    if (-not $cbSys.SelectedItem)  { return "시스템을 선택하세요" }
     if (-not $tbInspector.Text.Trim())  { return "점검자 비어있음" }
-    if ($tbSiteCode.Text -notmatch '^[a-z0-9_-]{1,32}$') { return "사이트 코드 형식: a-z 0-9 _- (1~32 chars)" }
+    if ($tbSiteCode.Text -notmatch '^[0-9]{5}_[A-Za-z0-9]+$') { return "사이트 코드 자동생성 실패 — 시도/시군구/시스템 확인 (codes.json)" }
+    $anySec = $false; foreach ($k in @($secChecks.Keys)) { if ($secChecks[$k].Checked) { $anySec = $true } }
+    if (-not $anySec) { return "수집 대상 섹션을 1개 이상 선택하세요" }
     if (-not $tbDbHost.Text.Trim()) { return "DB Host 비어있음" }
     if ($tbDbPort.Text -notmatch '^[0-9]{1,5}$') { return "DB Port 1~65535" }
     if (-not $tbDbUser.Text.Trim()) { return "DB Account 비어있음" }
@@ -375,11 +463,21 @@ $siteCode = $tbSiteCode.Text.Trim()
 $encPw    = Protect-Password -Plain $tbDbPwd.Text
 $tbDbPwd.Text = ''
 
+# 선택값 + 수집 섹션 (AP/DB/DBMS/GIS 고정 순서)
+$selSido = [string]$cbSido.SelectedItem
+$selSgg  = [string]$cbSgg.SelectedItem
+$selKo   = [string]$cbSys.SelectedItem
+$selEn   = [string]$tbSysEn.Text
+$selAdm  = if ($admByKey.ContainsKey("$selSido|$selSgg")) { [string]$admByKey["$selSido|$selSgg"] } else { '' }
+$sections = @(); foreach ($k in @('AP','DB','DBMS','GIS')) { if ($secChecks[$k].Checked) { $sections += $k } }
+
 $cfg = [ordered]@{
     site       = $siteCode
-    site_name  = ($tbSiteNameKo.Text.Trim() + ' ' + $tbSystemName.Text.Trim())
+    site_name  = ($selSgg + ' ' + $selEn)
     inspector  = $tbInspector.Text.Trim()
     tier       = 'ap'
+    sections   = $sections
+    region     = [ordered]@{ sido = $selSido; sgg = $selSgg; adm = $selAdm; sys_ko = $selKo; sys_en = $selEn }
     hosts      = [ordered]@{ ap = [ordered]@{ expected_hostname = $null; ip_hint = $null } }
     thresholds = [ordered]@{
         'perf.cpu_pct'       = [ordered]@{ warn = 70; crit = 85 }

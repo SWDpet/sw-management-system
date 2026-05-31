@@ -95,8 +95,9 @@ public class InspectionQrBatchService {
             return toIdempotentResponse(existing.get());
         }
 
-        // B. site → pjt
+        // B. site → pjt (신코드 우선, 구 site_code 는 별칭으로 폴백)
         SwProject pjt = swProjectRepository.findBySiteCode(payload.getSite())
+                .or(() -> swProjectRepository.findFirstBySiteCodeAlias(payload.getSite()))
                 .orElseThrow(() -> new SiteNotMappedException(payload.getSite()));
 
         // C. inspect_report — 동일 (pjt, month) 의 기존 manual 회차가 있으면 merge,
@@ -705,7 +706,8 @@ public class InspectionQrBatchService {
 
     private InspectionQrBatchResponse toIdempotentResponse(InspectQrBatch batch) {
         Long pjtId = null;
-        Optional<SwProject> pjt = swProjectRepository.findBySiteCode(batch.getSiteCode());
+        Optional<SwProject> pjt = swProjectRepository.findBySiteCode(batch.getSiteCode())
+                .or(() -> swProjectRepository.findFirstBySiteCodeAlias(batch.getSiteCode()));
         if (pjt.isPresent()) pjtId = pjt.get().getProjId();
 
         int tierCount = 0, itemCount = 0, manual = 0, warn = 0;
