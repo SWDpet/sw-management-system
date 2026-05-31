@@ -5,6 +5,30 @@
 
 . (Join-Path $PSScriptRoot 'Common.ps1')
 
+# ── 점검범위(섹션) 프로파일 ──────────────────────────────
+# maint_type 점검범위 분기(서버측 InspectMaintProfile)의 에이전트 대응.
+# site.{code}.json 의 "sections" 배열(예: ["GIS"], ["AP","GIS"], ["AP","DB","DBMS","GIS"])로
+# 수집할 섹션을 한정한다. 없으면 전체(하위호환). manifest 섹션은 AP/DB/DBMS/GIS (APP=수동입력).
+# 기획서: docs/product-specs/inspect-maint-profile.md §6 #7
+function Get-AllowedSections {
+    param($Config)
+    if ($Config.PSObject.Properties['sections'] -and $Config.sections) {
+        return @($Config.sections | ForEach-Object { $_.ToString().Trim().ToUpper() } | Where-Object { $_ })
+    }
+    return @()   # 빈 배열 = 제한 없음(전체)
+}
+
+# alphabetical fallback 용 — 체크 파일명 → 섹션 추정 (manifest 부재 시에만 사용)
+function Resolve-FileSection {
+    param([string] $FileStem)
+    $s = $FileStem.ToLower()
+    if ($s -like 'db-oracle*')          { return 'DBMS' }
+    if ($s -like 'db-*')                { return 'DB' }   # db-os-*, db-led-*
+    if ($s -like 'ap-*')                { return 'AP' }
+    if ($s -like 'gis-*')               { return 'GIS' }
+    return ''   # 미상 — 필터하지 않음(보수적 포함)
+}
+
 function Invoke-Checks {
     param(
         [Parameter(Mandatory)] [string] $ChecksDir,
@@ -13,20 +37,27 @@ function Invoke-Checks {
     )
 
     $tier = if ($Config.tier) { $Config.tier.ToString().ToUpper() } else { '' }
+    $allowSections = Get-AllowedSections -Config $Config
     $manifestPath = Join-Path (Split-Path -Parent $ChecksDir) 'manifest.json'
     $manifestModules = $null
 
     if (Test-Path $manifestPath) {
         try {
             $manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-            # AP 서버에서 전 섹션(AP/DB/DBMS/GIS) 수집 — DB/DBMS는 Telnet 원격, GIS는 로컬
+            # 점검 범위 섹션만 수집 — DB/DBMS는 Telnet 원격, GIS/AP는 로컬. 범위 밖 섹션은 모듈 미실행.
             $allModules = New-Object System.Collections.ArrayList
             foreach ($sec in $manifest.sections.PSObject.Properties) {
+                $secName = $sec.Name.ToString().ToUpper()
+                if ($allowSections.Count -gt 0 -and ($allowSections -notcontains $secName)) {
+                    Write-Log -Level INFO -Msg ("manifest section skip (범위 밖): {0} (rows={1})" -f $sec.Name, @($sec.Value).Count)
+                    continue
+                }
                 foreach ($m in $sec.Value) { [void]$allModules.Add($m) }
             }
             if ($allModules.Count -gt 0) {
                 $manifestModules = $allModules.ToArray()
-                Write-Log -Level INFO -Msg ("manifest dispatch: all sections, rows={0}" -f $manifestModules.Count)
+                $scopeMsg = if ($allowSections.Count -gt 0) { "sections=[{0}]" -f ($allowSections -join ',') } else { 'all sections' }
+                Write-Log -Level INFO -Msg ("manifest dispatch: {0}, rows={1}" -f $scopeMsg, $manifestModules.Count)
             }
         } catch {
             Write-Log -Level WARN -Msg ("manifest load failed: {0} — alphabetical fallback" -f $_.Exception.Message)
@@ -36,7 +67,7 @@ function Invoke-Checks {
     if ($manifestModules) {
         return Invoke-ChecksManifest -ChecksDir $ChecksDir -Config $Config -Modules $manifestModules -Include $Include
     }
-    return Invoke-ChecksAlphabetical -ChecksDir $ChecksDir -Config $Config -Include $Include
+    return Invoke-ChecksAlphabetical -ChecksDir $ChecksDir -Config $Config -Include $Include -AllowSections $allowSections
 }
 
 function Invoke-ChecksManifest {
@@ -116,13 +147,20 @@ function Invoke-ChecksAlphabetical {
     param(
         [string] $ChecksDir,
         $Config,
-        [string[]] $Include = @()
+        [string[]] $Include = @(),
+        [string[]] $AllowSections = @()
     )
     $files = Get-ChildItem -Path $ChecksDir -Filter '*.ps1' -File | Sort-Object Name
     if ($Include.Count -gt 0) {
         $files = $files | Where-Object {
             $stem = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
             $Include -contains $stem
+        }
+    }
+    if ($AllowSections.Count -gt 0) {
+        $files = $files | Where-Object {
+            $sec = Resolve-FileSection ([System.IO.Path]::GetFileNameWithoutExtension($_.Name))
+            ($sec -eq '') -or ($AllowSections -contains $sec)
         }
     }
 
@@ -191,6 +229,7 @@ function Build-Snapshot {
         round        = $round
         round_date   = (Get-Date).ToString('yyyy-MM-dd')
         tier         = $Config.tier
+        sections     = @(Get-AllowedSections -Config $Config)   # 점검범위(빈 배열=전체)
         host         = $hostInfo
         taken_at     = Get-IsoNow
         took_ms      = $TotalMs

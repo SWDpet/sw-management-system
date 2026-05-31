@@ -3,6 +3,7 @@
   "site_name": "단양군 UPIS",
   "inspector": "박욱진",
   "tier": "ap",
+  "sections": ["AP", "GIS"],
   "hosts": {
     "ap": { "expected_hostname": "UPIS-AP", "ip_hint": null }
   },

@@ -3,6 +3,7 @@
   "site_name": "강진군 UPIS",
   "inspector": "박욱진",
   "tier": "ap",
+  "sections": ["AP", "DB", "DBMS", "GIS"],
   "hosts": {
     "ap": { "expected_hostname": "UPIS-AP", "ip_hint": "110.15.1.171" },
     "db": { "expected_hostname": "UPIS-DB", "ip_hint": "110.15.1.172" }
