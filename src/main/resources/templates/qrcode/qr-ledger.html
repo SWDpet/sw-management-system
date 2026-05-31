@@ -9,11 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
+            /* 로컬 변수값을 디자인 토큰에 정렬 */
             --primary: #0F766E; --primary2: #115E59; --primary-lt: #F0FDFA;
-            --bg: #f5f5f5; --surface: #ffffff;
-            --text-primary: #222; --text-secondary: #666; --text-tertiary: #999;
-            --border: #e8e8e8; --border-light: #f0f0f0;
-            --success: #10b981; --error: #ef4444;
+            --bg: #FAFAF9; --surface: #ffffff;
+            --text-primary: #1C1917; --text-secondary: #57534E; --text-tertiary: #A8A29E;
+            --border: #E7E5E4; --border-light: #F5F5F4;
+            --success: #059669; --error: #DC2626;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text-primary); line-height:1.5; }
@@ -43,10 +44,10 @@
 
         /* Table */
         .data-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
-        .data-table thead { background:#fafafa; border-top:1px solid var(--border); border-bottom:2px solid var(--border); }
+        .data-table thead { background:var(--surface-2); border-top:1px solid var(--border); border-bottom:2px solid var(--border); }
         .data-table th { padding:11px 12px; text-align:left; font-weight:700; color:var(--text-primary); white-space:nowrap; }
         .data-table td { padding:10px 12px; border-bottom:1px solid var(--border-light); vertical-align:middle; }
-        .data-table tbody tr:hover { background:#fafafa; cursor:pointer; }
+        .data-table tbody tr:hover { background:var(--surface-2); cursor:pointer; }
 
         .qr-thumb { width:40px; height:40px; border-radius:4px; border:1px solid var(--border); }
 
@@ -111,7 +112,7 @@
                         <td style="text-align:center;" th:text="${stat.count}"></td>
                         <td>
                             <img th:if="${q.qrImageData != null}" th:src="'data:image/png;base64,' + ${q.qrImageData}" class="qr-thumb" alt="QR">
-                            <span th:if="${q.qrImageData == null}" style="color:#ccc;">-</span>
+                            <span th:if="${q.qrImageData == null}" style="color:var(--border2);">-</span>
                         </td>
                         <td style="font-weight:600;" th:text="${q.endUserName}"></td>
                         <td th:text="${q.endUserNameKo}"></td>
