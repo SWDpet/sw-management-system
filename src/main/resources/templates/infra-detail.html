@@ -4,36 +4,37 @@
     <meta charset="UTF-8">
     <title>인프라 자산 상세 정보</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        /* 기존 스타일 유지 */
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 40px 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 40px 20px; color: var(--text); }
         .container { max-width: 1600px; margin: auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); }
-        .page-header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #134E4A; }
-        .view-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #d1d3e2; }
-        .view-table th { background: #f8f9fc; color: #134E4A; font-weight: bold; padding: 12px; border: 1px solid #d1d3e2; text-align: center; width: 15%; white-space: nowrap; }
-        .view-table td { padding: 12px 15px; border: 1px solid #d1d3e2; color: #555; }
-        .section-title { font-size: 1.2em; font-weight: 700; color: #0F766E; margin: 40px 0 15px 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #0F766E; padding-bottom: 10px; }
-        .sub-title { font-size: 1em; font-weight: 700; color: #666; margin: 20px 0 10px 0; padding-left: 10px; border-left: 4px solid #858796; }
-        .info-box { border: 1px solid #e3e6f0; border-radius: 8px; padding: 25px; margin-bottom: 25px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .box-web { border-left: 5px solid #0d47a1; }
-        .box-db { border-left: 5px solid #e65100; }
-        .box-link { border-left: 5px solid #6a1b9a; }
-        .box-memo { border-left: 5px solid #607d8b; }
-        .box-hw { border-left: 5px solid #00897b; }
+        .page-header { border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: var(--primary); }
+        .view-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid var(--border); }
+        .view-table th { background: var(--surface-2); color: var(--primary); font-weight: bold; padding: 12px; border: 1px solid var(--border); text-align: center; width: 15%; white-space: nowrap; }
+        .view-table td { padding: 12px 15px; border: 1px solid var(--border); color: var(--text2); }
+        .section-title { font-size: 1.2em; font-weight: 700; color: var(--primary); margin: 40px 0 15px 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .sub-title { font-size: 1em; font-weight: 700; color: var(--text2); margin: 20px 0 10px 0; padding-left: 10px; border-left: 4px solid var(--border2); }
+        .info-box { border: 1px solid var(--border); border-radius: 8px; padding: 25px; margin-bottom: 25px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* 정보박스 섹션 accent — WEB=info · DB=warning · H/W=primary · API=success · 메모=text2 · UPIS연계=보라(유지) */
+        .box-web { border-left: 5px solid var(--info); }
+        .box-db { border-left: 5px solid var(--warning); }
+        .box-link { border-left: 5px solid #6a1b9a; }  /* UPIS 연계 — 토큰에 보라 없음, 카테고리 accent 유지 */
+        .box-memo { border-left: 5px solid var(--text2); }
+        .box-hw { border-left: 5px solid var(--primary); }
         .hw-spec-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
-        .hw-spec-table th { background: #e0f2f1; padding: 10px 12px; border: 1px solid #b2dfdb; text-align: center; color: #00695c; width: 15%; white-space: nowrap; font-weight: 600; }
-        .hw-spec-table td { padding: 10px 12px; border: 1px solid #b2dfdb; color: #555; }
+        .hw-spec-table th { background: var(--primary-lt); padding: 10px 12px; border: 1px solid var(--border); text-align: center; color: var(--primary2); width: 15%; white-space: nowrap; font-weight: 600; }
+        .hw-spec-table td { padding: 10px 12px; border: 1px solid var(--border); color: var(--text2); }
         .box-header { font-weight: 700; font-size: 1.1em; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
         .inner-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
-        .inner-table th { background: #eaecf4; padding: 8px; border: 1px solid #d1d3e2; text-align: center; }
-        .inner-table td { padding: 8px; border: 1px solid #d1d3e2; text-align: center; }
+        .inner-table th { background: var(--surface-2); padding: 8px; border: 1px solid var(--border); text-align: center; }
+        .inner-table td { padding: 8px; border: 1px solid var(--border); text-align: center; }
         .inner-table td.text-left { text-align: left; padding-left: 10px; }
-        .btn-area { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; }
+        .btn-area { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border); }
         .btn { padding: 12px 30px; border: none; border-radius: 5px; font-weight: bold; text-decoration: none; display: inline-block; transition: 0.2s; color: white; border: none; cursor: pointer; }
-        .btn-edit { background: #134E4A; }
-        .btn-list { background: #858796; }
-        .btn-del { background: #f08a7e; }
+        .btn-edit { background: var(--primary); }
+        .btn-list { background: var(--text2); }
+        .btn-del { background: var(--danger); }
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
     </style>
 </head>
@@ -43,14 +44,14 @@
         <div class="page-header">
             <h2><i class="fas fa-file-alt"></i> 인프라 자산 상세 정보</h2>
             <div>
-                <a href="/infra/list" style="padding:8px 14px; background:#858796; color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-list"></i> 목록</a>
+                <a href="/infra/list" style="padding:8px 14px; background:var(--text2); color:white; text-decoration:none; border-radius:5px; font-size:0.85em; font-weight:600; margin-left:4px;"><i class="fas fa-list"></i> 목록</a>
             </div>
         </div>
 
         <div class="section-title">
             <i class="fas fa-landmark"></i> 기본 정보
             <span style="font-size: 0.9em; margin-left: 10px; padding: 4px 10px; border-radius: 4px; color: white;"
-                  th:styleappend="${infra.infraType == 'TEST'} ? 'background-color: #e65100;' : 'background-color: #134E4A;'"
+                  th:styleappend="${infra.infraType == 'TEST'} ? 'background-color: var(--warning);' : 'background-color: var(--primary);'"
                   th:text="${infra.infraType == 'TEST'} ? '테스트(TEST)' : '운영(PROD)'">
             </span>
         </div>
@@ -73,13 +74,13 @@
         <div class="section-title"><i class="fas fa-server"></i> 서버 정보</div>
         <th:block th:each="server : ${infra.servers}" th:if="${server.serverType == 'WEB'}">
             <div class="info-box box-web">
-                <div class="box-header" style="color: #0d47a1;"><i class="fas fa-globe"></i> WEB / WAS 서버</div>
+                <div class="box-header" style="color: var(--info);"><i class="fas fa-globe"></i> WEB / WAS 서버</div>
                 <table class="view-table">
                     <tr><th>IP 주소</th> <td th:text="${server.ipAddr}"></td> <th>OS</th> <td th:text="${server.osNm}"></td></tr>
                     <tr><th>계정 (ID)</th> <td th:text="${server.accId}"></td> <th>MAC Address</th> <td th:text="${server.macAddr}"></td></tr>
                 </table>
                 <!-- H/W 스펙 정보 (I-01): 항상 표시, 빈 값은 '-' fallback -->
-                <div class="sub-title" style="border-left-color: #00897b; color: #00897b;"><i class="fas fa-microchip"></i> H/W 스펙</div>
+                <div class="sub-title" style="border-left-color: var(--primary); color: var(--primary);"><i class="fas fa-microchip"></i> H/W 스펙</div>
                 <table class="hw-spec-table">
                     <tr><th>서버 모델</th> <td th:text="${server.serverModel} ?: '-'"></td> <th>시리얼 번호</th> <td th:text="${server.serialNo} ?: '-'"></td></tr>
                     <tr><th>CPU</th> <td th:text="${server.cpuSpec} ?: '-'"></td> <th>메모리</th> <td th:text="${server.memorySpec} ?: '-'"></td></tr>
@@ -102,13 +103,13 @@
         </th:block>
         <th:block th:each="server : ${infra.servers}" th:if="${server.serverType == 'DB'}">
              <div class="info-box box-db">
-                <div class="box-header" style="color: #e65100;"><i class="fas fa-database"></i> DB 서버</div>
+                <div class="box-header" style="color: var(--warning);"><i class="fas fa-database"></i> DB 서버</div>
                 <table class="view-table">
                     <tr><th>IP 주소</th> <td th:text="${server.ipAddr}"></td> <th>OS</th> <td th:text="${server.osNm}"></td></tr>
                     <tr><th>계정 (ID)</th> <td th:text="${server.accId}"></td> <th>MAC Address</th> <td th:text="${server.macAddr}"></td></tr>
                 </table>
                 <!-- H/W 스펙 정보 (I-01): 항상 표시, 빈 값은 '-' fallback -->
-                <div class="sub-title" style="border-left-color: #00897b; color: #00897b;"><i class="fas fa-microchip"></i> H/W 스펙</div>
+                <div class="sub-title" style="border-left-color: var(--primary); color: var(--primary);"><i class="fas fa-microchip"></i> H/W 스펙</div>
                 <table class="hw-spec-table">
                     <tr><th>서버 모델</th> <td th:text="${server.serverModel} ?: '-'"></td> <th>시리얼 번호</th> <td th:text="${server.serialNo} ?: '-'"></td></tr>
                     <tr><th>CPU</th> <td th:text="${server.cpuSpec} ?: '-'"></td> <th>메모리</th> <td th:text="${server.memorySpec} ?: '-'"></td></tr>
@@ -133,7 +134,7 @@
         <div class="section-title"><i class="fas fa-network-wired"></i> 연계 정보</div>
         <th:block th:each="upis : ${infra.upisLinks}">
              <div class="info-box box-link">
-                <div class="box-header" style="color: #6a1b9a;"><i class="fas fa-link"></i> UPIS 시스템 연계</div>
+                <div class="box-header" style="color: #6a1b9a;"><i class="fas fa-link"></i> UPIS 시스템 연계</div>  <!-- 보라 유지 (UPIS 카테고리 accent) -->
                 <table class="view-table">
                     <tr><th>KRAS IP</th> <td th:text="${upis.krasIp}"></td> <th>KRAS 연계코드</th> <td th:text="${upis.krasCd}"></td></tr>
                     <tr><th>GPKI ID</th> <td th:text="${upis.gpkiId}"></td> <th>GPKI PW</th> <td th:text="${upis.gpkiPw}"></td></tr>
@@ -145,8 +146,8 @@
             </div>
         </th:block>
         <th:block th:each="api : ${infra.apiLinks}">
-             <div class="info-box box-link" style="border-left-color: #2e7d32;">
-                <div class="box-header" style="color: #2e7d32;"><i class="fas fa-key"></i> PKG SW (외부 API KEY 관리)</div>
+             <div class="info-box box-link" style="border-left-color: var(--success);">
+                <div class="box-header" style="color: var(--success);"><i class="fas fa-key"></i> PKG SW (외부 API KEY 관리)</div>
                 <table class="view-table">
                     <tr><th style="width: 20%;">NAVER NEWS</th><td th:text="${api.naverNewsKey}"></td><th>만료일</th> <td th:text="${api.naverNewsExpDt}"></td><th>신청자</th> <td th:text="${api.naverNewsUser}"></td></tr>
                     <tr><th style="width: 20%;">NAVER SECRET</th><td th:text="${api.naverSecretKey}"></td><th>만료일</th> <td th:text="${api.naverSecretExpDt}"></td><th>신청자</th> <td th:text="${api.naverSecretUser}"></td></tr>
@@ -162,16 +163,16 @@
         <div class="section-title"><i class="fas fa-sticky-note"></i> 비고 및 메모</div>
         <th:block th:each="memo : ${infra.memos}">
             <div class="info-box box-memo">
-                <div class="box-header" style="color: #607d8b;">
+                <div class="box-header" style="color: var(--text2);">
                     <i class="fas fa-pen-square"></i> 메모
-                    <span style="font-size: 0.8em; font-weight: normal; margin-left: auto; color: #888;">
+                    <span style="font-size: 0.8em; font-weight: normal; margin-left: auto; color: var(--muted);">
                         작성일: <span th:text="${memo.memoDate}"></span> / 작성자: <span th:text="${memo.memoWriter}"></span>
                     </span>
                 </div>
                 <div style="white-space: pre-wrap; line-height: 1.5;" th:text="${memo.memoContent}"></div>
             </div>
         </th:block>
-        <div th:if="${#lists.isEmpty(infra.memos)}" style="padding: 20px; text-align: center; color: #999;">
+        <div th:if="${#lists.isEmpty(infra.memos)}" style="padding: 20px; text-align: center; color: var(--muted);">
             등록된 메모가 없습니다.
         </div>
 

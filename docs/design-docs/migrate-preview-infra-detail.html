@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 인프라 상세 BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#fff; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; margin-bottom:12px; }
+  .page-header h2{ margin:0; font-size:1.1rem; }
+  .btn-list-top{ padding:6px 12px; color:#fff; border-radius:5px; font-size:.78em; font-weight:600; }
+  .section-title{ font-size:1.05em; font-weight:700; margin:14px 0 8px; padding-bottom:6px; display:flex; align-items:center; gap:8px; }
+  .modebadge{ font-size:.72em; padding:3px 9px; border-radius:4px; color:#fff; }
+  .info-box{ border:1px solid #e3e6f0; border-radius:8px; padding:12px 14px; margin-bottom:10px; background:#fff; }
+  .box-header{ font-weight:700; font-size:.95em; display:flex; align-items:center; gap:7px; }
+  .btn{ padding:9px 20px; border:none; border-radius:5px; font-weight:bold; color:#fff; font-size:.85em; }
+
+  /* BEFORE */
+  .before .page-header{ border-bottom:2px solid #eee; } .before .page-header h2{ color:#134E4A; }
+  .before .btn-list-top{ background:#858796; }
+  .before .section-title{ color:#0F766E; border-bottom:2px solid #0F766E; }
+  .before .box-web{ border-left:5px solid #0d47a1; } .before .h-web{ color:#0d47a1; }
+  .before .box-db{ border-left:5px solid #e65100; } .before .h-db{ color:#e65100; }
+  .before .box-hw{ border-left:5px solid #00897b; } .before .h-hw{ color:#00897b; }
+  .before .box-link{ border-left:5px solid #6a1b9a; } .before .h-link{ color:#6a1b9a; }
+  .before .box-api{ border-left:5px solid #2e7d32; } .before .h-api{ color:#2e7d32; }
+  .before .box-memo{ border-left:5px solid #607d8b; } .before .h-memo{ color:#607d8b; }
+  .before .btn-edit{ background:#134E4A; } .before .btn-list{ background:#858796; } .before .btn-del{ background:#f08a7e; }
+  .before .mb-prod{ background:#134E4A; } .before .mb-test{ background:#e65100; }
+
+  /* AFTER */
+  .after .page-header{ border-bottom:2px solid var(--border); } .after .page-header h2{ color:var(--primary); }
+  .after .btn-list-top{ background:var(--text2); }
+  .after .section-title{ color:var(--primary); border-bottom:2px solid var(--primary); }
+  .after .box-web{ border-left:5px solid var(--info); } .after .h-web{ color:var(--info); }
+  .after .box-db{ border-left:5px solid var(--warning); } .after .h-db{ color:var(--warning); }
+  .after .box-hw{ border-left:5px solid var(--primary); } .after .h-hw{ color:var(--primary); }
+  .after .box-link{ border-left:5px solid #6a1b9a; } .after .h-link{ color:#6a1b9a; }
+  .after .box-api{ border-left:5px solid var(--success); } .after .h-api{ color:var(--success); }
+  .after .box-memo{ border-left:5px solid var(--text2); } .after .h-memo{ color:var(--text2); }
+  .after .btn-edit{ background:var(--primary); } .after .btn-list{ background:var(--text2); } .after .btn-del{ background:var(--danger); }
+  .after .mb-prod{ background:var(--primary); } .after .mb-test{ background:var(--warning); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 인프라 자산 상세</h1>
+  <div class="sub">정보박스 섹션 accent: WEB→info · DB→warning · H/W→primary · API→success · 메모→text2. UPIS 연계(보라)는 유지.</div>
+  <div class="legendbox">
+    제목/섹션 <code>#134E4A·#0F766E</code>→<code>--primary</code> · PROD/TEST 뱃지 → <code>--primary/--warning</code> ·
+    WEB <code>#0d47a1</code>→info · DB <code>#e65100</code>→warning · H/W <code>#00897b</code>→primary · API <code>#2e7d32</code>→success · 메모 <code>#607d8b</code>→text2 ·
+    수정 <code>#134E4A</code>→primary · 삭제 <code>#f08a7e</code>→danger
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-file-alt"></i> 인프라 자산 상세</h2><span class="btn-list-top">목록</span></div>
+        <div class="section-title"><i class="fas fa-landmark"></i> 기본 정보 <span class="modebadge mb-prod">운영(PROD)</span></div>
+        <div class="info-box box-web"><div class="box-header h-web"><i class="fas fa-globe"></i> WEB / WAS 서버</div></div>
+        <div class="info-box box-db"><div class="box-header h-db"><i class="fas fa-database"></i> DB 서버</div></div>
+        <div class="info-box box-hw"><div class="box-header h-hw"><i class="fas fa-microchip"></i> H/W 스펙</div></div>
+        <div class="info-box box-link"><div class="box-header h-link"><i class="fas fa-link"></i> UPIS 시스템 연계</div></div>
+        <div class="info-box box-api"><div class="box-header h-api"><i class="fas fa-key"></i> PKG SW (API KEY)</div></div>
+        <div class="info-box box-memo"><div class="box-header h-memo"><i class="fas fa-pen-square"></i> 메모</div></div>
+        <div style="text-align:center;margin-top:12px;"><span class="btn btn-edit">수정하기</span> <span class="btn btn-del">삭제</span> <span class="btn btn-list">목록으로</span></div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-file-alt"></i> 인프라 자산 상세</h2><span class="btn-list-top">목록</span></div>
+        <div class="section-title"><i class="fas fa-landmark"></i> 기본 정보 <span class="modebadge mb-prod">운영(PROD)</span></div>
+        <div class="info-box box-web"><div class="box-header h-web"><i class="fas fa-globe"></i> WEB / WAS 서버</div></div>
+        <div class="info-box box-db"><div class="box-header h-db"><i class="fas fa-database"></i> DB 서버</div></div>
+        <div class="info-box box-hw"><div class="box-header h-hw"><i class="fas fa-microchip"></i> H/W 스펙</div></div>
+        <div class="info-box box-link"><div class="box-header h-link"><i class="fas fa-link"></i> UPIS 시스템 연계</div></div>
+        <div class="info-box box-api"><div class="box-header h-api"><i class="fas fa-key"></i> PKG SW (API KEY)</div></div>
+        <div class="info-box box-memo"><div class="box-header h-memo"><i class="fas fa-pen-square"></i> 메모</div></div>
+        <div style="text-align:center;margin-top:12px;"><span class="btn btn-edit">수정하기</span> <span class="btn btn-del">삭제</span> <span class="btn btn-list">목록으로</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ WEB=info·DB=warning 은 infra-list 표 헤더와 동일 매핑(두 페이지 일관). UPIS 연계 박스 보라(<code>#6a1b9a</code>)는 토큰에 보라가 없고 단일 카테고리 accent 라 유지합니다. H/W 스펙 표의 teal 테마(<code>#e0f2f1/#b2dfdb/#00695c</code>)도 primary 계열로 정렬.</div>
+</body>
+</html>
