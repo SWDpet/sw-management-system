@@ -23,6 +23,14 @@
     </properties>
 
     <dependencies>
+        <!-- 개발 편의: 코드/리소스 변경 시 자동 재기동(hot reload). optional=true 라 운영 jar 미포함. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
