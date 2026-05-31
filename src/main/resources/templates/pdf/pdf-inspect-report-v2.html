@@ -251,17 +251,17 @@
 
 <table class="kpi">
     <tr>
-        <td><div class="k-num" th:text="${kpi.cpu}">21%</div><div class="k-lab">CPU 점검기간 평균</div></td>
-        <td><div class="k-num" th:text="${kpi.mem}">76%</div><div class="k-lab">Memory 점검기간 평균</div></td>
-        <td><div class="k-num" th:text="${kpi.disk}">47%</div><div class="k-lab">Disk 점검기간 최대</div></td>
-        <td><div class="k-num" th:text="${kpi.days}">30</div><div class="k-lab">수집 일수</div></td>
+        <td><div class="k-num" th:text="${kpi.cpu}">21%</div><div class="k-lab">CPU 12개월 평균</div></td>
+        <td><div class="k-num" th:text="${kpi.mem}">76%</div><div class="k-lab">Memory 12개월 평균</div></td>
+        <td><div class="k-num" th:text="${kpi.disk}">47%</div><div class="k-lab">Disk 12개월 최대</div></td>
+        <td><div class="k-num" th:text="${kpi.days}">30</div><div class="k-lab">점검 횟수</div></td>
     </tr>
 </table>
 
 <div class="chart-wrap">
-    <img th:if="${chartImg != null}" th:src="${chartImg}" alt="점검기간 추이"/>
+    <img th:if="${chartImg != null}" th:src="${chartImg}" alt="월별 추이"/>
     <div th:if="${chartImg == null}" class="nodata">메트릭 추이 — 수집 대기</div>
-    <div class="chart-cap">CPU · Memory · Disk 사용률 추이 (직전 점검 이후 ~ 이번 점검월, 호스트별)</div>
+    <div class="chart-cap">CPU · Memory · Disk 사용률 월별 추이 (최근 12개월, 점검 회차별, 호스트별)</div>
 </div>
 
 <div class="panel">

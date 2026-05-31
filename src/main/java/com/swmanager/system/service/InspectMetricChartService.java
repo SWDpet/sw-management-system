@@ -11,7 +11,7 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
-import org.jfree.data.time.Day;
+import org.jfree.data.time.Month;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.springframework.stereotype.Service;
@@ -67,26 +67,20 @@ public class InspectMetricChartService {
     private final InspectMetricSnapshotRepository repository;
 
     /**
-     * 점검월 → 추이 윈도우 [since, until). thisMonth(YYYY-MM) 필수.
-     * 직전 점검월(prevMonth) 있으면 [직전 다음달1일, 이번 다음달1일) (직전 점검 이후~이번 점검월),
-     * 없으면(첫 회차) [이번 다음달1일−30일, 이번 다음달1일). 파싱 실패 시 [now−30d, now] 폴백.
+     * 월별 추이 윈도우 [since, until) — 이번 점검월 기준 직전 monthsBack 개월.
+     * 점검 회차마다 1점씩 누적된 월별 점들을 잇기 위함. (예: monthsBack=12 → 최근 12개월)
+     * since = (이번월 − (monthsBack−1)) 1일, until = 다음달 1일. 파싱 실패 시 now 기준 폴백.
      */
-    public static OffsetDateTime[] window(String thisMonth, String prevMonth) {
+    public static OffsetDateTime[] window(String thisMonth, int monthsBack) {
         try {
             java.time.ZoneOffset off = OffsetDateTime.now().getOffset();
             java.time.YearMonth tm = java.time.YearMonth.parse(thisMonth.trim());
             OffsetDateTime until = tm.plusMonths(1).atDay(1).atStartOfDay().atOffset(off);
-            OffsetDateTime since;
-            if (prevMonth != null && !prevMonth.isBlank()) {
-                java.time.YearMonth pm = java.time.YearMonth.parse(prevMonth.trim());
-                since = pm.plusMonths(1).atDay(1).atStartOfDay().atOffset(off);
-            } else {
-                since = until.minusDays(30);
-            }
+            OffsetDateTime since = tm.minusMonths(monthsBack - 1L).atDay(1).atStartOfDay().atOffset(off);
             return new OffsetDateTime[]{ since, until };
         } catch (Exception e) {
             OffsetDateTime now = OffsetDateTime.now();
-            return new OffsetDateTime[]{ now.minusDays(30), now };
+            return new OffsetDateTime[]{ now.minusMonths(monthsBack), now };
         }
     }
 
@@ -119,10 +113,10 @@ public class InspectMetricChartService {
                 for (InspectMetricSnapshot s : rows) {
                     if (s.getCollectedAt() == null) continue;
                     Date d = Date.from(s.getCollectedAt().toInstant());
-                    Day day = new Day(d);
-                    if (s.getCpuPct()  != null) cpu.addOrUpdate(day,  s.getCpuPct().doubleValue());
-                    if (s.getMemPct()  != null) mem.addOrUpdate(day,  s.getMemPct().doubleValue());
-                    if (s.getDiskPct() != null) disk.addOrUpdate(day, s.getDiskPct().doubleValue());
+                    Month m = new Month(d);   // 월 단위 — 점검 회차(월)당 1점, 같은 달 재점검 시 최신값
+                    if (s.getCpuPct()  != null) cpu.addOrUpdate(m,  s.getCpuPct().doubleValue());
+                    if (s.getMemPct()  != null) mem.addOrUpdate(m,  s.getMemPct().doubleValue());
+                    if (s.getDiskPct() != null) disk.addOrUpdate(m, s.getDiskPct().doubleValue());
                 }
                 if (!cpu.isEmpty())  dataset.addSeries(cpu);
                 if (!mem.isEmpty())  dataset.addSeries(mem);
@@ -169,7 +163,7 @@ public class InspectMetricChartService {
         plot.setOutlinePaint(GRID_COLOR);
 
         DateAxis xAxis = (DateAxis) plot.getDomainAxis();
-        xAxis.setDateFormatOverride(new SimpleDateFormat("MM/dd"));
+        xAxis.setDateFormatOverride(new SimpleDateFormat("yy/MM"));
         xAxis.setLabelFont(font);
         xAxis.setTickLabelFont(pickFont(9f));
 

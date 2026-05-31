@@ -75,7 +75,6 @@ public class DocumentController {
     @Autowired private InspectReportService inspectReportService;
     @Autowired private InspectPdfService inspectPdfService;
     @Autowired private com.swmanager.system.service.InspectMetricChartService inspectMetricChartService;
-    @Autowired private com.swmanager.system.repository.InspectReportRepository inspectChartReportRepo;
 
     // === 권한 ===
 
@@ -1794,14 +1793,11 @@ public class DocumentController {
         try {
             java.time.OffsetDateTime since, until;
             if (month != null && !month.isBlank()) {
-                String prev = inspectChartReportRepo
-                        .findTopByPjtIdAndInspectMonthLessThanAndDeletedAtIsNullOrderByInspectMonthDesc(pjtId, month)
-                        .map(com.swmanager.system.domain.InspectReport::getInspectMonth).orElse(null);
                 java.time.OffsetDateTime[] w =
-                        com.swmanager.system.service.InspectMetricChartService.window(month, prev);
+                        com.swmanager.system.service.InspectMetricChartService.window(month, 12);
                 since = w[0]; until = w[1];
             } else {
-                until = java.time.OffsetDateTime.now(); since = until.minusDays(30);
+                until = java.time.OffsetDateTime.now(); since = until.minusMonths(12);
             }
             byte[] png = inspectMetricChartService.renderChart(pjtId, since, until);
             if (png == null || png.length == 0) {

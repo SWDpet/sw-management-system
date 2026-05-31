@@ -4,10 +4,8 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.swmanager.system.domain.InspectMetricSnapshot;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.dto.InspectReportDTO;
-import com.swmanager.system.domain.InspectReport;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.InspectMetricSnapshotRepository;
-import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.InspectTemplateRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
@@ -51,7 +49,6 @@ public class InspectPdfService {
     @Autowired private InspectMetricChartService metricChartService;
     @Autowired private InspectMetricSnapshotRepository metricRepository;
     @Autowired private InspectTemplateRepository templateRepository;
-    @Autowired private InspectReportRepository reportRepository;
 
     private File fontFile;
 
@@ -135,17 +132,13 @@ public class InspectPdfService {
         ctx.setVariable("cntManual", manual);
         ctx.setVariable("cntTotal", results.size());
 
-        // 점검주기 추이 윈도우 [since, until) — 첫 회차=점검월말−30일~말, 이후=직전 점검월~이번 점검월
-        String prevMonth = reportRepository
-                .findTopByPjtIdAndInspectMonthLessThanAndDeletedAtIsNullOrderByInspectMonthDesc(
-                        report.getPjtId(), report.getInspectMonth())
-                .map(InspectReport::getInspectMonth).orElse(null);
-        OffsetDateTime[] win = InspectMetricChartService.window(report.getInspectMonth(), prevMonth);
+        // 월별 추이 윈도우 [since, until) — 이번 점검월 기준 직전 12개월 (점검 회차마다 1점씩 누적 → 추이)
+        OffsetDateTime[] win = InspectMetricChartService.window(report.getInspectMonth(), 12);
 
-        // KPI (점검기간 누적 스냅샷)
+        // KPI (최근 12개월 누적 스냅샷)
         ctx.setVariable("kpi", computeKpi(report.getPjtId(), win[0], win[1]));
 
-        // 점검기간 추이 차트 — PNG → base64 data URI
+        // 월별 추이 차트 — PNG → base64 data URI
         ctx.setVariable("chartImg", chartDataUri(report.getPjtId(), win[0], win[1]));
 
         // 점검범위 프로파일 (maint_type + 표준보유) — 기획서 inspect-maint-profile.md
