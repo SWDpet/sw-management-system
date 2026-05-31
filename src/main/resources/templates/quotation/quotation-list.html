@@ -7,8 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        :root { --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#f5f5f5; --surface:#ffffff; --border:#e8e8e8; --border2:#d4d4d4; --text:#222; --text2:#444; --muted:#888; }
+        /* 로컬 :root 값을 디자인 토큰(웜 중립)에 정렬 */
+        :root { --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#ffffff; --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E; }
         body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); margin:0; color:var(--text); font-size:13.5px; }
         .container { max-width:1700px; margin:auto; padding:28px 32px 56px; }
         .page-title { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
@@ -19,9 +21,10 @@
         .card h3 { margin:0 0 8px; color:var(--muted); font-size:0.8rem; font-weight:600; }
         .card .value { font-size:1.95rem; font-weight:700; color:var(--primary); font-family:'Inter',sans-serif; }
         .card .sub-pct { font-size:0.8rem; color:var(--muted); margin-top:5px; }
-        .card.green { border-top-color:#2e7d32; } .card.green .value { color:#2e7d32; }
-        .card.orange { border-top-color:#e64a19; } .card.orange .value { color:#e64a19; }
-        .card.purple { border-top-color:#9C27B0; } .card.purple .value { color:#7B1FA2; }
+        /* 견적 분류색: 용역=success · 제품=info · 유지보수=warning */
+        .card.green { border-top-color:var(--success); } .card.green .value { color:var(--success); }
+        .card.orange { border-top-color:var(--warning); } .card.orange .value { color:var(--warning); }
+        .card.purple { border-top-color:var(--primary); } .card.purple .value { color:var(--primary); }
         .toolbar { background:var(--surface); padding:12px 20px; border-radius:12px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 6px rgba(0,0,0,0.06); border:1px solid var(--border); }
         .filter-group { display:flex; align-items:center; gap:12px; font-size:0.84rem; font-weight:500; }
         select { padding:7px 13px; border-radius:8px; border:1.5px solid var(--border2); font-size:0.84rem; background:var(--bg); font-family:'Noto Sans KR',sans-serif; cursor:pointer; }
@@ -33,16 +36,18 @@
         table { width:100%; border-collapse:collapse; }
         th { background:var(--bg); padding:11px 8px; font-size:0.78em; border-bottom:2px solid var(--border2); text-align:center; white-space:nowrap; color:var(--muted); font-weight:600; }
         td { padding:11px 8px; border-bottom:1px solid var(--border); font-size:0.85em; white-space:nowrap; color:var(--text2); }
-        tr:hover { background:#faf9ff; }
+        tr:hover { background:var(--surface-2); }
         .text-right { text-align:right; }
         .text-center { text-align:center; }
         .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.75em; font-weight:600; }
-        .badge-용역 { background:#E8F5E9; color:#2E7D32; }
-        .badge-제품 { background:#E3F2FD; color:#1565C0; }
-        .badge-유지보수 { background:#FFF3E0; color:#E65100; }
-        .badge-발행완료 { background:#E8F5E9; color:#2E7D32; }
-        .badge-작성중 { background:#FFF9C4; color:#F57F17; }
-        .badge-취소 { background:#FFEBEE; color:#C62828; }
+        /* 분류 뱃지 — 용역=success · 제품=info · 유지보수=warning */
+        .badge-용역 { background:#F0FDF4; color:#166534; }
+        .badge-제품 { background:#ECFEFF; color:#155E75; }
+        .badge-유지보수 { background:#FFFBEB; color:#92400E; }
+        /* 상태 뱃지 — 발행완료=success · 작성중=warning · 취소=danger */
+        .badge-발행완료 { background:#F0FDF4; color:#166534; }
+        .badge-작성중 { background:#FFFBEB; color:#92400E; }
+        .badge-취소 { background:#FEF2F2; color:#B91C1C; }
         a.link { color:var(--primary); text-decoration:none; font-weight:600; }
         a.link:hover { text-decoration:underline; }
     </style>
@@ -67,9 +72,9 @@
             <h3><i class="fas fa-wrench"></i> 용역</h3>
             <div class="value" th:text="${stats['용역_count']} + '건'">0건</div>
         </div>
-        <div class="card" style="border-top-color:#1565C0;">
+        <div class="card" style="border-top-color:var(--info);">
             <h3><i class="fas fa-box"></i> 제품</h3>
-            <div class="value" style="color:#1565C0;" th:text="${stats['제품_count']} + '건'">0건</div>
+            <div class="value" style="color:var(--info);" th:text="${stats['제품_count']} + '건'">0건</div>
         </div>
         <div class="card orange">
             <h3><i class="fas fa-tools"></i> 유지보수</h3>
@@ -100,9 +105,9 @@
                     <option value="취소" th:selected="${selectedStatus == '취소'}">취소</option>
                 </select>
                 <input type="text" name="keyword" th:value="${selectedKeyword}" placeholder="견적번호, 건명, 수신, 작성자 검색"
-                       style="padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:0.84rem; width:240px;"
+                       style="padding:6px 10px; border:1px solid var(--border2); border-radius:6px; font-size:0.84rem; width:240px;"
                        onkeydown="if(event.key==='Enter'){this.form.submit();}">
-                <button type="submit" style="padding:6px 14px; background:#0F766E; color:#fff; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;">검색</button>
+                <button type="submit" style="padding:6px 14px; background:var(--primary); color:#fff; border:none; border-radius:6px; font-size:0.82rem; cursor:pointer;">검색</button>
             </form>
         </div>
         <a href="/quotation/new" class="btn btn-primary" th:if="${canEdit}"><i class="fas fa-plus"></i> 견적서 작성</a>
@@ -141,7 +146,7 @@
                     </td>
                     <td class="text-center" th:text="${q.createdBy}"></td>
                     <td class="text-center">
-                        <a th:href="@{'/quotation/' + ${q.quoteId} + '/preview'}" target="_blank" title="미리보기" style="color:#0F766E; font-size:1.05rem;"><i class="fas fa-eye"></i></a>
+                        <a th:href="@{'/quotation/' + ${q.quoteId} + '/preview'}" target="_blank" title="미리보기" style="color:var(--primary); font-size:1.05rem;"><i class="fas fa-eye"></i></a>
                     </td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(quotations)}">
