@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — SW 사업 추진 현황 BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Inter','Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#fff; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th{ padding:11px 10px; text-align:center; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+  td{ padding:11px 10px; text-align:center; font-size:.84rem; white-space:nowrap; }
+  .amt{ text-align:right; font-weight:600; }
+  .proj-link{ text-decoration:none; font-weight:700; }
+  .status-1{ font-weight:800; padding:4px 8px; border-radius:4px; }
+  .status-2{ font-weight:800; padding:4px 8px; border-radius:4px; }
+  .pg a{ padding:6px 12px; border-radius:6px; font-weight:600; text-decoration:none; }
+
+  /* BEFORE */
+  .before .table-responsive{ border:1px solid #e3e6f0; border-radius:8px; }
+  .before th{ background:#f8f9fc; border-bottom:2px solid #e3e6f0; color:#134E4A; }
+  .before td{ border-bottom:1px solid #e3e6f0; color:#5a5c69; }
+  .before .amt{ color:#134E4A; } .before .proj-link{ color:#0F766E; }
+  .before .status-1{ color:#0F766E; background:#eaecf4; } .before .status-2{ color:#1cc88a; background:#e2f9f1; }
+  .before .pg a{ background:#fff; border:1px solid #d1d3e2; color:#0F766E; } .before .pg .active{ background:#0F766E; color:#fff; border-color:#0F766E; }
+
+  /* AFTER */
+  .after .table-responsive{ border:1px solid var(--border); border-radius:8px; }
+  .after th{ background:var(--surface-2); border-bottom:2px solid var(--border); color:var(--primary2); }
+  .after td{ border-bottom:1px solid var(--border); color:var(--text2); }
+  .after .amt{ color:var(--primary2); } .after .proj-link{ color:var(--primary); }
+  .after .status-1{ color:var(--primary); background:var(--surface-2); } .after .status-2{ color:var(--success); background:#F0FDF4; }
+  .after .pg a{ background:#fff; border:1px solid var(--border2); color:var(--primary); } .after .pg .active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+
+  .note{ font-size:.78rem; color:#166534; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — SW 사업 추진 현황</h1>
+  <div class="sub">이미 teal 정렬된 페이지. 주 변경 = 완료 뱃지 녹 통일 + SB-Admin 회색 잔재 정리.</div>
+  <div class="legendbox">
+    완료뱃지 <code>#1cc88a</code>/<code>#e2f9f1</code> → <code>--success</code>/success-tint · 진행뱃지 배경 <code>#eaecf4</code> → <code>--surface-2</code> ·
+    금액/제목 <code>#134E4A</code> → <code>--primary2</code> · td 회색 <code>#5a5c69</code> → <code>--text2</code> · 표머리/테두리 <code>#f8f9fc/#e3e6f0/#d1d3e2</code> → <code>--surface-2/--border(2)</code>
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame"><div class="table-responsive">
+        <table>
+          <thead><tr><th>년도</th><th>시군구</th><th>사업명</th><th>계약금액</th><th>상태</th></tr></thead>
+          <tbody>
+            <tr><td>2026</td><td>강진군</td><td style="text-align:left;"><a class="proj-link">UPIS 고도화</a></td><td class="amt">524,000,000</td><td><span class="status-1">진행중</span></td></tr>
+            <tr><td>2025</td><td>나주시</td><td style="text-align:left;"><a class="proj-link">KRAS 유지보수</a></td><td class="amt">98,000,000</td><td><span class="status-2">완료</span></td></tr>
+          </tbody>
+        </table>
+      </div><div style="text-align:center;margin-top:10px;"><span class="pg"><a class="active">1</a> <a>2</a></span></div></div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame"><div class="table-responsive">
+        <table>
+          <thead><tr><th>년도</th><th>시군구</th><th>사업명</th><th>계약금액</th><th>상태</th></tr></thead>
+          <tbody>
+            <tr><td>2026</td><td>강진군</td><td style="text-align:left;"><a class="proj-link">UPIS 고도화</a></td><td class="amt">524,000,000</td><td><span class="status-1">진행중</span></td></tr>
+            <tr><td>2025</td><td>나주시</td><td style="text-align:left;"><a class="proj-link">KRAS 유지보수</a></td><td class="amt">98,000,000</td><td><span class="status-2">완료</span></td></tr>
+          </tbody>
+        </table>
+      </div><div style="text-align:center;margin-top:10px;"><span class="pg"><a class="active">1</a> <a>2</a></span></div></div>
+    </div>
+  </div>
+
+  <div class="note">※ 이 페이지는 이미 brand teal 로 현대화돼 있어 시각 변화가 작습니다 — 완료(녹) 뱃지를 --success 로 통일하고 SB-Admin 잔재 회색/테두리를 토큰으로 정리하는 정도입니다. 로컬 :root 변수값도 디자인 토큰에 정렬.</div>
+</body>
+</html>
