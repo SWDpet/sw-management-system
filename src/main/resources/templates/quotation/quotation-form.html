@@ -7,20 +7,22 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title th:text="${quotation != null} ? '견적서 수정' : '견적서 작성'">견적서 작성</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
         :root {
+            /* 로컬 변수값을 디자인 토큰에 정렬 */
             --primary: #0F766E;
             --primary2: #115E59;
             --primary-lt: #F0FDFA;
-            --bg: #f5f5f5;
+            --bg: #FAFAF9;
             --surface: #ffffff;
-            --text-primary: #222222;
-            --text-secondary: #666666;
-            --text-tertiary: #999999;
-            --border: #e8e8e8;
-            --border-light: #f0f0f0;
-            --success: #10b981;
-            --error: #ef4444;
+            --text-primary: #1C1917;
+            --text-secondary: #57534E;
+            --text-tertiary: #A8A29E;
+            --border: #E7E5E4;
+            --border-light: #F5F5F4;
+            --success: #059669;
+            --error: #DC2626;
         }
 
         * {
@@ -278,7 +280,7 @@
         }
 
         input[readonly] {
-            background: #f9f9f9;
+            background: var(--surface-2);
             color: var(--text-secondary);
         }
 
@@ -337,7 +339,7 @@
         }
 
         thead {
-            background: #fafafa;
+            background: var(--surface-2);
             border-top: 1px solid var(--border);
             border-bottom: 2px solid var(--border);
         }
@@ -356,7 +358,7 @@
         }
 
         tbody tr:hover {
-            background: #fafafa;
+            background: var(--surface-2);
         }
 
         /* Column Width */
@@ -404,7 +406,7 @@
         }
 
         .summary-card {
-            background: #fafafa;
+            background: var(--surface-2);
             border: 1px solid var(--border-light);
             border-radius: 8px;
             padding: 16px;
@@ -691,7 +693,7 @@
     <div class="form-header">
         <h1 class="form-title" th:text="${quotation != null} ? '견적서 수정' : '견적서 작성'">견적서 작성</h1>
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="openLoadQuotationModal()" th:if="${quotation == null}" style="background:#fff8e1;color:#e65100;border:1px solid #ffe0b2;">📂 불러오기</button>
+            <button type="button" class="btn btn-secondary" onclick="openLoadQuotationModal()" th:if="${quotation == null}" style="background:#FFFBEB;color:#D97706;border:1px solid #FDE68A;">📂 불러오기</button>
             <button type="button" class="btn btn-secondary" onclick="handlePreview()">👁️ 미리보기</button>
             <button type="button" class="btn btn-secondary" onclick="handleCancel()">취소</button>
             <button type="button" class="btn btn-primary" id="submitBtn" th:text="${quotation != null} ? '저장' : '발행'">발행</button>
@@ -758,7 +760,7 @@
                 <div class="items-controls">
                     <button type="button" class="btn btn-primary btn-small" onclick="addItemRow()">➕ 행 추가</button>
                     <button type="button" class="btn btn-secondary btn-small" onclick="openPatternModal()">🔗 패턴 불러오기</button>
-                    <button type="button" class="btn btn-secondary btn-small" onclick="openSwAmtModal()" style="background:#fff8e1;color:#e65100;border:1px solid #ffe0b2;">📊 도입금액 조회</button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="openSwAmtModal()" style="background:#FFFBEB;color:#D97706;border:1px solid #FDE68A;">📊 도입금액 조회</button>
                 </div>
 
                 <div class="table-wrapper">
@@ -809,7 +811,7 @@
                                     </select>
                                 </td>
                             </tr>
-                            <tr id="bidRateRow" style="background:#fff8e1;">
+                            <tr id="bidRateRow" style="background:#FFFBEB;">
                                 <td colspan="5" style="text-align:right;font-weight:600;font-size:0.85rem;padding:8px 12px;">
                                     낙찰율 적용
                                     <select id="bidRateSelect" onchange="handleBidRateChange()" style="font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:#fff;margin-left:6px;">
@@ -817,7 +819,7 @@
                                         <option value="custom">직접입력</option>
                                     </select>
                                     <input type="number" id="bidRateInput" step="0.01" min="0" max="100" placeholder="%" onchange="updateTotal()" oninput="updateTotal()" style="display:none;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;width:70px;margin-left:4px;text-align:right;">
-                                    <span id="bidRatePercent" style="display:none;font-size:0.8rem;color:#e65100;">%</span>
+                                    <span id="bidRatePercent" style="display:none;font-size:0.8rem;color:#D97706;">%</span>
                                 </td>
                                 <td colspan="3"></td>
                             </tr>
@@ -840,7 +842,7 @@
                             <input type="checkbox" id="showSeal" name="showSeal" value="true" th:checked="${quotation?.showSeal != false}" style="margin:0;width:16px;height:16px;">
                             도장 출력
                         </label>
-                        <span style="color:#ddd;">|</span>
+                        <span style="color:var(--border2);">|</span>
                         <label style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
                             출력양식
                             <!-- S8-C (2026-04-22): value 는 QuoteTemplateType Enum code 와 대응
@@ -879,14 +881,14 @@
                                     style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background: #F5F5F4;color:var(--text-secondary);cursor:pointer;white-space:nowrap;font-family:inherit;"
                                     title="현재 비고 내용을 패턴으로 저장">저장</button>
                             <button type="button" onclick="deleteSelectedRemarksPattern()"
-                                    style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background: #F5F5F4;color:#e74c3c;cursor:pointer;white-space:nowrap;font-family:inherit;"
+                                    style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:4px;background: #F5F5F4;color:var(--error);cursor:pointer;white-space:nowrap;font-family:inherit;"
                                     title="선택한 패턴 삭제">삭제</button>
                         </div>
                     </div>
                     <textarea id="quotationRemarks" rows="3" placeholder="비고 사항을 입력하세요 (출력 시 표시됩니다)"
-                              style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical;min-height:60px;line-height:1.6;color:var(--text-primary);background:#fafafa;outline:none;transition:border-color 0.2s;"
+                              style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical;min-height:60px;line-height:1.6;color:var(--text-primary);background:var(--surface-2);outline:none;transition:border-color 0.2s;"
                               onfocus="this.style.borderColor='var(--primary)';this.style.background='#fff';"
-                              onblur="this.style.borderColor='var(--border)';this.style.background='#fafafa';"
+                              onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface-2)';"
                               th:text="${quotation?.remarks}"></textarea>
                 </div>
             </div>
@@ -932,49 +934,49 @@
             <!-- 연도 선택 + 비율 설정 (편집 가능) -->
             <div style="display:flex;gap:10px;margin-bottom:16px;align-items:flex-end;flex-wrap:wrap;">
                 <div style="flex:1;min-width:120px;">
-                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">노임단가 연도 <span style="color:#ef4444;">*</span></label>
-                    <select id="laborYear" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="loadLaborGrades()">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">노임단가 연도 <span style="color:var(--error);">*</span></label>
+                    <select id="laborYear" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="loadLaborGrades()">
                     </select>
                 </div>
                 <div style="min-width:90px;">
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">제경비율(%)</label>
-                    <input type="number" id="laborOhInput" step="0.1" min="0" value="110" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="updateLaborSummary()">
+                    <input type="number" id="laborOhInput" step="0.1" min="0" value="110" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="updateLaborSummary()">
                 </div>
                 <div style="min-width:90px;">
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">기술료율(%)</label>
-                    <input type="number" id="laborTfInput" step="0.1" min="0" value="20" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="updateLaborSummary()">
+                    <input type="number" id="laborTfInput" step="0.1" min="0" value="20" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="updateLaborSummary()">
                 </div>
                 <div style="min-width:80px;">
                     <label style="display:block;margin-bottom:6px;font-weight:600;font-size:0.85rem;">월근무일</label>
-                    <input type="number" id="laborWorkDays" step="0.1" min="1" max="31" value="20.3" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="recalcAllLaborEntries()">
+                    <input type="number" id="laborWorkDays" step="0.1" min="1" max="31" value="20.3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.85rem;" onchange="recalcAllLaborEntries()">
                 </div>
             </div>
 
             <!-- 투입인력 추가 영역 -->
-            <div style="background: #F5F5F4;border:1px solid #e8e8e8;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+            <div style="background: #F5F5F4;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;">
                 <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
                     <div style="flex:1.2;min-width:140px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">기술등급</label>
-                        <select id="laborGrade" onchange="onLaborGradeChange()" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                        <select id="laborGrade" onchange="onLaborGradeChange()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;">
                         </select>
                     </div>
                     <div id="laborManualGradeWrap" style="display:none;flex:1;min-width:120px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">등급명</label>
-                        <input type="text" id="laborManualGrade" placeholder="예: 전문작업자(나)" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                        <input type="text" id="laborManualGrade" placeholder="예: 전문작업자(나)" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
                     <div style="flex:0.6;min-width:100px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">노임단가(원/일)</label>
-                        <input type="number" id="laborDailyRate" min="0" step="1" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                        <input type="number" id="laborDailyRate" min="0" step="1" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
                     <div style="flex:0.4;min-width:70px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입인력(인)</label>
-                        <input type="number" id="laborPeople" min="1" step="1" value="1" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                        <input type="number" id="laborPeople" min="1" step="1" value="1" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
                     <div style="flex:0.6;min-width:130px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">투입기간</label>
                         <div style="display:flex;gap:4px;">
-                            <input type="number" id="laborMonths" min="0.5" step="0.5" value="1" style="flex:1;min-width:50px;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
-                            <select id="laborDurationUnit" onchange="onLaborDurationUnitChange()" style="width:60px;padding:8px 4px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;background:#fff;">
+                            <input type="number" id="laborMonths" min="0.5" step="0.5" value="1" style="flex:1;min-width:50px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                            <select id="laborDurationUnit" onchange="onLaborDurationUnitChange()" style="width:60px;padding:8px 4px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;background:#fff;">
                                 <option value="MONTH">개월</option>
                                 <option value="DAY">일</option>
                             </select>
@@ -982,7 +984,7 @@
                     </div>
                     <div style="flex:0.5;min-width:70px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:0.8rem;">비고</label>
-                        <input type="text" id="laborRemarks" placeholder="" style="width:100%;padding:8px 10px;border:1px solid #e8e8e8;border-radius:6px;font-family:inherit;font-size:0.83rem;">
+                        <input type="text" id="laborRemarks" placeholder="" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.83rem;">
                     </div>
                     <div>
                         <button type="button" onclick="addLaborEntry()" style="padding:8px 14px;background:#0F766E;color:#fff;border:none;border-radius:6px;font-size:0.83rem;font-weight:700;cursor:pointer;white-space:nowrap;">+ 추가</button>
@@ -991,13 +993,13 @@
             </div>
 
             <!-- 투입인력 목록 테이블 -->
-            <div style="background:#fafafa;border:1px solid #e8e8e8;border-radius:8px;padding:0;margin-bottom:16px;overflow:hidden;">
+            <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:0;margin-bottom:16px;overflow:hidden;">
                 <table style="width:100%;font-size:0.82rem;border-collapse:collapse;">
                     <thead>
-                        <tr style="background:#f0f0f0;border-bottom:2px solid #e0e0e0;">
+                        <tr style="background:var(--surface-2);border-bottom:2px solid var(--border);">
                             <th style="padding:8px 10px;text-align:left;font-weight:700;">품명</th>
                             <th style="padding:8px 10px;text-align:right;font-weight:700;">노임단가</th>
-                            <th style="padding:8px 6px;text-align:center;font-weight:700;width:60px;">투입인력<br><span style="font-weight:500;font-size:0.72rem;color:#888;">(인)</span></th>
+                            <th style="padding:8px 6px;text-align:center;font-weight:700;width:60px;">투입인력<br><span style="font-weight:500;font-size:0.72rem;color:var(--text-tertiary);">(인)</span></th>
                             <th style="padding:8px 6px;text-align:center;font-weight:700;width:90px;">투입기간</th>
                             <th style="padding:8px 6px;text-align:center;font-weight:700;width:70px;">총투입기간</th>
                             <th style="padding:8px 10px;text-align:right;font-weight:700;">금액(원)</th>
@@ -1006,7 +1008,7 @@
                         </tr>
                     </thead>
                     <tbody id="laborEntries">
-                        <tr id="laborEmptyRow"><td colspan="8" style="padding:20px;text-align:center;color:#999;">위에서 기술등급, 투입인력, 투입기간을 입력 후 [+ 추가] 버튼을 클릭하세요</td></tr>
+                        <tr id="laborEmptyRow"><td colspan="8" style="padding:20px;text-align:center;color:var(--text-tertiary);">위에서 기술등급, 투입인력, 투입기간을 입력 후 [+ 추가] 버튼을 클릭하세요</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1015,7 +1017,7 @@
             <div id="laborPreviewArea" style="display:none;margin-bottom:16px;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                     <span style="font-weight:700;font-size:0.85rem;color:#0F766E;">📋 견적서 인쇄 형식 미리보기</span>
-                    <span style="font-size:0.72rem;color:#999;">— 실제 견적서에 아래와 같이 표시됩니다</span>
+                    <span style="font-size:0.72rem;color:var(--text-tertiary);">— 실제 견적서에 아래와 같이 표시됩니다</span>
                 </div>
                 <div style="background:#fff;border:2px solid #0F766E;border-radius:8px;padding:16px 20px;box-shadow:0 2px 8px rgba(107,62,240,0.08);">
                     <div id="laborPreviewContent"></div>
@@ -1023,17 +1025,17 @@
             </div>
 
             <!-- 계산 결과 요약 -->
-            <div style="background:#fff;border:2px solid #e8e8e8;border-radius:8px;padding:16px 20px;">
+            <div style="background:#fff;border:2px solid var(--border);border-radius:8px;padding:16px 20px;">
                 <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
-                    <tr style="border-bottom:1px solid #f0f0f0;">
+                    <tr style="border-bottom:1px solid var(--surface-2);">
                         <td style="padding:8px 0;font-weight:600;">소 계</td>
                         <td style="padding:8px 0;text-align:right;" id="laborDirectTotal">0</td>
                     </tr>
-                    <tr style="border-bottom:1px solid #f0f0f0;">
+                    <tr style="border-bottom:1px solid var(--surface-2);">
                         <td style="padding:8px 0;">제경비 (소계 × <span id="laborOhLabel2">76</span>%)</td>
                         <td style="padding:8px 0;text-align:right;" id="laborOverhead">0</td>
                     </tr>
-                    <tr style="border-bottom:1px solid #f0f0f0;">
+                    <tr style="border-bottom:1px solid var(--surface-2);">
                         <td style="padding:8px 0;">기술료 ((소계+제경비) × <span id="laborTfLabel2">10</span>%)</td>
                         <td style="padding:8px 0;text-align:right;" id="laborTechFee">0</td>
                     </tr>
@@ -1075,49 +1077,49 @@
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:0.875rem;margin-bottom:16px;">
                 <thead>
-                    <tr style="background:#F57C00;color:#fff;">
-                        <th style="padding:8px 12px;border:1px solid #E65100;width:100px;text-align:center;">구 분</th>
-                        <th style="padding:8px 12px;border:1px solid #E65100;text-align:center;">내 용</th>
-                        <th style="padding:8px 12px;border:1px solid #E65100;width:100px;text-align:center;">비 고</th>
+                    <tr style="background:#D97706;color:#fff;">
+                        <th style="padding:8px 12px;border:1px solid #D97706;width:100px;text-align:center;">구 분</th>
+                        <th style="padding:8px 12px;border:1px solid #D97706;text-align:center;">내 용</th>
+                        <th style="padding:8px 12px;border:1px solid #D97706;width:100px;text-align:center;">비 고</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;text-align:center;background:#fff8e1;">도입금액</td>
-                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;font-size:1rem;">
-                            <input type="text" id="swAmtInput" value="" placeholder="0" oninput="onSwAmtManualInput()" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:1rem;text-align:right;font-weight:700;">
+                        <td style="padding:8px 12px;border:1px solid var(--border2);font-weight:600;text-align:center;background:#FFFBEB;">도입금액</td>
+                        <td style="padding:8px 12px;border:1px solid var(--border2);text-align:right;font-weight:700;font-size:1rem;">
+                            <input type="text" id="swAmtInput" value="" placeholder="0" oninput="onSwAmtManualInput()" style="width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:1rem;text-align:right;font-weight:700;">
                             <input type="hidden" id="swAmtValue" value="0">
                         </td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">
-                            <select id="swAmtVatType" style="width:100%;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:0.8rem;">
+                        <td style="padding:4px 8px;border:1px solid var(--border2);text-align:center;">
+                            <select id="swAmtVatType" style="width:100%;padding:4px;border:1px solid var(--border2);border-radius:4px;font-size:0.8rem;">
                                 <option value="included">VAT 포함</option>
                                 <option value="excluded">VAT 별도</option>
                             </select>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;text-align:center;background:#fff8e1;">요율(%)</td>
-                        <td style="padding:4px 12px;border:1px solid #ddd;">
-                            <input type="number" id="swAmtRate" step="0.01" min="0" max="100" placeholder="%" style="width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:0.875rem;text-align:right;" oninput="calcSwAmtResult()">
+                        <td style="padding:8px 12px;border:1px solid var(--border2);font-weight:600;text-align:center;background:#FFFBEB;">요율(%)</td>
+                        <td style="padding:4px 12px;border:1px solid var(--border2);">
+                            <input type="number" id="swAmtRate" step="0.01" min="0" max="100" placeholder="%" style="width:80px;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:0.875rem;text-align:right;" oninput="calcSwAmtResult()">
                             <span style="margin-left:2px;font-weight:600;">%</span>
                         </td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;">
-                            <input type="text" id="swAmtRateRemark" placeholder="직접 입력" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:0.8rem;">
+                        <td style="padding:4px 8px;border:1px solid var(--border2);">
+                            <input type="text" id="swAmtRateRemark" placeholder="직접 입력" style="width:100%;padding:6px 8px;border:1px solid var(--border2);border-radius:4px;font-size:0.8rem;">
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;text-align:center;background:#fff8e1;">1년 유지보수</td>
-                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;color:#134E4A;" id="swAmtYearlyDisplay">0</td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">
+                        <td style="padding:8px 12px;border:1px solid var(--border2);font-weight:600;text-align:center;background:#FFFBEB;">1년 유지보수</td>
+                        <td style="padding:8px 12px;border:1px solid var(--border2);text-align:right;font-weight:700;color:var(--primary2);" id="swAmtYearlyDisplay">0</td>
+                        <td style="padding:4px 8px;border:1px solid var(--border2);text-align:center;">
                             <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                 <input type="checkbox" id="swAmtShowYearly" checked> <span>표출</span>
                             </label>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;text-align:center;background:#fff8e1;">월 유지보수</td>
-                        <td style="padding:8px 12px;border:1px solid #ddd;text-align:right;font-weight:700;color:#134E4A;" id="swAmtMonthlyDisplay">0</td>
-                        <td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">
+                        <td style="padding:8px 12px;border:1px solid var(--border2);font-weight:600;text-align:center;background:#FFFBEB;">월 유지보수</td>
+                        <td style="padding:8px 12px;border:1px solid var(--border2);text-align:right;font-weight:700;color:var(--primary2);" id="swAmtMonthlyDisplay">0</td>
+                        <td style="padding:4px 8px;border:1px solid var(--border2);text-align:center;">
                             <label style="font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                 <input type="checkbox" id="swAmtShowMonthly" checked> <span>표출</span>
                             </label>
@@ -1125,12 +1127,12 @@
                     </tr>
                 </tbody>
             </table>
-            <div id="swAmtResultBox" style="display:none;background:#F0FDFA;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;">
+            <div id="swAmtResultBox" style="display:none;background:#F0FDFA;border:1px solid #A5F3FC;border-radius:8px;padding:14px 18px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:0.85rem;color:#1e40af;font-weight:600;">계산 결과 (단가)</span>
-                    <span style="font-size:1.15rem;font-weight:800;color:#134E4A;" id="swAmtResultPrice">0</span>
+                    <span style="font-size:0.85rem;color:#155E75;font-weight:600;">계산 결과 (단가)</span>
+                    <span style="font-size:1.15rem;font-weight:800;color:var(--primary2);" id="swAmtResultPrice">0</span>
                 </div>
-                <div style="font-size:0.78rem;color:#666;margin-top:4px;" id="swAmtResultDesc"></div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px;" id="swAmtResultDesc"></div>
             </div>
         </div>
         <div class="modal-footer" style="padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;">
@@ -1174,7 +1176,7 @@
                         </tr>
                     </thead>
                     <tbody id="loadQtTableBody">
-                        <tr><td colspan="6" style="padding:40px;text-align:center;color:#999;">검색 결과가 표시됩니다</td></tr>
+                        <tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-tertiary);">검색 결과가 표시됩니다</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1485,7 +1487,7 @@
         var category = document.getElementById('loadQtCategory').value;
         var keyword = document.getElementById('loadQtKeyword').value.trim();
         var tbody = document.getElementById('loadQtTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:#999;">검색 중...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--text-tertiary);">검색 중...</td></tr>';
 
         try {
             var url = API_BASE + '/quotation/search?year=' + year;
@@ -1495,24 +1497,24 @@
             if (!res.ok) throw new Error('검색 실패');
             var list = await res.json();
             if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:#999;">검색 결과가 없습니다</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--text-tertiary);">검색 결과가 없습니다</td></tr>';
                 return;
             }
             var html = '';
             list.forEach(function(q) {
-                html += '<tr style="cursor:pointer;" onmouseover="this.style.background=\'#f5f3ff\'" onmouseout="this.style.background=\'\'">';
-                html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:center;font-size:0.8rem;color:#666;">' + (q.quoteNumber || '') + '</td>';
-                html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:center;"><span style="background:#f0f0f0;padding:2px 8px;border-radius:4px;font-size:0.75rem;">' + (q.category || '') + '</span></td>';
-                html += '<td style="padding:6px;border-bottom:1px solid #eee;font-weight:500;">' + (q.projectName || '') + '</td>';
-                html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;font-weight:600;">' + (q.grandTotal ? formatCurrency(q.grandTotal) : '0') + '</td>';
-                html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:center;font-size:0.78rem;color:#888;">' + (q.quoteDate ? q.quoteDate.substring(5) : '') + '</td>';
-                html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:center;"><button type="button" class="btn btn-primary btn-small" style="padding:3px 10px;font-size:0.75rem;" onclick="loadQuotationData(' + q.quoteId + ')">선택</button></td>';
+                html += '<tr style="cursor:pointer;" onmouseover="this.style.background=\'var(--surface-2)\'" onmouseout="this.style.background=\'\'">';
+                html += '<td style="padding:6px;border-bottom:1px solid var(--border);text-align:center;font-size:0.8rem;color:var(--text-secondary);">' + (q.quoteNumber || '') + '</td>';
+                html += '<td style="padding:6px;border-bottom:1px solid var(--border);text-align:center;"><span style="background:var(--surface-2);padding:2px 8px;border-radius:4px;font-size:0.75rem;">' + (q.category || '') + '</span></td>';
+                html += '<td style="padding:6px;border-bottom:1px solid var(--border);font-weight:500;">' + (q.projectName || '') + '</td>';
+                html += '<td style="padding:6px;border-bottom:1px solid var(--border);text-align:right;font-weight:600;">' + (q.grandTotal ? formatCurrency(q.grandTotal) : '0') + '</td>';
+                html += '<td style="padding:6px;border-bottom:1px solid var(--border);text-align:center;font-size:0.78rem;color:var(--text-tertiary);">' + (q.quoteDate ? q.quoteDate.substring(5) : '') + '</td>';
+                html += '<td style="padding:6px;border-bottom:1px solid var(--border);text-align:center;"><button type="button" class="btn btn-primary btn-small" style="padding:3px 10px;font-size:0.75rem;" onclick="loadQuotationData(' + q.quoteId + ')">선택</button></td>';
                 html += '</tr>';
             });
             tbody.innerHTML = html;
         } catch(e) {
             console.error(e);
-            tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:#e53935;">검색 중 오류가 발생했습니다</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--error);">검색 중 오류가 발생했습니다</td></tr>';
         }
     }
 
@@ -1786,7 +1788,7 @@
             <td class="col-product">
                 <input type="text" class="inline-input" value="${item.productName || ''}" placeholder="품명"
                        onchange="updateItemField(${itemNo - 1}, 'productName', this.value)" style="font-weight:600;margin-bottom:4px;">
-                <textarea class="inline-input spec-textarea" rows="${Math.max(3, (item.specification || '').split('\n').length + 1)}" style="resize:vertical;min-height:60px;font-size:0.8rem;line-height:1.6;white-space:pre-wrap;color:#555;width:100%;overflow:hidden;" placeholder="내용 (하위항목)"
+                <textarea class="inline-input spec-textarea" rows="${Math.max(3, (item.specification || '').split('\n').length + 1)}" style="resize:vertical;min-height:60px;font-size:0.8rem;line-height:1.6;white-space:pre-wrap;color:var(--text-secondary);width:100%;overflow:hidden;" placeholder="내용 (하위항목)"
                        onchange="updateItemField(${itemNo - 1}, 'specification', this.value)"
                        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';">${item.specification || ''}</textarea>
             </td>
@@ -2021,9 +2023,9 @@
             if (pattern.subItems) {
                 const lines = pattern.subItems.split('\n').filter(l => l.trim());
                 if (lines.length > 0) {
-                    subItemsPreview = '<div style="font-size:0.75rem;color:#888;margin-top:4px;line-height:1.5;">' +
+                    subItemsPreview = '<div style="font-size:0.75rem;color:var(--text-tertiary);margin-top:4px;line-height:1.5;">' +
                         lines.slice(0, 3).map(l => '<div style="padding-left:8px;">' + l + '</div>').join('') +
-                        (lines.length > 3 ? '<div style="padding-left:8px;color:#aaa;">... 외 ' + (lines.length - 3) + '건</div>' : '') +
+                        (lines.length > 3 ? '<div style="padding-left:8px;color:var(--text-tertiary);">... 외 ' + (lines.length - 3) + '건</div>' : '') +
                         '</div>';
                 }
             }
@@ -2308,7 +2310,7 @@
     function renderLaborEntries() {
         const tbody = document.getElementById('laborEntries');
         if (laborEntries.length === 0) {
-            tbody.innerHTML = '<tr id="laborEmptyRow"><td colspan="8" style="padding:20px;text-align:center;color:#999;">위에서 기술등급, 투입인력, 투입기간을 입력 후 [+ 추가] 버튼을 클릭하세요</td></tr>';
+            tbody.innerHTML = '<tr id="laborEmptyRow"><td colspan="8" style="padding:20px;text-align:center;color:var(--text-tertiary);">위에서 기술등급, 투입인력, 투입기간을 입력 후 [+ 추가] 버튼을 클릭하세요</td></tr>';
             return;
         }
         let html = '';
@@ -2316,14 +2318,14 @@
             const unit = e.durationUnit || 'MONTH';
             const dvStep = (unit === 'DAY') ? '1' : '0.5';
             const dvMin = (unit === 'DAY') ? '1' : '0.5';
-            html += '<tr style="border-bottom:1px solid #f0f0f0;">' +
-                '<td style="padding:5px 6px;"><input type="text" value="' + escapeHtml(e.gradeName) + '" onchange="editLaborEntry(' + i + ',\'gradeName\',this.value)" style="width:100%;border:1px solid #e8e8e8;border-radius:4px;padding:4px 6px;font-size:0.85rem;font-weight:600;"></td>' +
-                '<td style="padding:5px 6px;"><input type="number" value="' + e.dailyRate + '" onchange="editLaborEntry(' + i + ',\'dailyRate\',this.value)" style="width:80px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 6px;font-size:0.85rem;text-align:right;"></td>' +
-                '<td style="padding:5px 4px;"><input type="number" value="' + e.people + '" min="1" onchange="editLaborEntry(' + i + ',\'people\',this.value)" style="width:50px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;"></td>' +
+            html += '<tr style="border-bottom:1px solid var(--surface-2);">' +
+                '<td style="padding:5px 6px;"><input type="text" value="' + escapeHtml(e.gradeName) + '" onchange="editLaborEntry(' + i + ',\'gradeName\',this.value)" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:0.85rem;font-weight:600;"></td>' +
+                '<td style="padding:5px 6px;"><input type="number" value="' + e.dailyRate + '" onchange="editLaborEntry(' + i + ',\'dailyRate\',this.value)" style="width:80px;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:0.85rem;text-align:right;"></td>' +
+                '<td style="padding:5px 4px;"><input type="number" value="' + e.people + '" min="1" onchange="editLaborEntry(' + i + ',\'people\',this.value)" style="width:50px;border:1px solid var(--border);border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;"></td>' +
                 '<td style="padding:5px 4px;">' +
                     '<div style="display:flex;gap:2px;">' +
-                        '<input type="number" value="' + e.durationValue + '" min="' + dvMin + '" step="' + dvStep + '" onchange="editLaborEntry(' + i + ',\'durationValue\',this.value)" style="width:46px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;">' +
-                        '<select onchange="editLaborEntry(' + i + ',\'durationUnit\',this.value)" style="width:48px;padding:4px 2px;border:1px solid #e8e8e8;border-radius:4px;font-size:0.78rem;background:#fff;">' +
+                        '<input type="number" value="' + e.durationValue + '" min="' + dvMin + '" step="' + dvStep + '" onchange="editLaborEntry(' + i + ',\'durationValue\',this.value)" style="width:46px;border:1px solid var(--border);border-radius:4px;padding:4px 4px;font-size:0.85rem;text-align:center;">' +
+                        '<select onchange="editLaborEntry(' + i + ',\'durationUnit\',this.value)" style="width:48px;padding:4px 2px;border:1px solid var(--border);border-radius:4px;font-size:0.78rem;background:#fff;">' +
                             '<option value="MONTH"' + (unit === 'MONTH' ? ' selected' : '') + '>개월</option>' +
                             '<option value="DAY"' + (unit === 'DAY' ? ' selected' : '') + '>일</option>' +
                         '</select>' +
@@ -2331,8 +2333,8 @@
                 '</td>' +
                 '<td style="padding:5px 6px;text-align:center;font-size:0.85rem;">' + formatTotalDuration(e) + '</td>' +
                 '<td style="padding:5px 6px;text-align:right;font-weight:600;font-size:0.85rem;">' + formatCurrency(e.amount) + '</td>' +
-                '<td style="padding:5px 4px;"><input type="text" value="' + escapeHtml(e.remarks || '') + '" onchange="editLaborEntry(' + i + ',\'remarks\',this.value)" style="width:60px;border:1px solid #e8e8e8;border-radius:4px;padding:4px 4px;font-size:0.78rem;text-align:center;"></td>' +
-                '<td style="padding:5px 4px;text-align:center;"><button type="button" onclick="removeLaborEntry(' + i + ')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:2px 4px;" title="삭제">&times;</button></td>' +
+                '<td style="padding:5px 4px;"><input type="text" value="' + escapeHtml(e.remarks || '') + '" onchange="editLaborEntry(' + i + ',\'remarks\',this.value)" style="width:60px;border:1px solid var(--border);border-radius:4px;padding:4px 4px;font-size:0.78rem;text-align:center;"></td>' +
+                '<td style="padding:5px 4px;text-align:center;"><button type="button" onclick="removeLaborEntry(' + i + ')" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:1.1rem;padding:2px 4px;" title="삭제">&times;</button></td>' +
                 '</tr>';
         });
         tbody.innerHTML = html;
@@ -2398,41 +2400,41 @@
 
         let html = '<div style="font-weight:700;font-size:0.85rem;margin-bottom:6px;">● 인건비</div>';
         html += '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">';
-        html += '<thead><tr style="background:#f2f0ff;">' +
-            '<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-weight:700;">품명</th>' +
-            '<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-weight:700;width:80px;">노임단가</th>' +
-            '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:55px;">투입인력<br><span style="font-weight:500;font-size:0.7rem;">(인)</span></th>' +
-            '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:60px;">투입기간</th>' +
-            '<th style="border:1px solid #999;padding:6px 6px;text-align:center;font-weight:700;width:60px;">총투입기간</th>' +
-            '<th style="border:1px solid #999;padding:6px 8px;text-align:right;font-weight:700;width:100px;">금액(원)</th>' +
-            '<th style="border:1px solid #999;padding:6px 8px;text-align:center;font-weight:700;width:70px;">비고</th>' +
+        html += '<thead><tr style="background:var(--surface-2);">' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 8px;text-align:center;font-weight:700;">품명</th>' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 8px;text-align:center;font-weight:700;width:80px;">노임단가</th>' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 6px;text-align:center;font-weight:700;width:55px;">투입인력<br><span style="font-weight:500;font-size:0.7rem;">(인)</span></th>' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 6px;text-align:center;font-weight:700;width:60px;">투입기간</th>' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 6px;text-align:center;font-weight:700;width:60px;">총투입기간</th>' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 8px;text-align:right;font-weight:700;width:100px;">금액(원)</th>' +
+            '<th style="border:1px solid var(--text-tertiary);padding:6px 8px;text-align:center;font-weight:700;width:70px;">비고</th>' +
             '</tr></thead><tbody>';
         laborEntries.forEach(e => {
             html += '<tr>' +
-                '<td style="border:1px solid #ccc;padding:4px 8px;">' + escapeHtml(e.gradeName) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;">' + formatCurrency(e.dailyRate) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + e.people + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + formatDurationLabel(e) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 6px;text-align:center;">' + formatTotalDuration(e) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 8px;text-align:right;font-weight:600;">' + formatCurrency(e.amount) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:4px 8px;text-align:center;font-size:0.78rem;">' + escapeHtml(e.remarks || '') + '</td></tr>';
+                '<td style="border:1px solid var(--border2);padding:4px 8px;">' + escapeHtml(e.gradeName) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:4px 8px;text-align:right;">' + formatCurrency(e.dailyRate) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:4px 6px;text-align:center;">' + e.people + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:4px 6px;text-align:center;">' + formatDurationLabel(e) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:4px 6px;text-align:center;">' + formatTotalDuration(e) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:4px 8px;text-align:right;font-weight:600;">' + formatCurrency(e.amount) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:4px 8px;text-align:center;font-size:0.78rem;">' + escapeHtml(e.remarks || '') + '</td></tr>';
         });
-        html += '<tr style="border-top:2px solid #666;">' +
-            '<td colspan="5" style="border:1px solid #ccc;padding:5px 8px;font-weight:700;">소 계</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:700;">' + formatCurrency(subtotal) + '</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;"></td></tr>';
+        html += '<tr style="border-top:2px solid var(--text-secondary);">' +
+            '<td colspan="5" style="border:1px solid var(--border2);padding:5px 8px;font-weight:700;">소 계</td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;text-align:right;font-weight:700;">' + formatCurrency(subtotal) + '</td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;"></td></tr>';
         html += '<tr>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;font-weight:600;">제경비</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;">' + (ohPct > 0 ? ohPct + '%' : '<span style="color:#aaa;">사용안함</span>') + '</td>' +
-            '<td colspan="3" style="border:1px solid #ccc;padding:5px 8px;"></td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:600;">' + (ohPct > 0 ? formatCurrency(overhead) : '-') + '</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;"></td></tr>';
+            '<td style="border:1px solid var(--border2);padding:5px 8px;font-weight:600;">제경비</td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;text-align:right;">' + (ohPct > 0 ? ohPct + '%' : '<span style="color:var(--text-tertiary);">사용안함</span>') + '</td>' +
+            '<td colspan="3" style="border:1px solid var(--border2);padding:5px 8px;"></td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;text-align:right;font-weight:600;">' + (ohPct > 0 ? formatCurrency(overhead) : '-') + '</td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;"></td></tr>';
         html += '<tr>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;font-weight:600;">기술료</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;">' + (tfPct > 0 ? tfPct + '%' : '<span style="color:#aaa;">사용안함</span>') + '</td>' +
-            '<td colspan="3" style="border:1px solid #ccc;padding:5px 8px;"></td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;text-align:right;font-weight:600;">' + (tfPct > 0 ? formatCurrency(techFee) : '-') + '</td>' +
-            '<td style="border:1px solid #ccc;padding:5px 8px;"></td></tr>';
+            '<td style="border:1px solid var(--border2);padding:5px 8px;font-weight:600;">기술료</td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;text-align:right;">' + (tfPct > 0 ? tfPct + '%' : '<span style="color:var(--text-tertiary);">사용안함</span>') + '</td>' +
+            '<td colspan="3" style="border:1px solid var(--border2);padding:5px 8px;"></td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;text-align:right;font-weight:600;">' + (tfPct > 0 ? formatCurrency(techFee) : '-') + '</td>' +
+            '<td style="border:1px solid var(--border2);padding:5px 8px;"></td></tr>';
         html += '</tbody></table>';
 
         // 기술지원내역 미리보기 (패턴 subItems가 있으면)
@@ -2440,7 +2442,7 @@
             const subLines = currentLaborPattern.subItems.split('\n').filter(l => l.trim());
             if (subLines.length > 0) {
                 html += '<div style="margin-top:14px;font-weight:700;font-size:0.85rem;margin-bottom:4px;">● 기술지원내역</div>';
-                html += '<div style="font-size:0.82rem;color:#333;line-height:1.8;padding-left:6px;">';
+                html += '<div style="font-size:0.82rem;color:var(--text-primary);line-height:1.8;padding-left:6px;">';
                 subLines.forEach(line => {
                     const t = line.trim();
                     html += '<div>' + t + '</div>';
@@ -2875,41 +2877,41 @@
                 '<col style="width:88px;">' +           /* 금액 */
                 '<col style="width:50px;">' +           /* 비고 */
                 '</colgroup>';
-            html += '<thead><tr style="background:#f2f0ff;">' +
-                '<th style="border:1px solid #999;padding:3px 4px;text-align:center;font-weight:700;">품명</th>' +
-                '<th style="border:1px solid #999;padding:3px 4px;text-align:center;font-weight:700;">노임단가</th>' +
-                '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">투입인력<br><span style="font-weight:500;font-size:6pt;">(인)</span></th>' +
-                '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">투입기간</th>' +
-                '<th style="border:1px solid #999;padding:3px 2px;text-align:center;font-weight:700;">총투입</th>' +
-                '<th style="border:1px solid #999;padding:3px 4px;text-align:right;font-weight:700;">금액(원)</th>' +
-                '<th style="border:1px solid #999;padding:3px 3px;text-align:center;font-weight:700;">비고</th>' +
+            html += '<thead><tr style="background:var(--surface-2);">' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 4px;text-align:center;font-weight:700;">품명</th>' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 4px;text-align:center;font-weight:700;">노임단가</th>' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 2px;text-align:center;font-weight:700;">투입인력<br><span style="font-weight:500;font-size:6pt;">(인)</span></th>' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 2px;text-align:center;font-weight:700;">투입기간</th>' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 2px;text-align:center;font-weight:700;">총투입</th>' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 4px;text-align:right;font-weight:700;">금액(원)</th>' +
+                '<th style="border:1px solid var(--text-tertiary);padding:3px 3px;text-align:center;font-weight:700;">비고</th>' +
                 '</tr></thead><tbody>';
             ld.entries.forEach(e => {
                 html += '<tr>' +
-                    '<td style="border:1px solid #ccc;padding:2px 4px;white-space:nowrap;">' + e.gradeName + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 4px;text-align:right;white-space:nowrap;">' + formatNum(e.dailyRate || 0) + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + (e.people || 1) + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + formatDurationLabel(e) + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 2px;text-align:center;">' + formatTotalDuration(e) + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(e.amount || e.directCost || 0) + '</td>' +
-                    '<td style="border:1px solid #ccc;padding:2px 3px;text-align:center;font-size:6.5pt;">' + (e.remarks || '') + '</td></tr>';
+                    '<td style="border:1px solid var(--border2);padding:2px 4px;white-space:nowrap;">' + e.gradeName + '</td>' +
+                    '<td style="border:1px solid var(--border2);padding:2px 4px;text-align:right;white-space:nowrap;">' + formatNum(e.dailyRate || 0) + '</td>' +
+                    '<td style="border:1px solid var(--border2);padding:2px 2px;text-align:center;">' + (e.people || 1) + '</td>' +
+                    '<td style="border:1px solid var(--border2);padding:2px 2px;text-align:center;">' + formatDurationLabel(e) + '</td>' +
+                    '<td style="border:1px solid var(--border2);padding:2px 2px;text-align:center;">' + formatTotalDuration(e) + '</td>' +
+                    '<td style="border:1px solid var(--border2);padding:2px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(e.amount || e.directCost || 0) + '</td>' +
+                    '<td style="border:1px solid var(--border2);padding:2px 3px;text-align:center;font-size:6.5pt;">' + (e.remarks || '') + '</td></tr>';
             });
-            html += '<tr style="border-top:2px solid #666;">' +
-                '<td colspan="5" style="border:1px solid #ccc;padding:3px 4px;font-weight:700;">소 계</td>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-weight:700;white-space:nowrap;">' + formatNum(ld.subtotal || ld.totalDirect || 0) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:3px 3px;"></td></tr>';
+            html += '<tr style="border-top:2px solid var(--text-secondary);">' +
+                '<td colspan="5" style="border:1px solid var(--border2);padding:3px 4px;font-weight:700;">소 계</td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 4px;text-align:right;font-weight:700;white-space:nowrap;">' + formatNum(ld.subtotal || ld.totalDirect || 0) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 3px;"></td></tr>';
             html += '<tr>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;font-weight:600;">제경비</td>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;text-align:right;">' + ld.ohPct + '%</td>' +
-                '<td colspan="3" style="border:1px solid #ccc;padding:3px 2px;"></td>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(ld.overhead) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:3px 3px;"></td></tr>';
+                '<td style="border:1px solid var(--border2);padding:3px 4px;font-weight:600;">제경비</td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 4px;text-align:right;">' + ld.ohPct + '%</td>' +
+                '<td colspan="3" style="border:1px solid var(--border2);padding:3px 2px;"></td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(ld.overhead) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 3px;"></td></tr>';
             html += '<tr>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;font-weight:600;">기술료</td>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;text-align:right;">' + ld.tfPct + '%</td>' +
-                '<td colspan="3" style="border:1px solid #ccc;padding:3px 2px;"></td>' +
-                '<td style="border:1px solid #ccc;padding:3px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(ld.techFee) + '</td>' +
-                '<td style="border:1px solid #ccc;padding:3px 3px;"></td></tr>';
+                '<td style="border:1px solid var(--border2);padding:3px 4px;font-weight:600;">기술료</td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 4px;text-align:right;">' + ld.tfPct + '%</td>' +
+                '<td colspan="3" style="border:1px solid var(--border2);padding:3px 2px;"></td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 4px;text-align:right;font-weight:600;white-space:nowrap;">' + formatNum(ld.techFee) + '</td>' +
+                '<td style="border:1px solid var(--border2);padding:3px 3px;"></td></tr>';
             html += '</tbody></table></div>';
             return html;
         }
@@ -2918,7 +2920,7 @@
         function buildSubItemsHtml(subText) {
             if (!subText || !subText.trim()) return '';
             let html = '<div style="margin-top:14px;">';
-            html += '<div style="color:#333;line-height:1.8;padding-left:4px;">';
+            html += '<div style="color:var(--text-primary);line-height:1.8;padding-left:4px;">';
             html += renderSpecHtml(subText);
             html += '</div></div>';
             return html;
@@ -2929,10 +2931,10 @@
             try {
                 var lines = spec.split('\n');
                 var html = '<table style="width:100%;border-collapse:collapse;font-size:7pt;margin-top:4px;">';
-                html += '<thead><tr style="background:#F57C00;color:#fff;">';
-                html += '<th style="border:1px solid #E65100;padding:2px 4px;font-weight:700;text-align:center;width:30%;">구 분</th>';
-                html += '<th style="border:1px solid #E65100;padding:2px 4px;font-weight:700;text-align:center;width:40%;">내 용</th>';
-                html += '<th style="border:1px solid #E65100;padding:2px 4px;font-weight:700;text-align:center;width:30%;">비 고</th>';
+                html += '<thead><tr style="background:#D97706;color:#fff;">';
+                html += '<th style="border:1px solid #D97706;padding:2px 4px;font-weight:700;text-align:center;width:30%;">구 분</th>';
+                html += '<th style="border:1px solid #D97706;padding:2px 4px;font-weight:700;text-align:center;width:40%;">내 용</th>';
+                html += '<th style="border:1px solid #D97706;padding:2px 4px;font-weight:700;text-align:center;width:30%;">비 고</th>';
                 html += '</tr></thead><tbody>';
                 for (var i = 1; i < lines.length; i++) {
                     var parts = lines[i].split('|');
@@ -2945,9 +2947,9 @@
                     } else if (label.indexOf('요율') >= 0) {
                         value = value + '%';
                     }
-                    html += '<tr><td style="border:1px solid #ddd;padding:2px 4px;text-align:center;font-weight:600;background:#FFF3E0;">' + label + '</td>';
-                    html += '<td style="border:1px solid #ddd;padding:2px 4px;text-align:center;">' + value + '</td>';
-                    html += '<td style="border:1px solid #ddd;padding:2px 4px;text-align:center;color:#666;">' + remark + '</td></tr>';
+                    html += '<tr><td style="border:1px solid var(--border2);padding:2px 4px;text-align:center;font-weight:600;background:#FFFBEB;">' + label + '</td>';
+                    html += '<td style="border:1px solid var(--border2);padding:2px 4px;text-align:center;">' + value + '</td>';
+                    html += '<td style="border:1px solid var(--border2);padding:2px 4px;text-align:center;color:var(--text-secondary);">' + remark + '</td></tr>';
                 }
                 html += '</tbody></table>';
                 return html;
@@ -2964,7 +2966,7 @@
                 const laborData = item._laborData || parseLaborSpec(item.specification);
                 if (laborData) {
                     // 인건비 항목: 직접인건비 합산행 + 각 등급 서브행 + 소계/제경비/기술료
-                    const bd = '1px solid #aaa';
+                    const bd = '1px solid var(--text-tertiary)';
                     const cs = 'border:' + bd + ';padding:3px 4px;font-size:8pt;vertical-align:top;';
                     rows += '<tr><td style="text-align:center;' + cs + 'font-weight:700;" rowspan="' + (laborData.entries.length + 4) + '">' + rowNo + '</td>' +
                         '<td style="' + cs + 'font-weight:700;">' + (item.productName || '직접인건비') + '</td>' +
@@ -3002,14 +3004,14 @@
                         if (parts.length > 1) { subText = parts.slice(1).join('\n\n').trim(); if (subText.startsWith('● 인건비')) subText = ''; }
                     }
                     if (subText) {
-                        let subHtml = '<div style="color:#333;line-height:1.6;padding-left:2px;">';
+                        let subHtml = '<div style="color:var(--text-primary);line-height:1.6;padding-left:2px;">';
                         subHtml += renderSpecHtml(subText, {fontSize:'7pt'});
                         subHtml += '</div>';
                         rows += '<tr><td style="text-align:center;' + cs + '">&nbsp;</td><td colspan="7" style="' + cs + '">' + subHtml + '</td></tr>';
                     }
                 } else {
                     // 일반 품목
-                    const bd = '1px solid #aaa';
+                    const bd = '1px solid var(--text-tertiary)';
                     const cs = 'border:' + bd + ';padding:3px 4px;font-size:8pt;vertical-align:top;';
                     let nameHtml = '<div style="font-weight:600;">' + (item.productName || '') + '</div>';
                     if (item.specification && item.specification.startsWith('[SW_AMT_TABLE]')) {
@@ -3061,12 +3063,12 @@
                     renderSpecHtml(item.specification) + '</div>';
             }
             itemRows += '<tr>' +
-                '<td style="text-align:center;border:1px solid #aaa;padding:3px 4px;font-size:8pt;vertical-align:top;">' + (idx + 1) + '</td>' +
-                '<td style="border:1px solid #aaa;padding:3px 4px;font-size:8pt;vertical-align:top;">' + nameCell + '</td>' +
-                '<td style="text-align:center;border:1px solid #aaa;padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.quantity ? formatNum(item.quantity) : '') + '</td>' +
-                '<td style="text-align:right;border:1px solid #aaa;padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.unitPrice ? formatNum(item.unitPrice) : '') + '</td>' +
-                '<td style="text-align:right;border:1px solid #aaa;padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.amount ? formatNum(item.amount) : '') + '</td>' +
-                '<td style="border:1px solid #aaa;padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.remarks || '') + '</td>' +
+                '<td style="text-align:center;border:1px solid var(--text-tertiary);padding:3px 4px;font-size:8pt;vertical-align:top;">' + (idx + 1) + '</td>' +
+                '<td style="border:1px solid var(--text-tertiary);padding:3px 4px;font-size:8pt;vertical-align:top;">' + nameCell + '</td>' +
+                '<td style="text-align:center;border:1px solid var(--text-tertiary);padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.quantity ? formatNum(item.quantity) : '') + '</td>' +
+                '<td style="text-align:right;border:1px solid var(--text-tertiary);padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.unitPrice ? formatNum(item.unitPrice) : '') + '</td>' +
+                '<td style="text-align:right;border:1px solid var(--text-tertiary);padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.amount ? formatNum(item.amount) : '') + '</td>' +
+                '<td style="border:1px solid var(--text-tertiary);padding:3px 4px;font-size:8pt;vertical-align:top;">' + (item.remarks || '') + '</td>' +
                 '</tr>';
         });
         // 빈 행 제거됨: 품목이 있는 행만 표시
@@ -3080,33 +3082,33 @@
             '<style>' +
             '@page{size:A4 portrait;margin:0;}' +
             '*{margin:0;padding:0;box-sizing:border-box;}' +
-            'body{background:#e0e0e0;font-family:"Noto Sans KR","Malgun Gothic",sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+            'body{background:var(--border);font-family:"Noto Sans KR","Malgun Gothic",sans-serif;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
             '.toolbar{position:fixed;top:0;left:0;right:0;height:56px;background:#222;display:flex;align-items:center;justify-content:center;gap:12px;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.3);}' +
             '.toolbar button,.toolbar a{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;border-radius:6px;font-size:0.88rem;font-weight:600;text-decoration:none;border:none;cursor:pointer;}' +
-            '.btn-print{background:#0F766E;color:#fff;} .btn-back{background:#555;color:#fff;}' +
+            '.btn-print{background:#0F766E;color:#fff;} .btn-back{background:var(--text-secondary);color:#fff;}' +
             '.page{width:210mm;min-height:297mm;margin:76px auto 40px;background:#fff;padding:12mm 12mm 10mm;box-shadow:0 4px 24px rgba(0,0,0,0.18);}' +
             '.doc-title{text-align:center;font-size:24pt;font-weight:900;letter-spacing:14px;color:#111;margin-bottom:12px;padding-bottom:8px;border-bottom:3px double #222;}' +
             '.ht{width:100%;border-collapse:collapse;margin-bottom:8px;table-layout:fixed;}' +
-            '.ht td{border:1px solid #333;padding:2px 6px;font-size:8.5pt;font-weight:500;vertical-align:middle;height:22px;}' +
-            '.ht .hl{background:#f2f0ff;font-size:8pt;font-weight:700;color:#333;text-align:center;letter-spacing:3px;width:90px;}' +
-            '.ht .hs{width:18px;text-align:center;font-size:8pt;color:#666;padding:0;}' +
+            '.ht td{border:1px solid var(--text-primary);padding:2px 6px;font-size:8.5pt;font-weight:500;vertical-align:middle;height:22px;}' +
+            '.ht .hl{background:var(--surface-2);font-size:8pt;font-weight:700;color:var(--text-primary);text-align:center;letter-spacing:3px;width:90px;}' +
+            '.ht .hs{width:18px;text-align:center;font-size:8pt;color:var(--text-secondary);padding:0;}' +
             '.ht .hv{font-size:8.5pt;font-weight:500;} .ht .hv.b{font-weight:700;}' +
             '.ht .hseal{width:90px;text-align:center;vertical-align:middle;}' +
-            '.hsep{width:14px;display:flex;align-items:center;justify-content:center;font-size:8pt;color:#666;}' +
-            '.prow{display:flex;border:1px solid #333;min-height:26px;margin-bottom:8px;}' +
-            '.plbl{width:80px;min-width:80px;background:#f2f0ff;font-size:8pt;font-weight:700;color:#333;display:flex;align-items:center;padding:2px 8px;border-right:1px solid #ccc;}' +
+            '.hsep{width:14px;display:flex;align-items:center;justify-content:center;font-size:8pt;color:var(--text-secondary);}' +
+            '.prow{display:flex;border:1px solid var(--text-primary);min-height:26px;margin-bottom:8px;}' +
+            '.plbl{width:80px;min-width:80px;background:var(--surface-2);font-size:8pt;font-weight:700;color:var(--text-primary);display:flex;align-items:center;padding:2px 8px;border-right:1px solid var(--border2);}' +
             '.pval{flex:1;font-size:9pt;font-weight:700;display:flex;align-items:center;padding:2px 8px;}' +
-            '.abar{display:flex;border:2px solid #333;min-height:28px;margin-bottom:10px;background:#fafafa;}' +
-            '.albl{width:80px;min-width:80px;background:#0F766E;color:#fff;font-size:8.5pt;font-weight:800;display:flex;align-items:center;justify-content:center;border-right:2px solid #333;}' +
+            '.abar{display:flex;border:2px solid var(--text-primary);min-height:28px;margin-bottom:10px;background:var(--surface-2);}' +
+            '.albl{width:80px;min-width:80px;background:#0F766E;color:#fff;font-size:8.5pt;font-weight:800;display:flex;align-items:center;justify-content:center;border-right:2px solid var(--text-primary);}' +
             '.atxt{flex:1;font-size:10pt;font-weight:800;color:#111;display:flex;align-items:center;padding:2px 8px;}' +
-            '.anum{font-size:9pt;font-weight:700;color:#333;display:flex;align-items:center;padding:2px 10px;white-space:nowrap;}' +
-            '.avat{font-size:7.5pt;font-weight:600;color:#666;display:flex;align-items:center;padding:2px 8px;white-space:nowrap;}' +
+            '.anum{font-size:9pt;font-weight:700;color:var(--text-primary);display:flex;align-items:center;padding:2px 10px;white-space:nowrap;}' +
+            '.avat{font-size:7.5pt;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;padding:2px 8px;white-space:nowrap;}' +
             'table.items{width:100%;border-collapse:collapse;table-layout:fixed;}' +
-            'table.items th{background:#f2f0ff;border:1px solid #333;padding:4px 3px;font-size:7.5pt;font-weight:700;text-align:center;color:#222;}' +
-            '.st{width:100%;border-collapse:collapse;margin-bottom:8px;} .st td{border:1px solid #333;padding:4px 8px;font-size:8.5pt;}' +
-            '.sl{background:#f2f0ff;font-weight:700;text-align:center;} .sv{text-align:right;font-weight:700;font-size:9.5pt;width:150px;} .sr{width:90px;font-size:7.5pt;}' +
+            'table.items th{background:var(--surface-2);border:1px solid var(--text-primary);padding:4px 3px;font-size:7.5pt;font-weight:700;text-align:center;color:#222;}' +
+            '.st{width:100%;border-collapse:collapse;margin-bottom:8px;} .st td{border:1px solid var(--text-primary);padding:4px 8px;font-size:8.5pt;}' +
+            '.sl{background:var(--surface-2);font-weight:700;text-align:center;} .sv{text-align:right;font-weight:700;font-size:9.5pt;width:150px;} .sr{width:90px;font-size:7.5pt;}' +
             '.stot .sl{background:#0F766E;color:#fff;font-size:9.5pt;} .stot .sv{font-size:10pt;color:#0F766E;font-weight:800;}' +
-            '.remarks{border:1px solid #ccc;padding:6px 10px;margin-bottom:10px;min-height:36px;font-size:7.5pt;color:#444;line-height:1.6;}' +
+            '.remarks{border:1px solid var(--border2);padding:6px 10px;margin-bottom:10px;min-height:36px;font-size:7.5pt;color:#444;line-height:1.6;}' +
             '.remarks .rt{font-weight:700;font-size:8pt;color:#222;margin-bottom:2px;}' +
             '@media print{body{background:#fff;} .toolbar{display:none!important;} .page{margin:0;box-shadow:none;padding:10mm 10mm 8mm;width:100%;min-height:auto;} .doc-title{font-size:22pt;margin-bottom:8px;padding-bottom:6px;} .ht{margin-bottom:6px;} .ht td{height:20px;padding:1px 5px;font-size:8pt;} .prow{min-height:22px;margin-bottom:6px;} .abar{min-height:24px;margin-bottom:8px;} table.items th{padding:3px 2px;font-size:7pt;} table.items td{padding:2px 3px;font-size:7.5pt;} .st{margin-bottom:6px;} .st td{padding:3px 6px;font-size:8pt;} .remarks{padding:4px 8px;font-size:7pt;line-height:1.5;min-height:auto;}}' +
             '</style></head><body>' +
@@ -3138,9 +3140,9 @@
             '<div class="abar"><div class="albl">견적금액</div><div class="hsep">:</div><div class="atxt">' + amountToKorean(grandTotal) + '  ( ￦ ' + formatNum(grandTotal) + ' )</div><div class="avat">(VAT 포함)</div></div>' +
             '<table class="items"><thead><tr>' +
             (tplType === 2 ?
-                '<th style="width:30px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th><th style="width:72px;">노임단가</th><th style="width:42px;">투입인력<br><span style="font-weight:500;font-size:6.5pt;">(인)</span></th><th style="width:50px;">투입기간</th><th style="width:54px;">총투입기간</th><th style="width:96px;">금　액<br><span style="font-weight:500;font-size:7pt;color:#666;">(원)</span></th><th style="width:72px;">비고<br><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>'
+                '<th style="width:30px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">Product Description</span></th><th style="width:72px;">노임단가</th><th style="width:42px;">투입인력<br><span style="font-weight:500;font-size:6.5pt;">(인)</span></th><th style="width:50px;">투입기간</th><th style="width:54px;">총투입기간</th><th style="width:96px;">금　액<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">(원)</span></th><th style="width:72px;">비고<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">Remarks</span></th>'
                 :
-                '<th style="width:32px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:#666;">Product Description</span></th><th style="width:50px;">수량</th><th style="width:100px;">단　가<br><span style="font-weight:500;font-size:7pt;color:#666;">Unit Price</span></th><th style="width:110px;">금　액<br><span style="font-weight:500;font-size:7pt;color:#666;">Amount</span></th><th style="width:90px;">비고<br><span style="font-weight:500;font-size:7pt;color:#666;">Remarks</span></th>'
+                '<th style="width:32px;">No</th><th>품　명<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">Product Description</span></th><th style="width:50px;">수량</th><th style="width:100px;">단　가<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">Unit Price</span></th><th style="width:110px;">금　액<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">Amount</span></th><th style="width:90px;">비고<br><span style="font-weight:500;font-size:7pt;color:var(--text-secondary);">Remarks</span></th>'
             ) +
             '</tr></thead><tbody>' + itemRows + '</tbody></table>' +
             '<table class="st">' +
