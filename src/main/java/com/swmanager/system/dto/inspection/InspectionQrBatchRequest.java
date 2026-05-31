@@ -37,13 +37,14 @@ public class InspectionQrBatchRequest {
         /** snapshot tag (예: "snapshot/qr1") — 의미 없음, 호환용. */
         private String s;
 
-        /** 멱등 키 (예: "dyg-2026-05"). */
+        /** 멱등 키 (예: "46810_UPIS-2026-05-ap"). site_code 신규 규칙({adm}_{sys_nm_en})상 대문자 허용. */
         @NotBlank
-        @Pattern(regexp = "^[a-z0-9_\\-:]{1,64}$", message = "id must match ^[a-z0-9_\\-:]{1,64}$")
+        @Pattern(regexp = "^[A-Za-z0-9_\\-:]{1,64}$", message = "id must match ^[A-Za-z0-9_\\-:]{1,64}$")
         private String id;
 
+        // site_code 신규 규칙: {adm_sect_c}_{sys_nm_en} (예: 46810_UPIS). 시스템 영문은 대문자.
         @NotBlank
-        @Pattern(regexp = "^[a-z0-9_\\-]{1,32}$", message = "site must match ^[a-z0-9_\\-]{1,32}$")
+        @Pattern(regexp = "^[A-Za-z0-9_\\-]{1,32}$", message = "site must match ^[A-Za-z0-9_\\-]{1,32}$")
         private String site;
 
         @NotBlank
