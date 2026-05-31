@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 시스템 관계도 BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#fff; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; margin-bottom:14px; }
+  .page-header h2{ margin:0; font-size:1.05em; }
+  .hb a{ padding:7px 12px; color:#fff; border-radius:5px; font-size:.78em; font-weight:600; margin-left:4px; }
+  .tabs{ display:flex; gap:4px; margin-bottom:0; }
+  .tab-btn{ padding:9px 18px; border:1px solid transparent; border-bottom:none; cursor:pointer; font-size:.85em; font-weight:600; border-radius:8px 8px 0 0; }
+  .tab-panel{ padding:14px; border-radius:0 0 8px 8px; }
+  .panel-title{ margin:0 0 4px; font-size:1em; font-weight:700; }
+  .panel-desc{ margin:0 0 12px; font-size:.84em; }
+  .erd-toolbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:10px 12px; border-radius:8px; margin-bottom:10px; }
+  .erd-toolbar input{ padding:6px 10px; border-radius:4px; font-size:.84em; width:180px; }
+  .erd-toolbar label{ display:inline-flex; align-items:center; gap:5px; font-size:.82em; padding:4px 9px; border-radius:12px; }
+  .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .refresh{ padding:6px 12px; color:#fff; border:none; border-radius:4px; font-size:.84em; cursor:pointer; }
+  .node-row{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .gnode{ padding:7px 14px; border-radius:6px; color:#fff; font-weight:600; font-size:.82em; border:2px solid; }
+
+  /* GRAPH PALETTE — 두 패널 동일 (변경 없음) */
+  .n-city{ background:#134E4A; border-color:#0d124d; } .n-infra{ background:#0F766E; border-color:#115E59; }
+  .n-server{ background:#1cc88a; border-color:#17a673; } .n-software{ background:#f6c23e; border-color:#dda20a; color:#333; }
+  .d-infra{ background:#0F766E; } .d-contract{ background:#f6c23e; } .d-document{ background:#1cc88a; } .d-quotation{ background:#a14ed0; } .d-core{ background:#858796; }
+
+  /* BEFORE chrome */
+  .before .frame{ }
+  .before .page-header{ border-bottom:2px solid #134E4A; } .before .page-header h2{ color:#134E4A; }
+  .before .btn-users{ background:#858796; } .before .btn-logout{ background:#f08a7e; }
+  .before .tabs{ border-bottom:2px solid #e5e7eb; }
+  .before .tab-btn{ background:#f1f3f9; color:#555; } .before .tab-btn.active{ background:#fff; color:#134E4A; border-color:#e5e7eb; }
+  .before .tab-panel{ border:1px solid #e5e7eb; border-top:none; }
+  .before .panel-title{ color:#134E4A; } .before .panel-desc{ color:#666; }
+  .before .erd-toolbar{ background:#F5F5F4; } .before .erd-toolbar input{ border:1px solid #ccd; } .before .erd-toolbar label{ background:#fff; border:1px solid #dde; }
+  .before .refresh{ background:#134E4A; }
+
+  /* AFTER chrome */
+  .after .page-header{ border-bottom:2px solid var(--primary); } .after .page-header h2{ color:var(--primary); }
+  .after .btn-users{ background:var(--text2); } .after .btn-logout{ background:var(--danger); }
+  .after .tabs{ border-bottom:2px solid var(--border); }
+  .after .tab-btn{ background:var(--surface-2); color:var(--text2); } .after .tab-btn.active{ background:#fff; color:var(--primary); border-color:var(--border); }
+  .after .tab-panel{ border:1px solid var(--border); border-top:none; }
+  .after .panel-title{ color:var(--primary); } .after .panel-desc{ color:var(--text2); }
+  .after .erd-toolbar{ background:var(--surface-2); } .after .erd-toolbar input{ border:1px solid var(--border2); } .after .erd-toolbar label{ background:var(--surface); border:1px solid var(--border2); }
+  .after .refresh{ background:var(--primary); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 시스템 관계도 (관리자)</h1>
+  <div class="sub">UI 크롬만 토큰화. vis-network 그래프 노드 팔레트(도메인 5종·인프라레벨 4종)와 범례·트리·조직도색은 현행 유지.</div>
+  <div class="legendbox">
+    <b>크롬 변경</b> · 헤더/제목/탭활성/새로고침 <code>#134E4A 다크teal</code> → <code>--primary</code> (전 페이지 제목색 통일) ·
+    홈 <code>#0F766E</code>→<code>--primary</code> · 로그아웃 <code>#f08a7e</code>→<code>--danger</code> ·
+    탭 배경/테두리 <code>#f1f3f9·#e5e7eb</code>→<code>--surface-2/--border</code> · 회색 → <code>--text2/--muted</code>
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-project-diagram"></i> 시스템 관계도</h2>
+          <div class="hb"><a class="btn-users">사용자 관리</a><a class="btn-logout">로그아웃</a></div></div>
+        <div class="tabs"><button class="tab-btn active"><i class="fas fa-server"></i> A. 인프라</button><button class="tab-btn"><i class="fas fa-database"></i> C. ERD</button></div>
+        <div class="tab-panel">
+          <div class="panel-title">A. 인프라 구성도</div>
+          <div class="panel-desc">지자체 → 시스템 → 서버 → 소프트웨어</div>
+          <div class="erd-toolbar">
+            <input type="text" placeholder="🔍 테이블 검색"/>
+            <label><span class="dot d-infra"></span>Infra</label><label><span class="dot d-contract"></span>Contract</label>
+            <label><span class="dot d-document"></span>Document</label><label><span class="dot d-quotation"></span>Quotation</label><label><span class="dot d-core"></span>Core</label>
+            <button class="refresh"><i class="fas fa-sync-alt"></i> 새로고침</button>
+          </div>
+          <div class="node-row"><span class="gnode n-city">지자체</span><span class="gnode n-infra">시스템</span><span class="gnode n-server">서버</span><span class="gnode n-software">SW</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 크롬 토큰화 (그래프 팔레트 동일)</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-project-diagram"></i> 시스템 관계도</h2>
+          <div class="hb"><a class="btn-users">사용자 관리</a><a class="btn-logout">로그아웃</a></div></div>
+        <div class="tabs"><button class="tab-btn active"><i class="fas fa-server"></i> A. 인프라</button><button class="tab-btn"><i class="fas fa-database"></i> C. ERD</button></div>
+        <div class="tab-panel">
+          <div class="panel-title">A. 인프라 구성도</div>
+          <div class="panel-desc">지자체 → 시스템 → 서버 → 소프트웨어</div>
+          <div class="erd-toolbar">
+            <input type="text" placeholder="🔍 테이블 검색"/>
+            <label><span class="dot d-infra"></span>Infra</label><label><span class="dot d-contract"></span>Contract</label>
+            <label><span class="dot d-document"></span>Document</label><label><span class="dot d-quotation"></span>Quotation</label><label><span class="dot d-core"></span>Core</label>
+            <button class="refresh"><i class="fas fa-sync-alt"></i> 새로고침</button>
+          </div>
+          <div class="node-row"><span class="gnode n-city">지자체</span><span class="gnode n-infra">시스템</span><span class="gnode n-server">서버</span><span class="gnode n-software">SW</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ 아래 노드 박스(지자체/시스템/서버/SW)와 도메인 범례 점은 <b>두 패널 동일</b> — vis-network 그래프가 이 색으로 노드를 그리고 범례가 키 역할을 하므로 그래프 팔레트는 건드리지 않습니다. 헤더 다크teal #134E4A 는 그래프 city색과 우연히 같았는데, 크롬에서만 --primary 로 통일하고 그래프 city 노드색은 그대로 둡니다(역할 분리).</div>
+</body>
+</html>
