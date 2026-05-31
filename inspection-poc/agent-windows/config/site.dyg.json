@@ -3,7 +3,8 @@
   "site_name": "단양군 UPIS",
   "inspector": "박욱진",
   "tier": "ap",
-  "sections": ["AP", "GIS"],
+  "_note": "샘플(실측 이력 없음). 운영 시 강진과 동일 full 수집 지자체로 간주.",
+  "sections": ["AP", "DB", "DBMS", "GIS"],
   "hosts": {
     "ap": { "expected_hostname": "UPIS-AP", "ip_hint": null }
   },
