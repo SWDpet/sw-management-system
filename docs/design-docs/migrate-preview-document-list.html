@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 문서 목록 (D-01) BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  /* AFTER 패널 토큰 (design-system.css 동일) */
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA;
+    --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:22px; }
+  .legend{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legend code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#FAFAF9; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  /* ===== 공통 레이아웃 (두 패널 동일 구조) ===== */
+  .page-header{ background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,0.08); display:flex; justify-content:space-between; align-items:center; }
+  .page-header h2{ margin:0; font-size:1.1em; }
+  .header-actions button{ padding:8px 14px; border-radius:5px; font-size:.82em; font-weight:600; border:none; cursor:pointer; color:#fff; }
+  .filter-bar{ background:#fff; border-radius:10px; padding:10px 16px; margin-bottom:14px; box-shadow:0 1px 6px rgba(0,0,0,0.06); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .filter-bar label{ font-size:.8em; font-weight:600; }
+  .filter-bar select,.filter-bar input{ padding:6px 9px; border:1px solid #d6d3d1; border-radius:5px; font-size:.8em; }
+  .btn-search{ padding:7px 14px; color:#fff; border:none; border-radius:5px; font-size:.8em; cursor:pointer; font-weight:600; }
+  .btn-excel{ padding:7px 14px; color:#fff; border:none; border-radius:5px; font-size:.8em; cursor:pointer; font-weight:600; }
+  .list-section{ background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,0.08); }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ padding:9px 11px; font-size:.82em; border-bottom:1px solid #eee; text-align:left; }
+  .badge{ display:inline-block; padding:2px 8px; border-radius:4px; font-size:.74em; font-weight:600; color:#fff; }
+
+  /* ===== BEFORE — 현재 운영 색 (그대로) ===== */
+  .before .page-header h2{ color:#1565c0; }
+  .before .btn-primary{ background:#1cc88a; }
+  .before .filter-bar label{ color:#5a5c69; }
+  .before .btn-search{ background:#0F766E; }
+  .before .btn-excel{ background:#1cc88a; }
+  .before th{ background:#f8f9fc; color:#5a5c69; font-weight:600; }
+  .before .type-COMMENCE{ background:#4e73df; }
+  .before .type-INTERIM{ background:#f6c23e; }
+  .before .type-COMPLETION{ background:#1cc88a; }
+  .before .type-INSPECT{ background:#36b9cc; }
+  .before .type-FAULT{ background:#e74a3b; }
+  .before .badge-completed{ background:#1cc88a; }
+  .before .badge-draft{ background:#858796; }
+
+  /* ===== AFTER — 토큰 적용 ===== */
+  .after .page-header h2{ color:var(--primary); }
+  .after .btn-primary{ background:var(--primary); }
+  .after .filter-bar label{ color:var(--text2); }
+  .after .btn-search{ background:var(--primary); }
+  .after .btn-excel{ background:var(--success); }
+  .after th{ background:var(--surface-2); color:var(--text2); font-weight:600; }
+  .after .type-COMMENCE{ background:var(--primary); }
+  .after .type-INTERIM{ background:var(--warning); }
+  .after .type-COMPLETION{ background:var(--success); }
+  .after .type-INSPECT{ background:var(--info); }
+  .after .type-FAULT{ background:var(--danger); }
+  .after .badge-completed{ background:var(--success); }
+  .after .badge-draft{ background:var(--muted); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 문서 목록 (D-01)</h1>
+  <div class="sub">왼쪽 = 현재 운영(레거시 색) · 오른쪽 = design-system.css 토큰 적용. 같은 화면을 색만 통일.</div>
+
+  <div class="legend">
+    <b>주요 변경</b> ·
+    제목 <code>#1565c0 파랑</code> → <code>--primary teal</code> (오프브랜드 정정) ·
+    문서작성 버튼 <code>#1cc88a 녹</code> → <code>--primary</code> (브랜드 CTA) ·
+    라벨/헤더 회색 <code>#5a5c69 · #858796</code> → <code>--text2 / --muted</code> ·
+    완료/엑셀 <code>#1cc88a</code> → <code>--success</code> ·
+    유형 뱃지 5종 → 의미 토큰(primary/warning/success/info/danger)
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header">
+          <h2><i class="fas fa-file-alt"></i> 사업문서 목록 (D-01)</h2>
+          <div class="header-actions"><button class="btn-primary"><i class="fas fa-plus"></i> 문서 작성 ▾</button></div>
+        </div>
+        <div class="filter-bar">
+          <label>문서유형</label><select><option>전체</option></select>
+          <label>시도</label><select><option>전체</option></select>
+          <input type="text" placeholder="문서번호/제목 검색"/>
+          <button class="btn-search"><i class="fas fa-search"></i> 검색</button>
+          <button class="btn-excel"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+        </div>
+        <div class="list-section">
+          <table>
+            <thead><tr><th>No</th><th>문서번호</th><th>유형</th><th>시도</th><th>제목</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>3</td><td>INSP-0042</td><td><span class="badge type-INSPECT">점검</span></td><td>강진군</td><td>UPIS 정기점검</td><td><span class="badge badge-completed">완료</span></td></tr>
+              <tr><td>2</td><td>COM-0117</td><td><span class="badge type-COMMENCE">착수</span></td><td>단양군</td><td>착수계 제출</td><td><span class="badge badge-draft">임시</span></td></tr>
+              <tr><td>1</td><td>INT-0090</td><td><span class="badge type-INTERIM">기성</span></td><td>나주시</td><td>2차 기성</td><td><span class="badge type-COMPLETION">준공</span></td></tr>
+              <tr><td>0</td><td>FLT-0008</td><td><span class="badge type-FAULT">장애</span></td><td>의령군</td><td>DB 장애 보고</td><td><span class="badge badge-completed">완료</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame">
+        <div class="page-header">
+          <h2><i class="fas fa-file-alt"></i> 사업문서 목록 (D-01)</h2>
+          <div class="header-actions"><button class="btn-primary"><i class="fas fa-plus"></i> 문서 작성 ▾</button></div>
+        </div>
+        <div class="filter-bar">
+          <label>문서유형</label><select><option>전체</option></select>
+          <label>시도</label><select><option>전체</option></select>
+          <input type="text" placeholder="문서번호/제목 검색"/>
+          <button class="btn-search"><i class="fas fa-search"></i> 검색</button>
+          <button class="btn-excel"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+        </div>
+        <div class="list-section">
+          <table>
+            <thead><tr><th>No</th><th>문서번호</th><th>유형</th><th>시도</th><th>제목</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>3</td><td>INSP-0042</td><td><span class="badge type-INSPECT">점검</span></td><td>강진군</td><td>UPIS 정기점검</td><td><span class="badge badge-completed">완료</span></td></tr>
+              <tr><td>2</td><td>COM-0117</td><td><span class="badge type-COMMENCE">착수</span></td><td>단양군</td><td>착수계 제출</td><td><span class="badge badge-draft">임시</span></td></tr>
+              <tr><td>1</td><td>INT-0090</td><td><span class="badge type-INTERIM">기성</span></td><td>나주시</td><td>2차 기성</td><td><span class="badge type-COMPLETION">준공</span></td></tr>
+              <tr><td>0</td><td>FLT-0008</td><td><span class="badge type-FAULT">장애</span></td><td>의령군</td><td>DB 장애 보고</td><td><span class="badge badge-completed">완료</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    ※ 유형 뱃지는 <b>카테고리색(8종 구분 필요)</b>이라 의미 토큰 4종으로 전부 치환하면 구분이 사라집니다.
+    명확히 매핑되는 5종(착수→primary·기성→warning·준공→success·점검→info·장애→danger)만 토큰화하고,
+    SUPPORT/INSTALL/PATCH 3종은 별도 카테고리 팔레트 결정이 필요해 이번엔 현행 유지합니다.
+  </div>
+</body>
+</html>
