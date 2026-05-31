@@ -175,7 +175,9 @@ public class InspectMetricChartService {
 
     private void applyLineColors(JFreeChart chart, TimeSeriesCollection dataset) {
         XYPlot plot = chart.getXYPlot();
-        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        // lines + shapes(점 마커) — 점검 회차가 1개여도 점(dot)이 보이도록 마커 ON
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, true);
+        java.awt.Shape dot = new java.awt.geom.Ellipse2D.Double(-2.6, -2.6, 5.2, 5.2);
         for (int i = 0; i < dataset.getSeriesCount(); i++) {
             String key = String.valueOf(dataset.getSeriesKey(i));
             Color c;
@@ -185,6 +187,9 @@ public class InspectMetricChartService {
             else                             c = COLOR_DISK;
             renderer.setSeriesPaint(i, c);
             renderer.setSeriesStroke(i, new BasicStroke(1.6f));
+            renderer.setSeriesShape(i, dot);
+            renderer.setSeriesShapesVisible(i, true);
+            renderer.setSeriesShapesFilled(i, true);
         }
         plot.setRenderer(renderer);
     }
