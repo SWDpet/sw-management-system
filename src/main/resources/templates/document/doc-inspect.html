@@ -1740,45 +1740,57 @@ function collectFormData(status) {
         });
     });
 
+    // maint_type 점검범위 — applyMaintProfile 이 숨긴(범위 밖) 섹션은 저장에서도 제외
+    // (codex P2: 숨김 섹션의 빈/범위밖 행이 DB 저장돼 카운트·데이터 오염되는 것 방지).
+    // 기준 = 인라인 display:none (applyMaintProfile 이 세팅). 요소 없으면 보수적으로 포함.
+    var inScope = function(id) { var el = document.getElementById(id); return !el || el.style.display !== 'none'; };
+    var apdbScope = inScope('section-2');     // AP/DB 서버 + 사용율
+    var dbmsScope = inScope('dbmsSection');   // DBMS
+    var appScope  = inScope('appCheckTable'); // 표준시스템(APP)
+
     var checkResults = [];
-    collectCheckResults(checkResults, 'dbCheckBody', 'DB');
-    collectApCheckResults(checkResults, 'apCheckBody', 'AP');
-    collectCheckResults(checkResults, 'dbmsCheckBody', 'DBMS');
-    collectGisCheckResults(checkResults, 'gisCheckBody', 'GIS');
-    collectAppCheckResults(checkResults, 'appCheckBody', 'APP');
+    if (apdbScope) {
+        collectCheckResults(checkResults, 'dbCheckBody', 'DB');
+        collectApCheckResults(checkResults, 'apCheckBody', 'AP');
+    }
+    if (dbmsScope) collectCheckResults(checkResults, 'dbmsCheckBody', 'DBMS');
+    collectGisCheckResults(checkResults, 'gisCheckBody', 'GIS');   // GIS 항상
+    if (appScope) collectAppCheckResults(checkResults, 'appCheckBody', 'APP');
 
-    // DB 사용율
-    var dbUsageFields = ['cpu','memory','root','backup','oracle','oradata','archive'];
-    var dbUsageLabels = ['CPU','Memory','/','/backup','/oracle','/oradata','/archive'];
-    dbUsageFields.forEach(function(f, i) {
-        var el = document.getElementById('db_usage_' + f);
-        if (el && el.value) {
-            checkResults.push({ section: 'DB_USAGE', itemName: dbUsageLabels[i], itemMethod: '', result: el.value, sortOrder: i });
-        }
-    });
-
-    // AP 사용율
-    var apUsageFields = ['cpu','memory','diskC','diskD'];
-    var apUsageLabels = ['CPU','Memory','Disk C:','Disk D:'];
-    apUsageFields.forEach(function(f, i) {
-        var el = document.getElementById('ap_usage_' + f);
-        if (el && el.value) {
-            checkResults.push({ section: 'AP_USAGE', itemName: apUsageLabels[i], itemMethod: '', result: el.value, sortOrder: i });
-        }
-    });
-
-    // DBMS 기타
-    var dbmsEtcEl = document.getElementById('dbms_etc');
-    if (dbmsEtcEl && dbmsEtcEl.value) {
-        checkResults.push({ section: 'DBMS_ETC', category: '기타', itemName: '', itemMethod: '', result: dbmsEtcEl.value, sortOrder: 0 });
+    // DB/AP 사용율 (AP/DB 범위일 때만)
+    if (apdbScope) {
+        var dbUsageFields = ['cpu','memory','root','backup','oracle','oradata','archive'];
+        var dbUsageLabels = ['CPU','Memory','/','/backup','/oracle','/oradata','/archive'];
+        dbUsageFields.forEach(function(f, i) {
+            var el = document.getElementById('db_usage_' + f);
+            if (el && el.value) {
+                checkResults.push({ section: 'DB_USAGE', itemName: dbUsageLabels[i], itemMethod: '', result: el.value, sortOrder: i });
+            }
+        });
+        var apUsageFields = ['cpu','memory','diskC','diskD'];
+        var apUsageLabels = ['CPU','Memory','Disk C:','Disk D:'];
+        apUsageFields.forEach(function(f, i) {
+            var el = document.getElementById('ap_usage_' + f);
+            if (el && el.value) {
+                checkResults.push({ section: 'AP_USAGE', itemName: apUsageLabels[i], itemMethod: '', result: el.value, sortOrder: i });
+            }
+        });
     }
 
-    // 표준시스템(APP) 기타 — FR-9: 7번 섹션이 보이는 경우에만 저장 payload 포함
-    var appEtcEl = document.getElementById('app_etc');
-    var appTableEl = document.getElementById('appCheckTable');
-    var appVisible = appTableEl && appTableEl.style.display !== 'none';
-    if (appEtcEl && appEtcEl.value && appVisible) {
-        checkResults.push({ section: 'APP_ETC', category: '기타', itemName: '', itemMethod: '', result: appEtcEl.value, sortOrder: 0 });
+    // DBMS 기타 (DBMS 범위일 때만)
+    if (dbmsScope) {
+        var dbmsEtcEl = document.getElementById('dbms_etc');
+        if (dbmsEtcEl && dbmsEtcEl.value) {
+            checkResults.push({ section: 'DBMS_ETC', category: '기타', itemName: '', itemMethod: '', result: dbmsEtcEl.value, sortOrder: 0 });
+        }
+    }
+
+    // 표준시스템(APP) 기타 (APP 범위일 때만)
+    if (appScope) {
+        var appEtcEl = document.getElementById('app_etc');
+        if (appEtcEl && appEtcEl.value) {
+            checkResults.push({ section: 'APP_ETC', category: '기타', itemName: '', itemMethod: '', result: appEtcEl.value, sortOrder: 0 });
+        }
     }
 
     return {
