@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>점검 에이전트 — 사이트 정보 개편 작업 정리</title>
+<style>
+  :root{ --teal:#0f766e; --teal2:#0d9488; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --surf:#f8fafc;
+         --amber:#d97706; --navy:#1e3a5f; --green:#10b981; --red:#ef4444; }
+  *{ box-sizing:border-box; }
+  body{ font-family:'Malgun Gothic','Segoe UI',sans-serif; color:var(--ink); margin:0; background:#eef2f5; line-height:1.6; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:32px 28px 64px; }
+  header{ background:linear-gradient(135deg,var(--teal),var(--teal2)); color:#fff; border-radius:16px; padding:28px 32px; margin-bottom:24px; }
+  header h1{ margin:0 0 6px; font-size:24pt; font-weight:800; letter-spacing:1px; }
+  header .sub{ opacity:.9; font-size:11pt; }
+  h2{ font-size:15pt; font-weight:800; color:var(--ink); border-left:5px solid var(--teal); padding:2px 0 6px 12px; margin:30px 0 14px; }
+  h2 .ey{ font-size:9pt; color:var(--teal2); letter-spacing:2px; margin-left:6px; font-weight:700; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+  .card.done{ border-left:4px solid var(--green); }
+  .card.todo{ border-left:4px solid var(--teal); }
+  .card.decide{ border-left:4px solid var(--amber); }
+  .card.consult{ border-left:4px solid var(--navy); }
+  .card h3{ margin:0 0 8px; font-size:12pt; display:flex; align-items:center; gap:8px; }
+  .num{ display:inline-flex; width:26px; height:26px; border-radius:50%; background:var(--teal); color:#fff;
+        align-items:center; justify-content:center; font-size:10pt; font-weight:800; flex:0 0 26px; }
+  .badge{ display:inline-block; padding:2px 10px; border-radius:11px; font-size:8.5pt; font-weight:700; color:#fff; }
+  .b-done{ background:var(--green); } .b-todo{ background:var(--teal); } .b-decide{ background:var(--amber); } .b-consult{ background:var(--navy); }
+  ul{ margin:6px 0 2px; padding-left:20px; } li{ margin:3px 0; }
+  .small{ font-size:9.5pt; color:var(--muted); }
+  code{ background:var(--surf); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:9.5pt; color:#0b5d57; }
+  table{ width:100%; border-collapse:collapse; margin:8px 0; font-size:10pt; }
+  th,td{ border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th{ background:var(--surf); color:#475569; font-weight:700; }
+  .flow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; }
+  .step{ background:#fff; border:1px solid var(--line); border-radius:20px; padding:5px 14px; font-size:9.5pt; font-weight:600; }
+  .step.cur{ background:var(--teal); color:#fff; border-color:var(--teal); }
+  .arr{ color:var(--muted); font-weight:700; }
+  .mock{ background:var(--surf); border:1px dashed #94a3b8; border-radius:10px; padding:16px; margin-top:8px; font-size:10pt; }
+  .mock .row{ display:flex; gap:10px; margin:6px 0; align-items:center; }
+  .mock label{ width:160px; color:var(--muted); font-weight:600; }
+  .mock .ctl{ flex:1; background:#fff; border:1px solid var(--line); border-radius:6px; padding:5px 9px; }
+  .mock .ctl.auto{ background:#f0fdfa; color:var(--teal); font-weight:700; }
+  .chk{ accent-color:var(--teal); }
+  .warn{ background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:10pt; color:#92400e; margin:8px 0; }
+  .foot{ text-align:center; color:var(--muted); font-size:9pt; margin-top:30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>점검 에이전트 — 사이트 정보 개편 작업 정리</h1>
+    <div class="sub">2026-05-31 · 진행 중 누적된 요청을 한눈에 정리 (구현 전 합의용)</div>
+  </header>
+
+  <p class="small">※ 본 문서는 <b>확정된 기획서가 아니라</b>, 대화 중 추가된 요구사항을 모아 정리한 <b>작업 목록(TODO)</b>입니다.
+     <b>확정 필요 항목</b>과 <b>자문 필요 항목</b>을 정해야 정식 기획서(md+html)로 넘어갑니다.</p>
+
+  <!-- ===== 0. 완료 ===== -->
+  <h2>✅ 이미 완료 <span class="ey">DONE · 참고</span></h2>
+  <div class="card done">
+    <h3><span class="badge b-done">완료</span> maint_type 기반 점검범위 분기 (Step 1~5)</h3>
+    <ul>
+      <li>서버: 점검 프로파일(GIS만 / GIS+표준 / 전체) 단일 규칙 + 리포트 유형배지·범위칩 + 작성UI 섹션토글 + 목록 배지</li>
+      <li>에이전트: <code>Collector.ps1</code> 가 <code>site.{code}.json</code> 의 <code>sections</code> 로 범위 밖 모듈 미실행</li>
+      <li>커밋 <code>f923fbf</code>·<code>afd056e</code>·<code>782a957</code> (master 푸시). 단양=강진과 동일 full 로 정정 완료</li>
+    </ul>
+    <p class="small">→ 이 작업 덕분에 "어떤 섹션을 수집할지"의 <b>규칙</b>은 이미 있음. 이번 개편은 그 규칙을 <b>setup GUI에서 사람이 고르게</b> 만드는 일.</p>
+  </div>
+
+  <!-- ===== 1. 신규 요청 ===== -->
+  <h2>🆕 신규 요청 — 에이전트 setup 사이트 정보 개편 <span class="ey">TO&nbsp;DO</span></h2>
+
+  <div class="card todo">
+    <h3><span class="num">1</span> 시도 → 시군구 종속 드롭다운</h3>
+    <ul>
+      <li>"시도" 선택 시 해당 시도의 <b>시군구 목록만</b> 표출 (종속 콤보박스)</li>
+      <li>출처: <code>sigungu_code</code> (<code>sido_name</code>, <code>sgg_name</code>, <code>adm_sect_c</code>, <code>full_name</code>)</li>
+      <li>현재: 한글 이름 자유 입력(<code>강진군</code>) → 오타·표기 불일치 가능</li>
+    </ul>
+  </div>
+
+  <div class="card todo">
+    <h3><span class="num">2</span> 시스템 한글명 선택 → 영문명 자동</h3>
+    <ul>
+      <li>"시스템 한글명" 선택 시 <b>시스템 영문명 자동 결정</b> (예: 도시계획정보체계 → <code>UPIS</code>)</li>
+      <li>출처: <code>sys_mst</code> (<code>cd</code>=영문코드, <code>nm</code>=한글명)</li>
+      <li>현재: <code>UPIS</code> 자유 입력</li>
+    </ul>
+  </div>
+
+  <div class="card todo">
+    <h3><span class="num">3</span> 사이트 코드 = 시도+시군구+시스템영문 자동 조합 ★핵심</h3>
+    <ul>
+      <li>수동 입력(<code>gangjin</code>) <b>폐지</b> → 선택값으로 <b>자동 생성</b></li>
+      <li>제안 형식: <code>{시도코드}{시군구코드}-{시스템영문}</code> 또는 <code>{adm_sect_c}_{SYS}</code></li>
+      <li><b>충돌 방지</b>: 같은 서버에 UPIS+다른 시스템 공존 시에도 코드가 달라짐 → <code>site.{code}.json</code> 파일 중복 없음</li>
+    </ul>
+    <div class="mock">
+      <div class="row"><label>예) 강진군 UPIS</label><span class="ctl auto">46810-UPIS (또는 4681000000_UPIS)</span></div>
+      <div class="row"><label>예) 같은 서버 KRAS</label><span class="ctl auto">46810-KRAS</span></div>
+    </div>
+  </div>
+
+  <div class="card todo">
+    <h3><span class="num">4</span> 수집 대상(섹션) 체크 기능</h3>
+    <ul>
+      <li>setup GUI에서 <b>점검할 섹션 체크박스</b> (AP / DB / DBMS / GIS)</li>
+      <li>선택 결과 → <code>site.{code}.json</code> 의 <code>sections</code> 로 저장 (Step 5 와 연결)</li>
+      <li>기본값: maint_type 프로파일에서 자동 제안 + 사용자 가감 (제안 — 확정 필요)</li>
+    </ul>
+    <div class="mock">
+      <div class="row"><label>수집 대상</label>
+        <span><input type="checkbox" class="chk" checked> AP&nbsp;&nbsp;
+        <input type="checkbox" class="chk" checked> DB&nbsp;&nbsp;
+        <input type="checkbox" class="chk" checked> DBMS&nbsp;&nbsp;
+        <input type="checkbox" class="chk" checked> GIS</span></div>
+    </div>
+  </div>
+
+  <div class="card todo">
+    <h3><span class="num">5</span> setup.bat GUI 디자인 개편 <span class="badge b-consult">디자인팀</span></h3>
+    <ul>
+      <li>현재 WinForms 기본 룩(회색 박스) → 디자인 개선</li>
+      <li>레이아웃: 사이트정보(드롭다운 3종 + 자동코드) · 수집대상 체크 · DB/Oracle 원격 · 상태</li>
+      <li><b>디자인팀 자문 필요</b> (배색·간격·그룹 구성·자동코드 표시 방식)</li>
+    </ul>
+  </div>
+
+  <!-- ===== 2. 확정 필요 ===== -->
+  <h2>❓ 확정 필요 <span class="ey">DECISIONS</span></h2>
+
+  <div class="warn">⚠️ <b>가장 중요</b>: 에이전트는 <b>폐쇄망(인터넷·DB 접근 불가)</b>에서 돈다.
+     그래서 시도/시군구/시스템 목록을 <b>setup GUI가 DB에서 직접 못 읽는다.</b>
+     → 코드 목록을 <b>에이전트 패키지에 동봉(번들 json)</b>하거나, setup 시점 동기화 방법을 정해야 함.</div>
+
+  <table>
+    <tr><th>#</th><th>결정할 것</th><th>옵션 / 제안</th></tr>
+    <tr><td>D1</td><td>사이트 코드 포맷</td><td><code>adm_sect_c</code> 전체 자릿수 사용 vs 시도2+시군구3, 구분자(<code>-</code>/<code>_</code>), 대소문자</td></tr>
+    <tr><td>D2</td><td>코드 목록 번들 방식</td><td>sigungu_code + sys_mst 를 <b>json으로 추출해 에이전트에 동봉</b> (폐쇄망 대응) — 갱신 주기?</td></tr>
+    <tr><td>D3</td><td>섹션 기본값 규칙</td><td>maint_type 프로파일 자동 제안 후 체크 가감 vs 항상 수동 체크</td></tr>
+    <tr><td>D4</td><td>서버 매핑 정합</td><td>새 코드 ↔ <code>sw_pjt</code> 연결 (서버 <code>findBySiteCode</code> 가 새 코드 체계 인식하도록)</td></tr>
+    <tr><td>D5</td><td>기존 코드 호환</td><td><code>gangjin</code>/<code>gj</code>/<code>dyg</code> 등 기존 site → 신코드 마이그레이션 또는 별칭 유지</td></tr>
+  </table>
+
+  <!-- ===== 3. 자문 ===== -->
+  <h2>🤝 자문 필요 <span class="ey">CONSULT</span></h2>
+  <div class="card consult">
+    <h3><span class="badge b-consult">DB팀</span> 데이터/코드 스킴</h3>
+    <ul>
+      <li><code>sigungu_code.adm_sect_c</code> 포맷·유일성, <code>sys_mst</code> 한글↔영문 매핑 신뢰성</li>
+      <li>폐쇄망용 코드 목록 번들(추출 스크립트/포맷) 설계</li>
+    </ul>
+  </div>
+  <div class="card consult">
+    <h3><span class="badge b-consult">디자인팀</span> setup GUI</h3>
+    <ul><li>WinForms 화면 레이아웃·배색·그룹 구성, 자동 생성 코드 표시 UX</li></ul>
+  </div>
+
+  <!-- ===== 4. 다음 단계 ===== -->
+  <h2>🧭 다음 단계 <span class="ey">WORKFLOW</span></h2>
+  <div class="flow">
+    <span class="step cur">① 작업목록 정리(현재)</span><span class="arr">→</span>
+    <span class="step">② 확정 5건(D1~D5)</span><span class="arr">→</span>
+    <span class="step">③ DB·디자인팀 자문</span><span class="arr">→</span>
+    <span class="step">④ 기획서(md+html)</span><span class="arr">→</span>
+    <span class="step">⑤ 승인</span><span class="arr">→</span>
+    <span class="step">⑥ 구현(DB추출·GUI·코드조합·서버매핑)</span>
+  </div>
+
+  <div class="foot">정도UIT · SW Manager · 점검 에이전트 setup 개편 작업목록 — 2026-05-31</div>
+</div>
+</body>
+</html>

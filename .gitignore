@@ -136,3 +136,4 @@ inspection-poc/agent-windows/tools/*.exe
 
 # HTTPS dev keystore (local cert with known password — never commit)
 keystore-dev.p12
+docs/product-specs/*.png

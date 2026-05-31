@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>기획서 — 점검 에이전트 사이트 정보 개편</title>
+<style>
+  :root{ --teal:#0f766e; --teal2:#0d9488; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --surf:#f8fafc;
+         --amber:#d97706; --navy:#1e3a5f; --green:#10b981; }
+  *{ box-sizing:border-box; }
+  body{ font-family:'Malgun Gothic','Segoe UI',sans-serif; color:var(--ink); margin:0; background:#eef2f5; line-height:1.65; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:30px 28px 64px; }
+  header{ background:linear-gradient(135deg,var(--teal),var(--teal2)); color:#fff; border-radius:16px; padding:26px 30px; margin-bottom:22px; }
+  header h1{ margin:0 0 6px; font-size:22pt; font-weight:800; letter-spacing:.5px; }
+  header .sub{ opacity:.92; font-size:10.5pt; }
+  h2{ font-size:14.5pt; font-weight:800; border-left:5px solid var(--teal); padding:2px 0 6px 12px; margin:28px 0 12px; }
+  h2 .ey{ font-size:8.5pt; color:var(--teal2); letter-spacing:2px; margin-left:6px; }
+  h3{ font-size:11.5pt; margin:14px 0 6px; color:var(--teal); }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin-bottom:12px; }
+  table{ width:100%; border-collapse:collapse; margin:8px 0; font-size:10pt; }
+  th,td{ border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top; }
+  th{ background:var(--surf); color:#475569; font-weight:700; }
+  code{ background:var(--surf); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:9.5pt; color:#0b5d57; }
+  pre{ background:#0f172a; color:#e2e8f0; border-radius:10px; padding:14px 16px; overflow:auto; font-size:9.5pt; line-height:1.5; }
+  pre .k{ color:#7dd3fc; } pre .s{ color:#86efac; }
+  ul{ margin:6px 0; padding-left:20px; } li{ margin:3px 0; }
+  .small{ font-size:9.5pt; color:var(--muted); }
+  .badge{ display:inline-block; padding:2px 10px; border-radius:11px; font-size:8.5pt; font-weight:700; color:#fff; }
+  .b-ok{ background:var(--green);} .b-new{ background:var(--teal);} .b-design{ background:var(--navy);} .b-amber{background:var(--amber);}
+  .warn{ background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:10pt; color:#92400e; margin:10px 0; }
+  .flow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .step{ background:#fff; border:1px solid var(--line); border-radius:20px; padding:5px 14px; font-size:9.5pt; font-weight:600; }
+  .arr{ color:var(--muted); font-weight:700; }
+
+  /* ── GUI 목업 (윈도우 폼) ── */
+  .mock-grid{ display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+  .win{ background:#ece9d8; border:1px solid #94a3b8; border-radius:6px 6px 4px 4px; width:430px; box-shadow:0 6px 20px rgba(0,0,0,.18); overflow:hidden; }
+  .win.before{ width:330px; opacity:.96; }
+  .titlebar{ background:linear-gradient(#3a6ea5,#2b5278); color:#fff; font-size:9.5pt; font-weight:700; padding:5px 10px; display:flex; justify-content:space-between; }
+  .winbody{ background:#f4f4ef; padding:12px; }
+  .grp{ border:1px solid #b8c2cc; border-radius:4px; margin:0 0 10px; padding:10px 12px 12px; position:relative; background:#fbfbf8; }
+  .grp > .lg{ position:absolute; top:-9px; left:10px; background:#fbfbf8; padding:0 6px; font-size:9pt; font-weight:700; color:#1e3a5f; }
+  .frow{ display:flex; align-items:center; margin:6px 0; font-size:9.5pt; }
+  .frow .lbl{ width:120px; color:#334155; text-align:right; padding-right:10px; }
+  .frow .inp{ flex:1; background:#fff; border:1px solid #9aa7b3; border-radius:3px; padding:3px 8px; min-height:22px; }
+  .frow .inp.combo{ background:#fff; position:relative; }
+  .frow .inp.combo::after{ content:'▾'; position:absolute; right:7px; color:#64748b; }
+  .frow .inp.auto{ background:#f0fdfa; border-color:#5eead4; color:#0f766e; font-weight:800; }
+  .frow .inp.dim{ background:#eef2f6; color:#475569; }
+  .chks{ display:flex; gap:16px; font-size:9.5pt; padding:2px 0; }
+  .chks label{ color:#1e3a5f; font-weight:600; }
+  .btns{ display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+  .btn{ border:1px solid #9aa7b3; border-radius:4px; padding:5px 16px; font-size:9.5pt; background:#e8eef2; }
+  .btn.primary{ background:var(--teal); color:#fff; border-color:var(--teal); font-weight:700; }
+  .cap{ font-size:9pt; color:var(--muted); margin:4px 0 12px; }
+  .foot{ text-align:center; color:var(--muted); font-size:9pt; margin-top:28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>기획서 — 점검 에이전트 사이트 정보 개편</h1>
+    <div class="sub">코드 자동조합 · 수집대상 선택 · GUI 디자인 — 2026-05-31 (확정 반영, 승인용)</div>
+  </header>
+
+  <!-- 1 -->
+  <h2>1. 배경 / 목표 <span class="ey">WHY</span></h2>
+  <div class="card">
+    <p>현재 setup GUI 사이트 정보가 <b>전부 자유 입력</b>(지자체명·시스템명·사이트코드)이라:</p>
+    <ul>
+      <li>사이트 코드(<code>gangjin</code>)가 임의 → <b>같은 서버에 UPIS+다른 시스템 공존 시 코드 충돌</b> (<code>site.{code}.json</code> 중복)</li>
+      <li>표기 불일치 → 서버 <code>site_code</code> 매핑 실패(422)</li>
+    </ul>
+    <p><b>목표:</b> ① 선택만으로 <b>코드 자동조합</b>(충돌 불가) ② <b>수집 섹션 선택</b>(Step5 연동) ③ GUI 개편 ④ 폐쇄망 → <b>codes.json 번들</b></p>
+  </div>
+
+  <!-- 2 -->
+  <h2>2. 확정 결정 <span class="ey">DECIDED</span></h2>
+  <table>
+    <tr><th>#</th><th>항목</th><th>확정</th></tr>
+    <tr><td>D1</td><td>코드 형식</td><td><b><code>{행정코드5}_{시스템영문}</code></b> (시도2+시군구3 + _ + sys_nm_en)</td></tr>
+    <tr><td>D2</td><td>폐쇄망 목록</td><td>패키지에 <b><code>codes.json</code> 번들 동봉</b> (sigungu_code + sys_mst 추출)</td></tr>
+    <tr><td>D3</td><td>섹션 기본값</td><td><b>전부 체크</b>(AP/DB/DBMS/GIS) 후 가감</td></tr>
+    <tr><td>D5</td><td>기존 코드</td><td><b>신코드 전환 + 별칭 유지</b></td></tr>
+    <tr><td>D4</td><td>서버 매핑</td><td>신코드를 <code>sw_pjt.site_code</code> 에 정합 (§6)</td></tr>
+  </table>
+  <div class="card small">
+    <b>근거(DB 확인):</b> <code>adm_sect_c</code> 전 행 <b>5자리</b>(강진 <code>46810</code> · 단양 <code>43800</code>) ·
+    <code>sys_mst</code>(cd=영문 UPIS / nm=한글 도시계획정보체계) ·
+    <code>sw_pjt.site_code</code> VARCHAR(32) UNIQUE · 서버 <code>findBySiteCode(payload.site)</code> 미스 시 422.
+  </div>
+
+  <!-- 3 -->
+  <h2>3. 사이트 코드 규칙 <span class="ey">CODE</span></h2>
+  <div class="card">
+    <pre><span class="k">site_code</span> = adm_sect_c + <span class="s">"_"</span> + sys_nm_en       (시스템영문 대문자, 행정코드 5자리)
+
+강진군 UPIS = <span class="s">46810_UPIS</span>    강진군 KRAS = <span class="s">46810_KRAS</span>    단양군 UPIS = <span class="s">43800_UPIS</span></pre>
+    <ul>
+      <li><b>충돌 해소</b>: 같은 PC라도 시스템영문이 달라 코드 분리 → 파일 중복 없음</li>
+      <li>길이 ≤16자 → <code>VARCHAR(32)</code> 안전. <b>payload.site = 파일명 = sw_pjt.site_code</b> 동일 규칙 → end-to-end 일치</li>
+    </ul>
+  </div>
+
+  <!-- 4 -->
+  <h2>4. 폐쇄망 코드 번들 <span class="ey">codes.json</span></h2>
+  <div class="card">
+    <p class="small">빌드/배포 시 운영 DB 에서 추출해 에이전트에 동봉. setup GUI 는 <b>이 파일만</b> 읽음(인터넷·DB 불필요).</p>
+    <pre>{
+  <span class="k">"generated_at"</span>: <span class="s">"2026-05-31"</span>,
+  <span class="k">"sigungu"</span>: [
+    { <span class="k">"sido"</span>:<span class="s">"전라남도"</span>, <span class="k">"sgg"</span>:<span class="s">"강진군"</span>, <span class="k">"adm"</span>:<span class="s">"46810"</span> },
+    { <span class="k">"sido"</span>:<span class="s">"충청북도"</span>, <span class="k">"sgg"</span>:<span class="s">"단양군"</span>, <span class="k">"adm"</span>:<span class="s">"43800"</span> }
+  ],
+  <span class="k">"systems"</span>: [ {<span class="k">"ko"</span>:<span class="s">"도시계획정보체계"</span>,<span class="k">"en"</span>:<span class="s">"UPIS"</span>}, {<span class="k">"ko"</span>:<span class="s">"부동산종합공부시스템"</span>,<span class="k">"en"</span>:<span class="s">"KRAS"</span>} ]
+}</pre>
+    <p class="small">추출 스크립트 <code>tools/export-codes.ps1</code>. 시군구는 시도로 필터(종속). 시스템은 ko 표시/en 저장. 갱신=재배포 시.</p>
+  </div>
+
+  <!-- 5 -->
+  <h2>5. setup GUI 개편 <span class="ey">DESIGN</span> <span class="badge b-design">디자인팀 자문</span></h2>
+
+  <div class="mock-grid">
+    <div>
+      <div class="cap"><b>Before</b> (현재 — 자유 입력)</div>
+      <div class="win before">
+        <div class="titlebar"><span>UPIS Inspection Setup v0.3.0</span><span>— □ ✕</span></div>
+        <div class="winbody">
+          <div class="grp"><span class="lg">1. 사이트 정보</span>
+            <div class="frow"><span class="lbl">지자체 이름(한글)</span><span class="inp">강진군</span></div>
+            <div class="frow"><span class="lbl">시스템 명</span><span class="inp">UPIS</span></div>
+            <div class="frow"><span class="lbl">점검자 이름</span><span class="inp">박욱진</span></div>
+            <div class="frow"><span class="lbl">사이트 코드(ascii)</span><span class="inp">gangjin</span></div>
+          </div>
+          <div class="small" style="color:#b91c1c;">⚠ 자유 입력 → 충돌·오타 위험, 수집대상 선택 없음</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="cap"><b>After</b> (개편안 — 선택형 + 자동조합 + 수집대상)</div>
+      <div class="win">
+        <div class="titlebar"><span>UPIS Inspection Setup v0.4.0</span><span>— □ ✕</span></div>
+        <div class="winbody">
+          <div class="grp"><span class="lg">1. 사이트 정보</span>
+            <div class="frow"><span class="lbl">시도</span><span class="inp combo">전라남도</span></div>
+            <div class="frow"><span class="lbl">시군구</span><span class="inp combo">강진군</span></div>
+            <div class="frow"><span class="lbl">시스템(한글)</span><span class="inp combo">도시계획정보체계</span></div>
+            <div class="frow"><span class="lbl">시스템 영문</span><span class="inp auto">UPIS &nbsp;<span style="font-weight:400;font-size:8pt;">(자동)</span></span></div>
+            <div class="frow"><span class="lbl">점검자 이름</span><span class="inp">박욱진</span></div>
+            <div class="frow"><span class="lbl">사이트 코드</span><span class="inp auto">46810_UPIS &nbsp;<span style="font-weight:400;font-size:8pt;">(자동조합)</span></span></div>
+          </div>
+          <div class="grp"><span class="lg">2. 수집 대상</span>
+            <div class="chks">
+              <label><input type="checkbox" checked> AP</label>
+              <label><input type="checkbox" checked> DB</label>
+              <label><input type="checkbox" checked> DBMS</label>
+              <label><input type="checkbox" checked> GIS</label>
+            </div>
+          </div>
+          <div class="grp"><span class="lg">3. DB 서버 접속</span>
+            <div class="frow"><span class="lbl">Protocol / Host</span><span class="inp dim">telnet · 110.15.1.172</span></div>
+          </div>
+          <div class="grp"><span class="lg">4. Oracle 접속</span>
+            <div class="frow"><span class="lbl">SID / Auth</span><span class="inp dim">upis · sysdba</span></div>
+          </div>
+          <div class="btns"><span class="btn">Test Connection</span><span class="btn primary">Save</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>5-1. 동작 명세 (그룹 1)</h3>
+  <table>
+    <tr><th>컨트롤</th><th>변경</th></tr>
+    <tr><td>시도 / 시군구</td><td><b>종속 콤보</b> — 시도 선택 시 해당 시군구만 (codes.json)</td></tr>
+    <tr><td>시스템(한글)</td><td>콤보(systems.ko) → <b>시스템영문 자동(readonly)</b></td></tr>
+    <tr><td>점검자</td><td>텍스트 유지 (기본 <code>$env:USERNAME</code>)</td></tr>
+    <tr><td>사이트 코드</td><td><b>자동조합(readonly)</b> <code>adm_시스템영문</code> — teal 강조칸</td></tr>
+    <tr><td>수집 대상</td><td>신규 그룹, <b>AP/DB/DBMS/GIS 체크</b>(기본 전체) → <code>site.json.sections</code></td></tr>
+  </table>
+
+  <h3>5-2. 디자인 방향 <span class="badge b-design">디자인팀</span></h3>
+  <ul>
+    <li>폭 640→<b>680</b>, 그룹 4단(사이트정보 / 수집대상 / DB접속 / Oracle), 상단 teal 헤더 띠</li>
+    <li><b>자동 생성 필드</b>(시스템영문·사이트코드) = 연한 teal 배경 <code>#f0fdfa</code> + 굵게 → "자동" 시각 구분</li>
+    <li>라벨 우측정렬 그리드 · 그룹 번호+아이콘 · <b>Save = teal 강조</b> 버튼</li>
+  </ul>
+
+  <!-- 6 -->
+  <h2>6. 서버 연동 <span class="ey">D4 · D5</span></h2>
+  <div class="card">
+    <ul>
+      <li><b>정합</b>: <code>sw_pjt.site_code</code> 를 동일 규칙 <code>adm_시스템영문</code> 으로 설정해야 payload.site 와 매칭 → 사업관리 화면에 <b>코드 자동생성 버튼</b>(동일 규칙) 추가(후속)</li>
+      <li><b>별칭(D5)</b>: 기존 <code>gangjin</code>/<code>gj</code>/<code>dyg</code> 과거 데이터 호환 → <code>findBySiteCode</code> 가 본코드+별칭 모두 조회</li>
+      <li>미스 시 기존대로 422 + "사업관리에서 site_code 설정" 안내(변경 없음)</li>
+    </ul>
+  </div>
+
+  <!-- 7 -->
+  <h2>7. 개발 단계 <span class="ey">STEPS</span></h2>
+  <div class="card">
+    <ol>
+      <li><b>codes.json 추출</b> — export 스크립트 + 패키지 동봉(폐쇄망)</li>
+      <li><b>setup GUI 개편</b> — 종속 콤보·자동영문·자동코드·섹션 체크 + 저장(sections) + 디자인</li>
+      <li><b>서버 site_code 정합</b> — 사업관리 자동생성(후속) + 별칭 조회 확장</li>
+      <li><b>마이그레이션</b> — 기존 site_code → 신코드 매핑/별칭</li>
+    </ol>
+  </div>
+
+  <!-- 8 -->
+  <h2>8. 검증 <span class="ey">VERIFY</span></h2>
+  <div class="card">
+    <ul>
+      <li>GUI: 종속 드롭다운·자동 영문/코드·섹션 저장 → 생성 <code>site.{code}.json</code> 확인(<b>시뮬레이션</b>)</li>
+      <li>서버: 신코드 + 별칭 <code>findBySiteCode</code> 단위/통합 테스트</li>
+      <li>codes.json 추출 정확성(46810_UPIS 등)</li>
+      <li><b>지자체 현장 실측 수집 = 사용자 직접 진행</b>(분담). codex 전체검증은 속도모드 종료 후</li>
+    </ul>
+  </div>
+
+  <!-- 다음 -->
+  <h2>다음 단계 <span class="ey">NEXT</span></h2>
+  <div class="flow">
+    <span class="step" style="background:var(--teal);color:#fff;border-color:var(--teal);">① 기획서(현재)</span><span class="arr">→</span>
+    <span class="step">② 사용자 승인</span><span class="arr">→</span>
+    <span class="step">③ codes.json 추출</span><span class="arr">→</span>
+    <span class="step">④ GUI 개편</span><span class="arr">→</span>
+    <span class="step">⑤ 서버 정합·별칭</span><span class="arr">→</span>
+    <span class="step">⑥ 마이그레이션</span>
+  </div>
+
+  <div class="foot">정도UIT · SW Manager · 점검 에이전트 사이트 정보 개편 기획서 — 2026-05-31</div>
+</div>
+</body>
+</html>
