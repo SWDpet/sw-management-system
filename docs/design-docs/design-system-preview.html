@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>SW Manager 디자인 시스템 — 통일안 미리보기</title>
+<link rel="stylesheet" href="../../src/main/resources/static/css/design-system.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  body{ font-family:var(--font); background:var(--bg); color:var(--text); margin:0; padding:30px 36px 60px; }
+  h1{ font-size:1.5rem; margin:0 0 4px; }
+  .sub{ color:var(--text2); font-size:.85rem; margin-bottom:26px; }
+  h3{ font-size:1rem; color:var(--primary); border-left:4px solid var(--primary); padding-left:10px; margin:30px 0 14px; }
+  .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+  .sw{ width:120px; }
+  .sw .chip{ height:54px; border-radius:8px; border:1px solid var(--border); }
+  .sw .nm{ font-size:.72rem; margin-top:6px; color:var(--text); font-weight:600; }
+  .sw .hex{ font-family:var(--font-mono); font-size:.68rem; color:var(--muted); }
+  .cmp{ display:flex; gap:30px; flex-wrap:wrap; }
+  .cmp .grp{ }
+  .cmp .lab{ font-size:.74rem; color:var(--text2); margin-bottom:6px; }
+  .dots{ display:flex; gap:6px; }
+  .dots b{ width:30px; height:30px; border-radius:6px; display:inline-block; border:1px solid var(--border); }
+  .arrow{ align-self:center; color:var(--muted); font-size:1.3rem; }
+  .cards{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; max-width:880px; }
+  .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); padding:18px; max-width:880px; }
+  .note{ font-size:.8rem; color:var(--text2); background:var(--primary-lt); border:1px solid #99F6E4; border-radius:8px; padding:10px 14px; margin-top:10px; }
+</style>
+</head>
+<body>
+  <h1>SW Manager 디자인 시스템 — 통일안</h1>
+  <div class="sub">SoT: docs/DESIGN.md · 구현: static/css/design-system.css · 흩어진 3개 팔레트 → teal 기준 단일 토큰</div>
+
+  <h3>1. 통일 토큰 팔레트</h3>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--primary)"></div><div class="nm">Primary</div><div class="hex">#0F766E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--primary2)"></div><div class="nm">Primary Dark</div><div class="hex">#115E59</div></div>
+    <div class="sw"><div class="chip" style="background:var(--primary-lt)"></div><div class="nm">Primary Light</div><div class="hex">#F0FDFA</div></div>
+    <div class="sw"><div class="chip" style="background:var(--success)"></div><div class="nm">Success</div><div class="hex">#059669</div></div>
+    <div class="sw"><div class="chip" style="background:var(--warning)"></div><div class="nm">Warning</div><div class="hex">#D97706</div></div>
+    <div class="sw"><div class="chip" style="background:var(--danger)"></div><div class="nm">Danger</div><div class="hex">#DC2626</div></div>
+    <div class="sw"><div class="chip" style="background:var(--info)"></div><div class="nm">Info</div><div class="hex">#0891B2</div></div>
+  </div>
+  <div class="row" style="margin-top:14px;">
+    <div class="sw"><div class="chip" style="background:var(--text)"></div><div class="nm">Text</div><div class="hex">#1C1917</div></div>
+    <div class="sw"><div class="chip" style="background:var(--text2)"></div><div class="nm">Text-2</div><div class="hex">#57534E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--muted)"></div><div class="nm">Muted</div><div class="hex">#A8A29E</div></div>
+    <div class="sw"><div class="chip" style="background:var(--surface-2)"></div><div class="nm">Surface-2</div><div class="hex">#F5F5F4</div></div>
+    <div class="sw"><div class="chip" style="background:var(--border2)"></div><div class="nm">Border-2</div><div class="hex">#D6D3D1</div></div>
+  </div>
+
+  <h3>2. 레거시(흩어진 색) → 통일</h3>
+  <div class="cmp">
+    <div class="grp"><div class="lab">완료/성공 (녹 3종 혼재)</div><div class="dots"><b style="background:#1cc88a"></b><b style="background:#2e7d32"></b><b style="background:#059669"></b></div></div>
+    <span class="arrow">→</span>
+    <div class="grp"><div class="lab">--success</div><div class="dots"><b style="background:var(--success)"></b></div></div>
+    <div class="grp" style="margin-left:30px;"><div class="lab">진행/주의 (황·주황 혼재)</div><div class="dots"><b style="background:#f6c23e"></b><b style="background:#e64a19"></b></div></div>
+    <span class="arrow">→</span>
+    <div class="grp"><div class="lab">--warning</div><div class="dots"><b style="background:var(--warning)"></b></div></div>
+  </div>
+  <div class="cmp" style="margin-top:16px;">
+    <div class="grp"><div class="lab">정보 (청·파 혼재)</div><div class="dots"><b style="background:#36b9cc"></b><b style="background:#4e73df"></b></div></div>
+    <span class="arrow">→</span>
+    <div class="grp"><div class="lab">--info / --primary</div><div class="dots"><b style="background:var(--info)"></b><b style="background:var(--primary)"></b></div></div>
+    <div class="grp" style="margin-left:30px;"><div class="lab">보라(Material, 시스템에 없음)</div><div class="dots"><b style="background:#7b1fa2"></b></div></div>
+    <span class="arrow">→</span>
+    <div class="grp"><div class="lab">teal 로 흡수</div><div class="dots"><b style="background:var(--primary)"></b></div></div>
+  </div>
+
+  <h3>3. 공용 컴포넌트 (통일 적용 예시)</h3>
+  <div class="row" style="margin-bottom:18px;">
+    <button class="ds-btn ds-btn--primary">＋ 신규 등록</button>
+    <button class="ds-btn ds-btn--subtle">필터</button>
+    <button class="ds-btn">상세</button>
+    <button class="ds-btn ds-btn--danger">삭제</button>
+  </div>
+
+  <div class="cards">
+    <div class="ds-card ds-card--primary"><div class="ds-card__head">📁 전체 등록 사업</div><div class="ds-card__value">312<span class="unit">건</span></div><div class="ds-card__meta">2026년 등록 전체</div></div>
+    <div class="ds-card"><div class="ds-card__head">✔ 완료 사업</div><div class="ds-card__value" style="color:var(--success)">198<span class="unit">건</span></div><div class="ds-card__meta">전체 대비 63%</div></div>
+    <div class="ds-card"><div class="ds-card__head">↻ 진행 사업</div><div class="ds-card__value" style="color:var(--warning)">114<span class="unit">건</span></div><div class="ds-card__meta">전체 대비 37%</div></div>
+    <div class="ds-card"><div class="ds-card__head">🔑 라이선스</div><div class="ds-card__value">1,580</div><div class="ds-card__meta">신규 120 · 기존 1,460</div></div>
+  </div>
+
+  <div class="panel" style="margin-top:18px;">
+    <table class="ds-table">
+      <thead><tr><th>시스템</th><th>총개수</th><th>상태</th><th>금액 합계</th></tr></thead>
+      <tbody>
+        <tr><td>도시계획정보체계(UPIS)</td><td>296</td><td><span class="ds-badge ds-badge--warning">진행</span></td><td class="is-emphasis">5,240,000,000</td></tr>
+        <tr><td>부동산종합공부(KRAS)</td><td>14</td><td><span class="ds-badge ds-badge--success">완료</span></td><td class="is-emphasis">980,000,000</td></tr>
+        <tr><td>통합인허가(IPSS)</td><td>6</td><td><span class="ds-badge ds-badge--info">검토</span></td><td class="is-emphasis">320,000,000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">※ 이 미리보기는 실제 <code>design-system.css</code>를 그대로 link 해 렌더했습니다. 전역 적용 시 이 토큰/컴포넌트가 페이지에 공유됩니다.</div>
+</body>
+</html>
