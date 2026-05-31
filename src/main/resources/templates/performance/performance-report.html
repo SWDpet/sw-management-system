@@ -6,55 +6,57 @@
     <title>성과 리포트</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1200px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1565c0; }
+        .page-header h2 { margin: 0; color: var(--primary); }
         .btn { padding: 8px 16px; border: none; border-radius: 5px; font-size: 0.85em; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-        .btn-primary { background: #1565c0; color: white; }
-        .btn-success { background: #1cc88a; color: white; }
-        .btn-secondary { background: #858796; color: white; }
-        .btn-excel { background: #217346; color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-secondary { background: var(--text2); color: white; }
+        .btn-excel { background: var(--success); color: white; }
 
         /* 검색 폼 */
         .search-box { background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,0.15); }
-        .search-box h4 { margin: 0 0 15px; color: #333; }
+        .search-box h4 { margin: 0 0 15px; color: var(--text); }
         .search-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
         .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 0.78em; color: #888; font-weight: 600; }
-        .form-group select, .form-group input { padding: 7px 12px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.85em; }
-        .period-sep { font-size: 1.1em; font-weight: 700; color: #888; padding-bottom: 8px; }
+        .form-group label { font-size: 0.78em; color: var(--muted); font-weight: 600; }
+        .form-group select, .form-group input { padding: 7px 12px; border: 1px solid var(--border2); border-radius: 5px; font-size: 0.85em; }
+        .period-sep { font-size: 1.1em; font-weight: 700; color: var(--muted); padding-bottom: 8px; }
 
         /* 리포트 결과 */
         .report-result { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 0.15rem 1.75rem rgba(58,59,69,0.15); }
-        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #1565c0; }
-        .report-header h3 { margin: 0; color: #1565c0; }
-        .report-meta { font-size: 0.82em; color: #888; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--primary); }
+        .report-header h3 { margin: 0; color: var(--primary); }
+        .report-meta { font-size: 0.82em; color: var(--muted); }
 
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
-        .stat-item { background: #f8f9fc; border-radius: 8px; padding: 18px; text-align: center; }
-        .stat-item .stat-label { font-size: 0.78em; color: #888; margin-bottom: 6px; }
-        .stat-item .stat-value { font-size: 1.6em; font-weight: 700; color: #0F766E; }
-        .stat-item .stat-unit { font-size: 0.75em; color: #888; }
+        .stat-item { background: var(--surface-2); border-radius: 8px; padding: 18px; text-align: center; }
+        .stat-item .stat-label { font-size: 0.78em; color: var(--muted); margin-bottom: 6px; }
+        .stat-item .stat-value { font-size: 1.6em; font-weight: 700; color: var(--primary); }
+        .stat-item .stat-unit { font-size: 0.75em; color: var(--muted); }
 
         .rate-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .rate-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 20px; color: white; text-align: center; }
-        .rate-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        /* 수행율 카드 — 브랜드 teal 그라데이션 / 일정준수 success 그라데이션 */
+        .rate-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary2) 100%); border-radius: 10px; padding: 20px; color: white; text-align: center; }
+        .rate-card.green { background: linear-gradient(135deg, var(--success) 0%, #34D399 100%); }
         .rate-card .rate-label { font-size: 0.85em; opacity: 0.9; margin-bottom: 8px; }
         .rate-card .rate-value { font-size: 2.2em; font-weight: 700; }
 
         .detail-table { margin-top: 20px; }
-        .detail-table h4 { margin: 0 0 12px; color: #333; }
+        .detail-table h4 { margin: 0 0 12px; color: var(--text); }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 12px; text-align: center; font-size: 0.85em; border-bottom: 1px solid #e3e6f0; }
-        th { background: #f8f9fc; color: #5a5c69; font-weight: 600; }
-        tr:hover { background: #f8f9fc; }
+        th, td { padding: 10px 12px; text-align: center; font-size: 0.85em; border-bottom: 1px solid var(--border); }
+        th { background: var(--surface-2); color: var(--text2); font-weight: 600; }
+        tr:hover { background: var(--surface-2); }
 
         .chart-wrap { margin-top: 25px; }
         .chart-wrap canvas { max-height: 300px; }
 
-        .no-data { text-align: center; padding: 50px; color: #aaa; font-size: 1em; }
+        .no-data { text-align: center; padding: 50px; color: var(--muted); font-size: 1em; }
         .no-data i { font-size: 3em; margin-bottom: 15px; display: block; }
     </style>
 </head>
@@ -234,10 +236,11 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: '설치', data: installData, borderColor: '#0F766E', backgroundColor: 'rgba(15, 118, 110,0.1)', fill: true, tension: 0.3 },
-                        { label: '패치', data: patchData, borderColor: '#1cc88a', backgroundColor: 'rgba(28,200,138,0.1)', fill: true, tension: 0.3 },
-                        { label: '장애', data: faultData, borderColor: '#f08a7e', backgroundColor: 'rgba(231,74,59,0.1)', fill: true, tension: 0.3 },
-                        { label: '업무지원', data: supportData, borderColor: '#f6c23e', backgroundColor: 'rgba(246,194,62,0.1)', fill: true, tension: 0.3 }
+                        // 업무유형 카테고리색 = 디자인 토큰 (primary/success/danger/warning)
+                        { label: '설치', data: installData, borderColor: '#0F766E', backgroundColor: 'rgba(15,118,110,0.1)', fill: true, tension: 0.3 },
+                        { label: '패치', data: patchData, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)', fill: true, tension: 0.3 },
+                        { label: '장애', data: faultData, borderColor: '#DC2626', backgroundColor: 'rgba(220,38,38,0.1)', fill: true, tension: 0.3 },
+                        { label: '업무지원', data: supportData, borderColor: '#D97706', backgroundColor: 'rgba(217,119,6,0.1)', fill: true, tension: 0.3 }
                     ]
                 },
                 options: {
