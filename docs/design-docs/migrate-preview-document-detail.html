@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 문서 상세 (D-10) BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA;
+    --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:22px; }
+  .legend{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legend code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#FAFAF9; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  /* 공통 레이아웃 */
+  .page-header{ background:#fff; border-radius:12px; padding:14px 18px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,0.08); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .page-header h2{ margin:0; font-size:1.05em; }
+  .header-actions{ display:flex; flex-wrap:wrap; gap:6px; }
+  .header-actions a, .header-actions button{ padding:7px 12px; border-radius:5px; font-size:.78em; font-weight:600; border:none; cursor:pointer; color:#fff; text-decoration:none; }
+  .info-section{ background:#fff; border-radius:12px; padding:18px; margin-bottom:14px; box-shadow:0 2px 10px rgba(0,0,0,0.08); }
+  .info-section h3{ margin:0 0 14px; font-size:1em; padding-left:10px; }
+  .info-table{ width:100%; border-collapse:collapse; }
+  .info-table th,.info-table td{ padding:9px 12px; font-size:.85em; }
+  .info-table th{ width:110px; text-align:left; font-weight:600; }
+  .badge{ display:inline-block; padding:3px 10px; border-radius:4px; font-size:.78em; font-weight:600; color:#fff; }
+  .tab-bar{ display:flex; gap:0; margin-bottom:14px; }
+  .tab-btn{ padding:9px 18px; background:none; border:none; font-size:.85em; font-weight:600; cursor:pointer; border-bottom:3px solid transparent; }
+  .history-table{ width:100%; border-collapse:collapse; }
+  .history-table th,.history-table td{ padding:8px 11px; font-size:.8em; text-align:left; }
+  .history-table th{ font-weight:600; }
+
+  /* BEFORE */
+  .before .page-header h2{ color:#1565c0; }
+  .before .btn-edit{ background:#0F766E; } .before .btn-delete{ background:#f08a7e; }
+  .before .btn-hwp{ background:#0abde3; } .before .btn-excel{ background:#1cc88a; }
+  .before .btn-zip{ background:#6c5ce7; } .before .btn-list{ background:#858796; }
+  .before .info-section h3{ color:#1565c0; border-left:4px solid #1565c0; }
+  .before .info-table th,.before .info-table td{ border:1px solid #e3e6f0; }
+  .before .info-table th{ background:#f8f9fc; color:#5a5c69; }
+  .before .badge-completed{ background:#1cc88a; } .before .badge-draft{ background:#858796; }
+  .before .tab-bar{ border-bottom:2px solid #e3e6f0; }
+  .before .tab-btn{ color:#888; } .before .tab-btn.active{ color:#1565c0; border-bottom-color:#1565c0; }
+  .before .history-table th{ background:#f8f9fc; color:#5a5c69; border-bottom:1px solid #eee; }
+  .before .history-table td{ border-bottom:1px solid #eee; }
+  .before .action-create{ color:#1cc88a; } .before .action-status{ color:#f6c23e; } .before .action-reject{ color:#f08a7e; font-weight:700; }
+
+  /* AFTER */
+  .after .page-header h2{ color:var(--primary); }
+  .after .btn-edit{ background:var(--primary); } .after .btn-delete{ background:var(--danger); }
+  .after .btn-hwp{ background:#0abde3; } .after .btn-excel{ background:var(--success); }
+  .after .btn-zip{ background:#6c5ce7; } .after .btn-list{ background:var(--text2); }
+  .after .info-section h3{ color:var(--primary); border-left:4px solid var(--primary); }
+  .after .info-table th,.after .info-table td{ border:1px solid var(--border); }
+  .after .info-table th{ background:var(--surface-2); color:var(--text2); }
+  .after .badge-completed{ background:var(--success); } .after .badge-draft{ background:var(--muted); }
+  .after .tab-bar{ border-bottom:2px solid var(--border); }
+  .after .tab-btn{ color:var(--muted); } .after .tab-btn.active{ color:var(--primary); border-bottom-color:var(--primary); }
+  .after .history-table th{ background:var(--surface-2); color:var(--text2); border-bottom:1px solid var(--border); }
+  .after .history-table td{ border-bottom:1px solid var(--border); }
+  .after .action-create{ color:var(--success); } .after .action-status{ color:var(--warning); } .after .action-reject{ color:var(--danger); font-weight:700; }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 문서 상세 (D-10)</h1>
+  <div class="sub">왼쪽 = 현재 운영 · 오른쪽 = 토큰 적용. 제목·탭 파랑→teal, 삭제 연빨강→danger, 회색/테두리 토큰화.</div>
+  <div class="legend">
+    <b>주요 변경</b> · 제목/탭 <code>#1565c0 파랑</code> → <code>--primary</code> ·
+    삭제 <code>#f08a7e</code> → <code>--danger</code> ·
+    완료/Excel/action-create <code>#1cc88a</code> → <code>--success</code> ·
+    임시/action-status <code>#f6c23e</code> → <code>--warning</code> ·
+    th/라벨 회색 → <code>--text2/--muted</code> · 테두리 → <code>--border</code>
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header">
+          <h2><i class="fas fa-file-alt"></i> 문서 상세 (D-10)</h2>
+          <div class="header-actions">
+            <a class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
+            <button class="btn-delete"><i class="fas fa-trash"></i> 삭제</button>
+            <a class="btn-hwp"><i class="fas fa-file-alt"></i> 착수계(HWP)</a>
+            <a class="btn-excel"><i class="fas fa-file-excel"></i> 설계내역서(Excel)</a>
+            <a class="btn-zip"><i class="fas fa-file-archive"></i> ZIP</a>
+            <a class="btn-list"><i class="fas fa-list"></i> 목록</a>
+          </div>
+        </div>
+        <div class="info-section">
+          <h3><i class="fas fa-info-circle"></i> 기본 정보</h3>
+          <table class="info-table">
+            <tr><th>문서번호</th><td>COM-0117</td><th>문서유형</th><td>착수계</td></tr>
+            <tr><th>지자체</th><td>강진군</td><th>상태</th><td><span class="badge badge-completed">완료</span></td></tr>
+          </table>
+        </div>
+        <div class="info-section">
+          <div class="tab-bar"><button class="tab-btn active">문서 내용</button><button class="tab-btn">변경 이력</button></div>
+          <table class="history-table">
+            <thead><tr><th>일시</th><th>작업</th><th>처리자</th></tr></thead>
+            <tbody>
+              <tr><td>05-30 14:02</td><td><span class="action-create">CREATE</span></td><td>홍길동</td></tr>
+              <tr><td>05-30 15:11</td><td><span class="action-status">STATUS</span></td><td>홍길동</td></tr>
+              <tr><td>05-31 09:20</td><td><span class="action-reject">REJECT</span></td><td>관리자</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame">
+        <div class="page-header">
+          <h2><i class="fas fa-file-alt"></i> 문서 상세 (D-10)</h2>
+          <div class="header-actions">
+            <a class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
+            <button class="btn-delete"><i class="fas fa-trash"></i> 삭제</button>
+            <a class="btn-hwp"><i class="fas fa-file-alt"></i> 착수계(HWP)</a>
+            <a class="btn-excel"><i class="fas fa-file-excel"></i> 설계내역서(Excel)</a>
+            <a class="btn-zip"><i class="fas fa-file-archive"></i> ZIP</a>
+            <a class="btn-list"><i class="fas fa-list"></i> 목록</a>
+          </div>
+        </div>
+        <div class="info-section">
+          <h3><i class="fas fa-info-circle"></i> 기본 정보</h3>
+          <table class="info-table">
+            <tr><th>문서번호</th><td>COM-0117</td><th>문서유형</th><td>착수계</td></tr>
+            <tr><th>지자체</th><td>강진군</td><th>상태</th><td><span class="badge badge-completed">완료</span></td></tr>
+          </table>
+        </div>
+        <div class="info-section">
+          <div class="tab-bar"><button class="tab-btn active">문서 내용</button><button class="tab-btn">변경 이력</button></div>
+          <table class="history-table">
+            <thead><tr><th>일시</th><th>작업</th><th>처리자</th></tr></thead>
+            <tbody>
+              <tr><td>05-30 14:02</td><td><span class="action-create">CREATE</span></td><td>홍길동</td></tr>
+              <tr><td>05-30 15:11</td><td><span class="action-status">STATUS</span></td><td>홍길동</td></tr>
+              <tr><td>05-31 09:20</td><td><span class="action-reject">REJECT</span></td><td>관리자</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ HWP(<code>#0abde3</code>)·ZIP(<code>#6c5ce7</code>) 다운로드 버튼은 파일종류 구분색이라 현행 유지. Excel만 <code>--success</code>로 정리.</div>
+</body>
+</html>
