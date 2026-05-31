@@ -4,16 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GeoNURIS 라이선스 수정 - SW 관리 시스템</title>
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FAFAF9; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); }
         .container { max-width: 860px; margin: 0 auto; padding: 24px 20px; }
 
         .header { background: white; padding: 20px 24px; border-radius: 8px;
                   margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                   display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 22px; color: #e06b5e; }
-        .header p  { color: #666; font-size: 13px; margin-top: 3px; }
+        .header h1 { font-size: 22px; color: var(--primary); }
+        .header p  { color: var(--text2); font-size: 13px; margin-top: 3px; }
 
         .btn { display: inline-flex; align-items: center; gap: 4px;
                padding: 8px 14px; border-radius: 6px;
@@ -21,45 +22,45 @@
                cursor: pointer; border: none; transition: 0.2s;
                white-space: nowrap; line-height: 1.4; }
         .btn:hover { opacity: 0.88; }
-        .btn-home     { background: #6c757d; color: white; }
-        .btn-home:hover { background: #5a6268; }
-        .btn-list     { background: #0F766E; color: white; }
-        .btn-list:hover { background: #115E59; }
-        .btn-detail   { background: #0F766E; color: white; }
-        .btn-detail:hover { background: #115E59; }
-        .btn-delete   { background: #dc3545; color: white; }
-        .btn-update   { background: #e67e22; color: white; font-size: 16px;
+        .btn-home     { background: var(--text2); color: white; }
+        .btn-home:hover { background: var(--text); }
+        .btn-list     { background: var(--primary); color: white; }
+        .btn-list:hover { background: var(--primary2); }
+        .btn-detail   { background: var(--primary); color: white; }
+        .btn-detail:hover { background: var(--primary2); }
+        .btn-delete   { background: var(--danger); color: white; }
+        .btn-update   { background: var(--primary); color: white; font-size: 16px;
                         padding: 12px 40px; width: 100%; margin-top: 10px;
                         justify-content: center; }
-        .btn-update:hover { background: #d35400; }
+        .btn-update:hover { background: var(--primary2); }
 
         /* 카드 */
         .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 18px; }
-        .card-title { padding: 14px 20px; border-bottom: 1px solid #eee; font-size: 15px;
-                      font-weight: bold; color: #333; display: flex; align-items: center; gap: 8px; }
+        .card-title { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 15px;
+                      font-weight: bold; color: var(--text); display: flex; align-items: center; gap: 8px; }
         .card-body  { padding: 20px; }
 
         /* 폼 */
         .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-full   { grid-column: 1 / -1; }
         .form-group  { display: flex; flex-direction: column; gap: 5px; }
-        .form-group label { font-size: 13px; color: #555; font-weight: 500; }
-        .form-group label .req { color: #e74c3c; margin-left: 2px; }
-        .form-control { padding: 9px 12px; border: 1px solid #ddd; border-radius: 5px;
+        .form-group label { font-size: 13px; color: var(--text2); font-weight: 500; }
+        .form-group label .req { color: var(--danger); margin-left: 2px; }
+        .form-control { padding: 9px 12px; border: 1px solid var(--border2); border-radius: 5px;
                         font-size: 14px; width: 100%; transition: 0.2s; }
-        .form-control:focus { outline: none; border-color: #e67e22; box-shadow: 0 0 0 2px rgba(230,126,34,0.15); }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(15,118,110,0.15); }
         select.form-control { background: white; cursor: pointer; }
 
         /* 라이선스 타입 카드 선택 */
         .type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .type-card { border: 2px solid #ddd; border-radius: 8px; padding: 12px 6px;
+        .type-card { border: 2px solid var(--border2); border-radius: 8px; padding: 12px 6px;
                      text-align: center; cursor: pointer; transition: 0.2s; position: relative; }
-        .type-card:hover { border-color: #e67e22; background: #fef5e7; }
+        .type-card:hover { border-color: var(--primary); background: var(--primary-lt); }
         .type-card input[type=radio] { display: none; }
-        .type-card.selected { border-color: #e67e22; background: #fef5e7; }
+        .type-card.selected { border-color: var(--primary); background: var(--primary-lt); }
         .type-card .icon { font-size: 22px; margin-bottom: 5px; }
-        .type-card .name { font-size: 12px; font-weight: bold; color: #333; }
-        .type-card .sub  { font-size: 11px; color: #666; margin-top: 2px; }
+        .type-card .name { font-size: 12px; font-weight: bold; color: var(--text); }
+        .type-card .sub  { font-size: 11px; color: var(--text2); margin-top: 2px; }
 
         /* 동적 섹션 */
         .section-gss    { display: none; }
@@ -69,20 +70,20 @@
         /* 체크박스 */
         .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 10px 12px;
-                         border: 1px solid #eee; border-radius: 6px; cursor: pointer; }
-        .checkbox-item:hover { background: #F5F5F4; }
+                         border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+        .checkbox-item:hover { background: var(--surface-2); }
         .checkbox-item input { width: 16px; height: 16px; cursor: pointer; }
         .checkbox-item span  { font-size: 13px; }
 
         /* 힌트 */
-        .hint { font-size: 11px; color: #999; margin-top: 3px; }
-        .alert-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;
+        .hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+        .alert-error { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C;
                        padding: 12px 16px; border-radius: 5px; margin-bottom: 16px; font-size: 14px; }
-        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724;
+        .alert-success { background: #F0FDF4; border: 1px solid #86EFAC; color: #166534;
                          padding: 12px 16px; border-radius: 5px; margin-bottom: 16px; font-size: 14px; }
-        .admin-badge { display: inline-block; background: #dc3545; color: white; font-size: 11px;
+        .admin-badge { display: inline-block; background: var(--danger); color: white; font-size: 11px;
                        padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
-        .id-info { display: inline-block; background: #F5F5F4; color: #666; font-size: 12px;
+        .id-info { display: inline-block; background: var(--surface-2); color: var(--text2); font-size: 12px;
                    padding: 3px 10px; border-radius: 4px; margin-left: 8px; }
 
         @media (max-width: 640px) {
@@ -125,7 +126,7 @@
 
         <!-- ① 라이선스 종류 -->
         <div class="card">
-            <div class="card-title">① 라이선스 종류 선택 <span style="color:#e74c3c; font-size:12px;">필수</span></div>
+            <div class="card-title">① 라이선스 종류 선택 <span style="color:var(--danger); font-size:12px;">필수</span></div>
             <div class="card-body">
                 <div class="type-grid">
                     <label class="type-card" onclick="selectType('GSS30',this)"
@@ -169,7 +170,7 @@
                         <div class="sub">GeoNURIS</div>
                     </label>
                 </div>
-                <p id="typeError" style="color:#e74c3c; font-size:12px; margin-top:8px; display:none;">
+                <p id="typeError" style="color:var(--danger); font-size:12px; margin-top:8px; display:none;">
                     라이선스 종류를 선택해주세요.
                 </p>
             </div>
