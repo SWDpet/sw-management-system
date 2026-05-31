@@ -7,90 +7,93 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>점검내역서 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1200px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #0f766e; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
-        .btn-save { background: #1cc88a; color: white; }
-        .btn-load { background: #0F766E; color: white; }
-        .btn-cancel { background: #858796; color: white; }
-        .draft-indicator { font-size: 0.75em; color: #f08a7e; margin-left: 12px; display: none; }
-        .draft-indicator.saved { color: #1cc88a; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-load { background: var(--primary); color: white; }
+        .btn-cancel { background: var(--text2); color: white; }
+        .draft-indicator { font-size: 0.75em; color: var(--danger); margin-left: 12px; display: none; }
+        .draft-indicator.saved { color: var(--success); }
 
         .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; transition: 0.2s; }
-        .tab-nav button.active { background: white; color: #0f766e; border-bottom-color: #0f766e; }
+        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: var(--surface-2); font-size: 0.82em; font-weight: 600; cursor: pointer; color: var(--text2); border-bottom: 3px solid transparent; transition: 0.2s; }
+        .tab-nav button.active { background: white; color: var(--primary); border-bottom-color: var(--primary); }
 
         .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-section.active { display: block; }
-        .section-title { margin: 0 0 18px; font-size: 1em; font-weight: 800; color: #0f766e; border-left: 5px solid #0f766e; border-bottom: 1px solid #e1e5ec; padding: 0 0 7px 10px; }
-        .sub-title { margin: 24px 0 12px; font-weight: 700; font-size: 0.9em; color: #333; border-left: 3px solid #4caf50; padding-left: 8px; }
+        .section-title { margin: 0 0 18px; font-size: 1em; font-weight: 800; color: var(--primary); border-left: 5px solid var(--primary); border-bottom: 1px solid var(--border); padding: 0 0 7px 10px; }
+        .sub-title { margin: 24px 0 12px; font-weight: 700; font-size: 0.9em; color: var(--text); border-left: 3px solid var(--success); padding-left: 8px; }
 
         .form-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
-        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 140px; white-space: nowrap; }
-        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; box-sizing: border-box; }
-        .form-table input:focus, .form-table select:focus { border-color: #0f766e; outline: none; }
-        .form-table input[readonly] { background: #f8f9fc; color: #666; }
-        .required { color: #f08a7e; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid var(--border); font-size: 0.88em; }
+        .form-table th { background: var(--surface-2); color: var(--text2); font-weight: 600; text-align: left; width: 140px; white-space: nowrap; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border2); border-radius: 5px; font-size: 0.88em; font-family: inherit; box-sizing: border-box; }
+        .form-table input:focus, .form-table select:focus { border-color: var(--primary); outline: none; }
+        .form-table input[readonly] { background: var(--surface-2); color: var(--text2); }
+        .required { color: var(--danger); }
 
         .check-table { width: 100%; border-collapse: collapse; font-size: 0.82em; margin-bottom: 16px; }
-        .check-table th, .check-table td { padding: 8px 10px; border: 1px solid #e3e6f0; }
-        .check-table thead th { background: #f0fdfa; color: #0f766e; font-weight: 700; text-align: center; }
+        .check-table th, .check-table td { padding: 8px 10px; border: 1px solid var(--border); }
+        .check-table thead th { background: var(--primary-lt); color: var(--primary); font-weight: 700; text-align: center; }
         .check-table tbody td { vertical-align: middle; }
-        .check-table .cat-cell { background: #f8f9fc; font-weight: 600; text-align: center; white-space: nowrap; }
+        .check-table .cat-cell { background: var(--surface-2); font-weight: 600; text-align: center; white-space: nowrap; }
 
         .result-cell { text-align: center; white-space: normal; }
         .result-cell label { margin: 0 6px; cursor: pointer; font-size: 0.92em; white-space: nowrap; }
         .result-cell input[type="checkbox"] { margin-right: 2px; cursor: pointer; transform: scale(1.1); vertical-align: middle; }
-        .qr-memo { font-size: 0.75em; color: #1e40af; margin-top: 5px; word-break: break-all; white-space: normal; line-height: 1.3; background: #dbeafe; border: 1px solid #93c5fd; border-radius: 4px; padding: 3px 7px; display: block; text-align: left; font-weight: 600; }
+        .qr-memo { font-size: 0.75em; color: #155E75; margin-top: 5px; word-break: break-all; white-space: normal; line-height: 1.3; background: #ECFEFF; border: 1px solid #A5F3FC; border-radius: 4px; padding: 3px 7px; display: block; text-align: left; font-weight: 600; }
 
         /* inspect-report-d-v6 Phase H — 자동 영역인데 QR 수집값이 없는 행 시각 단서.
            applyAutoReadonlyIfNeeded() / restoreCheckResults() 이후 markAwaitingCollection() 가
            '정상'/'점검' 어느 체크박스도 안 켜진 자동 행에 awaiting-collection 클래스를 붙임. */
-        tr.awaiting-collection { background: #fffbeb !important; }
+        /* 자동 수집대기 행 = warning(amber) 패밀리 / 수동 행 = 보라(토큰 없음, 카테고리 구분 유지) */
+        tr.awaiting-collection { background: #FFFBEB !important; }
         tr.awaiting-collection.manual-row { background: #faf5ff !important; }
-        tr.awaiting-collection .result-cell label { color: #b45309; }
+        tr.awaiting-collection .result-cell label { color: #92400E; }
         tr.awaiting-collection.manual-row .result-cell label { color: #7c3aed; }
-        tr.awaiting-collection .result-cell { border: 1px dashed #d97706 !important; }
+        tr.awaiting-collection .result-cell { border: 1px dashed var(--warning) !important; }
         tr.awaiting-collection.manual-row .result-cell { border: 1px dashed #a855f7 !important; }
         tr.awaiting-collection .awaiting-tag {
             display: inline-block; margin-left: 6px; padding: 2px 8px;
             font-size: 0.78em; font-style: italic; color: #92400e;
-            border: 1px dashed #d97706; border-radius: 10px; background: #fff;
+            border: 1px dashed var(--warning); border-radius: 10px; background: #fff;
         }
         tr.awaiting-collection .awaiting-tag.manual-check {
             color: #6b21a8; border-color: #a855f7; background: #faf5ff; font-style: normal; font-weight: 600;
         }
 
-        .server-card { border: 1px solid #ddd; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
-        .server-card.db { background: #e8f5e9; border-left: 4px solid #4caf50; }
-        .server-card.ap { background: #e3f2fd; border-left: 4px solid #2196f3; }
+        .server-card { border: 1px solid var(--border2); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+        /* 서버 카드 — DB=success(녹) · AP=info(청) 카테고리 */
+        .server-card.db { background: #F0FDF4; border-left: 4px solid var(--success); }
+        .server-card.ap { background: #ECFEFF; border-left: 4px solid var(--info); }
         .server-card h4 { margin: 0 0 8px; font-size: 0.92em; }
-        .server-card .spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; font-size: 0.83em; color: #555; }
+        .server-card .spec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; font-size: 0.83em; color: var(--text2); }
 
-        .btn-add-row { padding: 5px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-top: 6px; }
-        .btn-del-row { padding: 3px 8px; background: #f08a7e; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+        .btn-add-row { padding: 5px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-top: 6px; }
+        .btn-del-row { padding: 3px 8px; background: var(--danger); color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
         .report-list-modal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; }
         .report-list-content { background:white; margin:80px auto; max-width:700px; border-radius:12px; padding:24px; max-height:70vh; overflow-y:auto; }
-        .report-list-content h3 { margin:0 0 16px; color:#0f766e; }
-        .report-item { padding:12px; border:1px solid #e3e6f0; border-radius:6px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-        .report-item:hover { background:#f0f4ff; }
+        .report-list-content h3 { margin:0 0 16px; color:var(--primary); }
+        .report-item { padding:12px; border:1px solid var(--border); border-radius:6px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+        .report-item:hover { background:var(--primary-lt); }
         .report-item .info { font-size:0.88em; }
         .report-item .status { font-size:0.75em; padding:3px 8px; border-radius:10px; }
-        .report-item .status.draft { background:#fff3cd; color:#856404; }
-        .report-item .status.completed { background:#d4edda; color:#155724; }
-        .type-badge { font-size: 0.72em; padding: 2px 8px; border-radius: 10px; background: #f0fdfa; color: #0f766e; margin-left: 8px; font-weight: 600; }
+        .report-item .status.draft { background:#FFFBEB; color:#92400E; }
+        .report-item .status.completed { background:#F0FDF4; color:#166534; }
+        .type-badge { font-size: 0.72em; padding: 2px 8px; border-radius: 10px; background: var(--primary-lt); color: var(--primary); margin-left: 8px; font-weight: 600; }
 
         .sign-box { flex:1; min-width:280px; }
-        .sign-label { font-weight:700; font-size:0.88em; color:#333; margin-bottom:6px; }
-        .sign-canvas-wrap { position:relative; display:inline-block; border:2px solid #d1d3e2; border-radius:8px; background:#fff; }
+        .sign-label { font-weight:700; font-size:0.88em; color:var(--text); margin-bottom:6px; }
+        .sign-canvas-wrap { position:relative; display:inline-block; border:2px solid var(--border2); border-radius:8px; background:#fff; }
         .sign-canvas-wrap canvas { display:block; border-radius:6px; cursor:crosshair; touch-action:none; }
         .sign-clear-btn { position:absolute; top:6px; right:6px; background:rgba(231,74,59,0.85); color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:0.75em; cursor:pointer; }
-        .sign-clear-btn:hover { background:#f08a7e; }
+        .sign-clear-btn:hover { background:var(--danger); }
         .sign-step-card { background:#fff; border-radius:12px; padding:24px; box-shadow:0 2px 12px rgba(0,0,0,0.1); margin-bottom:16px; }
         /* === Galaxy Tab S8 세로모드 반응형 (max-width: 900px) === */
         @media (max-width: 900px) {
@@ -134,44 +137,44 @@
             <span class="draft-indicator" id="draftIndicator"><i class="fas fa-circle"></i> 자동저장됨</span>
         </div>
         <div class="header-actions">
-            <button onclick="saveReport('DRAFT')" class="btn-save" style="background:#f6c23e;color:#333;"><i class="fas fa-edit"></i> 임시저장</button>
+            <button onclick="saveReport('DRAFT')" class="btn-save" style="background:var(--warning);color:var(--text);"><i class="fas fa-edit"></i> 임시저장</button>
             <button onclick="saveReport('COMPLETED')" class="btn-save"><i class="fas fa-save"></i> 저장</button>
-            <button onclick="openSignModal()" class="btn-save" style="background:#0F766E;"><i class="fas fa-signature"></i> 서명 요청</button>
-            <a href="/ops-doc/list" class="btn-load" style="background:#36b9cc;"><i class="fas fa-list"></i> 목록</a>
+            <button onclick="openSignModal()" class="btn-save" style="background:var(--primary);"><i class="fas fa-signature"></i> 서명 요청</button>
+            <a href="/ops-doc/list" class="btn-load" style="background:var(--info);"><i class="fas fa-list"></i> 목록</a>
             <a href="/ops-doc/list" class="btn-cancel"><i class="fas fa-arrow-left"></i> 취소</a>
-            <button th:if="${isAdmin}" onclick="openDeleteModal()" id="btnDeleteReport" class="btn-save" style="background:#e74a3b;display:none;"><i class="fas fa-trash-alt"></i> 삭제</button>
+            <button th:if="${isAdmin}" onclick="openDeleteModal()" id="btnDeleteReport" class="btn-save" style="background:var(--danger);display:none;"><i class="fas fa-trash-alt"></i> 삭제</button>
             </div>
     </div>
 
     <!-- Step Wizard Navigator (inspection-report-d-v5 wizard) -->
-    <div class="step-nav" id="stepNav" style="display:flex;gap:6px;margin:0 0 14px;padding:10px;background:#f8fafc;border-radius:10px;flex-wrap:wrap;">
-        <div class="step-nav-item active" data-step="1" onclick="goStep(1)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #0f766e;text-align:center;font-size:0.92em;">
-            <div style="font-weight:700;color:#0f766e;">STEP 1</div>
+    <div class="step-nav" id="stepNav" style="display:flex;gap:6px;margin:0 0 14px;padding:10px;background:var(--surface-2);border-radius:10px;flex-wrap:wrap;">
+        <div class="step-nav-item active" data-step="1" onclick="goStep(1)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid var(--primary);text-align:center;font-size:0.92em;">
+            <div style="font-weight:700;color:var(--primary);">STEP 1</div>
             <div>표지 / 대상 작성</div>
         </div>
-        <div class="step-nav-item" data-step="2" onclick="goStep(2)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+        <div class="step-nav-item" data-step="2" onclick="goStep(2)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid var(--border2);text-align:center;font-size:0.92em;color:var(--text2);">
             <div style="font-weight:700;">STEP 2</div>
             <div>QR 자동수집 대기</div>
         </div>
-        <div class="step-nav-item" data-step="3" onclick="goStep(3)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+        <div class="step-nav-item" data-step="3" onclick="goStep(3)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid var(--border2);text-align:center;font-size:0.92em;color:var(--text2);">
             <div style="font-weight:700;">STEP 3</div>
             <div>점검결과 검토·입력</div>
         </div>
-        <div class="step-nav-item" data-step="4" onclick="goStep(4)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+        <div class="step-nav-item" data-step="4" onclick="goStep(4)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid var(--border2);text-align:center;font-size:0.92em;color:var(--text2);">
             <div style="font-weight:700;">STEP 4</div>
             <div>발견사항·차회계획</div>
         </div>
-        <div class="step-nav-item" data-step="5" onclick="goStep(5)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid #cbd5e0;text-align:center;font-size:0.92em;color:#4a5568;">
+        <div class="step-nav-item" data-step="5" onclick="goStep(5)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid var(--border2);text-align:center;font-size:0.92em;color:var(--text2);">
             <div style="font-weight:700;">STEP 5</div>
             <div>서명 / 저장</div>
         </div>
     </div>
 
     <style>
-        .step-nav-item.completed { background:#dcfce7 !important; border-color:#16a34a !important; color:#166534 !important; }
-        .step-nav-item.completed div:first-child { color:#16a34a !important; }
-        .step-nav-item.active { background:#fff !important; border-color:#0f766e !important; color:#0f766e !important; }
-        .step-nav-item.active div:first-child { color:#0f766e !important; }
+        .step-nav-item.completed { background:#dcfce7 !important; border-color:var(--success) !important; color:#166534 !important; }
+        .step-nav-item.completed div:first-child { color:var(--success) !important; }
+        .step-nav-item.active { background:#fff !important; border-color:var(--primary) !important; color:var(--primary) !important; }
+        .step-nav-item.active div:first-child { color:var(--primary) !important; }
     </style>
 
     <!-- =========== ① 표지 =========== -->
@@ -194,23 +197,23 @@
                 <td colspan="3">
                     <div style="display:flex;gap:8px;align-items:center;">
                         <select id="projId" onchange="loadProjectInfo()" style="flex:1;"><option value="">-- 위 조건을 선택하세요 --</option></select>
-                        <span id="projHint" style="font-size:0.78em;color:#999;white-space:nowrap;"></span>
+                        <span id="projHint" style="font-size:0.78em;color:var(--muted);white-space:nowrap;"></span>
                     </div>
                 </td>
             </tr>
             <tr><th>용역명</th><td colspan="3"><input type="text" id="cover_projNm" readonly></td></tr>
             <tr><th>사업기간</th><td><input type="text" id="cover_period" readonly></td>
                 <th>시스템유형</th>
-                <td><input type="text" id="cover_sysTypeDisplay" readonly style="background:#f8f9fc;font-weight:600;"></td>
+                <td><input type="text" id="cover_sysTypeDisplay" readonly style="background:var(--surface-2);font-weight:600;"></td>
             </tr>
             <tr><th>점검유형 / 범위</th>
                 <td colspan="3">
                     <span id="maintTypeBadge" style="display:none;padding:3px 12px;border-radius:12px;font-size:0.82em;font-weight:800;color:#fff;letter-spacing:0.5px;"></span>
-                    <span id="maintScopeChip" style="margin-left:8px;font-size:0.85em;color:#0f766e;font-weight:700;"></span>
+                    <span id="maintScopeChip" style="margin-left:8px;font-size:0.85em;color:var(--primary);font-weight:700;"></span>
                 </td>
             </tr>
             <tr><th>점검년월</th><td><input type="month" id="cover_month" onchange="loadPreviousVisits()"></td>
-                <th>문서제목</th><td><input type="text" id="cover_title" readonly style="background:#f8f9fc;"></td></tr>
+                <th>문서제목</th><td><input type="text" id="cover_title" readonly style="background:var(--surface-2);"></td></tr>
             <tr><th>점검자 (회사)</th><td><input type="text" id="cover_inspCompany" value="(주)정도UIT"></td>
                 <th>점검자 (담당자)</th><td><input type="text" id="cover_inspName"></td></tr>
             <tr><th>확인자 (기관)</th><td><input type="text" id="cover_confOrg"></td>
@@ -238,10 +241,10 @@
         <div class="sub-title">1. 월별 점검 및 장애조치 이력 요약</div>
         <table class="check-table" id="visitTable">
             <thead><tr><th style="width:60px;">년도</th><th style="width:40px;">월</th><th style="width:40px;">일</th><th>업무</th><th>증상</th><th>조치내용</th><th style="width:36px;"></th></tr></thead>
-            <tbody id="visitPrevBody" style="background: #FAFAF9;color:#555;"></tbody>
+            <tbody id="visitPrevBody" style="background: var(--bg);color:var(--text2);"></tbody>
             <tbody id="visitBody"></tbody>
         </table>
-        <div id="visitPrevInfo" style="display:none;font-size:0.78em;color:#888;margin:6px 0;padding:6px 10px;background:#fffbe6;border-left:3px solid #f6c23e;border-radius:3px;">
+        <div id="visitPrevInfo" style="display:none;font-size:0.78em;color:var(--muted);margin:6px 0;padding:6px 10px;background:#FFFBEB;border-left:3px solid var(--warning);border-radius:3px;">
             <i class="fas fa-info-circle"></i> 회색 행은 이전 월 점검내역서의 이력이며 편집할 수 없습니다. 해당 보고서에서 수정하세요.
         </div>
         <button class="btn-add-row" onclick="addVisitRow()"><i class="fas fa-plus"></i> 방문이력 추가</button>
@@ -310,7 +313,7 @@
         </div>
 
         <div class="sub-title">■ 시스템 구성도</div>
-        <div style="border:2px dashed #ccc;border-radius:8px;padding:30px;text-align:center;color:#999;font-size:0.85em;" id="diagramArea">
+        <div style="border:2px dashed var(--border2);border-radius:8px;padding:30px;text-align:center;color:var(--muted);font-size:0.85em;" id="diagramArea">
             시스템유형 선택 시 기본 구성도가 표시됩니다.
         </div>
     </div>
@@ -367,17 +370,17 @@
         </table>
 
         <!-- v6 T-H2: 30일 메트릭 추이 차트 미리보기 (P5 docx 임베드 미리보기) -->
-        <div id="chartPreviewCard" style="display:none; margin-top:20px; border:1px solid #e3e6f0; border-radius:8px; padding:16px; background:#fafbfc;">
+        <div id="chartPreviewCard" style="display:none; margin-top:20px; border:1px solid var(--border); border-radius:8px; padding:16px; background:var(--surface-2);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-weight:700; font-size:0.9em; color:#0f766e;"><i class="fas fa-chart-line"></i> 30일 메트릭 추이 (P5 차트)</span>
-                <button type="button" onclick="refreshChartPreview()" style="background:#e3f2fd; color:#0f766e; border:none; border-radius:4px; padding:4px 10px; font-size:0.78em; cursor:pointer;">
+                <span style="font-weight:700; font-size:0.9em; color:var(--primary);"><i class="fas fa-chart-line"></i> 30일 메트릭 추이 (P5 차트)</span>
+                <button type="button" onclick="refreshChartPreview()" style="background:#e3f2fd; color:var(--primary); border:none; border-radius:4px; padding:4px 10px; font-size:0.78em; cursor:pointer;">
                     <i class="fas fa-sync-alt"></i> 새로고침
                 </button>
             </div>
             <div id="chartPreviewWrap" style="text-align:center;">
-                <p style="color:#999; font-size:0.85em;">STEP 3 진입 시 자동 로드됩니다.</p>
+                <p style="color:var(--muted); font-size:0.85em;">STEP 3 진입 시 자동 로드됩니다.</p>
             </div>
-            <p style="font-size:0.75em; color:#888; margin:8px 0 0;">이 차트는 docx 보고서 P5에 자동 임베드됩니다.</p>
+            <p style="font-size:0.75em; color:var(--muted); margin:8px 0 0;">이 차트는 docx 보고서 P5에 자동 임베드됩니다.</p>
         </div>
     </div>
 
@@ -428,7 +431,7 @@
                               style="width:100%;border:none;resize:vertical;"
                               placeholder="기타 사항 입력"
                               oninput="updateAppEtcCounter()"></textarea>
-                    <small id="app_etc_counter" style="display:block;text-align:right;color:#999;font-size:0.8em;margin-top:2px;">0 / 500</small>
+                    <small id="app_etc_counter" style="display:block;text-align:right;color:var(--muted);font-size:0.8em;margin-top:2px;">0 / 500</small>
                 </td></tr>
             </tbody>
         </table>
@@ -438,12 +441,12 @@
     <!-- =========== STEP 4 — 발견사항 / 차회 점검 계획 (시안D v5 09 NEXT ROUND) =========== -->
     <div class="form-section" id="section-4" data-step="4">
         <h3 class="section-title"><i class="fas fa-lightbulb"></i> 발견사항 · 차회 점검 계획</h3>
-        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">점검자가 작성하는 종합 의견 영역. 시안D v5 SUMMARY 본문 / 권고사항 / 후속조치 / 일정 메모.</p>
+        <p style="color:var(--text2);font-size:0.92em;margin:0 0 14px;">점검자가 작성하는 종합 의견 영역. 시안D v5 SUMMARY 본문 / 권고사항 / 후속조치 / 일정 메모.</p>
         <table class="form-table" style="margin-bottom:12px;">
             <tr>
                 <th style="width:140px;">핵심 발견사항</th>
                 <td>
-                    <textarea id="key_findings" rows="3" style="width:100%;border:1px solid #d0d4d9;border-radius:4px;padding:6px;resize:vertical;"
+                    <textarea id="key_findings" rows="3" style="width:100%;border:1px solid var(--border2);border-radius:4px;padding:6px;resize:vertical;"
                               placeholder="이번 회차에서 발견한 주요 이슈 / 점검자 종합 의견 (시안D v5 SUMMARY 본문 끝에 자동 포함)"></textarea>
                 </td>
             </tr>
@@ -481,23 +484,23 @@
     <!-- =========== STEP 2 — QR 자동수집 (인라인 카메라 + 폴백 폴링) =========== -->
     <div class="form-section" id="section-q" data-step="2">
         <h3 class="section-title"><i class="fas fa-qrcode"></i> QR 자동수집</h3>
-        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">현장 점검 대상 서버에서 생성된 QR 을 본 카메라로 직접 스캔하거나, 별도 PWA 스캐너 업로드를 5초마다 자동 확인합니다.</p>
+        <p style="color:var(--text2);font-size:0.92em;margin:0 0 14px;">현장 점검 대상 서버에서 생성된 QR 을 본 카메라로 직접 스캔하거나, 별도 PWA 스캐너 업로드를 5초마다 자동 확인합니다.</p>
 
         <!-- 인라인 카메라 카드 -->
-        <div id="qrCamCard" style="background:#0b1220;border-radius:12px;padding:14px;color:#e5e7eb;">
+        <div id="qrCamCard" style="background:var(--text);border-radius:12px;padding:14px;color:var(--border);">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
                 <div style="font-size:0.92em;font-weight:700;color:#fff;">
                     <i class="fas fa-camera"></i> 인라인 QR 스캐너
-                    <span id="qrEnginePill" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.72em;margin-left:6px;">engine: …</span>
+                    <span id="qrEnginePill" style="background:var(--text);color:var(--border2);padding:2px 8px;border-radius:999px;font-size:0.72em;margin-left:6px;">engine: …</span>
                 </div>
                 <div>
-                    <button type="button" id="qrBtnStart" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;">
+                    <button type="button" id="qrBtnStart" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;">
                         <i class="fas fa-play"></i> 시작
                     </button>
-                    <button type="button" id="qrBtnStop" style="background:#374151;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;" disabled>
+                    <button type="button" id="qrBtnStop" style="background:var(--text);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;" disabled>
                         <i class="fas fa-stop"></i> 정지
                     </button>
-                    <button type="button" id="qrBtnReset" style="background:#374151;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;">
+                    <button type="button" id="qrBtnReset" style="background:var(--text);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.82em;cursor:pointer;">
                         <i class="fas fa-undo"></i> 초기화
                     </button>
                 </div>
@@ -508,9 +511,9 @@
                 <div id="qrCamStatus" style="position:absolute;left:8px;top:8px;background:rgba(0,0,0,0.55);color:#fff;padding:4px 8px;border-radius:4px;font-size:11px;">대기 중</div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;">
-                <span id="qrPillHeader" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">헤더 대기</span>
-                <span id="qrPillProgress" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">청크 0/?</span>
-                <span id="qrPillStatus" style="background:#374151;color:#cbd5e1;padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">대기 중</span>
+                <span id="qrPillHeader" style="background:var(--text);color:var(--border2);padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">헤더 대기</span>
+                <span id="qrPillProgress" style="background:var(--text);color:var(--border2);padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">청크 0/?</span>
+                <span id="qrPillStatus" style="background:var(--text);color:var(--border2);padding:2px 8px;border-radius:999px;font-size:0.75em;font-weight:600;">대기 중</span>
             </div>
             <div id="qrChunks" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;"></div>
             <div id="qrCamErr" style="display:none;margin-top:8px;background:#7f1d1d;color:#fecaca;padding:8px 10px;border-radius:6px;font-size:0.8em;"></div>
@@ -525,12 +528,12 @@
             </div>
         </div>
 
-        <div id="qrResultCard" style="display:none;background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:20px;margin-top:14px;">
+        <div id="qrResultCard" style="display:none;background:#f0fdf4;border:2px solid var(--success);border-radius:12px;padding:20px;margin-top:14px;">
             <h3 style="margin:0 0 10px;color:#166534;"><i class="fas fa-check-circle"></i> QR 자동수집 적재 완료</h3>
-            <div id="qrResultSummary" style="color:#374151;font-size:0.95em;"></div>
+            <div id="qrResultSummary" style="color:var(--text);font-size:0.95em;"></div>
         </div>
         <div style="margin-top:14px;text-align:center;">
-            <button type="button" onclick="skipQrWait()" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:10px 24px;font-size:0.9em;cursor:pointer;">
+            <button type="button" onclick="skipQrWait()" style="background:var(--text2);color:#fff;border:none;border-radius:6px;padding:10px 24px;font-size:0.9em;cursor:pointer;">
                 <i class="fas fa-forward"></i> QR 없이 진행
             </button>
         </div>
@@ -539,78 +542,78 @@
     <!-- =========== STEP 5 — 서명 / 저장 (신규) =========== -->
     <div class="form-section" id="section-5" data-step="5">
         <h3 class="section-title"><i class="fas fa-signature"></i> 서명 / 저장</h3>
-        <p style="color:#6b7280;font-size:0.92em;margin:0 0 14px;">점검자 · 확인자 서명을 캡처한 뒤 저장합니다. 갤럭시탭에서 직접 서명할 수 있습니다.</p>
-        <div id="signSummary" style="background:#f8fafc;border-radius:10px;padding:20px;margin-bottom:14px;">
+        <p style="color:var(--text2);font-size:0.92em;margin:0 0 14px;">점검자 · 확인자 서명을 캡처한 뒤 저장합니다. 갤럭시탭에서 직접 서명할 수 있습니다.</p>
+        <div id="signSummary" style="background:var(--surface-2);border-radius:10px;padding:20px;margin-bottom:14px;">
             <div style="display:flex;gap:20px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:240px;">
-                    <h4 style="margin:0 0 8px;color:#374151;">점검자 서명</h4>
-                    <div id="step5InspSignBox" style="border:1px solid #d1d5db;border-radius:6px;padding:10px;background:#fff;min-height:80px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">미등록</div>
+                    <h4 style="margin:0 0 8px;color:var(--text);">점검자 서명</h4>
+                    <div id="step5InspSignBox" style="border:1px solid var(--border2);border-radius:6px;padding:10px;background:#fff;min-height:80px;display:flex;align-items:center;justify-content:center;color:var(--muted);">미등록</div>
                 </div>
                 <div style="flex:1;min-width:240px;">
-                    <h4 style="margin:0 0 8px;color:#374151;">확인자 서명</h4>
-                    <div id="step5ConfSignBox" style="border:1px solid #d1d5db;border-radius:6px;padding:10px;background:#fff;min-height:80px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">미등록</div>
+                    <h4 style="margin:0 0 8px;color:var(--text);">확인자 서명</h4>
+                    <div id="step5ConfSignBox" style="border:1px solid var(--border2);border-radius:6px;padding:10px;background:#fff;min-height:80px;display:flex;align-items:center;justify-content:center;color:var(--muted);">미등록</div>
                 </div>
             </div>
         </div>
         <div style="text-align:center;">
-            <button type="button" onclick="openSignModal()" style="background:#0f766e;color:#fff;border:none;border-radius:8px;padding:14px 32px;font-size:1em;font-weight:700;cursor:pointer;margin-right:8px;">
+            <button type="button" onclick="openSignModal()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:14px 32px;font-size:1em;font-weight:700;cursor:pointer;margin-right:8px;">
                 <i class="fas fa-signature"></i> 서명 캡처
             </button>
         </div>
     </div>
 
     <!-- =========== Wizard Footer (Next/Prev/저장) =========== -->
-    <div id="wizardFooter" style="margin-top:18px;padding:14px;background:#f8fafc;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-        <button type="button" id="btnPrevStep" onclick="prevStep()" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
+    <div id="wizardFooter" style="margin-top:18px;padding:14px;background:var(--surface-2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="btnPrevStep" onclick="prevStep()" style="background:var(--text2);color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
             <i class="fas fa-arrow-left"></i> 이전
         </button>
-        <div style="color:#6b7280;font-size:0.9em;" id="stepIndicator">STEP 1 / 5</div>
-        <button type="button" id="btnNextStep" onclick="nextStep()" style="background:#0f766e;color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
+        <div style="color:var(--text2);font-size:0.9em;" id="stepIndicator">STEP 1 / 5</div>
+        <button type="button" id="btnNextStep" onclick="nextStep()" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:0.95em;cursor:pointer;">
             다음 <i class="fas fa-arrow-right"></i>
         </button>
     </div>
 </div>
 
 <!-- 서명 요청 모달 (전체화면) -->
-<div id="signModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background: #FAFAF9;z-index:2000;overflow-y:auto;">
+<div id="signModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background: var(--bg);z-index:2000;overflow-y:auto;">
     <div style="max-width:600px;margin:0 auto;padding:30px 20px;">
         <div style="text-align:center;margin-bottom:24px;">
-            <h2 style="color:#0f766e;margin:0 0 6px;"><i class="fas fa-signature"></i> 점검내역서 서명</h2>
-            <p style="color:#666;font-size:0.88em;margin:0;" id="signModalInfo"></p>
+            <h2 style="color:var(--primary);margin:0 0 6px;"><i class="fas fa-signature"></i> 점검내역서 서명</h2>
+            <p style="color:var(--text2);font-size:0.88em;margin:0;" id="signModalInfo"></p>
         </div>
 
         <!-- STEP 1: 점검자 서명 -->
         <div id="signStep1" class="sign-step-card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <h3 style="margin:0;font-size:1em;color:#333;"><span style="background:#1cc88a;color:#fff;padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 1</span> 점검자 서명</h3>
-                <button onclick="clearSign('modalInspCanvas')" style="background:#f08a7e;color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
+                <h3 style="margin:0;font-size:1em;color:var(--text);"><span style="background:var(--success);color:#fff;padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 1</span> 점검자 서명</h3>
+                <button onclick="clearSign('modalInspCanvas')" style="background:var(--danger);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
             </div>
-            <div style="border:2px solid #0f766e;border-radius:10px;background:#fff;overflow:hidden;">
+            <div style="border:2px solid var(--primary);border-radius:10px;background:#fff;overflow:hidden;">
                 <canvas id="modalInspCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;border:2px dashed #94a3b8;border-radius:8px;background:#fff;box-sizing:border-box;"></canvas>
             </div>
             <div style="text-align:center;margin-top:16px;">
-                <button onclick="signStepNext()" style="background:#0f766e;color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-arrow-right"></i> 다음: 확인자 서명</button>
+                <button onclick="signStepNext()" style="background:var(--primary);color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-arrow-right"></i> 다음: 확인자 서명</button>
             </div>
         </div>
 
         <!-- STEP 2: 확인자 서명 -->
         <div id="signStep2" class="sign-step-card" style="display:none;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <h3 style="margin:0;font-size:1em;color:#333;"><span style="background:#f6c23e;color:#333;padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 2</span> 확인자 서명</h3>
-                <button onclick="clearSign('modalConfCanvas')" style="background:#f08a7e;color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
+                <h3 style="margin:0;font-size:1em;color:var(--text);"><span style="background:var(--warning);color:var(--text);padding:2px 10px;border-radius:12px;font-size:0.8em;margin-right:8px;">STEP 2</span> 확인자 서명</h3>
+                <button onclick="clearSign('modalConfCanvas')" style="background:var(--danger);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:0.8em;cursor:pointer;"><i class="fas fa-eraser"></i> 지우기</button>
             </div>
-            <p style="color:#666;font-size:0.85em;margin:0 0 10px;text-align:center;">확인자에게 태블릿을 전달하여 아래에 서명해주세요.</p>
-            <div style="border:2px solid #f6c23e;border-radius:10px;background:#fff;overflow:hidden;">
+            <p style="color:var(--text2);font-size:0.85em;margin:0 0 10px;text-align:center;">확인자에게 태블릿을 전달하여 아래에 서명해주세요.</p>
+            <div style="border:2px solid var(--warning);border-radius:10px;background:#fff;overflow:hidden;">
                 <canvas id="modalConfCanvas" width="540" height="200" style="width:100%;display:block;touch-action:none;cursor:crosshair;border:2px dashed #94a3b8;border-radius:8px;background:#fff;box-sizing:border-box;"></canvas>
             </div>
             <div style="display:flex;gap:12px;justify-content:center;margin-top:16px;">
-                <button onclick="signStepBack()" style="background:#858796;color:#fff;border:none;border-radius:6px;padding:12px 30px;font-size:0.95em;font-weight:600;cursor:pointer;"><i class="fas fa-arrow-left"></i> 이전</button>
-                <button onclick="signComplete()" style="background:#1cc88a;color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-check"></i> 서명 완료 및 저장</button>
+                <button onclick="signStepBack()" style="background:var(--text2);color:#fff;border:none;border-radius:6px;padding:12px 30px;font-size:0.95em;font-weight:600;cursor:pointer;"><i class="fas fa-arrow-left"></i> 이전</button>
+                <button onclick="signComplete()" style="background:var(--success);color:#fff;border:none;border-radius:6px;padding:12px 40px;font-size:1em;font-weight:700;cursor:pointer;"><i class="fas fa-check"></i> 서명 완료 및 저장</button>
             </div>
         </div>
 
         <div style="text-align:center;margin-top:20px;">
-            <button onclick="closeSignModal()" style="background:none;border:none;color:#858796;font-size:0.88em;cursor:pointer;text-decoration:underline;">취소하고 돌아가기</button>
+            <button onclick="closeSignModal()" style="background:none;border:none;color:var(--text2);font-size:0.88em;cursor:pointer;text-decoration:underline;">취소하고 돌아가기</button>
         </div>
     </div>
 </div>
@@ -620,11 +623,11 @@
 <!-- 삭제 확인 모달 (Phase J: 관리자 전용) -->
 <div class="report-list-modal" id="deleteConfirmModal" onclick="if(event.target===this)this.style.display='none'" th:if="${isAdmin}">
     <div class="report-list-content" style="max-width:440px;text-align:center;">
-        <h3 style="color:#e74a3b;"><i class="fas fa-exclamation-triangle"></i> 점검내역서 삭제</h3>
-        <p style="margin:16px 0;font-size:0.92em;color:#555;">이 점검내역서를 삭제하시겠습니까?<br>삭제된 데이터는 관리자에 의해 복구될 수 있습니다.</p>
+        <h3 style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> 점검내역서 삭제</h3>
+        <p style="margin:16px 0;font-size:0.92em;color:var(--text2);">이 점검내역서를 삭제하시겠습니까?<br>삭제된 데이터는 관리자에 의해 복구될 수 있습니다.</p>
         <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
             <button onclick="document.getElementById('deleteConfirmModal').style.display='none'" class="btn-cancel" style="padding:10px 24px;border:none;border-radius:6px;cursor:pointer;font-size:0.88em;">취소</button>
-            <button onclick="confirmDeleteReport()" style="padding:10px 24px;border:none;border-radius:6px;cursor:pointer;font-size:0.88em;background:#e74a3b;color:white;font-weight:600;">삭제</button>
+            <button onclick="confirmDeleteReport()" style="padding:10px 24px;border:none;border-radius:6px;cursor:pointer;font-size:0.88em;background:var(--danger);color:white;font-weight:600;">삭제</button>
         </div>
     </div>
 </div>
@@ -646,7 +649,7 @@ function initSignCanvas(canvasId) {
     var drawing = false;
     var lastX = 0, lastY = 0;
 
-    ctx.strokeStyle = '#222';
+    ctx.strokeStyle = 'var(--text)';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -823,7 +826,7 @@ function stopQrPolling() {
 
 function showQrResult(data) {
     var spinner = document.getElementById('qrPollSpinner');
-    if (spinner) spinner.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;"></i>';
+    if (spinner) spinner.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success);"></i>';
     var waitMsg = document.getElementById('qrWaitMsg');
     if (waitMsg) waitMsg.textContent = '적재 완료 — 점검결과 검토 단계로 진행할 수 있습니다.';
     var resultCard = document.getElementById('qrResultCard');
@@ -841,15 +844,15 @@ function showQrResult(data) {
             var s = bySection[sec];
             html += '<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:10px;text-align:center;">'
                   + '<div style="font-weight:700;color:#166534;">' + sec + '</div>'
-                  + '<div style="font-size:1.4em;color:#15803d;margin-top:4px;">' + s.total + ' 건</div>'
-                  + '<div style="font-size:0.8em;color:#4a5568;margin-top:4px;">'
+                  + '<div style="font-size:1.4em;color:var(--success);margin-top:4px;">' + s.total + ' 건</div>'
+                  + '<div style="font-size:0.8em;color:var(--text2);margin-top:4px;">'
                   + '정상 ' + s.NORMAL
                   + (s.PARTIAL ? ' · 경고 ' + s.PARTIAL : '')
                   + (s.ABNORMAL ? ' · 비정상 ' + s.ABNORMAL : '')
                   + '</div></div>';
         });
         html += '</div>';
-        html += '<p style="margin-top:10px;color:#374151;">아래 [다음] 버튼을 눌러 STEP 3 에서 결과를 검토하고 수동 점검 항목을 입력하세요.</p>';
+        html += '<p style="margin-top:10px;color:var(--text);">아래 [다음] 버튼을 눌러 STEP 3 에서 결과를 검토하고 수동 점검 항목을 입력하세요.</p>';
         summary.innerHTML = html;
         resultCard.style.display = 'block';
     }
@@ -953,17 +956,17 @@ function refreshChartPreview() {
     if (!pjtId || !card) return;
     card.style.display = 'block';
     var wrap = document.getElementById('chartPreviewWrap');
-    wrap.innerHTML = '<p style="color:#999;font-size:0.85em;"><i class="fas fa-spinner fa-spin"></i> 차트 로딩 중...</p>';
+    wrap.innerHTML = '<p style="color:var(--muted);font-size:0.85em;"><i class="fas fa-spinner fa-spin"></i> 차트 로딩 중...</p>';
     var img = new Image();
     img.onload = function() {
         wrap.innerHTML = '';
         img.style.maxWidth = '100%';
         img.style.borderRadius = '6px';
-        img.style.border = '1px solid #e3e6f0';
+        img.style.border = '1px solid var(--border)';
         wrap.appendChild(img);
     };
     img.onerror = function() {
-        wrap.innerHTML = '<p style="color:#f59e0b;font-size:0.85em;"><i class="fas fa-info-circle"></i> 수집된 메트릭 데이터가 없습니다. QR 업로드 후 차트가 표시됩니다.</p>';
+        wrap.innerHTML = '<p style="color:var(--warning);font-size:0.85em;"><i class="fas fa-info-circle"></i> 수집된 메트릭 데이터가 없습니다. QR 업로드 후 차트가 표시됩니다.</p>';
     };
     var _m = (document.getElementById('cover_month') || {}).value || '';
     img.src = '/document/api/inspect-chart/preview?pjtId=' + pjtId
@@ -974,7 +977,7 @@ function markRowReadonly(tr, ro) {
     tr.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.disabled = ro; });
     tr.querySelectorAll('input[type="text"], textarea').forEach(function(el) { el.readOnly = ro; });
     if (ro) {
-        tr.style.background = '#f3f4f6';
+        tr.style.background = 'var(--surface-2)';
         tr.title = '🤖 QR 자동수집 — 읽기전용';
     } else {
         tr.style.background = '';
@@ -1013,7 +1016,7 @@ function refreshSignSummary() {
             ins.style.color = '';
         } else {
             ins.innerHTML = '미등록';
-            ins.style.color = '#9ca3af';
+            ins.style.color = 'var(--muted)';
         }
     }
     if (con) {
@@ -1022,7 +1025,7 @@ function refreshSignSummary() {
             con.style.color = '';
         } else {
             con.innerHTML = '미등록';
-            con.style.color = '#9ca3af';
+            con.style.color = 'var(--muted)';
         }
     }
 }
@@ -1192,73 +1195,73 @@ function loadSystemDiagram(sysType) {
     if (!area) return;
 
     // UPIS 구성도 (시군구청 DB/AP Server + 국토교통부 + 연계시스템)
-    var upisDiagram = '<div style="font-weight:700;color:#0f766e;margin-bottom:14px;font-size:0.95em;">UPIS 시스템 구성도</div>' +
+    var upisDiagram = '<div style="font-weight:700;color:var(--primary);margin-bottom:14px;font-size:0.95em;">UPIS 시스템 구성도</div>' +
         '<div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;font-size:0.82em;">' +
         // 업무담당자
-        '<div style="flex:0 0 130px;border:1px solid #ccc;border-radius:8px;padding:12px;text-align:center;background:#f9f9f9;">' +
-        '<div style="font-weight:700;color:#0f766e;border:2px solid #0f766e;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">업무 담당자</div>' +
-        '<div style="border:1px solid #aaa;border-radius:6px;padding:8px;margin-top:6px;background:#fff;">' +
-        '<div style="font-weight:600;color:#0f766e;margin-bottom:4px;">표준UPIS (Client)</div>' +
-        '<div style="font-size:0.9em;color:#555;">Web브라우저<br/>Windows</div></div></div>' +
+        '<div style="flex:0 0 130px;border:1px solid var(--border2);border-radius:8px;padding:12px;text-align:center;background:var(--surface-2);">' +
+        '<div style="font-weight:700;color:var(--primary);border:2px solid var(--primary);border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">업무 담당자</div>' +
+        '<div style="border:1px solid var(--muted);border-radius:6px;padding:8px;margin-top:6px;background:#fff;">' +
+        '<div style="font-weight:600;color:var(--primary);margin-bottom:4px;">표준UPIS (Client)</div>' +
+        '<div style="font-size:0.9em;color:var(--text2);">Web브라우저<br/>Windows</div></div></div>' +
         // 화살표
-        '<div style="display:flex;align-items:center;font-size:1.5em;color:#999;">⇄</div>' +
+        '<div style="display:flex;align-items:center;font-size:1.5em;color:var(--muted);">⇄</div>' +
         // 시군구청 서버
-        '<div style="flex:1;min-width:200px;border:1px solid #999;border-radius:8px;padding:14px;background: #FAFAF9;">' +
-        '<div style="text-align:center;font-weight:700;color:#0f766e;border:2px solid #0f766e;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:10px;">시군구청</div>' +
+        '<div style="flex:1;min-width:200px;border:1px solid var(--muted);border-radius:8px;padding:14px;background: var(--bg);">' +
+        '<div style="text-align:center;font-weight:700;color:var(--primary);border:2px solid var(--primary);border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:10px;">시군구청</div>' +
         '<div style="display:flex;gap:10px;justify-content:center;">' +
-        '<div style="flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center;">' +
-        '<div style="font-weight:700;margin-bottom:4px;">DB Server</div><div style="font-size:0.9em;color:#555;">GeoNURIS Spatial Server<br/>Oracle DBMS</div></div>' +
-        '<div style="flex:1;background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;text-align:center;">' +
-        '<div style="font-weight:700;margin-bottom:4px;">AP Server</div><div style="font-size:0.9em;color:#555;">GeoNURIS GeoWeb Server<br/>Tomcat WAS</div></div></div>' +
-        '<div style="text-align:center;margin-top:8px;font-weight:600;background:#0f766e;color:#fff;padding:6px;border-radius:4px;">UPIS 표준시스템</div></div>' +
+        '<div style="flex:1;background:#fff;border:1px solid var(--border2);border-radius:6px;padding:10px;text-align:center;">' +
+        '<div style="font-weight:700;margin-bottom:4px;">DB Server</div><div style="font-size:0.9em;color:var(--text2);">GeoNURIS Spatial Server<br/>Oracle DBMS</div></div>' +
+        '<div style="flex:1;background:#fff;border:1px solid var(--border2);border-radius:6px;padding:10px;text-align:center;">' +
+        '<div style="font-weight:700;margin-bottom:4px;">AP Server</div><div style="font-size:0.9em;color:var(--text2);">GeoNURIS GeoWeb Server<br/>Tomcat WAS</div></div></div>' +
+        '<div style="text-align:center;margin-top:8px;font-weight:600;background:var(--primary);color:#fff;padding:6px;border-radius:4px;">UPIS 표준시스템</div></div>' +
         // 화살표
-        '<div style="display:flex;align-items:center;font-size:1.5em;color:#999;">⇄</div>' +
+        '<div style="display:flex;align-items:center;font-size:1.5em;color:var(--muted);">⇄</div>' +
         // 국토교통부
-        '<div style="flex:0 0 150px;border:1px solid #999;border-radius:8px;padding:12px;background: #FAFAF9;text-align:center;">' +
-        '<div style="font-weight:700;color:#0f766e;border:2px solid #0f766e;border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">국토교통부</div>' +
-        '<div style="font-size:0.85em;color:#555;">AP Server<br/>대시민 서비스<br/>DB Server</div>' +
-        '<div style="margin-top:6px;font-weight:600;background:#0f766e;color:#fff;padding:5px;border-radius:4px;font-size:0.85em;">국토교통부<br/>UPIS 표준시스템</div></div></div>' +
+        '<div style="flex:0 0 150px;border:1px solid var(--muted);border-radius:8px;padding:12px;background: var(--bg);text-align:center;">' +
+        '<div style="font-weight:700;color:var(--primary);border:2px solid var(--primary);border-radius:20px;padding:4px 10px;display:inline-block;margin-bottom:8px;">국토교통부</div>' +
+        '<div style="font-size:0.85em;color:var(--text2);">AP Server<br/>대시민 서비스<br/>DB Server</div>' +
+        '<div style="margin-top:6px;font-weight:600;background:var(--primary);color:#fff;padding:5px;border-radius:4px;font-size:0.85em;">국토교통부<br/>UPIS 표준시스템</div></div></div>' +
         // 연계시스템
         '<div style="margin-top:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px;text-align:center;font-size:0.82em;">' +
-        '<span style="font-weight:700;color:#2e7d32;">연계시스템</span>&nbsp;&nbsp;' +
+        '<span style="font-weight:700;color:var(--success);">연계시스템</span>&nbsp;&nbsp;' +
         '부동산종합공부시스템 | 건축행정정보시스템 | 새올 지적정보시스템 | 전자결재시스템 | 새올 민원정보시스템 | 토지이용규제정보시스템 | GPKI 로그인</div>';
 
     // KRAS 구성도 (Client → AP → DB 3단 구조)
-    var krasDiagram = '<div style="font-weight:700;color:#0f766e;margin-bottom:14px;font-size:0.95em;">KRAS 시스템 구성도</div>' +
+    var krasDiagram = '<div style="font-weight:700;color:var(--primary);margin-bottom:14px;font-size:0.95em;">KRAS 시스템 구성도</div>' +
         '<div style="display:flex;gap:0;font-size:0.82em;align-items:stretch;">' +
         // Client
-        '<div style="flex:1;background:#666;border-radius:8px 0 0 8px;padding:3px;">' +
+        '<div style="flex:1;background:var(--text2);border-radius:8px 0 0 8px;padding:3px;">' +
         '<div style="text-align:center;color:#fff;font-weight:700;font-size:1.1em;padding:8px;">Client</div>' +
-        '<div style="background: #FAFAF9;border-radius:6px;padding:14px;margin:0 3px 3px;">' +
+        '<div style="background: var(--bg);border-radius:6px;padding:14px;margin:0 3px 3px;">' +
         '<div style="text-align:center;font-weight:700;margin-bottom:10px;">PC</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">부동산종합공부 사이트</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">측량성과프로그램</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;text-align:center;">GeoDT</div></div></div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">부동산종합공부 사이트</div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">측량성과프로그램</div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;text-align:center;">GeoDT</div></div></div>' +
         // 화살표 요청/답변
         '<div style="display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 6px;">' +
-        '<div style="background:#4caf50;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">요청 ▶</div>' +
-        '<div style="background:#ff9800;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">◀ 답변</div></div>' +
+        '<div style="background:var(--success);color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">요청 ▶</div>' +
+        '<div style="background:var(--warning);color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">◀ 답변</div></div>' +
         // Server (AP + DB)
         '<div style="flex:2;display:flex;gap:0;">' +
         // AP
-        '<div style="flex:1;background:#555;border-radius:0;padding:3px;">' +
+        '<div style="flex:1;background:var(--text2);border-radius:0;padding:3px;">' +
         '<div style="text-align:center;color:#fff;font-weight:700;font-size:1.1em;padding:8px;">Server</div>' +
-        '<div style="background:#e0e0e0;border-radius:6px;padding:14px;margin:0 3px 3px;">' +
+        '<div style="background:var(--border);border-radius:6px;padding:14px;margin:0 3px 3px;">' +
         '<div style="text-align:center;font-weight:700;margin-bottom:10px;">AP</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">부동산종합공부시스템</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">KrasAgent</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;text-align:center;">GeoNURIS GeoWeb Server</div></div></div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">부동산종합공부시스템</div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">KrasAgent</div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;text-align:center;">GeoNURIS GeoWeb Server</div></div></div>' +
         // 화살표
         '<div style="display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 6px;">' +
-        '<div style="background:#4caf50;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">요청 ▶</div>' +
-        '<div style="background:#ff9800;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">◀ 답변</div></div>' +
+        '<div style="background:var(--success);color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">요청 ▶</div>' +
+        '<div style="background:var(--warning);color:#fff;padding:3px 8px;border-radius:4px;font-size:0.8em;font-weight:600;text-align:center;">◀ 답변</div></div>' +
         // DB
-        '<div style="flex:1;background:#555;padding:3px;border-radius:0 8px 8px 0;">' +
+        '<div style="flex:1;background:var(--text2);padding:3px;border-radius:0 8px 8px 0;">' +
         '<div style="text-align:center;color:#fff;font-weight:700;font-size:1.1em;padding:8px;">Server</div>' +
-        '<div style="background:#e0e0e0;border-radius:6px;padding:14px;margin:0 3px 3px;">' +
+        '<div style="background:var(--border);border-radius:6px;padding:14px;margin:0 3px 3px;">' +
         '<div style="text-align:center;font-weight:700;margin-bottom:10px;">DB</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">Oracle</div>' +
-        '<div style="background:#fff;border:1px solid #ccc;border-radius:4px;padding:8px;text-align:center;">GeoNURIS Spatial Server</div></div></div></div></div>';
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;margin-bottom:6px;text-align:center;">Oracle</div>' +
+        '<div style="background:#fff;border:1px solid var(--border2);border-radius:4px;padding:8px;text-align:center;">GeoNURIS Spatial Server</div></div></div></div></div>';
 
     var diagrams = {
         'KRAS': krasDiagram,
@@ -1267,7 +1270,7 @@ function loadSystemDiagram(sysType) {
     };
     area.style.border = 'none';
     area.style.padding = '10px';
-    area.innerHTML = diagrams[sysType] || '<div style="text-align:center;color:#999;">해당 시스템유형의 구성도가 없습니다.</div>';
+    area.innerHTML = diagrams[sysType] || '<div style="text-align:center;color:var(--muted);">해당 시스템유형의 구성도가 없습니다.</div>';
 }
 
 // === 시스템유형 변경 → 섹션 동적 표시 + 템플릿 로드 ===
@@ -1410,7 +1413,7 @@ function updateAppEtcCounter() {
     var len = el.value.length;
     var max = 500;
     counter.textContent = len + ' / ' + max;
-    counter.style.color = (len >= max * 0.95) ? '#f08a7e' : '#999';
+    counter.style.color = (len >= max * 0.95) ? 'var(--danger)' : 'var(--muted)';
 }
 
 // === 템플릿 항목 API 로드 ===
@@ -1500,7 +1503,7 @@ function renderGisSection(bodyId, items, templateType) {
                     var lines = item.itemMethod.split('\n');
                     for (var li = 0; li < lines.length; li++) {
                         var line = lines[li].trim();
-                        if (line) contentHtml += '<div style="padding-left:18px; color:#444; margin-bottom:2px; line-height:1.6;">• ' + line + '</div>';
+                        if (line) contentHtml += '<div style="padding-left:18px; color:var(--text2); margin-bottom:2px; line-height:1.6;">• ' + line + '</div>';
                     }
                 }
                 html += '<tr>' +
@@ -1674,7 +1677,7 @@ function renderPreviousVisits(visits) {
             '<td style="padding:6px 8px;">' + (v.task || '') + '</td>' +
             '<td style="padding:6px 8px;">' + (v.symptom || '') + '</td>' +
             '<td style="padding:6px 8px;">' + (v.action || '') + '</td>' +
-            '<td style="text-align:center;padding:6px;color:#bbb;"><i class="fas fa-lock" title="읽기전용"></i></td></tr>';
+            '<td style="text-align:center;padding:6px;color:var(--muted);"><i class="fas fa-lock" title="읽기전용"></i></td></tr>';
     });
     body.innerHTML = html;
     if (info) info.style.display = '';
@@ -2344,7 +2347,7 @@ const acc = new FrameAccumulator(async (ev) => {
     if (ev.kind === 'header') {
         $('qrPillHeader').textContent = '헤더 ✓';
         $('qrPillHeader').style.background = '#dcfce7';
-        $('qrPillHeader').style.color = '#15803d';
+        $('qrPillHeader').style.color = 'var(--success)';
         renderChunkSlots(ev.frame.total);
         renderProgress(ev.progress);
     } else if (ev.kind === 'chunk') {
@@ -2352,7 +2355,7 @@ const acc = new FrameAccumulator(async (ev) => {
     } else if (ev.kind === 'complete') {
         $('qrPillStatus').textContent = '디코드 완료 ✓';
         $('qrPillStatus').style.background = '#dcfce7';
-        $('qrPillStatus').style.color = '#15803d';
+        $('qrPillStatus').style.color = 'var(--success)';
         stopQrCamera();
         await uploadBatch(ev);
     } else if (ev.kind === 'error') {
@@ -2373,7 +2376,7 @@ function renderChunkSlots(total) {
         const c = document.createElement('div');
         c.dataset.seq = String(i);
         c.textContent = String(i);
-        c.style.cssText = 'width:24px;height:24px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;background:#1f2937;color:#9ca3af;border:1px solid #374151;';
+        c.style.cssText = 'width:24px;height:24px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:700;background:var(--text);color:var(--muted);border:1px solid var(--text);';
         wrap.appendChild(c);
     }
 }
@@ -2383,7 +2386,7 @@ function renderProgress(p) {
         $('qrPillProgress').textContent = `청크 ${p.received}/${p.total}`;
         if (p.received === p.total) {
             $('qrPillProgress').style.background = '#dcfce7';
-            $('qrPillProgress').style.color = '#15803d';
+            $('qrPillProgress').style.color = 'var(--success)';
         } else {
             $('qrPillProgress').style.background = '#fef3c7';
             $('qrPillProgress').style.color = '#92400e';
@@ -2400,7 +2403,7 @@ function renderProgress(p) {
         const el = $('qrChunks').querySelector(`[data-seq="${seq}"]`);
         if (el) {
             el.style.background = '#dcfce7';
-            el.style.color = '#15803d';
+            el.style.color = 'var(--success)';
             el.style.borderColor = '#86efac';
         }
     }
@@ -2498,14 +2501,14 @@ function resetQrCamera() {
     lastDecodedTexts = new Set();
     uploaded = false;
     $('qrPillHeader').textContent = '헤더 대기';
-    $('qrPillHeader').style.background = '#374151';
-    $('qrPillHeader').style.color = '#cbd5e1';
+    $('qrPillHeader').style.background = 'var(--text)';
+    $('qrPillHeader').style.color = 'var(--border2)';
     $('qrPillProgress').textContent = '청크 0/?';
-    $('qrPillProgress').style.background = '#374151';
-    $('qrPillProgress').style.color = '#cbd5e1';
+    $('qrPillProgress').style.background = 'var(--text)';
+    $('qrPillProgress').style.color = 'var(--border2)';
     $('qrPillStatus').textContent = '대기 중';
-    $('qrPillStatus').style.background = '#374151';
-    $('qrPillStatus').style.color = '#cbd5e1';
+    $('qrPillStatus').style.background = 'var(--text)';
+    $('qrPillStatus').style.color = 'var(--border2)';
     $('qrChunks').innerHTML = '';
     $('qrCamErr').style.display = 'none';
 }
