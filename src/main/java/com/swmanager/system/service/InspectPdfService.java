@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
@@ -22,7 +23,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -46,6 +51,14 @@ public class InspectPdfService {
     @Autowired private InspectTemplateRepository templateRepository;
 
     private File fontFile;
+
+    /** Edge 실행파일 경로 override (미지정 시 표준 설치경로 자동탐색). application.properties: pdf.edge.path */
+    @Value("${pdf.edge.path:}") private String edgePathProp;
+
+    private static final String[] EDGE_CANDIDATES = {
+            "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+            "C:/Program Files/Microsoft/Edge/Application/msedge.exe"
+    };
 
     /** resultText 끝의 "…NN%" 또는 "NN.N %" 형태에서 퍼센트 값 추출용. */
     private static final Pattern PCT_PATTERN = Pattern.compile("([0-9]+(?:\\.[0-9]+)?)\\s*%");
@@ -357,29 +370,94 @@ public class InspectPdfService {
         }
     }
 
+    /**
+     * 점검내역서 PDF 생성. 미리보기(브라우저)와 100% 동일하게 나오도록 Edge 헤드리스
+     * print-to-pdf 를 우선 사용하고, Edge 미설치/실패 시 openhtmltopdf 로 폴백한다.
+     * (미리보기 /document/inspect-preview/{id} 와 동일한 renderToHtmlV2 HTML 사용)
+     */
     public byte[] generatePdf(Long reportId) {
-        String html = renderToHtmlV2(reportId);   // v2 비주얼 템플릿 사용
+        String html = renderToHtmlV2(reportId);   // 미리보기와 동일 HTML
         log.info("PDF HTML(v2) 렌더링 완료, reportId={}, html길이={}", reportId, html.length());
 
+        File edge = resolveEdge();
+        if (edge != null) {
+            try {
+                byte[] pdf = renderPdfViaEdge(html, edge);
+                if (pdf != null && pdf.length > 0) {
+                    log.info("PDF 생성 완료(Edge print-to-pdf): {} bytes", pdf.length);
+                    return pdf;
+                }
+                log.warn("Edge print-to-pdf 결과 비어있음 → openhtmltopdf 폴백");
+            } catch (Exception e) {
+                log.warn("Edge print-to-pdf 실패 → openhtmltopdf 폴백: {}", e.getMessage());
+            }
+        } else {
+            log.info("Edge 미발견 → openhtmltopdf 사용 (pdf.edge.path 로 경로 지정 가능)");
+        }
+        return renderPdfViaOpenHtml(html);
+    }
+
+    /** Edge 실행파일 탐색 (property override → 표준 설치경로). 없으면 null. */
+    private File resolveEdge() {
+        if (edgePathProp != null && !edgePathProp.isBlank()) {
+            File f = new File(edgePathProp);
+            if (f.exists()) return f;
+            log.warn("pdf.edge.path 지정됐으나 파일 없음: {}", edgePathProp);
+        }
+        for (String p : EDGE_CANDIDATES) {
+            File f = new File(p);
+            if (f.exists()) return f;
+        }
+        return null;
+    }
+
+    /** Edge 헤드리스 print-to-pdf. 미리보기와 동일 렌더(배경색은 템플릿의 print-color-adjust:exact 로 보존). */
+    private byte[] renderPdfViaEdge(String html, File edge) throws Exception {
+        Path dir = Files.createTempDirectory("inspectpdf-");
+        Path htmlFile = dir.resolve("report.html");
+        Path pdfFile  = dir.resolve("report.pdf");
+        Path profile  = dir.resolve("profile");
+        try {
+            Files.write(htmlFile, html.getBytes(StandardCharsets.UTF_8));
+            ProcessBuilder pb = new ProcessBuilder(
+                    edge.getAbsolutePath(),
+                    "--headless", "--disable-gpu", "--no-pdf-header-footer",
+                    "--user-data-dir=" + profile.toAbsolutePath(),
+                    "--print-to-pdf=" + pdfFile.toAbsolutePath(),
+                    htmlFile.toUri().toString()
+            );
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            Process proc = pb.start();
+            boolean done = proc.waitFor(60, TimeUnit.SECONDS);
+            if (!done) { proc.destroyForcibly(); throw new RuntimeException("Edge print-to-pdf 타임아웃(60s)"); }
+            if (!Files.exists(pdfFile) || Files.size(pdfFile) == 0) {
+                throw new RuntimeException("Edge 가 PDF 를 생성하지 못함");
+            }
+            return Files.readAllBytes(pdfFile);
+        } finally {
+            try (var paths = Files.walk(dir)) {
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            } catch (Exception ignore) { /* temp 정리 실패 무시 */ }
+        }
+    }
+
+    /** openhtmltopdf 폴백 (Edge 미설치 환경용). CSS 지원이 제한적이라 미리보기와 미세하게 다를 수 있음. */
+    private byte[] renderPdfViaOpenHtml(String html) {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
-
-            // 한글 폰트 등록 (File 기반)
             File font = getFontFile();
             if (font != null) {
                 builder.useFont(font, "Malgun Gothic");
-                log.info("한글 폰트 등록 완료: {}", font.getAbsolutePath());
             } else {
                 log.warn("한글 폰트를 찾을 수 없습니다. PDF에 한글이 표시되지 않을 수 있습니다.");
             }
-
             builder.withHtmlContent(html, "/");
             builder.toStream(os);
             builder.run();
-
             byte[] result = os.toByteArray();
-            log.info("PDF 생성 완료: {} bytes", result.length);
+            log.info("PDF 생성 완료(openhtmltopdf): {} bytes", result.length);
             return result;
         } catch (Exception e) {
             log.error("점검내역서 PDF 변환 실패", e);
