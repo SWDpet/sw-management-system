@@ -7,20 +7,22 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>품명 패턴 관리 - SW Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
         :root {
+            /* 로컬 변수값을 디자인 토큰에 정렬 (웜 중립 + 의미색) */
             --primary: #0F766E;
             --primary2: #115E59;
             --primary-lt: #F0FDFA;
-            --bg: #f5f5f5;
+            --bg: #FAFAF9;
             --surface: #ffffff;
-            --text-primary: #222222;
-            --text-secondary: #666666;
-            --text-tertiary: #999999;
-            --border: #e8e8e8;
-            --border-light: #f0f0f0;
-            --success: #10b981;
-            --error: #ef4444;
+            --text-primary: #1C1917;
+            --text-secondary: #57534E;
+            --text-tertiary: #A8A29E;
+            --border: #E7E5E4;
+            --border-light: #F5F5F4;
+            --success: #059669;
+            --error: #DC2626;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -123,7 +125,7 @@
         }
 
         .pattern-table thead {
-            background: #fafafa;
+            background: var(--surface-2);
             border-top: 1px solid var(--border);
             border-bottom: 2px solid var(--border);
         }
@@ -142,7 +144,7 @@
             vertical-align: top;
         }
 
-        .pattern-table tbody tr:hover { background: #fafafa; }
+        .pattern-table tbody tr:hover { background: var(--surface-2); }
 
         .pattern-table .col-cat { width: 70px; }
         .pattern-table .col-group { width: 150px; }
@@ -161,9 +163,10 @@
             font-size: 0.75rem;
         }
 
-        .badge-용역 { background: #E8F5E9; color: #2E7D32; }
-        .badge-제품 { background: #E3F2FD; color: #1565C0; }
-        .badge-유지보수 { background: #FFF3E0; color: #E65100; }
+        /* 분류 뱃지 — quotation-list 와 동일: 용역=success · 제품=info · 유지보수=warning */
+        .badge-용역 { background: #F0FDF4; color: #166534; }
+        .badge-제품 { background: #ECFEFF; color: #155E75; }
+        .badge-유지보수 { background: #FFFBEB; color: #92400E; }
 
         /* Sub-items preview */
         .sub-preview {
@@ -420,15 +423,15 @@
                     <div class="fg">
                         <label>재경비율 (%)</label>
                         <input type="number" id="mOverheadRate" step="0.01" value="110" placeholder="110">
-                        <label style="font-size:0.82em;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;color:#666;white-space:nowrap;"><input type="checkbox" id="mOverheadDisabled"> 사용안함</label>
+                        <label style="font-size:0.82em;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;color:var(--text-secondary);white-space:nowrap;"><input type="checkbox" id="mOverheadDisabled"> 사용안함</label>
                     </div>
                     <div class="fg">
                         <label>기술료율 (%)</label>
                         <input type="number" id="mTechFeeRate" step="0.01" value="20" placeholder="20">
-                        <label style="font-size:0.82em;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;color:#666;white-space:nowrap;"><input type="checkbox" id="mTechFeeDisabled"> 사용안함</label>
+                        <label style="font-size:0.82em;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;color:var(--text-secondary);white-space:nowrap;"><input type="checkbox" id="mTechFeeDisabled"> 사용안함</label>
                     </div>
                 </div>
-                <div style="background:#F0FDFA;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:0.8rem;color:#1e40af;line-height:1.6;">
+                <div style="background:#ECFEFF;border:1px solid #A5F3FC;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:0.8rem;color:#155E75;line-height:1.6;">
                     인건비 자동계산: 견적서 작성 시 기술등급·투입일수만 입력하면<br>
                     직접인건비 = 노임단가(M/D) × 투입일수<br>
                     재경비 = 직접인건비 × 재경비율(%)<br>
@@ -529,16 +532,16 @@
                 lastGroup = groupKey;
             }
 
-            const subPreview = p.subItems ? escapeHtml(p.subItems).substring(0, 120) + (p.subItems.length > 120 ? '...' : '') : '<span style="color:#ccc;">-</span>';
+            const subPreview = p.subItems ? escapeHtml(p.subItems).substring(0, 120) + (p.subItems.length > 120 ? '...' : '') : '<span style="color:var(--border2);">-</span>';
 
-            const laborBadge = (p.calcType === 'LABOR') ? '<span style="display:inline-block;padding:2px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;background:#dbeafe;color:#1d4ed8;margin-left:6px;">자동계산</span>' : '';
+            const laborBadge = (p.calcType === 'LABOR') ? '<span style="display:inline-block;padding:2px 6px;border-radius:3px;font-size:0.7rem;font-weight:700;background:#ECFEFF;color:#155E75;margin-left:6px;">자동계산</span>' : '';
 
             const checked = selectedIds.has(p.patternId) ? ' checked' : '';
             html += '<tr>' +
                 '<td style="text-align:center;"><input type="checkbox" class="pattern-chk" value="' + p.patternId + '" onchange="togglePatternCheck(this)"' + checked + '></td>' +
                 '<td><span class="badge badge-' + p.category + '">' + p.category + '</span></td>' +
                 '<td>' + escapeHtml(p.patternGroup) + '</td>' +
-                '<td style="font-weight:600;">' + escapeHtml(p.productName) + laborBadge + (p.description ? '<div style="font-size:0.78rem;color:#999;margin-top:2px;">' + escapeHtml(p.description) + '</div>' : '') + '</td>' +
+                '<td style="font-weight:600;">' + escapeHtml(p.productName) + laborBadge + (p.description ? '<div style="font-size:0.78rem;color:var(--text-tertiary);margin-top:2px;">' + escapeHtml(p.description) + '</div>' : '') + '</td>' +
                 '<td style="text-align:center;">' + escapeHtml(p.defaultUnit) + '</td>' +
                 '<td style="text-align:right;">' + formatCurrency(p.defaultUnitPrice) + '</td>' +
                 '<td><div class="sub-preview">' + subPreview + '</div></td>' +
@@ -568,12 +571,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('mOverheadDisabled').addEventListener('change', function() {
             var inp = document.getElementById('mOverheadRate');
-            if (this.checked) { inp.dataset.backup = inp.value; inp.value = ''; inp.disabled = true; inp.style.background = '#f0f0f0'; }
+            if (this.checked) { inp.dataset.backup = inp.value; inp.value = ''; inp.disabled = true; inp.style.background = 'var(--surface-2)'; }
             else { inp.value = inp.dataset.backup || 110; inp.disabled = false; inp.style.background = ''; }
         });
         document.getElementById('mTechFeeDisabled').addEventListener('change', function() {
             var inp = document.getElementById('mTechFeeRate');
-            if (this.checked) { inp.dataset.backup = inp.value; inp.value = ''; inp.disabled = true; inp.style.background = '#f0f0f0'; }
+            if (this.checked) { inp.dataset.backup = inp.value; inp.value = ''; inp.disabled = true; inp.style.background = 'var(--surface-2)'; }
             else { inp.value = inp.dataset.backup || 20; inp.disabled = false; inp.style.background = ''; }
         });
     });
@@ -595,12 +598,12 @@
             document.getElementById('mOverheadDisabled').checked = ohOff;
             document.getElementById('mOverheadRate').value = ohOff ? '' : (pattern.overheadRate != null ? pattern.overheadRate : 110);
             document.getElementById('mOverheadRate').disabled = ohOff;
-            document.getElementById('mOverheadRate').style.background = ohOff ? '#f0f0f0' : '';
+            document.getElementById('mOverheadRate').style.background = ohOff ? 'var(--surface-2)' : '';
             var tfOff = (pattern.techFeeRate === 0);
             document.getElementById('mTechFeeDisabled').checked = tfOff;
             document.getElementById('mTechFeeRate').value = tfOff ? '' : (pattern.techFeeRate != null ? pattern.techFeeRate : 20);
             document.getElementById('mTechFeeRate').disabled = tfOff;
-            document.getElementById('mTechFeeRate').style.background = tfOff ? '#f0f0f0' : '';
+            document.getElementById('mTechFeeRate').style.background = tfOff ? 'var(--surface-2)' : '';
             document.getElementById('mSubItems').value = pattern.subItems || '';
             document.getElementById('mDesc').value = pattern.description || '';
         } else {
