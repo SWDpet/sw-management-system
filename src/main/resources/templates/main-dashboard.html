@@ -8,9 +8,9 @@
     <style>
         :root {
             /* 2025 Cool-Warm Hybrid · Indigo accent */
-            --primary:   #0F766E;   /* indigo-600 */
-            --primary2:  #115E59;   /* indigo-700 */
-            --primary-lt:#F0FDFA;   /* indigo-50 */
+            --primary:   var(--primary);   /* indigo-600 */
+            --primary2:  var(--primary2);   /* indigo-700 */
+            --primary-lt:var(--primary-lt);   /* indigo-50 */
             --bg:        #FAFAF9;   /* 살짝 웜 오프화이트 */
             --surface:   #FFFFFF;
             --surface-2: #F5F5F4;   /* stone-100, hover/선택 */
@@ -24,10 +24,11 @@
             --warning:   #D97706;   /* amber-600 */
             --danger:    #DC2626;   /* red-600 */
             --info:      #0891B2;   /* cyan-600 */
-            --green:     #2e7d32;
-            --orange:    #e64a19;
-            --teal:      #0277bd;
-            --purple:    #7B1FA2;
+            /* 레거시 보조 변수 — 디자인 토큰에 정렬 */
+            --green:     var(--success);
+            --orange:    var(--warning);
+            --teal:      var(--info);
+            --purple:    var(--primary);
         }
 
         body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); font-size: 13.5px; }
@@ -57,7 +58,7 @@
         @media (max-width: 720px)  { .summary-container { grid-template-columns: repeat(2, 1fr); } }
         .card {
             background: var(--surface);
-            border: 1px solid #ededf1;
+            border: 1px solid var(--border);
             border-radius: 14px;
             padding: 18px 20px 16px;
             position: relative;
@@ -69,41 +70,41 @@
         .card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 28px rgba(17,17,27,0.07);
-            border-color: #dcdce3;
+            border-color: var(--border2);
         }
         .card-head {
             display: flex; align-items: center; gap: 9px;
-            color: #5c5c68; font-size: 0.78rem; font-weight: 600;
+            color: var(--text2); font-size: 0.78rem; font-weight: 600;
             letter-spacing: 0.005em;
         }
         .card-ico {
             width: 28px; height: 28px; display: inline-flex;
             align-items: center; justify-content: center;
-            border-radius: 8px; background: #f3f3f7; color: #6b6b78;
+            border-radius: 8px; background: var(--surface-2); color: var(--text2);
             font-size: 0.82rem; flex-shrink: 0;
         }
         .card .value {
-            font-size: 1.55rem; font-weight: 700; color: #0a0a0c;
+            font-size: 1.55rem; font-weight: 700; color: var(--text);
             font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
             line-height: 1.15; letter-spacing: -0.015em;
         }
         .card .value .unit {
-            font-size: 0.68em; color: #9b9ba6; margin-left: 3px; font-weight: 500;
+            font-size: 0.68em; color: var(--muted); margin-left: 3px; font-weight: 500;
         }
         .card .meta {
-            font-size: 0.76rem; color: #7a7a87;
+            font-size: 0.76rem; color: var(--text2);
             display: flex; align-items: center; gap: 7px;
             margin-top: auto;
         }
-        .card .meta strong { color: #2c2c36; font-weight: 700; }
+        .card .meta strong { color: var(--text); font-weight: 700; }
         .card .trend-dot {
             width: 6px; height: 6px; border-radius: 50%;
-            background: #b6b6c2; display: inline-block; flex-shrink: 0;
+            background: var(--muted); display: inline-block; flex-shrink: 0;
         }
 
         /* Primary card — 단일 브랜드 강조 (indigo) */
         .card.is-primary {
-            background: linear-gradient(180deg, #F0FDFA 0%, #FFFFFF 65%);
+            background: linear-gradient(180deg, var(--primary-lt) 0%, #FFFFFF 65%);
             border-color: #99F6E4;
         }
         .card.is-primary .card-ico { background: #CCFBF1; color: var(--primary); }
@@ -119,14 +120,14 @@
         .card.is-clickable { cursor: pointer; }
         .card.is-clickable::after {
             content: '→'; position: absolute; top: 16px; right: 18px;
-            font-size: 0.95rem; color: #b6b6c2;
+            font-size: 0.95rem; color: var(--muted);
             opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease, color 0.18s ease;
         }
         .card.is-clickable:hover::after {
             opacity: 1; transform: translateX(3px); color: var(--primary);
         }
-        .btn-geonuris-icon { color: #0277bd !important; margin-left: 4px !important; font-size: 1em !important; transition: 0.2s; }
-        .btn-geonuris-icon:hover { color: #0d6efd !important; transform: scale(1.1); }
+        .btn-geonuris-icon { color: var(--primary) !important; margin-left: 4px !important; font-size: 1em !important; transition: 0.2s; }
+        .btn-geonuris-icon:hover { color: var(--primary) !important; transform: scale(1.1); }
 
         /* ── 툴바 ── */
         .toolbar {
@@ -151,12 +152,12 @@
             padding: 5px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s;
         }
         .nav-links a:hover { background: var(--primary-lt); color: var(--primary); }
-        .btn-add-icon     { color: #00a87a !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
-        .btn-add-icon:hover { color: #00875f !important; transform: scale(1.15); }
-        .btn-add-icon-red { color: #f08a7e !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
-        .btn-add-icon-red:hover { color: #e06b5e !important; transform: scale(1.15); }
-        .btn-license-icon { color: #7B1FA2 !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
-        .btn-license-icon:hover { color: #6a1691 !important; transform: scale(1.15); }
+        .btn-add-icon     { color: var(--success) !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
+        .btn-add-icon:hover { color: #047857 !important; transform: scale(1.15); }
+        .btn-add-icon-red { color: var(--danger) !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
+        .btn-add-icon-red:hover { color: #B91C1C !important; transform: scale(1.15); }
+        .btn-license-icon { color: var(--primary) !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
+        .btn-license-icon:hover { color: var(--primary2) !important; transform: scale(1.15); }
 
         /* ── 테이블 ── */
         .table-section {
@@ -176,7 +177,7 @@
             text-align: center; white-space: nowrap; color: var(--muted);
             font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
         }
-        th.th-group-amt { background: #F0FDFA; color: var(--primary2); text-transform: none; letter-spacing: 0.02em; font-size: 0.78em; }
+        th.th-group-amt { background: var(--primary-lt); color: var(--primary2); text-transform: none; letter-spacing: 0.02em; font-size: 0.78em; }
         td {
             padding: 14px 10px; border-bottom: 1px solid #F5F5F4;
             text-align: right; font-size: 0.85em; white-space: nowrap;
@@ -188,13 +189,13 @@
         .td-cnt    { text-align: center; font-weight: 700; color: var(--text); font-family: 'Inter', sans-serif; }
         .td-comp   { text-align: center; color: var(--success); font-weight: 700; }
         .td-prog   { text-align: center; color: var(--warning); font-weight: 700; }
-        .td-total  { background: #F0FDFA; font-weight: 700; color: var(--primary2); }
+        .td-total  { background: var(--primary-lt); font-weight: 700; color: var(--primary2); }
         tbody tr { transition: background 0.12s, box-shadow 0.12s; }
         tbody tr:hover { background-color: #FAFAF9; box-shadow: inset 3px 0 0 0 var(--primary); }
 
         /* 합계 행 */
         tfoot td {
-            background: #F0FDFA; font-weight: 700; color: var(--primary2);
+            background: var(--primary-lt); font-weight: 700; color: var(--primary2);
             border-top: 1px solid #5EEAD4; padding: 14px 10px;
             white-space: nowrap; font-family: 'Inter', sans-serif;
             font-variant-numeric: tabular-nums;
@@ -282,7 +283,7 @@
             --bg:        #0C0A09;  /* stone-950 */
             --surface:   #1C1917;  /* stone-900 */
             --surface-2: #292524;  /* stone-800 */
-            --border:    #44403C;  /* stone-700 */
+            --border:    var(--text2)03C;  /* stone-700 */
             --border2:   #57534E;  /* stone-600 */
             --text:      #FAFAF9;
             --text2:     #D6D3D1;
@@ -301,7 +302,7 @@
         [data-theme="dark"] .card-ico { background: var(--surface-2); color: var(--text2); }
         [data-theme="dark"] .card.is-primary {
             background: linear-gradient(180deg, #0D3F3A 0%, #1C1917 65%);
-            border-color: #0F766E;
+            border-color: var(--primary);
         }
         [data-theme="dark"] .card.is-primary .card-ico { background: #134E4A; color: #5EEAD4; }
         [data-theme="dark"] .card.is-primary .value { color: #5EEAD4; }
@@ -317,7 +318,7 @@
         [data-theme="dark"] .td-total { background: #0D3F3A; color: #5EEAD4; }
         [data-theme="dark"] tbody tr:hover { background: var(--surface-2); }
         [data-theme="dark"] tfoot td {
-            background: #0D3F3A; color: #5EEAD4; border-top-color: #0F766E;
+            background: #0D3F3A; color: #5EEAD4; border-top-color: var(--primary);
         }
         [data-theme="dark"] .page-title h2 { color: var(--text); }
         [data-theme="dark"] nav {
@@ -337,45 +338,45 @@
 <body>
 
 <!-- T world 스타일 GNB -->
-<nav style="background:#fff; border-bottom:1px solid #e8e8e8; position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+<nav style="background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
     <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
         <a href="/" title="메인 대시보드로 이동" style="text-decoration:none; display:inline-flex; align-items:center; cursor:pointer;">
-            <span style="background:#0F766E; color:#fff; padding:7px 14px; border-radius:8px; font-weight:800; font-size:0.95rem; letter-spacing:-0.005em; font-family:'Inter','Noto Sans KR',sans-serif; line-height:1; transition:background 0.15s;" onmouseover="this.style.background='#115E59'" onmouseout="this.style.background='#0F766E'">SW Manager</span>
+            <span style="background:var(--primary); color:#fff; padding:7px 14px; border-radius:8px; font-weight:800; font-size:0.95rem; letter-spacing:-0.005em; font-family:'Inter','Noto Sans KR',sans-serif; line-height:1; transition:background 0.15s;" onmouseover="this.style.background='var(--primary2)'" onmouseout="this.style.background='var(--primary)'">SW Manager</span>
         </a>
         <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
             <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/infra/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-server" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>서버관리</a>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/infra/list}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-server" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>서버관리</a>
                 <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authInfra == 'EDIT'}" th:href="@{/infra/new}" class="btn-add-icon-red" title="인프라/서버 신규 등록"><i class="fas fa-plus-circle"></i></a>
             </div>
 
             <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/projects/status}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-briefcase" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>사업관리</a>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/projects/status}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-briefcase" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>사업관리</a>
                 <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authProject == 'EDIT'}" th:href="@{/projects/new}" class="btn-add-icon" title="신규 사업 바로 등록"><i class="fas fa-plus-circle"></i></a>
             </div>
 
             <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/person/list}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-users" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>담당자관리</a>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/person/list}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-users" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>담당자관리</a>
                 <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authPerson == 'EDIT'}" th:href="@{/person/new}" class="btn-add-icon" title="신규 담당자 바로 등록"><i class="fas fa-plus-circle"></i></a>
             </div>
 
             <!-- [스프린트 6 후속] 라이선스 관리 드롭다운: 라이선스 대장 + GeoNURIS -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
                 <div id="licenseMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleLicenseMenu(event)" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-key" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>라이선스 관리 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="licenseMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
-                        <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">라이선스 대장</div>
-                        <a th:href="@{/license/registry/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 라이선스 대장 목록</a>
+                    <a href="#" onclick="toggleLicenseMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-key" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>라이선스 관리 <span style="font-size:0.7em;">▾</span></a>
+                    <div id="licenseMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
+                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">라이선스 대장</div>
+                        <a th:href="@{/license/registry/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 라이선스 대장 목록</a>
                         <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
-                           th:href="@{/license/registry/upload}" style="display:block; padding:8px 14px; text-decoration:none; color:#7B1FA2; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">⬆ CSV 업로드</a>
-                        <div style="height:1px; background:#eee; margin:6px 0;"></div>
-                        <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">GeoNURIS</div>
-                        <a th:href="@{/geonuris/license/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🔑 GeoNURIS 목록</a>
+                           th:href="@{/license/registry/upload}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⬆ CSV 업로드</a>
+                        <div style="height:1px; background:var(--border); margin:6px 0;"></div>
+                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">GeoNURIS</div>
+                        <a th:href="@{/geonuris/license/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🔑 GeoNURIS 목록</a>
                         <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
-                           th:href="@{/geonuris/license/new}" style="display:block; padding:8px 14px; text-decoration:none; color:#0277bd; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🔑 GeoNURIS 발급</a>
+                           th:href="@{/geonuris/license/new}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🔑 GeoNURIS 발급</a>
                     </div>
                 </div>
                 <script>
@@ -397,19 +398,19 @@
 
             <!-- [스프린트 6 후속] 견적서 드롭다운: 목록/대장/패턴/비고패턴/노임단가 -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
                 <div id="quotationMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleQuotationMenu(event)" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-file-invoice-dollar" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>견적서 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="quotationMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
-                        <a th:href="@{/quotation/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#0F766E; font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📝 견적서 목록</a>
+                    <a href="#" onclick="toggleQuotationMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-file-invoice-dollar" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>견적서 <span style="font-size:0.7em;">▾</span></a>
+                    <div id="quotationMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
+                        <a th:href="@{/quotation/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 견적서 목록</a>
                         <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authQuotation == 'EDIT'}"
-                           th:href="@{/quotation/new}" style="display:block; padding:8px 14px; text-decoration:none; color:#00a87a; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">➕ 견적서 작성</a>
-                        <div style="height:1px; background:#eee; margin:6px 0;"></div>
-                        <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">대장·기준정보</div>
-                        <a th:href="@{/quotation/ledger}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 견적대장</a>
-                        <a th:href="@{/quotation/patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🧩 패턴관리</a>
-                        <a th:href="@{/quotation/remarks-patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📝 비고패턴</a>
-                        <a th:href="@{/quotation/wage-rates}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">💰 노임단가</a>
+                           th:href="@{/quotation/new}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--success); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">➕ 견적서 작성</a>
+                        <div style="height:1px; background:var(--border); margin:6px 0;"></div>
+                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">대장·기준정보</div>
+                        <a th:href="@{/quotation/ledger}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 견적대장</a>
+                        <a th:href="@{/quotation/patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧩 패턴관리</a>
+                        <a th:href="@{/quotation/remarks-patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 비고패턴</a>
+                        <a th:href="@{/quotation/wage-rates}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">💰 노임단가</a>
                     </div>
                 </div>
                 <script>
@@ -433,32 +434,32 @@
 
             <!-- 업무계획 메뉴 -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#e8f5e9';this.style.color='#2e7d32'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-calendar-days" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>업무계획</a>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-calendar-days" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>업무계획</a>
             </div>
 
             <!-- [스프린트 6 후속] 문서관리 드롭다운: 목록 + 8 문서 유형 작성 바로가기 -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authDocument != null and #authentication.principal.user.authDocument != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
                 <div id="documentMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleDocumentMenu(event)" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#fbe9e7';this.style.color='#e64a19'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-file-lines" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>문서관리 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="documentMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
+                    <a href="#" onclick="toggleDocumentMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-file-lines" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>문서관리 <span style="font-size:0.7em;">▾</span></a>
+                    <div id="documentMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
                         <!-- doc-split-ops (2026-04-29): 사업 / 운영 두 그룹으로 분리 -->
-                        <a th:href="@{/document/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#e64a19; font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 사업문서 목록</a>
-                        <a th:href="@{/ops-doc/list}" style="display:block; padding:8px 14px; text-decoration:none; color:#0f766e; font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🛠 운영문서 목록</a>
+                        <a th:href="@{/document/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 사업문서 목록</a>
+                        <a th:href="@{/ops-doc/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🛠 운영문서 목록</a>
                         <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authDocument == 'EDIT'}">
-                            <div style="height:1px; background:#eee; margin:6px 0;"></div>
-                            <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">사업문서</div>
-                            <a th:href="@{/document/create(docType='COMMENCE')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📜 착수계</a>
-                            <a th:href="@{/document/create(docType='INTERIM')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🧾 기성계</a>
-                            <a th:href="@{/document/create(docType='COMPLETION')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">✒ 준공계</a>
-                            <div style="height:1px; background:#eee; margin:6px 0;"></div>
-                            <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">운영·유지보수 문서</div>
-                            <a th:href="@{/document/create(docType='INSPECT')}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📝 점검내역서</a>
-                            <a th:href="@{/ops-doc/fault/form}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">⚠ 장애처리</a>
-                            <a th:href="@{/ops-doc/support/form}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🤝 업무지원</a>
-                            <a th:href="@{/ops-doc/install/form}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">⬇ 설치보고서</a>
-                            <a th:href="@{/ops-doc/patch/form}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🧩 패치내역서</a>
+                            <div style="height:1px; background:var(--border); margin:6px 0;"></div>
+                            <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">사업문서</div>
+                            <a th:href="@{/document/create(docType='COMMENCE')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📜 착수계</a>
+                            <a th:href="@{/document/create(docType='INTERIM')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧾 기성계</a>
+                            <a th:href="@{/document/create(docType='COMPLETION')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">✒ 준공계</a>
+                            <div style="height:1px; background:var(--border); margin:6px 0;"></div>
+                            <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">운영·유지보수 문서</div>
+                            <a th:href="@{/document/create(docType='INSPECT')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 점검내역서</a>
+                            <a th:href="@{/ops-doc/fault/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⚠ 장애처리</a>
+                            <a th:href="@{/ops-doc/support/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🤝 업무지원</a>
+                            <a th:href="@{/ops-doc/install/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⬇ 설치보고서</a>
+                            <a th:href="@{/ops-doc/patch/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧩 패치내역서</a>
                         </th:block>
                     </div>
                 </div>
@@ -481,21 +482,21 @@
 
             <!-- 성과통계 메뉴 -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authPerformance != null and #authentication.principal.user.authPerformance != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/performance/personal}" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='#f3e5f5';this.style.color='#7B1FA2'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-chart-line" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>성과통계</a>
+                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
+                <a th:href="@{/performance/personal}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-chart-line" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>성과통계</a>
             </div>
 
             <!-- [스프린트 5 v2] 관리자 드롭다운: 사용자승인·조직도관리·로그관리·시스템관계도 -->
             <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" id="adminMenuWrap" style="position:relative; display:inline-block; margin-left:4px;">
-                <a href="#" onclick="toggleAdminMenu(event)" style="text-decoration:none; color:#d32f2f; font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#ffebee'" onmouseout="this.style.background=''"><i class="fas fa-gear" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>관리자 <span style="font-size:0.7em;">▾</span></a>
-                <div id="adminMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
-                    <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">사용자·조직</div>
-                    <a th:href="@{/admin/users}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">👥 사용자 승인</a>
-                    <a th:href="@{/admin/org-units}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🏢 조직도 관리</a>
-                    <div style="height:1px; background:#eee; margin:6px 0;"></div>
-                    <div style="padding:4px 14px; font-size:0.7rem; color:#888; font-weight:700; letter-spacing:0.5px;">시스템</div>
-                    <a th:href="@{/admin/logs}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">📋 로그 관리</a>
-                    <a th:href="@{/admin/system-graph}" style="display:block; padding:8px 14px; text-decoration:none; color:#333; font-size:0.85rem;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">🕸️ 시스템 관계도</a>
+                <a href="#" onclick="toggleAdminMenu(event)" style="text-decoration:none; color:var(--danger); font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''"><i class="fas fa-gear" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>관리자 <span style="font-size:0.7em;">▾</span></a>
+                <div id="adminMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
+                    <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">사용자·조직</div>
+                    <a th:href="@{/admin/users}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">👥 사용자 승인</a>
+                    <a th:href="@{/admin/org-units}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🏢 조직도 관리</a>
+                    <div style="height:1px; background:var(--border); margin:6px 0;"></div>
+                    <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">시스템</div>
+                    <a th:href="@{/admin/logs}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 로그 관리</a>
+                    <a th:href="@{/admin/system-graph}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🕸️ 시스템 관계도</a>
                 </div>
             </div>
             <script>
@@ -515,7 +516,7 @@
             </script>
 
             <!-- [Phase 3] 다크모드 토글 (실험) -->
-            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
+            <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
             <button id="themeToggleBtn" type="button" onclick="window.__toggleTheme && window.__toggleTheme()"
                 title="라이트/다크 모드 전환"
                 style="background:transparent; border:1px solid #E7E5E4; color:#57534E;
@@ -528,11 +529,11 @@
             </button>
 
             <!-- [스프린트 6 후속] 마이페이지를 로그아웃 바로 앞으로 이동 -->
-            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 4px; display:inline-block;"></span>
-            <a href="/mypage" style="text-decoration:none; color:#444; font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='#F0FDFA';this.style.color='#0F766E'" onmouseout="this.style.background='';this.style.color='#444'"><i class="fas fa-circle-user" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>마이페이지</a>
+            <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
+            <a href="/mypage" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-circle-user" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>마이페이지</a>
 
-            <span style="width:1px; height:18px; background:#e0e0e0; margin:0 6px; display:inline-block;"></span>
-            <a href="/logout" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#a8a29e;background:transparent;font-size:0.82rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:all 0.18s;" onmouseover="this.style.background='#FEF2F2';this.style.color='#f08a7e'" onmouseout="this.style.background='transparent';this.style.color='#a8a29e'"><i class="fas fa-arrow-right-from-bracket" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>로그아웃</a>
+            <span style="width:1px; height:18px; background:var(--border); margin:0 6px; display:inline-block;"></span>
+            <a href="/logout" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#a8a29e;background:transparent;font-size:0.82rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:all 0.18s;" onmouseover="this.style.background='#FEF2F2';this.style.color='var(--danger)'" onmouseout="this.style.background='transparent';this.style.color='#a8a29e'"><i class="fas fa-arrow-right-from-bracket" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>로그아웃</a>
         </div>
     </div>
 
@@ -631,7 +632,7 @@
             <div class="value"><span id="licenseCount" class="skeleton skel-num">-</span></div>
             <div class="meta" style="flex-direction:column; align-items:flex-start; gap:3px;">
                 <span>신규 <strong id="licenseNewCount">-</strong> · 기존 <strong id="licenseExistingCount">-</strong></span>
-                <span id="licenseUploadDate" class="skeleton skel-text" style="color:#b6b6c2; font-size:0.72rem;">기준일: -</span>
+                <span id="licenseUploadDate" class="skeleton skel-text" style="color:var(--muted); font-size:0.72rem;">기준일: -</span>
             </div>
         </div>
 
@@ -674,7 +675,7 @@
         <div class="table-title">
             <i class="fas fa-table"></i>
             시스템별 사업 현황
-            <span style="font-size:0.85rem; color:#888; font-weight:400;"
+            <span style="font-size:0.85rem; color:var(--muted); font-weight:400;"
                   th:text="${selectedYear != null ? '(' + selectedYear + '년 기준)' : '(전체 연도 기준)'}">
                 (2026년 기준)
             </span>
@@ -686,8 +687,8 @@
                     <tr>
                         <th rowspan="2">시스템명</th>
                         <th rowspan="2">총개수</th>
-                        <th rowspan="2" style="color:#2e7d32;">완료</th>
-                        <th rowspan="2" style="color:#e64a19;">진행중</th>
+                        <th rowspan="2" style="color:var(--success);">완료</th>
+                        <th rowspan="2" style="color:var(--primary);">진행중</th>
                         <th rowspan="2" class="th-group-amt">금액 합계</th>
                         <th colspan="7" class="th-group-amt">항목별 금액 (단위: 원)</th>
                     </tr>
