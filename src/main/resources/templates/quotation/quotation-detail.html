@@ -8,6 +8,7 @@
     <title>견적서 상세 - SW Manager</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
         * {
             margin: 0;
@@ -16,16 +17,16 @@
         }
 
         body {
-            background: #FAFAF9;
+            background: var(--bg);
             font-family: 'Inter', 'Noto Sans KR', sans-serif;
-            color: #222;
+            color: var(--text);
             line-height: 1.6;
         }
 
         /* Navigation */
         nav {
             background: #fff;
-            border-bottom: 1px solid #e8e8e8;
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             z-index: 200;
@@ -66,7 +67,7 @@
         .logo-text {
             font-weight: 800;
             font-size: 1.08rem;
-            color: #222;
+            color: var(--text);
         }
 
         .nav-links {
@@ -78,7 +79,7 @@
 
         .nav-link {
             text-decoration: none;
-            color: #444;
+            color: var(--text2);
             font-size: 0.82rem;
             font-weight: 600;
             padding: 6px 11px;
@@ -100,7 +101,7 @@
         .nav-divider {
             width: 1px;
             height: 18px;
-            background: #e0e0e0;
+            background: var(--border);
             margin: 0 4px;
             display: inline-block;
         }
@@ -110,7 +111,7 @@
         }
 
         .nav-plus {
-            color: #00a87a;
+            color: var(--success);
             margin-left: 2px;
             font-size: 0.95em;
             text-decoration: none;
@@ -118,12 +119,12 @@
         }
 
         .nav-plus:hover {
-            color: #00b88a;
+            color: var(--success);
         }
 
         .nav-logout {
             text-decoration: none;
-            color: #999;
+            color: var(--muted);
             font-size: 0.8rem;
             padding: 6px 10px;
             border-radius: 6px;
@@ -131,7 +132,7 @@
         }
 
         .nav-logout:hover {
-            background: #FAFAF9;
+            background: var(--bg);
         }
 
         /* Main Container */
@@ -152,7 +153,7 @@
         .header-title {
             font-size: 1.75rem;
             font-weight: 800;
-            color: #222;
+            color: var(--text);
         }
 
         .badge {
@@ -163,34 +164,35 @@
             font-weight: 600;
         }
 
+        /* 상태/분류 뱃지 — quotation-list 와 동일 의미 토큰 */
         .badge-발행완료 {
-            background: #E8F5E9;
-            color: #2E7D32;
+            background: #F0FDF4;
+            color: #166534;
         }
 
         .badge-작성중 {
-            background: #FFF9C4;
-            color: #F57F17;
+            background: #FFFBEB;
+            color: #92400E;
         }
 
         .badge-취소 {
-            background: #FFEBEE;
-            color: #C62828;
+            background: #FEF2F2;
+            color: #B91C1C;
         }
 
         .badge-용역 {
-            background: #E8F5E9;
-            color: #2E7D32;
+            background: #F0FDF4;
+            color: #166534;
         }
 
         .badge-제품 {
-            background: #E3F2FD;
-            color: #1565C0;
+            background: #ECFEFF;
+            color: #155E75;
         }
 
         .badge-유지보수 {
-            background: #FFF3E0;
-            color: #E65100;
+            background: #FFFBEB;
+            color: #92400E;
         }
 
         /* Info Section */
@@ -199,7 +201,7 @@
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
-            border: 1px solid #f0f0f0;
+            border: 1px solid var(--surface-2);
         }
 
         .info-grid {
@@ -217,7 +219,7 @@
         .info-label {
             font-size: 0.8rem;
             font-weight: 600;
-            color: #999;
+            color: var(--muted);
             margin-bottom: 6px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -226,13 +228,13 @@
         .info-value {
             font-size: 1rem;
             font-weight: 600;
-            color: #222;
+            color: var(--text);
             word-break: break-word;
         }
 
         .total-amount-container {
             padding-top: 24px;
-            border-top: 2px solid #f0f0f0;
+            border-top: 2px solid var(--surface-2);
             display: flex;
             align-items: baseline;
             gap: 16px;
@@ -241,7 +243,7 @@
         .total-amount-label {
             font-size: 0.85rem;
             font-weight: 600;
-            color: #999;
+            color: var(--muted);
             text-transform: uppercase;
         }
 
@@ -254,7 +256,7 @@
         .total-amount-text {
             font-size: 0.9rem;
             font-weight: 500;
-            color: #666;
+            color: var(--text2);
             margin-left: auto;
         }
 
@@ -264,14 +266,14 @@
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
-            border: 1px solid #f0f0f0;
+            border: 1px solid var(--surface-2);
             overflow-x: auto;
         }
 
         .items-title {
             font-size: 1.1rem;
             font-weight: 700;
-            color: #222;
+            color: var(--text);
             margin-bottom: 16px;
         }
 
@@ -281,7 +283,7 @@
         }
 
         thead {
-            background: #FAFAF9;
+            background: var(--bg);
         }
 
         th {
@@ -289,20 +291,20 @@
             text-align: left;
             font-size: 0.8rem;
             font-weight: 700;
-            color: #666;
-            border-bottom: 2px solid #e8e8e8;
+            color: var(--text2);
+            border-bottom: 2px solid var(--border);
             text-transform: uppercase;
         }
 
         td {
             padding: 12px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--surface-2);
             font-size: 0.9rem;
-            color: #333;
+            color: var(--text);
         }
 
         tbody tr:hover {
-            background: #fafafa;
+            background: var(--surface-2);
         }
 
         .text-right {
@@ -314,15 +316,15 @@
         }
 
         .total-row {
-            background: #f9f9f9;
+            background: var(--surface-2);
             font-weight: 700;
-            border-top: 2px solid #e8e8e8;
-            border-bottom: 2px solid #e8e8e8;
+            border-top: 2px solid var(--border);
+            border-bottom: 2px solid var(--border);
         }
 
         .total-row td {
             padding: 14px 12px;
-            color: #222;
+            color: var(--text);
         }
 
         /* Action Buttons */
@@ -348,32 +350,32 @@
         }
 
         .btn-primary {
-            background: #0F766E;
+            background: var(--primary);
             color: #fff;
         }
 
         .btn-primary:hover {
-            background: #5a2fbf;
-            box-shadow: 0 4px 12px rgba(107, 62, 240, 0.3);
+            background: var(--primary2);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
         }
 
         .btn-danger {
-            background: #f44336;
+            background: var(--danger);
             color: #fff;
         }
 
         .btn-danger:hover {
-            background: #da190b;
-            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+            background: #B91C1C;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
         }
 
         .btn-secondary {
-            background: #e8e8e8;
-            color: #222;
+            background: var(--border);
+            color: var(--text);
         }
 
         .btn-secondary:hover {
-            background: #d8d8d8;
+            background: var(--border2);
         }
 
         /* Print Styles */
@@ -554,8 +556,8 @@
         <!-- Action Buttons -->
         <div class="action-buttons">
             <!-- 출력 (도장 선택) -->
-            <div style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:4px 8px;">
-                <select id="sealOption" style="padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-size:0.82rem;">
+            <div style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--border2);border-radius:8px;padding:4px 8px;">
+                <select id="sealOption" style="padding:5px 8px;border:1px solid var(--border2);border-radius:4px;font-size:0.82rem;">
                     <option value="true">도장 표시</option>
                     <option value="false">도장 미표시</option>
                 </select>
@@ -566,7 +568,7 @@
             <!-- 편집 권한 그룹: 수정=작성자|관리자, 삭제=관리자만(그 외는 문의 안내) -->
             <th:block th:if="${canEdit}">
                 <!-- 수정: 작성자 또는 관리자만 노출 -->
-                <a th:if="${isAdmin or isAuthor}" th:href="@{/quotation/{id}/edit(id=${quotation.quoteId})}" class="btn btn-primary" style="background:#444;">
+                <a th:if="${isAdmin or isAuthor}" th:href="@{/quotation/{id}/edit(id=${quotation.quoteId})}" class="btn btn-primary" style="background:var(--text2);">
                     <i class="fas fa-pencil"></i> 수정
                 </a>
                 <!-- 삭제: 관리자만 실제 삭제 -->
