@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>마이페이지</title>
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #FAFAF9; padding: 24px; margin: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 24px; margin: 0; }
         .card { max-width: 1200px; margin: auto; background: white; padding: 28px 32px; border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.08); }
-        h2 { color: #134E4A; border-bottom: 2px solid #134E4A; padding-bottom: 12px; margin: 0 0 20px; font-weight: 700; font-size: 1.4em; }
-        h3 { font-size: 1em; color: #0F766E; margin: 0 0 14px; border-left: 4px solid #0F766E; padding-left: 10px; }
+        h2 { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 12px; margin: 0 0 20px; font-weight: 700; font-size: 1.4em; }
+        h3 { font-size: 1em; color: var(--primary); margin: 0 0 14px; border-left: 4px solid var(--primary); padding-left: 10px; }
 
         /* 2x2 메인 레이아웃 */
         .main-grid { display: grid; grid-template-columns: 1.55fr 1fr; gap: 22px; }
         @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
 
-        .section { background: #fafbff; border: 1px solid #e8eaf6; border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+        .section { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
         .section:last-child { margin-bottom: 0; }
 
         /* 내부 폼 그리드 — 2~3열 */
@@ -25,24 +26,24 @@
         .span3 { grid-column: 1 / -1; }
 
         .form-group { margin: 0; }
-        label { display: block; font-weight: 600; margin-bottom: 4px; color: #555; font-size: 0.78em; }
-        input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 5px; box-sizing: border-box; background: #fff; font-size: 0.88em; }
-        input[readonly] { background: #f3f4f6; color: #888; cursor: not-allowed; border-color: #eee; }
-        select { width: 100%; padding: 8px 10px; border: 1px solid #0F766E; border-radius: 5px; font-size: 0.85em; background: #fff; }
-        .btn-submit { padding: 11px 22px; background: #134E4A; color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.92em; }
-        .btn-submit:hover { background: #10154c; }
-        .btn-pw-change { padding: 10px 18px; background: #0F766E; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.88em; width: 100%; }
-        .btn-pw-change:hover { background: #115E59; }
-        .info-box { background: #e3f2fd; border: 1px solid #90caf9; color: #1565c0; padding: 10px 12px; border-radius: 6px; font-size: 0.8em; text-align: center; margin-top: 10px; }
-        .warning-box { background: #fff3e0; border: 1px solid #ffe0b2; color: #e65100; padding: 10px 12px; border-radius: 6px; font-size: 0.8em; text-align: center; margin-top: 10px; }
+        label { display: block; font-weight: 600; margin-bottom: 4px; color: var(--text2); font-size: 0.78em; }
+        input { width: 100%; padding: 8px 10px; border: 1px solid var(--border2); border-radius: 5px; box-sizing: border-box; background: #fff; font-size: 0.88em; }
+        input[readonly] { background: var(--surface-2); color: var(--muted); cursor: not-allowed; border-color: var(--border); }
+        select { width: 100%; padding: 8px 10px; border: 1px solid var(--primary); border-radius: 5px; font-size: 0.85em; background: #fff; }
+        .btn-submit { padding: 11px 22px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.92em; }
+        .btn-submit:hover { background: var(--primary2); }
+        .btn-pw-change { padding: 10px 18px; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.88em; width: 100%; }
+        .btn-pw-change:hover { background: var(--primary2); }
+        .info-box { background: #ECFEFF; border: 1px solid #A5F3FC; color: #155E75; padding: 10px 12px; border-radius: 6px; font-size: 0.8em; text-align: center; margin-top: 10px; }
+        .warning-box { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; padding: 10px 12px; border-radius: 6px; font-size: 0.8em; text-align: center; margin-top: 10px; }
         .alert { padding: 12px; border-radius: 6px; margin-bottom: 14px; font-weight: bold; text-align: center; font-size: 0.88em; }
         .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
         .action-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
         .footer-link { text-align: center; margin-top: 18px; }
-        .footer-link a { color: #666; text-decoration: none; font-size: 0.88em; }
-        .footer-link a:hover { color: #0F766E; }
+        .footer-link a { color: var(--text2); text-decoration: none; font-size: 0.88em; }
+        .footer-link a:hover { color: var(--primary); }
     
         /* 테이블 현대화 — 행 높이 + hover 좌측 teal 바 */
         tbody tr { transition: background 0.12s, box-shadow 0.12s; }
@@ -64,8 +65,8 @@
 <div th:replace="~{fragments/top-nav :: nav}"></div>
 
 <div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E7E5E4; padding-bottom:16px; margin-bottom:22px;">
-        <h2 style="margin:0; border:none; padding:0; font-size:1.35rem; font-weight:700; color:#1C1917;">👤 마이페이지</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:22px;">
+        <h2 style="margin:0; border:none; padding:0; font-size:1.35rem; font-weight:700; color:var(--text);">👤 마이페이지</h2>
     </div>
 
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
@@ -76,7 +77,7 @@
             <!-- 좌측: 기본정보 + 인적사항 -->
             <div>
                 <div class="section">
-                    <h3>1. 기본 정보 <span style="font-size:0.8em; color:#888; font-weight:400;">(수정 불가)</span></h3>
+                    <h3>1. 기본 정보 <span style="font-size:0.8em; color:var(--muted); font-weight:400;">(수정 불가)</span></h3>
                     <div class="form-grid-3">
                         <div class="form-group">
                             <label>아이디</label>
@@ -94,7 +95,7 @@
                 </div>
 
                 <div class="section">
-                    <h3>2. 인적 사항 <span style="font-size:0.8em; color:#888; font-weight:400;">(수정 가능)</span></h3>
+                    <h3>2. 인적 사항 <span style="font-size:0.8em; color:var(--muted); font-weight:400;">(수정 가능)</span></h3>
                     <div class="form-grid-3">
                         <div class="form-group">
                             <label>부서명</label>
@@ -133,12 +134,12 @@
                             <input type="text" name="address" th:value="${user.address}">
                         </div>
                         <div class="form-group span3">
-                            <label>자격증 <span style="color:#888; font-weight:400;">(콤마 구분)</span></label>
+                            <label>자격증 <span style="color:var(--muted); font-weight:400;">(콤마 구분)</span></label>
                             <input type="text" name="certificate" th:value="${user.certificate}" placeholder="예: 정보처리기사, 측량기능사">
                         </div>
                         <div class="form-group span3">
-                            <label>업무 <span style="color:#888; font-weight:400;">(Enter 로 추가)</span></label>
-                            <div id="tasksChipBox" style="border:1px solid #d1d5db; border-radius:5px; padding:6px; min-height:36px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text; background:#fff;"
+                            <label>업무 <span style="color:var(--muted); font-weight:400;">(Enter 로 추가)</span></label>
+                            <div id="tasksChipBox" style="border:1px solid var(--border2); border-radius:5px; padding:6px; min-height:36px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text; background:#fff;"
                                  onclick="document.getElementById('tasksChipInput').focus();">
                                 <input type="text" id="tasksChipInput" placeholder="업무 입력 후 Enter" style="border:none; outline:none; flex:1; min-width:160px; padding:4px; font-size:0.88em;">
                             </div>
@@ -214,8 +215,8 @@
 
     <!-- 비밀번호 변경 (별도 form) -->
     <form th:action="@{/mypage/password}" method="post" onsubmit="return validatePassword();" style="margin-top: 18px;">
-        <div class="section" style="background:#f3f4f6;">
-            <h3 style="color:#7B1FA2; border-left-color:#7B1FA2;">4. 비밀번호 변경</h3>
+        <div class="section" style="background:var(--surface-2);">
+            <h3 style="color:var(--primary); border-left-color:var(--primary);">4. 비밀번호 변경</h3>
             <div class="form-grid-3">
                 <div class="form-group">
                     <label>현재 비밀번호</label>
@@ -250,7 +251,7 @@
         arr.forEach(function(t){
             var chip = document.createElement('span');
             chip.className = 'chip';
-            chip.style.cssText = 'background:#e3f2fd; color:#1565c0; padding:3px 8px; border-radius:12px; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;';
+            chip.style.cssText = 'background:var(--primary-lt); color:var(--primary); padding:3px 8px; border-radius:12px; font-size:0.82em; display:inline-flex; align-items:center; gap:4px;';
             chip.innerHTML = t + ' <span style="cursor:pointer; font-weight:bold;" onclick="event.stopPropagation(); this.parentNode.dataset.del=\'1\'; window.__taskRefresh();">×</span>';
             chip.dataset.val = t;
             box.insertBefore(chip, input);

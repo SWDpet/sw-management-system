@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>회원가입</title>
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; padding: 40px 0; background: #f4f7f6; margin: 0; }
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 40px 0; background: var(--bg); margin: 0; }
         .card { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 450px; }
-        h2 { text-align: center; color: #134E4A; margin-bottom: 25px; }
-        label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #134E4A; color: white; font-weight: bold; cursor: pointer; border: none; }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; }
+        label { display: block; font-size: 0.85em; font-weight: bold; margin-bottom: 5px; color: var(--text2); }
+        input, button { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px; border: 1px solid var(--border2); box-sizing: border-box; }
+        button { background: var(--primary); color: white; font-weight: bold; cursor: pointer; border: none; }
     </style>
 </head>
 <body>
@@ -60,7 +61,7 @@
             <input type="text" name="techGrade" placeholder="예: 초급, 중급, 고급, 특급">
 
             <label>업무 (다중 입력 - 엔터로 추가)</label>
-            <div id="signupTasksBox" style="border:1px solid #ced4da; border-radius:5px; padding:6px; min-height:38px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text;"
+            <div id="signupTasksBox" style="border:1px solid var(--border2); border-radius:5px; padding:6px; min-height:38px; display:flex; flex-wrap:wrap; gap:5px; align-items:center; cursor:text;"
                  onclick="document.getElementById('signupTasksInput').focus();">
                 <input type="text" id="signupTasksInput" placeholder="예: GIS SW 유지보수" style="border:none; outline:none; flex:1; min-width:160px; padding:4px;">
             </div>
@@ -73,7 +74,7 @@
                     arr.forEach(function(t){
                         var c=document.createElement('span');
                         c.className='chip';
-                        c.style.cssText='background:#e3f2fd;color:#1565c0;padding:3px 8px;border-radius:12px;font-size:0.85em;display:inline-flex;align-items:center;gap:4px;';
+                        c.style.cssText='background:var(--primary-lt);color:var(--primary);padding:3px 8px;border-radius:12px;font-size:0.85em;display:inline-flex;align-items:center;gap:4px;';
                         c.innerHTML=t+' <span style="cursor:pointer;font-weight:bold;" onclick="event.stopPropagation();this.parentNode.remove();window.__sgRefresh();">×</span>';
                         c.dataset.val=t;
                         box.insertBefore(c,inp);
@@ -107,7 +108,7 @@
             <button type="submit">가입 승인 요청</button>
         </form>
         <div style="text-align: center; margin-top: 10px;">
-            <a th:href="@{/login}" style="color: #666; text-decoration: none;">로그인으로 이동</a>
+            <a th:href="@{/login}" style="color: var(--text2); text-decoration: none;">로그인으로 이동</a>
         </div>
     </div>
 </body>
