@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <title>조직도 관리</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08); display:flex; justify-content:space-between; align-items:center; }
-        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
         .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
         .layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
         ul.tree, ul.tree ul { list-style: none; margin: 0; padding: 0 0 0 16px; }
@@ -19,23 +20,24 @@
             display: inline-block; padding: 4px 10px; border-radius: 6px; cursor: pointer;
             border: 1px solid transparent;
         }
-        .unit.sel { background: #e3f2fd; border-color: #1976d2; font-weight: 600; }
+        .unit.sel { background: var(--primary-lt); border-color: var(--primary); font-weight: 600; }
         .unit .type-badge {
             display: inline-block; font-size: 0.72em; padding: 1px 6px; border-radius: 3px;
             color: white; margin-right: 6px; vertical-align: middle;
         }
-        .type-DIVISION { background: #1565c0; }
-        .type-DEPARTMENT { background: #00897b; }
-        .type-TEAM { background: #7b1fa2; }
+        /* 조직 유형 뱃지 — 본부/부서/팀 3단계 구분 */
+        .type-DIVISION { background: var(--primary); }
+        .type-DEPARTMENT { background: var(--info); }
+        .type-TEAM { background: var(--warning); }
         .form-grp { margin-bottom: 12px; }
-        .form-grp label { display:block; font-size:0.85em; color:#5a5c69; margin-bottom:4px; }
-        .form-grp input, .form-grp select { width: 100%; padding: 8px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
+        .form-grp label { display:block; font-size:0.85em; color:var(--text2); margin-bottom:4px; }
+        .form-grp input, .form-grp select { width: 100%; padding: 8px; border: 1px solid var(--border2); border-radius: 5px; font-size: 0.88em; box-sizing: border-box; }
         .btn { padding: 8px 14px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85em; margin-right: 6px; }
-        .btn-primary { background: #1565c0; color: white; }
-        .btn-secondary { background: #858796; color: white; }
-        .btn-danger { background: #f08a7e; color: white; }
-        .muted { color: #999; font-size: 0.85em; }
-        .empty-msg { color: #999; text-align: center; padding: 40px 0; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--text2); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .muted { color: var(--muted); font-size: 0.85em; }
+        .empty-msg { color: var(--muted); text-align: center; padding: 40px 0; }
     </style>
 </head>
 <body>
@@ -58,7 +60,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0; color:#1565c0; border-left:4px solid #1565c0; padding-left:10px; font-size:1em;">
+                <h3 style="margin-top:0; color:var(--primary); border-left:4px solid var(--primary); padding-left:10px; font-size:1em;">
                     상세/편집
                 </h3>
                 <div id="detailPane">

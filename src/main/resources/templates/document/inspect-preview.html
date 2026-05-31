@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>점검내역서 미리보기</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
+        /* 뷰어 backdrop/툴바는 문서 미리보기용 다크 크롬 — 의도 유지. 문서 본문 색(표지/섹션/결과뱃지)은 납품 산출물 디자인이라 미변경. */
         body { font-family: 'Noto Sans KR', sans-serif; background: #4a4a4a; margin: 0; padding: 0; }
         .toolbar { background: #333; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .toolbar h3 { margin: 0; font-size: 1em; }
         .toolbar-actions { display: flex; gap: 8px; }
         .toolbar-actions a, .toolbar-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; }
-        .btn-pdf { background: #f08a7e; color: white; }
-        .btn-back { background: #858796; color: white; }
+        .btn-pdf { background: var(--danger); color: white; }   /* PDF = 레드 (inspect-detail 와 통일) */
+        .btn-back { background: var(--text2); color: white; }
 
         .preview-container { max-width: 900px; margin: 30px auto; padding: 0 20px 60px; }
         .document-paper { background: white; border-radius: 2px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); padding: 50px 60px; min-height: 800px; }
@@ -89,7 +91,7 @@
     <!-- 도구바 -->
     <div class="toolbar">
         <h3>
-            <span style="background:#0f766e; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7em; font-weight:600; margin-right:8px;">운영문서</span>
+            <span style="background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7em; font-weight:600; margin-right:8px;">운영문서</span>
             <i class="fas fa-clipboard-check"></i> 점검내역서 미리보기
         </h3>
         <div class="toolbar-actions">
