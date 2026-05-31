@@ -6,44 +6,45 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>기성계 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
-        .btn-save { background: #1cc88a; color: white; }
-        .btn-cancel { background: #858796; color: white; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-cancel { background: var(--text2); color: white; }
 
         /* 탭 네비 */
         .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
-        .tab-nav button.active { background: white; color: #1565c0; border-bottom-color: #1565c0; }
+        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: var(--surface-2); font-size: 0.82em; font-weight: 600; cursor: pointer; color: var(--text2); border-bottom: 3px solid transparent; }
+        .tab-nav button.active { background: white; color: var(--primary); border-bottom-color: var(--primary); }
 
         /* 섹션 */
         .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-section.active { display: block; }
-        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: var(--primary); border-left: 4px solid var(--primary); padding-left: 10px; }
 
         .form-table { width: 100%; border-collapse: collapse; }
-        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
-        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
-        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid var(--border); font-size: 0.88em; }
+        .form-table th { background: var(--surface-2); color: var(--text2); font-weight: 600; text-align: left; width: 130px; }
+        .form-table input, .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border2); border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
         .form-table textarea { height: auto; }
         .form-table textarea { height: 80px; resize: vertical; }
-        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
-        .required { color: #f08a7e; }
-        .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
+        .form-table input:focus, .form-table select:focus { border-color: var(--primary); outline: none; }
+        .required { color: var(--danger); }
+        .amount-text { font-size: 0.82em; color: var(--primary); margin-top: 4px; font-weight: 600; }
 
         /* 동적 행 */
         .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
-        .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
-        .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
-        .btn-add-row { padding: 5px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
-        .btn-del-row { padding: 3px 8px; background: #f08a7e; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid var(--border); font-size: 0.82em; text-align: center; }
+        .dynamic-table th { background: var(--surface-2); color: var(--text2); }
+        .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid var(--border2); border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
+        .btn-add-row { padding: 5px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: var(--danger); color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
-        .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
+        .help-text { font-size: 0.78em; color: var(--muted); margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -148,7 +149,7 @@
                 <tr><th>나. 계약금액</th><td><input type="number" id="detail_contAmt" placeholder="계약금액" onchange="calcInterimPreview()">
                     <div class="amount-text" id="detail_contAmt_kr"></div></td>
                     <th>낙찰율(%)</th><td><input type="number" id="detail_bidRate" step="0.01" value="100" style="width:80px;" onchange="calcInterimPreview()"> %</td></tr>
-                <tr><th>SW요율(%)<br><span style="font-weight:400; font-size:0.78em; color:#888;">(사업기본정보 자동, 수정가능)</span></th><td colspan="3"><input type="number" id="detail_swRt" step="0.000001" placeholder="자동" style="width:120px;"> %
+                <tr><th>SW요율(%)<br><span style="font-weight:400; font-size:0.78em; color:var(--muted);">(사업기본정보 자동, 수정가능)</span></th><td colspan="3"><input type="number" id="detail_swRt" step="0.000001" placeholder="자동" style="width:120px;"> %
                     <span class="help-text">사업 선택 시 sw_pjt.sw_rt 자동 로드. 비워두면 12% 기본값 사용</span></td></tr>
                 <tr><th>다. 선금금액</th><td><input type="number" id="detail_prePay" value="0" placeholder="0" onchange="calcInterimPreview()"></td>
                     <th>라. 전회기성금액</th><td><input type="number" id="detail_prevAmt" value="0" placeholder="0" onchange="calcInterimPreview()"></td></tr>
@@ -160,7 +161,7 @@
                     <th>준공기간(개월)</th><td><input type="number" id="detail_completionMonths" value="6" min="0" max="12" style="width:60px;" onchange="calcInterimPreview()"> 개월</td></tr>
                 <tr><th>전회 기성 비율(%)</th><td colspan="3"><input type="number" id="detail_prevRate" value="0" step="0.1" min="0" max="100" style="width:80px;" onchange="calcInterimPreview()"> %
                     <span class="help-text">금회 기성 비율은 기성검사원의 기성율을 사용합니다.</span></td></tr>
-                <tr><th>합계 절사 단위<br><span style="font-weight:400; font-size:0.78em; color:#888;">(설계서 D12)</span></th><td colspan="3">
+                <tr><th>합계 절사 단위<br><span style="font-weight:400; font-size:0.78em; color:var(--muted);">(설계서 D12)</span></th><td colspan="3">
                     <select id="detail_truncDigit" style="width:120px;">
                         <option value="1">일 단위 절사</option>
                         <option value="2">십 단위 절사</option>
@@ -172,8 +173,8 @@
             </table>
 
             <!-- SW 항목 (프로젝트 장비에서 자동 로드) -->
-            <div style="margin:20px 0 8px; font-weight:700; color:#f08a7e;">◎ 유지보수 항목
-                <button type="button" onclick="addInterimItemRow()" style="margin-left:15px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            <div style="margin:20px 0 8px; font-weight:700; color:var(--danger);">◎ 유지보수 항목
+                <button type="button" onclick="addInterimItemRow()" style="margin-left:15px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
                 <span class="help-text" style="margin-left:10px;">사업 선택 시 장비 자동 로드</span>
             </div>
             <table class="dynamic-table" id="interimItemTable">
