@@ -9,6 +9,7 @@ import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
+import com.swmanager.system.service.inspection.InspectMaintProfile;
 import com.swmanager.system.service.ops.OpsDocService;
 import com.swmanager.system.service.ops.OpsDocSignatureService;
 import lombok.RequiredArgsConstructor;
@@ -66,10 +67,18 @@ public class OpsDocController {
         // 문서별 시도/시군구 해석 (regionCode → 코드, INSPECT → 연계 사업)
         Map<Long, String> sidoByDoc = new HashMap<>();
         Map<Long, String> sggByDoc = new HashMap<>();
+        // 점검내역서(INSPECT) 한정 유지보수유형 배지 (연계 사업 maint_type)
+        Map<Long, String> maintLabelByDoc = new HashMap<>();
+        Map<Long, String> maintToneByDoc = new HashMap<>();
         for (OpsDocument d : all) {
             String[] r = resolveRegion(d, byCode, bySgg);
             sidoByDoc.put(d.getDocId(), r[0]);
             sggByDoc.put(d.getDocId(), r[1]);
+            String mt = resolveMaintType(d);
+            if (mt != null) {
+                maintLabelByDoc.put(d.getDocId(), InspectMaintProfile.badgeLabel(mt));
+                maintToneByDoc.put(d.getDocId(), InspectMaintProfile.badgeTone(mt));
+            }
         }
 
         List<OpsDocument> docs = all.stream()
@@ -88,6 +97,8 @@ public class OpsDocController {
         model.addAttribute("documents", docs);
         model.addAttribute("sidoByDoc", sidoByDoc);
         model.addAttribute("sggByDoc", sggByDoc);
+        model.addAttribute("maintLabelByDoc", maintLabelByDoc);
+        model.addAttribute("maintToneByDoc", maintToneByDoc);
         model.addAttribute("docType", docType);
         model.addAttribute("status", status);
         model.addAttribute("keyword", keyword);
@@ -140,6 +151,17 @@ public class OpsDocController {
             }
         }
         return new String[]{ "-", "-" };
+    }
+
+    /** 점검내역서(INSPECT) 의 연계 사업 maint_type (없으면 null). 유형 배지용. */
+    private String resolveMaintType(OpsDocument d) {
+        if (d.getDocType() != OpsDocType.INSPECT) return null;
+        Long reportId = parseReportId(d.getDocNo());
+        if (reportId == null) return null;
+        var report = inspectReportRepository.findById(reportId).orElse(null);
+        if (report == null || report.getPjtId() == null) return null;
+        var pj = swProjectRepository.findById(report.getPjtId()).orElse(null);
+        return pj != null ? pj.getMaintType() : null;
     }
 
     private static String nz(String s) { return (s == null || s.isBlank()) ? "-" : s; }

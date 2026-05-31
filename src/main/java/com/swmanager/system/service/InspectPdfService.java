@@ -6,7 +6,9 @@ import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.dto.InspectReportDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.InspectMetricSnapshotRepository;
+import com.swmanager.system.repository.InspectTemplateRepository;
 import com.swmanager.system.repository.SwProjectRepository;
+import com.swmanager.system.service.inspection.InspectMaintProfile;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +43,7 @@ public class InspectPdfService {
     @Autowired private InfraRepository infraRepository;
     @Autowired private InspectMetricChartService metricChartService;
     @Autowired private InspectMetricSnapshotRepository metricRepository;
+    @Autowired private InspectTemplateRepository templateRepository;
 
     private File fontFile;
 
@@ -122,13 +125,23 @@ public class InspectPdfService {
         // 30일 추이 차트 — PNG → base64 data URI
         ctx.setVariable("chartImg", chartDataUri(report.getPjtId()));
 
-        // 섹션 카드
+        // 점검범위 프로파일 (maint_type + 표준보유) — 기획서 inspect-maint-profile.md
+        String maintType   = project != null ? project.getMaintType() : null;
+        String templateType = report.getSysType() != null ? report.getSysType() : "UPIS";
+        boolean hasStandard = templateRepository
+                .existsByTemplateTypeAndSectionAndUseYn(templateType, InspectMaintProfile.APP, "Y");
+        Set<String> scope = InspectMaintProfile.sections(maintType, hasStandard);
+        ctx.setVariable("maintBadge", InspectMaintProfile.badgeLabel(maintType));
+        ctx.setVariable("maintTone",  InspectMaintProfile.badgeTone(maintType));
+        ctx.setVariable("scopeChip",  InspectMaintProfile.scopeChip(maintType, hasStandard));
+
+        // 섹션 카드 — 점검범위 내 섹션만(lean). 범위 밖 섹션은 데이터가 있어도 비표시.
         List<SectionCard> cards = new ArrayList<>();
-        addCard(cards, results, "AP",   "AP 서버");
-        addCard(cards, results, "DB",   "DB 서버 (OS)");
-        addCard(cards, results, "DBMS", "DBMS (Oracle)");
-        addCard(cards, results, "GIS",  "GIS 엔진");
-        addCard(cards, results, "APP",  "표준시스템");
+        if (scope.contains(InspectMaintProfile.AP))   addCard(cards, results, "AP",   "AP 서버");
+        if (scope.contains(InspectMaintProfile.DB))   addCard(cards, results, "DB",   "DB 서버 (OS)");
+        if (scope.contains(InspectMaintProfile.DBMS)) addCard(cards, results, "DBMS", "DBMS (Oracle)");
+        if (scope.contains(InspectMaintProfile.GIS))  addCard(cards, results, "GIS",  "GIS 엔진");
+        if (scope.contains(InspectMaintProfile.APP))  addCard(cards, results, "APP",  "표준시스템");
         ctx.setVariable("cards", cards);
 
         // 핵심 이슈 (위반/주의 항목)

@@ -881,9 +881,11 @@ INSERT INTO cont_frm_mst (cd, nm) VALUES ('3', '무상') ON CONFLICT (cd) DO NOT
 INSERT INTO cont_frm_mst (cd, nm) VALUES ('4', '유상') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO cont_frm_mst (cd, nm) VALUES ('5', '종료') ON CONFLICT (cd) DO NOTHING;
 
--- maint_tp_mst (7건)
+-- maint_tp_mst (8건)
 INSERT INTO maint_tp_mst (cd, nm) VALUES ('DU', '데이터 업로드') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO maint_tp_mst (cd, nm) VALUES ('SW', 'SW') ON CONFLICT (cd) DO NOTHING;
+-- SU: SW + 표준시스템 점검 (2026-05-31 신규, 점검범위=GIS+표준). 기획서 inspect-maint-profile.md
+INSERT INTO maint_tp_mst (cd, nm) VALUES ('SU', 'SW/표준') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO maint_tp_mst (cd, nm) VALUES ('HS', 'HW/SW') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO maint_tp_mst (cd, nm) VALUES ('DS', 'DB/SW') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO maint_tp_mst (cd, nm) VALUES ('DHS', 'DB/HW/SW') ON CONFLICT (cd) DO NOTHING;

@@ -203,6 +203,12 @@
                 <th>시스템유형</th>
                 <td><input type="text" id="cover_sysTypeDisplay" readonly style="background:#f8f9fc;font-weight:600;"></td>
             </tr>
+            <tr><th>점검유형 / 범위</th>
+                <td colspan="3">
+                    <span id="maintTypeBadge" style="display:none;padding:3px 12px;border-radius:12px;font-size:0.82em;font-weight:800;color:#fff;letter-spacing:0.5px;"></span>
+                    <span id="maintScopeChip" style="margin-left:8px;font-size:0.85em;color:#0f766e;font-weight:700;"></span>
+                </td>
+            </tr>
             <tr><th>점검년월</th><td><input type="month" id="cover_month" onchange="loadPreviousVisits()"></td>
                 <th>문서제목</th><td><input type="text" id="cover_title" readonly style="background:#f8f9fc;"></td></tr>
             <tr><th>점검자 (회사)</th><td><input type="text" id="cover_inspCompany" value="(주)정도UIT"></td>
@@ -1145,6 +1151,8 @@ function loadProjectInfo() {
             var sysType = determineSysType(p.sysNmEn || sysNmEn, p.swAmt, p.hwAmt);
             document.getElementById('cover_sysType').value = sysType;
             document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(sysType);
+            // 유지보수유형(maint_type) 점검범위 프로파일 — onSysTypeChange 끝에서 applyMaintProfile 적용
+            currentMaintType = (p.maintType || '').toUpperCase();
             onSysTypeChange();
 
             // 설치일 자동 채우기
@@ -1304,6 +1312,65 @@ function onSysTypeChange() {
 
     updateCoverTitle();
     loadTemplateItems(sysType || 'UPIS');
+    // 시스템 토글 직후 maint_type 프로파일을 덧씌워 범위 밖 섹션을 추가로 숨김
+    applyMaintProfile(currentMaintType);
+}
+
+// === maint_type 점검범위 프로파일 (기획서 inspect-maint-profile.md) ===
+// SW/DS=GIS만 · SU=GIS+표준 · HS/DHS/미지정=전체. 표준보유는 시스템(KRAS=미보유)으로 판단.
+var currentMaintType = '';
+function applyMaintProfile(maintType) {
+    currentMaintType = (maintType || '').toUpperCase();
+    var mt = currentMaintType;
+    var full     = (mt === '' || mt === 'HS' || mt === 'DHS');  // 운영장비(AP/DB)·DBMS 포함
+    var wantsStd = (full || mt === 'SU');                        // 표준시스템 점검 대상 유형
+    var sysType  = document.getElementById('cover_sysType').value;
+    var hasStandard = (sysType !== 'KRAS');                      // KRAS=표준 미보유(APP 템플릿 없음)
+    var showStd  = wantsStd && hasStandard;
+
+    // ① 서버 점검결과 스텝(AP/DB) — 전체 유형일 때만 (인라인 display 로 위저드보다 우선)
+    var sec2 = document.getElementById('section-2');
+    if (sec2) sec2.style.display = full ? '' : 'none';
+    // ② 점검대상 HW 사양(DB/AP/소프트웨어) — 전체 유형일 때만 (UPIS 한정)
+    var targetHW = document.getElementById('targetHW');
+    if (targetHW && sysType === 'UPIS') targetHW.style.display = full ? '' : 'none';
+    // ③ DBMS(Oracle) 점검 — 전체 유형일 때만
+    var dbmsSection = document.getElementById('dbmsSection');
+    if (dbmsSection) dbmsSection.style.display = full ? '' : 'none';
+    // ④ 표준시스템(APP) — 표준 점검 + 표준 보유일 때만
+    var appTitle = document.getElementById('appTitle');
+    var appTable = document.getElementById('appCheckTable');
+    var appEtcTable = document.getElementById('appEtcTable');
+    if (appTable)    appTable.style.display    = showStd ? '' : 'none';
+    if (appEtcTable) appEtcTable.style.display = showStd ? '' : 'none';
+    if (appTitle)    appTitle.textContent      = showStd ? '표준시스템 점검결과' : '';
+
+    renderMaintScope(mt, full, showStd);
+}
+
+function renderMaintScope(mt, full, showStd) {
+    var badge = document.getElementById('maintTypeBadge');
+    var chip  = document.getElementById('maintScopeChip');
+    if (!badge || !chip) return;
+    var label, tone;
+    switch (mt) {
+        case 'SW':  label = 'SW · GIS엔진'; tone = '#0d9488'; break;
+        case 'SU':  label = 'SW / 표준';    tone = '#d97706'; break;
+        case 'DS':  label = 'DB / SW';      tone = '#0d9488'; break;
+        case 'HS':  label = 'HW / SW';      tone = '#1e3a5f'; break;
+        case 'DHS': label = 'DB / HW / SW'; tone = '#1e3a5f'; break;
+        case '':    label = '전체';          tone = '#1e3a5f'; break;
+        default:    label = mt;             tone = '#1e3a5f';
+    }
+    badge.textContent = label;
+    badge.style.background = tone;
+    badge.style.display = 'inline-block';
+
+    var parts = [];
+    if (full) parts.push('운영장비(AP/DB)', 'DBMS');
+    parts.push('GIS엔진');
+    if (showStd) parts.push('표준시스템');
+    chip.textContent = '점검 범위: ' + parts.join(' + ');
 }
 
 function updateGisHeader(type) {
@@ -1947,6 +2014,8 @@ function loadReport(id) {
                         document.getElementById('cover_sysType').value = sysType;
                         document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(sysType);
 
+                        // 유지보수유형 점검범위 프로파일 (onSysTypeChange 끝에서 적용)
+                        currentMaintType = (p.maintType || '').toUpperCase();
                         // 시스템유형 변경 → 탭/섹션 + 템플릿 로드
                         onSysTypeChange();
 
@@ -1972,10 +2041,11 @@ function loadReport(id) {
                         startAutoDraft();
                     });
             } else {
-                // 프로젝트 없는 경우
+                // 프로젝트 없는 경우 — maint_type 불명 → 전체 프로파일(보수적 폴백)
                 if (data.sysType) {
                     document.getElementById('cover_sysType').value = data.sysType;
                     document.getElementById('cover_sysTypeDisplay').value = getSysTypeLabel(data.sysType);
+                    currentMaintType = '';
                     onSysTypeChange();
                 }
                 if (data.checkResults && data.checkResults.length > 0) {
