@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 사용자 통합 관리 BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#fff; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; margin-bottom:14px; }
+  .page-header h2{ margin:0; font-size:1.2rem; }
+  .btn-top{ padding:7px 13px; border-radius:6px; color:#fff; font-weight:bold; font-size:.82rem; }
+  .section-title{ font-size:1rem; font-weight:700; margin:14px 0 8px; padding-left:10px; }
+  .section-title.pending{ }
+  table{ width:100%; border-collapse:collapse; margin-bottom:6px; }
+  th,td{ padding:8px 10px; text-align:center; font-size:.82em; }
+  .btn-action{ color:#fff; border:none; padding:5px 11px; border-radius:4px; font-weight:bold; font-size:.82em; }
+  .sel{ padding:4px 6px; border-radius:4px; font-size:.8em; }
+  .auth-badge{ display:inline-block; padding:2px 7px; border-radius:3px; font-size:.72em; color:#fff; margin:1px; font-weight:600; }
+  .status-active{ font-weight:600; font-size:.85em; } .status-locked{ font-weight:600; font-size:.85em; }
+  .pg a,.pg span{ padding:6px 10px; border-radius:5px; font-size:.85em; text-decoration:none; }
+  .sens{ padding:4px 7px; border-radius:4px; font-size:.82em; }
+
+  /* BEFORE */
+  .before .page-header{ border-bottom:2px solid #eee; } .before .page-header h2{ color:#134E4A; }
+  .before .btn-log{ background:#f08a7e; }
+  .before .section-title{ color:#444; border-left:5px solid #134E4A; } .before .section-title.pending{ color:#e65100; border-left-color:#ff9800; }
+  .before th{ background:#f8f9fc; color:#134E4A; border:1px solid #e3e6f0; border-bottom:2px solid #134E4A; } .before td{ border:1px solid #e3e6f0; }
+  .before .btn-approve{ background:#1cc88a; } .before .btn-update{ background:#0F766E; } .before .btn-delete{ background:#f08a7e; }
+  .before .sel-a{ border:1px solid #667eea; } .before .sel-b{ border:1px solid #2e7d32; } .before .sel-c{ border:1px solid #e64a19; } .before .sel-d{ border:1px solid #7B1FA2; }
+  .before .auth-badge.view{ background:#3b82f6; } .before .auth-badge.edit{ background:#10b981; }
+  .before .status-active{ color:#10b981; } .before .status-locked{ color:#f08a7e; }
+  .before .pg a{ border:1px solid #e0e0e0; color:#134E4A; background:#fff; } .before .pg .active{ background:#0F766E; color:#fff; border:1px solid #0F766E; }
+  .before .sens{ background:#fff7ed; border:1px solid #ddd; }
+
+  /* AFTER */
+  .after .page-header{ border-bottom:2px solid var(--border); } .after .page-header h2{ color:var(--primary); }
+  .after .btn-log{ background:var(--danger); }
+  .after .section-title{ color:var(--text); border-left:5px solid var(--primary); } .after .section-title.pending{ color:var(--warning); border-left-color:var(--warning); }
+  .after th{ background:var(--surface-2); color:var(--primary); border:1px solid var(--border); border-bottom:2px solid var(--primary); } .after td{ border:1px solid var(--border); }
+  .after .btn-approve{ background:var(--success); } .after .btn-update{ background:var(--primary); } .after .btn-delete{ background:var(--danger); }
+  .after .sel-a,.after .sel-b,.after .sel-c,.after .sel-d{ border:1px solid var(--border2); }
+  .after .auth-badge.view{ background:var(--info); } .after .auth-badge.edit{ background:var(--success); }
+  .after .status-active{ color:var(--success); } .after .status-locked{ color:var(--danger); }
+  .after .pg a{ border:1px solid var(--border); color:var(--primary); background:#fff; } .after .pg .active{ background:var(--primary); color:#fff; border:1px solid var(--primary); }
+  .after .sens{ background:#fff7ed; border:1px solid var(--border2); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 사용자 통합 관리</h1>
+  <div class="sub">헤더/표/버튼/페이지네이션 토큰화 + 대기행 무지개 select 테두리 통일. 민감정보 amber 강조는 유지.</div>
+  <div class="legendbox">
+    제목/표머리 <code>#134E4A</code>→<code>--primary</code> · 대기섹션 주황 <code>#e65100/#ff9800</code>→<code>--warning</code> ·
+    승인 <code>#1cc88a</code>→<code>--success</code> · 삭제/로그 <code>#f08a7e</code>→<code>--danger</code> ·
+    권한뱃지 조회/편집 → <code>--info/--success</code> · 대기행 select 무지개테두리 → <code>--border2</code> 통일
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-users-cog"></i> 사용자 통합 관리</h2><a class="btn-top btn-log">로그</a></div>
+        <div class="section-title pending"><i class="fas fa-user-clock"></i> 가입 및 수정 승인 대기</div>
+        <table>
+          <thead><tr><th>아이디</th><th>성명</th><th>권한 설정</th><th>처리</th></tr></thead>
+          <tbody><tr><td>hong</td><td>홍길동</td>
+            <td><select class="sel sel-a"><option>대시보드</option></select> <select class="sel sel-b"><option>업무계획</option></select> <select class="sel sel-c"><option>문서관리</option></select> <select class="sel sel-d"><option>성과통계</option></select></td>
+            <td><button class="btn-action btn-approve">승인</button></td></tr></tbody>
+        </table>
+        <div class="section-title"><i class="fas fa-users"></i> 등록된 사용자 관리</div>
+        <table>
+          <thead><tr><th>아이디</th><th>성명</th><th>권한 요약</th><th>상태</th><th>관리</th></tr></thead>
+          <tbody><tr><td>kim</td><td>김철수</td>
+            <td><span class="auth-badge view">사업 조회</span><span class="auth-badge edit">문서 편집</span></td>
+            <td><span class="status-active">활성</span></td>
+            <td><button class="btn-action btn-update">수정</button> <button class="btn-action btn-delete">삭제</button></td></tr>
+            <tr><td>lee</td><td>이영희</td><td><span class="auth-badge edit">성과 편집</span></td><td><span class="status-locked">잠금</span></td><td>—</td></tr></tbody>
+        </table>
+        <div style="margin-top:6px;"><span class="pg"><span class="active">1</span> <a>2</a> <a>3</a></span></div>
+        <div style="margin-top:8px;"><span class="sens">010-****-1234</span> <small>민감정보 마스킹(유지)</small></div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-users-cog"></i> 사용자 통합 관리</h2><a class="btn-top btn-log">로그</a></div>
+        <div class="section-title pending"><i class="fas fa-user-clock"></i> 가입 및 수정 승인 대기</div>
+        <table>
+          <thead><tr><th>아이디</th><th>성명</th><th>권한 설정</th><th>처리</th></tr></thead>
+          <tbody><tr><td>hong</td><td>홍길동</td>
+            <td><select class="sel sel-a"><option>대시보드</option></select> <select class="sel sel-b"><option>업무계획</option></select> <select class="sel sel-c"><option>문서관리</option></select> <select class="sel sel-d"><option>성과통계</option></select></td>
+            <td><button class="btn-action btn-approve">승인</button></td></tr></tbody>
+        </table>
+        <div class="section-title"><i class="fas fa-users"></i> 등록된 사용자 관리</div>
+        <table>
+          <thead><tr><th>아이디</th><th>성명</th><th>권한 요약</th><th>상태</th><th>관리</th></tr></thead>
+          <tbody><tr><td>kim</td><td>김철수</td>
+            <td><span class="auth-badge view">사업 조회</span><span class="auth-badge edit">문서 편집</span></td>
+            <td><span class="status-active">활성</span></td>
+            <td><button class="btn-action btn-update">수정</button> <button class="btn-action btn-delete">삭제</button></td></tr>
+            <tr><td>lee</td><td>이영희</td><td><span class="auth-badge edit">성과 편집</span></td><td><span class="status-locked">잠금</span></td><td>—</td></tr></tbody>
+        </table>
+        <div style="margin-top:6px;"><span class="pg"><span class="active">1</span> <a>2</a> <a>3</a></span></div>
+        <div style="margin-top:8px;"><span class="sens">010-****-1234</span> <small>민감정보 마스킹(유지)</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ 민감정보 입력칸 amber 배경(<code>#fff7ed</code> 마스킹 / <code>#fef3c7</code>+<code>#f59e0b</code> 공개됨)은 "민감/공개" 상태를 알리는 의도적 UX 신호 세트라 유지합니다. 대기행 권한 select 의 무지개 테두리(모듈별 5색)는 활성 사용자 select(테두리 무채색)와 불일치라 <code>--border2</code> 로 통일합니다.</div>
+</body>
+</html>
