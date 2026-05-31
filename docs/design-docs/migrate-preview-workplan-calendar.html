@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 업무 캘린더 BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#FAFAF9; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ background:#fff; border-radius:12px; padding:14px 18px; margin-bottom:12px; box-shadow:0 2px 12px rgba(58,59,69,0.12); display:flex; justify-content:space-between; align-items:center; }
+  .page-header h2{ margin:0; font-size:1.05em; }
+  .btn{ padding:8px 14px; border:none; border-radius:5px; font-size:.8em; cursor:pointer; font-weight:700; color:#fff; }
+  .filter-bar{ background:#fff; border-radius:10px; padding:10px 14px; margin-bottom:12px; box-shadow:0 1px 8px rgba(58,59,69,0.1); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .filter-bar label{ font-size:.8em; font-weight:600; }
+  .filter-bar select{ padding:6px 10px; border-radius:5px; font-size:.8em; }
+  .fc-toolbar{ display:flex; gap:6px; align-items:center; margin:8px 0; }
+  .fc-btn{ padding:6px 12px; border:none; border-radius:5px; font-size:.8em; color:#fff; cursor:pointer; }
+  .fc-title{ font-weight:700; font-size:1.1em; margin:0 10px; }
+  .cal{ background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px; }
+  .cal-head{ display:grid; grid-template-columns:repeat(7,1fr); }
+  .cal-head div{ padding:6px; text-align:center; font-size:.76em; font-weight:600; }
+  .cal-row{ display:grid; grid-template-columns:repeat(7,1fr); }
+  .cal-cell{ border:1px solid #eee; min-height:46px; padding:4px; font-size:.72em; }
+  .ev{ border-radius:4px; padding:1px 5px; font-size:.92em; color:#fff; font-weight:600; margin-top:2px; }
+  .legend-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .legend-item{ display:flex; align-items:center; gap:4px; font-size:.74em; }
+  .legend-dot{ width:11px; height:11px; border-radius:3px; }
+
+  /* event-type palette (BOTH panels identical — 변경 없음) */
+  .t-contract{ background:#1565c0; } .t-install{ background:#2e7d32; } .t-patch{ background:#00897b; }
+  .t-inspect{ background:#ff9800; } .t-pre{ background:#9e9e9e; } .t-fault{ background:#f08a7e; }
+  .t-support{ background:#6a1b9a; } .t-settle{ background:#5c6bc0; } .t-complete{ background:#37474f; } .t-etc{ background:#795548; }
+
+  /* BEFORE chrome */
+  .before .page-header h2{ color:#1565c0; }
+  .before .btn-new{ background:#1cc88a; } .before .btn-reset{ background:#858796; }
+  .before .filter-bar label{ color:#5a5c69; } .before .filter-bar select{ border:1px solid #d1d3e2; }
+  .before .fc-btn{ background:#1565c0; } .before .fc-title{ color:#333; }
+  .before .cal-head{ background:#f8f9fc; } .before .today{ background:#e3f2fd; }
+
+  /* AFTER chrome */
+  .after .page-header h2{ color:var(--primary); }
+  .after .btn-new{ background:var(--primary); } .after .btn-reset{ background:var(--text2); }
+  .after .filter-bar label{ color:var(--text2); } .after .filter-bar select{ border:1px solid var(--border2); }
+  .after .fc-btn{ background:var(--primary); } .after .fc-title{ color:var(--text); }
+  .after .cal-head{ background:var(--surface-2); } .after .today{ background:var(--primary-lt); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 업무 캘린더</h1>
+  <div class="sub">UI 크롬(헤더·버튼·FC 툴바·오늘 강조)만 토큰화. 이벤트 유형 범례 10종은 현행 유지.</div>
+  <div class="legendbox">
+    <b>크롬 변경</b> · 제목/FC버튼 <code>#1565c0</code>→<code>--primary</code> · 업무등록 <code>#1cc88a</code>→<code>--primary</code>(CTA) ·
+    오늘 <code>#e3f2fd 파랑틴트</code>→<code>--primary-lt</code> · 초기화/뒤로 <code>#858796</code>→<code>--text2</code> ·
+    삭제 <code>#f08a7e</code>→<code>--danger</code> · 상태변경 <code>#f6c23e</code>→<code>--warning</code> · 회색 → <code>--text2/--muted</code>
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-calendar-alt"></i> 업무 캘린더</h2><button class="btn btn-new"><i class="fas fa-plus"></i> 업무등록</button></div>
+        <div class="filter-bar"><label>담당자</label><select><option>전체</option></select><label>유형</label><select><option>전체</option></select><button class="btn btn-reset">초기화</button></div>
+        <div class="cal">
+          <div class="fc-toolbar"><button class="fc-btn">‹</button><button class="fc-btn">오늘</button><button class="fc-btn">›</button><span class="fc-title">2026년 5월</span></div>
+          <div class="cal-head"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+          <div class="cal-row">
+            <div class="cal-cell">11</div><div class="cal-cell">12<div class="ev t-install">설치</div></div>
+            <div class="cal-cell today">13<div class="ev t-inspect">점검</div></div><div class="cal-cell">14<div class="ev t-fault">장애</div></div>
+            <div class="cal-cell">15<div class="ev t-contract">계약</div></div><div class="cal-cell">16</div><div class="cal-cell">17</div>
+          </div>
+          <div class="legend-row">
+            <div class="legend-item"><div class="legend-dot t-contract"></div>계약</div><div class="legend-item"><div class="legend-dot t-install"></div>설치</div>
+            <div class="legend-item"><div class="legend-dot t-patch"></div>패치</div><div class="legend-item"><div class="legend-dot t-inspect"></div>점검</div>
+            <div class="legend-item"><div class="legend-dot t-pre"></div>사전연락</div><div class="legend-item"><div class="legend-dot t-fault"></div>장애</div>
+            <div class="legend-item"><div class="legend-dot t-support"></div>지원</div><div class="legend-item"><div class="legend-dot t-settle"></div>기성</div>
+            <div class="legend-item"><div class="legend-dot t-complete"></div>준공</div><div class="legend-item"><div class="legend-dot t-etc"></div>기타</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 크롬 토큰화 (범례 동일)</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-calendar-alt"></i> 업무 캘린더</h2><button class="btn btn-new"><i class="fas fa-plus"></i> 업무등록</button></div>
+        <div class="filter-bar"><label>담당자</label><select><option>전체</option></select><label>유형</label><select><option>전체</option></select><button class="btn btn-reset">초기화</button></div>
+        <div class="cal">
+          <div class="fc-toolbar"><button class="fc-btn">‹</button><button class="fc-btn">오늘</button><button class="fc-btn">›</button><span class="fc-title">2026년 5월</span></div>
+          <div class="cal-head"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+          <div class="cal-row">
+            <div class="cal-cell">11</div><div class="cal-cell">12<div class="ev t-install">설치</div></div>
+            <div class="cal-cell today">13<div class="ev t-inspect">점검</div></div><div class="cal-cell">14<div class="ev t-fault">장애</div></div>
+            <div class="cal-cell">15<div class="ev t-contract">계약</div></div><div class="cal-cell">16</div><div class="cal-cell">17</div>
+          </div>
+          <div class="legend-row">
+            <div class="legend-item"><div class="legend-dot t-contract"></div>계약</div><div class="legend-item"><div class="legend-dot t-install"></div>설치</div>
+            <div class="legend-item"><div class="legend-dot t-patch"></div>패치</div><div class="legend-item"><div class="legend-dot t-inspect"></div>점검</div>
+            <div class="legend-item"><div class="legend-dot t-pre"></div>사전연락</div><div class="legend-item"><div class="legend-dot t-fault"></div>장애</div>
+            <div class="legend-item"><div class="legend-dot t-support"></div>지원</div><div class="legend-item"><div class="legend-dot t-settle"></div>기성</div>
+            <div class="legend-item"><div class="legend-dot t-complete"></div>준공</div><div class="legend-item"><div class="legend-dot t-etc"></div>기타</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ 이벤트 유형 범례 10종(계약 파랑·설치 녹·패치 청록·점검 주황·…)은 <b>FullCalendar 이벤트의 백엔드 지정색과 1:1 매칭되는 키</b>라 그대로 둡니다. 범례만 바꾸면 달력 이벤트 색과 어긋나고, 10종을 토큰 4~6개로 줄이면 구분이 사라집니다. 색 체계 자체를 손보려면 백엔드 enum까지 함께 가는 별도 작업으로 다뤄야 합니다.</div>
+</body>
+</html>
