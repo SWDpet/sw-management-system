@@ -4,50 +4,52 @@
     <meta charset="UTF-8">
     <title>운영문서 목록</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1500px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
         .header-actions { display: flex; gap: 8px; }
         .header-actions a, .header-actions button { padding: 8px 14px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; }
-        .btn-primary { background: #1cc88a; color: white; }
-        .btn-home { background: #858796; color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-home { background: var(--text2); color: white; }
         .alert { padding: 12px 20px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9em; }
         .alert-success { background: #d4edda; color: #155724; }
         .alert-error { background: #f8d7da; color: #721c24; }
 
         /* 필터 */
         .filter-bar { background: white; border-radius: 10px; padding: 12px 18px; margin-bottom: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.82em; }
-        .filter-bar label { font-size: 0.82em; font-weight: 600; color: #5a5c69; }
-        .btn-search { padding: 7px 15px; background: #0F766E; color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border2); border-radius: 5px; font-size: 0.82em; }
+        .filter-bar label { font-size: 0.82em; font-weight: 600; color: var(--text2); }
+        .btn-search { padding: 7px 15px; background: var(--primary); color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
 
         /* 문서 생성 드롭다운 */
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 8px; z-index: 10; overflow: hidden; }
-        .dropdown-content a { display: block; padding: 10px 16px; font-size: 0.85em; color: #333; text-decoration: none; }
-        .dropdown-content a:hover { background: #f0f0f0; }
+        .dropdown-content a { display: block; padding: 10px 16px; font-size: 0.85em; color: var(--text); text-decoration: none; }
+        .dropdown-content a:hover { background: var(--surface-2); }
         .dropdown:hover .dropdown-content { display: block; }
 
         /* 테이블 */
         .list-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 12px; font-size: 0.85em; border-bottom: 1px solid #eee; text-align: left; }
-        th { background: #f8f9fc; font-weight: 600; color: #5a5c69; }
-        tr:hover { background: #f8f9fc; cursor: pointer; }
+        th, td { padding: 10px 12px; font-size: 0.85em; border-bottom: 1px solid var(--border); text-align: left; }
+        th { background: var(--surface-2); font-weight: 600; color: var(--text2); }
+        tr:hover { background: var(--surface-2); cursor: pointer; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600; color: white; }
-        .badge-draft { background: #858796; }
-        .badge-completed { background: #1cc88a; }
-        .badge-in_review { background: #f6c23e; }
-        .type-badge { background: #5a5c69; }
-        .type-INSPECT    { background: #36b9cc; }
-        .type-FAULT      { background: #e74a3b; }
+        .badge-draft { background: var(--muted); }
+        .badge-completed { background: var(--success); }
+        .badge-in_review { background: var(--warning); }
+        .type-badge { background: var(--text2); }
+        /* 유형 뱃지 — 점검/장애는 의미 토큰, SUPPORT/INSTALL/PATCH 3종은 카테고리 구분 위해 현행 유지 */
+        .type-INSPECT    { background: var(--info); }
+        .type-FAULT      { background: var(--danger); }
         .type-SUPPORT    { background: #6f42c1; }
         .type-INSTALL    { background: #20c997; }
         .type-PATCH      { background: #fd7e14; }
-        .empty-row td { text-align: center; color: #aaa; padding: 40px; }
-        .btn-link { color: #0F766E; text-decoration: none; font-weight: 600; }
+        .empty-row td { text-align: center; color: var(--muted); padding: 40px; }
+        .btn-link { color: var(--primary); text-decoration: none; font-weight: 600; }
         /* 유지보수유형 배지 (점검내역서) — teal=GIS만 · amber=GIS+표준 · navy=전체 */
         .mtag { display: inline-block; margin-left: 5px; padding: 1px 8px; border-radius: 10px;
                 font-size: 0.72em; font-weight: 700; color: #fff; }
@@ -76,7 +78,7 @@
                     </div>
                 </div>
                 <button th:if="${isAdmin}" type="button" onclick="openResetModal()"
-                        style="background:#e74a3b;color:white;"
+                        style="background:var(--danger);color:white;"
                         title="모든 점검 데이터 영구 삭제 (테스트용)">
                     <i class="fas fa-trash-can"></i> 테스트 데이터 초기화
                 </button>
@@ -166,7 +168,7 @@
                             <button th:if="${d.docType?.name() == 'INSPECT'}"
                                     th:data-docno="${d.docNo}" th:data-docid="${d.docId}"
                                     onclick="deleteInspectDoc(this.dataset.docno, this.dataset.docid); event.stopPropagation();"
-                                    style="padding:4px 10px;background:#e74a3b;color:white;border:none;border-radius:4px;font-size:0.78em;cursor:pointer;"
+                                    style="padding:4px 10px;background:var(--danger);color:white;border:none;border-radius:4px;font-size:0.78em;cursor:pointer;"
                                     title="삭제"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
@@ -182,19 +184,19 @@
     <div th:if="${isAdmin}" id="resetModal"
          style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
         <div style="background:white; border-radius:12px; padding:28px; max-width:480px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.25);">
-            <h3 style="margin:0 0 14px; color:#e74a3b; font-size:1.1em;"><i class="fas fa-triangle-exclamation"></i> 점검 데이터 일괄 초기화</h3>
-            <p style="font-size:0.88em; color:#555; line-height:1.7; margin:0 0 6px;">
+            <h3 style="margin:0 0 14px; color:var(--danger); font-size:1.1em;"><i class="fas fa-triangle-exclamation"></i> 점검 데이터 일괄 초기화</h3>
+            <p style="font-size:0.88em; color:var(--text2); line-height:1.7; margin:0 0 6px;">
                 모든 <b>점검내역서·점검결과·방문이력·QR배치·메트릭 스냅샷·운영문서(점검)</b> 가
-                <b style="color:#e74a3b;">영구 삭제</b>됩니다. 되돌릴 수 없습니다.
+                <b style="color:var(--danger);">영구 삭제</b>됩니다. 되돌릴 수 없습니다.
             </p>
-            <p style="font-size:0.88em; color:#555; margin:0 0 6px;">계속하려면 아래에 <b>초기화</b> 를 입력하세요.</p>
+            <p style="font-size:0.88em; color:var(--text2); margin:0 0 6px;">계속하려면 아래에 <b>초기화</b> 를 입력하세요.</p>
             <input type="text" id="resetConfirmInput" placeholder="초기화" autocomplete="off"
-                   style="width:100%; padding:9px 11px; border:1px solid #d1d3e2; border-radius:5px; margin:8px 0 18px; box-sizing:border-box;">
+                   style="width:100%; padding:9px 11px; border:1px solid var(--border2); border-radius:5px; margin:8px 0 18px; box-sizing:border-box;">
             <div style="display:flex; gap:8px; justify-content:flex-end;">
                 <button type="button" onclick="closeResetModal()"
-                        style="padding:8px 16px; background:#858796; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">취소</button>
+                        style="padding:8px 16px; background:var(--text2); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">취소</button>
                 <button type="button" onclick="doReset()"
-                        style="padding:8px 16px; background:#e74a3b; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">초기화 실행</button>
+                        style="padding:8px 16px; background:var(--danger); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:600;">초기화 실행</button>
             </div>
         </div>
     </div>

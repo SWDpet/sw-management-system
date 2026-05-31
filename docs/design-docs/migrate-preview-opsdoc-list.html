@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 운영문서 목록 (D-02) BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#FAFAF9; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ background:#fff; border-radius:12px; padding:14px 18px; margin-bottom:12px; box-shadow:0 2px 10px rgba(0,0,0,0.08); display:flex; justify-content:space-between; align-items:center; }
+  .page-header h2{ margin:0; font-size:1.05em; }
+  .header-actions{ display:flex; gap:6px; }
+  .header-actions button{ padding:7px 12px; border-radius:5px; font-size:.8em; font-weight:600; border:none; cursor:pointer; color:#fff; }
+  .btn-search{ padding:7px 12px; color:#fff; border:none; border-radius:5px; font-size:.8em; cursor:pointer; font-weight:600; }
+  .list-section{ background:#fff; border-radius:12px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,0.08); }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ padding:9px 11px; font-size:.82em; text-align:left; }
+  .badge{ display:inline-block; padding:2px 8px; border-radius:4px; font-size:.74em; font-weight:600; color:#fff; }
+  .mtag{ display:inline-block; margin-left:5px; padding:1px 8px; border-radius:10px; font-size:.7em; font-weight:700; color:#fff; }
+  /* mtag — 두 패널 동일 (유지보수 범위 3색, 현행 유지) */
+  .mtag.teal{ background:#0d9488; } .mtag.amber{ background:#d97706; } .mtag.navy{ background:#1e3a5f; }
+
+  /* BEFORE */
+  .before .page-header h2{ color:#1565c0; }
+  .before .btn-primary{ background:#1cc88a; } .before .btn-reset{ background:#e74a3b; }
+  .before .btn-search{ background:#0F766E; }
+  .before th{ background:#f8f9fc; color:#5a5c69; border-bottom:1px solid #eee; }
+  .before td{ border-bottom:1px solid #eee; }
+  .before .type-INSPECT{ background:#36b9cc; } .before .type-FAULT{ background:#e74a3b; }
+  .before .badge-completed{ background:#1cc88a; } .before .badge-in_review{ background:#f6c23e; } .before .badge-draft{ background:#858796; }
+
+  /* AFTER */
+  .after .page-header h2{ color:var(--primary); }
+  .after .btn-primary{ background:var(--primary); } .after .btn-reset{ background:var(--danger); }
+  .after .btn-search{ background:var(--primary); }
+  .after th{ background:var(--surface-2); color:var(--text2); border-bottom:1px solid var(--border); }
+  .after td{ border-bottom:1px solid var(--border); }
+  .after .type-INSPECT{ background:var(--info); } .after .type-FAULT{ background:var(--danger); }
+  .after .badge-completed{ background:var(--success); } .after .badge-in_review{ background:var(--warning); } .after .badge-draft{ background:var(--muted); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 운영문서 목록 (D-02)</h1>
+  <div class="sub">document-list와 동일 매핑 + 검토중 뱃지·파괴버튼·유지보수 범위 뱃지.</div>
+  <div class="legendbox">
+    제목 <code>#1565c0</code>→<code>--primary</code> · 문서작성 <code>#1cc88a</code>→<code>--primary</code> ·
+    완료 <code>#1cc88a</code>→<code>--success</code> · 검토중 <code>#f6c23e</code>→<code>--warning</code> ·
+    파괴버튼(초기화/삭제) <code>#e74a3b</code>→<code>--danger</code> · 유형뱃지 점검→info·장애→danger · 회색/테두리 토큰화
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-tools"></i> 운영문서 목록 (D-02)</h2>
+          <div class="header-actions"><button class="btn-primary"><i class="fas fa-plus"></i> 문서 작성 ▾</button><button class="btn-reset"><i class="fas fa-trash-can"></i> 테스트 초기화</button></div></div>
+        <div class="list-section">
+          <table>
+            <thead><tr><th>No</th><th>문서번호</th><th>유형</th><th>시스템</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>INSP-0042</td><td><span class="badge type-INSPECT">점검</span></td><td>UPIS <span class="mtag teal">GIS만</span></td><td><span class="badge badge-completed">작성완료</span></td></tr>
+              <tr><td>2</td><td>FLT-0008</td><td><span class="badge type-FAULT">장애</span></td><td>KRAS</td><td><span class="badge badge-in_review">검토중</span></td></tr>
+              <tr><td>3</td><td>INSP-0040</td><td><span class="badge type-INSPECT">점검</span></td><td>IPSS <span class="mtag amber">GIS+표준</span></td><td><span class="badge badge-draft">작성중</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="frame">
+        <div class="page-header"><h2><i class="fas fa-tools"></i> 운영문서 목록 (D-02)</h2>
+          <div class="header-actions"><button class="btn-primary"><i class="fas fa-plus"></i> 문서 작성 ▾</button><button class="btn-reset"><i class="fas fa-trash-can"></i> 테스트 초기화</button></div></div>
+        <div class="list-section">
+          <table>
+            <thead><tr><th>No</th><th>문서번호</th><th>유형</th><th>시스템</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>INSP-0042</td><td><span class="badge type-INSPECT">점검</span></td><td>UPIS <span class="mtag teal">GIS만</span></td><td><span class="badge badge-completed">작성완료</span></td></tr>
+              <tr><td>2</td><td>FLT-0008</td><td><span class="badge type-FAULT">장애</span></td><td>KRAS</td><td><span class="badge badge-in_review">검토중</span></td></tr>
+              <tr><td>3</td><td>INSP-0040</td><td><span class="badge type-INSPECT">점검</span></td><td>IPSS <span class="mtag amber">GIS+표준</span></td><td><span class="badge badge-draft">작성중</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ 유지보수 범위 뱃지 <span class="mtag teal">GIS만</span> <span class="mtag amber">GIS+표준</span> <span class="mtag navy">전체</span> 는 두 패널 동일 — 점검내역서·PDF 등 여러 곳에 공유되는 정의된 3색 세트라 분산 변경하지 않고, 앱 전체 통일은 별도 작업으로 다룹니다(amber는 이미 --warning과 동일).</div>
+</body>
+</html>
