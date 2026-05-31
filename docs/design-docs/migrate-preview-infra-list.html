@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>마이그레이션 시안 — 인프라 자산 현황 BEFORE / AFTER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap');
+  .after{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA; --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1; --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+  }
+  body{ font-family:'Noto Sans KR',sans-serif; background:#EFEEEC; margin:0; padding:26px 30px 60px; color:#1C1917; }
+  h1{ font-size:1.4rem; margin:0 0 4px; }
+  .sub{ color:#57534E; font-size:.84rem; margin-bottom:18px; }
+  .legendbox{ font-size:.78rem; color:#57534E; background:#fff; border:1px solid #E7E5E4; border-radius:8px; padding:10px 14px; margin-bottom:22px; line-height:1.7; }
+  .legendbox code{ background:#F5F5F4; padding:1px 6px; border-radius:4px; font-family:'Inter',monospace; }
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .col > .tag{ display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.05em; padding:4px 12px; border-radius:6px; margin-bottom:10px; }
+  .col.before .tag{ background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; }
+  .col.after  .tag{ background:#F0FDF4; color:#166534; border:1px solid #BBF7D0; }
+  .frame{ background:#fff; border:1px solid #D6D3D1; border-radius:12px; padding:16px; }
+
+  .page-header{ display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; margin-bottom:12px; }
+  .page-header h2{ margin:0; font-size:1.15rem; }
+  .btn-top{ padding:7px 13px; border-radius:6px; font-weight:bold; font-size:.82rem; color:#fff; text-decoration:none; }
+  .search-box{ padding:10px; border-radius:8px; margin-bottom:12px; display:flex; gap:8px; align-items:center; }
+  .search-input{ flex:1; padding:8px 12px; border-radius:4px; font-size:.9em; }
+  .btn-search,.btn-reset{ padding:8px 16px; border:none; border-radius:4px; font-weight:bold; font-size:.85em; color:#fff; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ padding:7px 6px; text-align:center; font-size:.78em; }
+  .cell-link{ font-weight:bold; text-decoration:none; }
+  .cell-pw{ font-weight:bold; }
+  .btn-del{ border:none; padding:5px 10px; border-radius:4px; font-size:.8em; color:#fff; }
+  .pg a{ padding:6px 10px; border-radius:4px; font-size:.85em; text-decoration:none; }
+  .modetag{ font-size:.72rem; padding:2px 8px; border-radius:5px; margin-left:6px; }
+
+  /* BEFORE */
+  .before .page-header{ border-bottom:2px solid #eee; }
+  .before .h2-prod{ color:#134E4A; } .before .h2-test{ color:#e65100; }
+  .before .btn-home{ background:#0F766E; } .before .btn-add{ background:#1cc88a; }
+  .before .search-box{ background:#f8f9fc; border:1px solid #e3e6f0; } .before .search-input{ border:1px solid #ccc; }
+  .before .btn-search{ background:#0F766E; } .before .btn-reset{ background:#858796; }
+  .before table{ border:1px solid #e3e6f0; } .before th,.before td{ border:1px solid #e3e6f0; }
+  .before th{ background:#f8f9fc; color:#134E4A; }
+  .before .th-web{ background:#e3f2fd; color:#0d47a1; border-bottom:2px solid #1976d2; }
+  .before .th-db{ background:#fff3e0; color:#e65100; border-bottom:2px solid #f57c00; }
+  .before .cell-link{ color:#0F766E; } .before .cell-pw{ color:#f08a7e; } .before .btn-del{ background:#f08a7e; }
+  .before .pg a{ border:1px solid #ddd; color:#333; background:#fff; } .before .pg .active{ background:#134E4A; color:#fff; border-color:#134E4A; }
+
+  /* AFTER */
+  .after .page-header{ border-bottom:2px solid var(--border); }
+  .after .h2-prod{ color:var(--primary); } .after .h2-test{ color:var(--warning); }
+  .after .btn-home{ background:var(--primary); } .after .btn-add{ background:var(--primary); }
+  .after .search-box{ background:var(--surface-2); border:1px solid var(--border); } .after .search-input{ border:1px solid var(--border2); }
+  .after .btn-search{ background:var(--primary); } .after .btn-reset{ background:var(--text2); }
+  .after table{ border:1px solid var(--border); } .after th,.after td{ border:1px solid var(--border); }
+  .after th{ background:var(--surface-2); color:var(--primary); }
+  .after .th-web{ background:#ECFEFF; color:#155E75; border-bottom:2px solid var(--info); }
+  .after .th-db{ background:#FFFBEB; color:#92400E; border-bottom:2px solid var(--warning); }
+  .after .cell-link{ color:var(--primary); } .after .cell-pw{ color:var(--danger); } .after .btn-del{ background:var(--danger); }
+  .after .pg a{ border:1px solid var(--border2); color:var(--text); background:#fff; } .after .pg .active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+
+  .note{ font-size:.78rem; color:#92400E; background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px 14px; margin-top:20px; line-height:1.6; }
+  .panels{ display:flex; flex-direction:column; gap:16px; }
+</style>
+</head>
+<body>
+  <h1>마이그레이션 시안 — 인프라 자산 현황</h1>
+  <div class="sub">운영(teal)/테스트(주황→warning) 모드 색 + WEB/DB 그룹 헤더 info/warning 통일.</div>
+  <div class="legendbox">
+    운영 제목 <code>#134E4A</code>→<code>--primary</code> · <b>테스트 제목 <code>#e65100</code>→<code>--warning</code></b>(테스트 경고 유지) ·
+    WEB 헤더 파랑→<code>info 패밀리</code> · DB 헤더 주황→<code>warning 패밀리</code> ·
+    자산등록 <code>#1cc88a</code>→<code>--primary</code> · 삭제/PW <code>#f08a7e</code>→<code>--danger</code> · 회색/테두리 토큰화
+  </div>
+
+  <div class="split">
+    <!-- BEFORE -->
+    <div class="col before">
+      <div class="tag">BEFORE — 현재 운영</div>
+      <div class="panels">
+        <div class="frame">
+          <div class="page-header"><h2 class="h2-prod"><i class="fas fa-server"></i> 운영 인프라 자산 현황</h2>
+            <span><a class="btn-top btn-add"><i class="fas fa-plus"></i> 자산 등록</a></span></div>
+          <div class="search-box"><input class="search-input" placeholder="통합 검색"/><button class="btn-search">검색</button><button class="btn-reset">초기화</button></div>
+          <table>
+            <thead>
+              <tr><th rowspan="2">No</th><th rowspan="2">시군구</th><th colspan="2" class="th-web"><i class="fas fa-globe"></i> WEB/WAS</th><th colspan="2" class="th-db"><i class="fas fa-database"></i> DB</th><th rowspan="2">관리</th></tr>
+              <tr><th class="th-web">IP</th><th class="th-web">PW</th><th class="th-db">IP</th><th class="th-db">PW</th></tr>
+            </thead>
+            <tbody><tr><td>1</td><td><a class="cell-link">강진군</a></td><td>10.0.1.5</td><td class="cell-pw">******</td><td>10.0.1.6</td><td class="cell-pw">******</td><td><button class="btn-del">삭제</button></td></tr></tbody>
+          </table>
+          <div style="text-align:center;"><span class="pg"><span class="active">1</span> <a>2</a></span></div>
+        </div>
+        <div class="frame"><h2 class="h2-test" style="margin:0;font-size:1.15rem;"><i class="fas fa-vial"></i> 테스트 인프라 자산 현황 <span class="modetag" style="background:#fff3e0;color:#e65100;">TEST</span></h2></div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="col after">
+      <div class="tag">AFTER — 토큰 통일</div>
+      <div class="panels">
+        <div class="frame">
+          <div class="page-header"><h2 class="h2-prod"><i class="fas fa-server"></i> 운영 인프라 자산 현황</h2>
+            <span><a class="btn-top btn-add"><i class="fas fa-plus"></i> 자산 등록</a></span></div>
+          <div class="search-box"><input class="search-input" placeholder="통합 검색"/><button class="btn-search">검색</button><button class="btn-reset">초기화</button></div>
+          <table>
+            <thead>
+              <tr><th rowspan="2">No</th><th rowspan="2">시군구</th><th colspan="2" class="th-web"><i class="fas fa-globe"></i> WEB/WAS</th><th colspan="2" class="th-db"><i class="fas fa-database"></i> DB</th><th rowspan="2">관리</th></tr>
+              <tr><th class="th-web">IP</th><th class="th-web">PW</th><th class="th-db">IP</th><th class="th-db">PW</th></tr>
+            </thead>
+            <tbody><tr><td>1</td><td><a class="cell-link">강진군</a></td><td>10.0.1.5</td><td class="cell-pw">******</td><td>10.0.1.6</td><td class="cell-pw">******</td><td><button class="btn-del">삭제</button></td></tr></tbody>
+          </table>
+          <div style="text-align:center;"><span class="pg"><span class="active">1</span> <a>2</a></span></div>
+        </div>
+        <div class="frame"><h2 class="h2-test" style="margin:0;font-size:1.15rem;"><i class="fas fa-vial"></i> 테스트 인프라 자산 현황 <span class="modetag" style="background:#FFFBEB;color:#92400E;">TEST</span></h2></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">※ 테스트 모드 제목/뱃지는 "운영 아님" 경고라 <b>주황→--warning</b> 으로 의미 유지하며 통일. WEB/DB 그룹 헤더는 2그룹 구분이 필요해 각각 <b>info(청)·warning(황) 패밀리</b> 로 매핑(구분 유지). 비밀번호 셀은 민감 클릭 신호로 <b>--danger</b>.</div>
+</body>
+</html>
