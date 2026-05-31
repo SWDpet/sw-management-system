@@ -75,6 +75,7 @@ public class DocumentController {
     @Autowired private InspectReportService inspectReportService;
     @Autowired private InspectPdfService inspectPdfService;
     @Autowired private com.swmanager.system.service.InspectMetricChartService inspectMetricChartService;
+    @Autowired private com.swmanager.system.repository.InspectReportRepository inspectChartReportRepo;
 
     // === 권한 ===
 
@@ -1784,12 +1785,25 @@ public class DocumentController {
 
     // DOCX 다운로드/서비스 제거 (2026-05-30): 점검내역서는 PDF(v2) 단일 출력으로 통일.
 
-    /** GET /document/api/inspect-chart/preview?pjtId={pjtId} — v6 P5 메트릭 차트 미리보기 PNG */
+    /** GET /document/api/inspect-chart/preview?pjtId={pjtId}&month={YYYY-MM} — P5 메트릭 차트 미리보기 PNG.
+     *  month 주면 점검주기 윈도우(직전 점검월~이번 점검월), 없으면 최근 30일. */
     @GetMapping("/api/inspect-chart/preview")
     @ResponseBody
-    public ResponseEntity<byte[]> inspectChartPreview(@RequestParam Long pjtId) {
+    public ResponseEntity<byte[]> inspectChartPreview(@RequestParam Long pjtId,
+                                                      @RequestParam(required = false) String month) {
         try {
-            byte[] png = inspectMetricChartService.renderChart(pjtId, 30);
+            java.time.OffsetDateTime since, until;
+            if (month != null && !month.isBlank()) {
+                String prev = inspectChartReportRepo
+                        .findTopByPjtIdAndInspectMonthLessThanAndDeletedAtIsNullOrderByInspectMonthDesc(pjtId, month)
+                        .map(com.swmanager.system.domain.InspectReport::getInspectMonth).orElse(null);
+                java.time.OffsetDateTime[] w =
+                        com.swmanager.system.service.InspectMetricChartService.window(month, prev);
+                since = w[0]; until = w[1];
+            } else {
+                until = java.time.OffsetDateTime.now(); since = until.minusDays(30);
+            }
+            byte[] png = inspectMetricChartService.renderChart(pjtId, since, until);
             if (png == null || png.length == 0) {
                 return ResponseEntity.noContent().build();
             }

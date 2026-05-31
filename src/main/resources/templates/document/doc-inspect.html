@@ -965,7 +965,9 @@ function refreshChartPreview() {
     img.onerror = function() {
         wrap.innerHTML = '<p style="color:#f59e0b;font-size:0.85em;"><i class="fas fa-info-circle"></i> 수집된 메트릭 데이터가 없습니다. QR 업로드 후 차트가 표시됩니다.</p>';
     };
-    img.src = '/document/api/inspect-chart/preview?pjtId=' + pjtId + '&_t=' + Date.now();
+    var _m = (document.getElementById('cover_month') || {}).value || '';
+    img.src = '/document/api/inspect-chart/preview?pjtId=' + pjtId
+            + (_m ? '&month=' + encodeURIComponent(_m) : '') + '&_t=' + Date.now();
 }
 
 function markRowReadonly(tr, ro) {

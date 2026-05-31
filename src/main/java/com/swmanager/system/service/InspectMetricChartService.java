@@ -67,23 +67,48 @@ public class InspectMetricChartService {
     private final InspectMetricSnapshotRepository repository;
 
     /**
-     * 30일 차트 렌더.
+     * 점검월 → 추이 윈도우 [since, until). thisMonth(YYYY-MM) 필수.
+     * 직전 점검월(prevMonth) 있으면 [직전 다음달1일, 이번 다음달1일) (직전 점검 이후~이번 점검월),
+     * 없으면(첫 회차) [이번 다음달1일−30일, 이번 다음달1일). 파싱 실패 시 [now−30d, now] 폴백.
+     */
+    public static OffsetDateTime[] window(String thisMonth, String prevMonth) {
+        try {
+            java.time.ZoneOffset off = OffsetDateTime.now().getOffset();
+            java.time.YearMonth tm = java.time.YearMonth.parse(thisMonth.trim());
+            OffsetDateTime until = tm.plusMonths(1).atDay(1).atStartOfDay().atOffset(off);
+            OffsetDateTime since;
+            if (prevMonth != null && !prevMonth.isBlank()) {
+                java.time.YearMonth pm = java.time.YearMonth.parse(prevMonth.trim());
+                since = pm.plusMonths(1).atDay(1).atStartOfDay().atOffset(off);
+            } else {
+                since = until.minusDays(30);
+            }
+            return new OffsetDateTime[]{ since, until };
+        } catch (Exception e) {
+            OffsetDateTime now = OffsetDateTime.now();
+            return new OffsetDateTime[]{ now.minusDays(30), now };
+        }
+    }
+
+    /**
+     * 점검주기 추이 차트 렌더 — 윈도우 [since, until).
+     * (첫 회차=점검월말−30일~말, 이후=직전 점검월말~이번 점검월말. 산출은 InspectPdfService.)
      *
-     * @param pjtId   SwProject.proj_id
-     * @param days    조회 윈도우 (보통 30)
+     * @param pjtId  SwProject.proj_id
+     * @param since  윈도우 시작(포함)
+     * @param until  윈도우 끝(미포함)
      * @return PNG byte[] — 데이터 0건이면 빈 차트 ("수집 대기" 안내)
      */
-    public byte[] renderChart(Long pjtId, int days) {
-        OffsetDateTime since = OffsetDateTime.now().minusDays(days);
+    public byte[] renderChart(Long pjtId, OffsetDateTime since, OffsetDateTime until) {
         TimeSeriesCollection dataset = new TimeSeriesCollection();
         int hostLineCount = 0;
 
         // server_role = 'AP' / 'DB' 각각 호스트별 시리즈 추가
         for (String role : new String[]{"AP", "DB"}) {
-            List<String> hosts = repository.findHostsByPjtRole(pjtId, role, since);
+            List<String> hosts = repository.findHostsByPjtRoleRange(pjtId, role, since, until);
             for (String host : hosts) {
-                List<InspectMetricSnapshot> rows = repository.findRecentByPjtRoleHost(
-                        pjtId, role, host, since);
+                List<InspectMetricSnapshot> rows = repository.findRangeByPjtRoleHost(
+                        pjtId, role, host, since, until);
                 if (rows.isEmpty()) continue;
 
                 String hostLabel = (host == null || host.isBlank()) ? role : (role + "·" + host);
@@ -107,7 +132,7 @@ public class InspectMetricChartService {
         }
 
         if (dataset.getSeriesCount() == 0) {
-            log.info("renderChart pjt={} days={} → no data, empty chart", pjtId, days);
+            log.info("renderChart pjt={} window=[{},{}) → no data, empty chart", pjtId, since, until);
             return emptyChart("수집 대기 — agent snapshot 누적 필요");
         }
 
@@ -120,8 +145,8 @@ public class InspectMetricChartService {
             BufferedImage img = chart.createBufferedImage(CHART_WIDTH, CHART_HEIGHT);
             ByteArrayOutputStream bao = new ByteArrayOutputStream();
             ImageIO.write(img, "png", bao);
-            log.info("renderChart pjt={} days={} hosts={} series={} bytes={}",
-                    pjtId, days, hostLineCount, dataset.getSeriesCount(), bao.size());
+            log.info("renderChart pjt={} window=[{},{}) hosts={} series={} bytes={}",
+                    pjtId, since, until, hostLineCount, dataset.getSeriesCount(), bao.size());
             return bao.toByteArray();
         } catch (Exception e) {
             log.warn("renderChart PNG 직렬화 실패: {}", e.getMessage());

@@ -4,8 +4,10 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.swmanager.system.domain.InspectMetricSnapshot;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.dto.InspectReportDTO;
+import com.swmanager.system.domain.InspectReport;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.InspectMetricSnapshotRepository;
+import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.InspectTemplateRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
@@ -49,6 +51,7 @@ public class InspectPdfService {
     @Autowired private InspectMetricChartService metricChartService;
     @Autowired private InspectMetricSnapshotRepository metricRepository;
     @Autowired private InspectTemplateRepository templateRepository;
+    @Autowired private InspectReportRepository reportRepository;
 
     private File fontFile;
 
@@ -132,11 +135,18 @@ public class InspectPdfService {
         ctx.setVariable("cntManual", manual);
         ctx.setVariable("cntTotal", results.size());
 
-        // KPI (30일 누적 스냅샷)
-        ctx.setVariable("kpi", computeKpi(report.getPjtId()));
+        // 점검주기 추이 윈도우 [since, until) — 첫 회차=점검월말−30일~말, 이후=직전 점검월~이번 점검월
+        String prevMonth = reportRepository
+                .findTopByPjtIdAndInspectMonthLessThanAndDeletedAtIsNullOrderByInspectMonthDesc(
+                        report.getPjtId(), report.getInspectMonth())
+                .map(InspectReport::getInspectMonth).orElse(null);
+        OffsetDateTime[] win = InspectMetricChartService.window(report.getInspectMonth(), prevMonth);
 
-        // 30일 추이 차트 — PNG → base64 data URI
-        ctx.setVariable("chartImg", chartDataUri(report.getPjtId()));
+        // KPI (점검기간 누적 스냅샷)
+        ctx.setVariable("kpi", computeKpi(report.getPjtId(), win[0], win[1]));
+
+        // 점검기간 추이 차트 — PNG → base64 data URI
+        ctx.setVariable("chartImg", chartDataUri(report.getPjtId(), win[0], win[1]));
 
         // 점검범위 프로파일 (maint_type + 표준보유) — 기획서 inspect-maint-profile.md
         String maintType   = project != null ? project.getMaintType() : null;
@@ -285,12 +295,11 @@ public class InspectPdfService {
         cards.add(new SectionCard(title, worstLabel, worst, rows));
     }
 
-    private Kpi computeKpi(Long pjtId) {
+    private Kpi computeKpi(Long pjtId, OffsetDateTime since, OffsetDateTime until) {
         if (pjtId == null) return new Kpi("수집 대기", "수집 대기", "수집 대기", "0");
-        OffsetDateTime since = OffsetDateTime.now().minusDays(30);
         List<InspectMetricSnapshot> rows = new ArrayList<>();
-        rows.addAll(metricRepository.findRecentByPjtRole(pjtId, "AP", since));
-        rows.addAll(metricRepository.findRecentByPjtRole(pjtId, "DB", since));
+        rows.addAll(metricRepository.findRangeByPjtRole(pjtId, "AP", since, until));
+        rows.addAll(metricRepository.findRangeByPjtRole(pjtId, "DB", since, until));
         if (rows.isEmpty()) return new Kpi("수집 대기", "수집 대기", "수집 대기", "0");
 
         double cpuSum = 0, memSum = 0, diskMax = -1;
@@ -308,10 +317,10 @@ public class InspectPdfService {
         return new Kpi(cpu, mem, disk, String.valueOf(days.size()));
     }
 
-    private String chartDataUri(Long pjtId) {
+    private String chartDataUri(Long pjtId, OffsetDateTime since, OffsetDateTime until) {
         if (pjtId == null) return null;
         try {
-            byte[] png = metricChartService.renderChart(pjtId, 30);
+            byte[] png = metricChartService.renderChart(pjtId, since, until);
             if (png == null || png.length == 0) return null;
             return "data:image/png;base64," + Base64.getEncoder().encodeToString(png);
         } catch (Exception e) {

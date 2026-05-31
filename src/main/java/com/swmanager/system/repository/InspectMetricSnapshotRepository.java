@@ -72,6 +72,38 @@ public interface InspectMetricSnapshotRepository extends JpaRepository<InspectMe
             @Param("role") String serverRole,
             @Param("since") OffsetDateTime since);
 
+    // ── 점검주기 윈도우 [since, until) — 직전 점검월 ~ 이번 점검월 추이용 (2026-05-31) ──
+    @Query("""
+        SELECT m FROM InspectMetricSnapshot m
+         WHERE m.pjtId = :pjtId AND m.serverRole = :role AND m.hostName = :host
+           AND m.collectedAt >= :since AND m.collectedAt < :until
+         ORDER BY m.collectedAt ASC
+        """)
+    List<InspectMetricSnapshot> findRangeByPjtRoleHost(
+            @Param("pjtId") Long pjtId, @Param("role") String serverRole,
+            @Param("host") String hostName,
+            @Param("since") OffsetDateTime since, @Param("until") OffsetDateTime until);
+
+    @Query("""
+        SELECT m FROM InspectMetricSnapshot m
+         WHERE m.pjtId = :pjtId AND m.serverRole = :role
+           AND m.collectedAt >= :since AND m.collectedAt < :until
+         ORDER BY m.hostName ASC, m.collectedAt ASC
+        """)
+    List<InspectMetricSnapshot> findRangeByPjtRole(
+            @Param("pjtId") Long pjtId, @Param("role") String serverRole,
+            @Param("since") OffsetDateTime since, @Param("until") OffsetDateTime until);
+
+    @Query("""
+        SELECT DISTINCT m.hostName FROM InspectMetricSnapshot m
+         WHERE m.pjtId = :pjtId AND m.serverRole = :role
+           AND m.collectedAt >= :since AND m.collectedAt < :until
+         ORDER BY m.hostName ASC
+        """)
+    List<String> findHostsByPjtRoleRange(
+            @Param("pjtId") Long pjtId, @Param("role") String serverRole,
+            @Param("since") OffsetDateTime since, @Param("until") OffsetDateTime until);
+
     /**
      * 멱등 적재 — 동일 (pjt_id, server_role, host_name, collected_at) 재INSERT 시 무시.
      * PostgreSQL native query. raw_payload 는 jsonb 캐스팅.
