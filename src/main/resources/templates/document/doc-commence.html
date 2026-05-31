@@ -6,73 +6,74 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>착수계 작성</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
     <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background: #FAFAF9; padding: 20px; color: #333; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1100px; margin: auto; }
         .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; }
-        .page-header h2 { margin: 0; color: #1565c0; font-size: 1.2em; }
+        .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
         .header-actions a, .header-actions button { padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; margin-left: 8px; }
-        .btn-save { background: #1cc88a; color: white; }
-        .btn-cancel { background: #858796; color: white; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-cancel { background: var(--text2); color: white; }
 
         /* 탭 네비 */
         .tab-nav { display: flex; gap: 0; background: white; border-radius: 12px 12px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: #f0f0f0; font-size: 0.82em; font-weight: 600; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
-        .tab-nav button.active { background: white; color: #1565c0; border-bottom-color: #1565c0; }
+        .tab-nav button { flex: 1; padding: 14px 8px; border: none; background: var(--surface-2); font-size: 0.82em; font-weight: 600; cursor: pointer; color: var(--text2); border-bottom: 3px solid transparent; }
+        .tab-nav button.active { background: white; color: var(--primary); border-bottom-color: var(--primary); }
 
         /* 섹션 */
         .form-section { display: none; background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-section.active { display: block; }
-        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: #1565c0; border-left: 4px solid #1565c0; padding-left: 10px; }
+        .form-section h3 { margin: 0 0 20px; font-size: 1em; color: var(--primary); border-left: 4px solid var(--primary); padding-left: 10px; }
 
         .form-table { width: 100%; border-collapse: collapse; }
-        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid #e3e6f0; font-size: 0.88em; }
-        .form-table th { background: #f8f9fc; color: #5a5c69; font-weight: 600; text-align: left; width: 130px; }
-        .form-table input:not([type=checkbox]):not([type=radio]), .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d3e2; border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
+        .form-table th, .form-table td { padding: 10px 12px; border: 1px solid var(--border); font-size: 0.88em; }
+        .form-table th { background: var(--surface-2); color: var(--text2); font-weight: 600; text-align: left; width: 130px; }
+        .form-table input:not([type=checkbox]):not([type=radio]), .form-table select, .form-table textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border2); border-radius: 5px; font-size: 0.88em; font-family: inherit; line-height: 1.4; box-sizing: border-box; height: 36px; }
         .form-table textarea { height: auto; }
         .form-table input[type=checkbox] { width:16px; height:16px; margin:0 6px 0 0; vertical-align:middle; padding:0; }
         .form-table textarea { height: 80px; resize: vertical; }
-        .form-table input:focus, .form-table select:focus { border-color: #1565c0; outline: none; }
-        .required { color: #f08a7e; }
-        .amount-text { font-size: 0.82em; color: #1565c0; margin-top: 4px; font-weight: 600; }
+        .form-table input:focus, .form-table select:focus { border-color: var(--primary); outline: none; }
+        .required { color: var(--danger); }
+        .amount-text { font-size: 0.82em; color: var(--primary); margin-top: 4px; font-weight: 600; }
 
         /* 동적 행 */
         .dynamic-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid #e3e6f0; font-size: 0.82em; text-align: center; }
-        .dynamic-table th { background: #f8f9fc; color: #5a5c69; }
-        .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid #d1d3e2; border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
-        .btn-add-row { padding: 5px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
-        .btn-del-row { padding: 3px 8px; background: #f08a7e; color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
+        .dynamic-table th, .dynamic-table td { padding: 8px 10px; border: 1px solid var(--border); font-size: 0.82em; text-align: center; }
+        .dynamic-table th { background: var(--surface-2); color: var(--text2); }
+        .dynamic-table input, .dynamic-table select { width: 100%; padding: 5px; border: 1px solid var(--border2); border-radius: 3px; font-size: 0.85em; box-sizing: border-box; }
+        .btn-add-row { padding: 5px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; }
+        .btn-del-row { padding: 3px 8px; background: var(--danger); color: white; border: none; border-radius: 3px; font-size: 0.75em; cursor: pointer; }
 
-        .help-text { font-size: 0.78em; color: #aaa; margin-top: 4px; }
+        .help-text { font-size: 0.78em; color: var(--muted); margin-top: 4px; }
 
         /* 미리보기 버튼 */
-        .btn-preview { padding: 4px 12px; background: #0F766E; color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-left: 12px; font-weight: 600; vertical-align: middle; }
-        .btn-preview:hover { background: #115E59; }
+        .btn-preview { padding: 4px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 0.78em; cursor: pointer; margin-left: 12px; font-weight: 600; vertical-align: middle; }
+        .btn-preview:hover { background: var(--primary2); }
 
         /* 미리보기 모달 */
         .preview-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; overflow-y: auto; }
         .preview-wrapper { max-width: 860px; margin: 30px auto; padding: 0 20px 60px; }
-        .preview-toolbar { background: #333; color: white; padding: 10px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .preview-toolbar { background: var(--text); color: white; padding: 10px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
         .preview-toolbar h4 { margin: 0; font-size: 0.95em; }
-        .preview-close { padding: 6px 16px; background: #858796; color: white; border: none; border-radius: 4px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
-        .preview-close:hover { background: #6b6d7d; }
+        .preview-close { padding: 6px 16px; background: var(--text2); color: white; border: none; border-radius: 4px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .preview-close:hover { background: var(--text2); }
         .document-paper { background: white; padding: 60px 50px; min-height: 700px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); font-family: 'Noto Sans KR', 'Batang', serif; font-size: 13px; line-height: 1.8; color: #000; border-radius: 0 0 8px 8px; }
         .document-paper h2.doc-title { text-align: center; font-size: 22px; letter-spacing: 8px; margin: 30px 0; }
         .document-paper .doc-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        .document-paper .doc-table th, .document-paper .doc-table td { border: 1px solid #333; padding: 8px 10px; font-size: 13px; }
-        .document-paper .doc-table th { background: #FAFAF9; font-weight: 600; text-align: center; }
-        .document-paper .letterhead { text-align: center; border-bottom: 3px double #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .document-paper .doc-table th, .document-paper .doc-table td { border: 1px solid var(--text); padding: 8px 10px; font-size: 13px; }
+        .document-paper .doc-table th { background: var(--bg); font-weight: 600; text-align: center; }
+        .document-paper .letterhead { text-align: center; border-bottom: 3px double var(--text); padding-bottom: 15px; margin-bottom: 20px; }
         .document-paper .letterhead h1 { font-size: 24px; margin: 0; letter-spacing: 6px; }
         .document-paper .letter-info { margin: 10px 0; font-size: 13px; }
         .document-paper .letter-info td { border: none; padding: 3px 8px; }
         .document-paper .letter-info .label { font-weight: 600; width: 80px; }
         .document-paper .doc-body { white-space: pre-wrap; margin: 20px 0; line-height: 2; }
         .document-paper .company-footer { text-align: center; margin-top: 40px; font-size: 16px; font-weight: 700; letter-spacing: 4px; }
-        .document-paper .stamp-area { text-align: right; margin-top: 20px; font-size: 12px; color: #666; }
+        .document-paper .stamp-area { text-align: right; margin-top: 20px; font-size: 12px; color: var(--text2); }
         .document-paper .gantt-table th, .document-paper .gantt-table td { font-size: 11px; padding: 5px 3px; text-align: center; }
-        .document-paper .gantt-bar { background: #0F766E; height: 14px; border-radius: 2px; }
-        .document-paper .sign-line { display: inline-block; width: 120px; border-bottom: 1px solid #333; margin-left: 10px; }
+        .document-paper .gantt-bar { background: var(--primary); height: 14px; border-radius: 2px; }
+        .document-paper .sign-line { display: inline-block; width: 120px; border-bottom: 1px solid var(--text); margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -128,9 +129,9 @@
                         </select>
                         <span class="help-text" id="projHint"></span>
                         <div id="projInfoBadge" style="margin-top:8px; display:none; font-size:0.82em;">
-                            <span style="display:inline-block; padding:3px 10px; background:#F0FDFA; color:#3730a3; border-radius:4px; margin-right:6px;">[계약일] <b id="badgeContDt">-</b></span>
-                            <span style="display:inline-block; padding:3px 10px; background:#ecfdf5; color:#065f46; border-radius:4px; margin-right:6px;">[과업기간] <b id="badgePeriod">-</b> (<b id="badgeMonths">-</b>개월)</span>
-                            <span id="badgeWarn" style="display:none; padding:3px 10px; background:#fef3c7; color:#92400e; border-radius:4px;" title="계약일과 과업 시작일이 다릅니다. 공정표는 과업기간 기준으로 작성됩니다.">⚠ 계약일 ≠ 과업시작일</span>
+                            <span style="display:inline-block; padding:3px 10px; background:#ECFEFF; color:#155E75; border-radius:4px; margin-right:6px;">[계약일] <b id="badgeContDt">-</b></span>
+                            <span style="display:inline-block; padding:3px 10px; background:#F0FDF4; color:#166534; border-radius:4px; margin-right:6px;">[과업기간] <b id="badgePeriod">-</b> (<b id="badgeMonths">-</b>개월)</span>
+                            <span id="badgeWarn" style="display:none; padding:3px 10px; background:#FFFBEB; color:#92400e; border-radius:4px;" title="계약일과 과업 시작일이 다릅니다. 공정표는 과업기간 기준으로 작성됩니다.">⚠ 계약일 ≠ 과업시작일</span>
                         </div>
                     </td>
                 </tr>
@@ -238,7 +239,7 @@
                 <tr><th>용역명</th><td colspan="3"><input type="text" id="pledge_name" placeholder="자동"></td></tr>
                 <tr><th>계약기간</th><td><input type="date" id="pledge_from"></td><th>~</th><td><input type="date" id="pledge_to"></td></tr>
             </table>
-            <div id="pledgePreview" style="margin-top: 12px; font-size: 0.82em; color: #888;">
+            <div id="pledgePreview" style="margin-top: 12px; font-size: 0.82em; color: var(--muted);">
                 보안서약서는 저장 후 PDF 출력 시 인원별로 자동 생성됩니다.
             </div>
         </div>
@@ -277,14 +278,14 @@
             </table>
 
             <!-- 안내 -->
-            <div style="margin:15px 0 0; padding:10px 14px; background:#fff8e1; border-left:4px solid #f9a825; border-radius:4px; font-size:0.88em; color:#5d4037;">
+            <div style="margin:15px 0 0; padding:10px 14px; background:#FFFBEB; border-left:4px solid var(--warning); border-radius:4px; font-size:0.88em; color:#92400E;">
                 ※ 도입가는 기존 설계내역서에 부가세포함이면 포함한 금액으로, 부가세 별도면 별도 금액으로 작성 요망
             </div>
 
             <!-- HW 항목 -->
             <div id="estHwSection">
-                <div style="margin:20px 0 8px; font-weight:700; color:#1cc88a;">◎ 1. 하드웨어 유지보수
-                    <button type="button" onclick="addEstEquipRow('estHwTable','HW')" style="margin-left:15px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+                <div style="margin:20px 0 8px; font-weight:700; color:var(--success);">◎ 1. 하드웨어 유지보수
+                    <button type="button" onclick="addEstEquipRow('estHwTable','HW')" style="margin-left:15px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
                 </div>
                 <table class="dynamic-table" id="estHwTable">
                     <thead><tr><th style="width:35px;">No</th><th>품명</th><th style="width:90px;">적용율(%)</th><th>도입가</th><th>비고</th><th style="width:40px;"></th></tr></thead>
@@ -293,8 +294,8 @@
             </div>
 
             <!-- SW 항목 -->
-            <div style="margin:20px 0 8px; font-weight:700; color:#f08a7e;">◎ 2. 소프트웨어 유지보수
-                <button type="button" onclick="addEstEquipRow('estSwTable','SW')" style="margin-left:15px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            <div style="margin:20px 0 8px; font-weight:700; color:var(--danger);">◎ 2. 소프트웨어 유지보수
+                <button type="button" onclick="addEstEquipRow('estSwTable','SW')" style="margin-left:15px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </div>
             <table class="dynamic-table" id="estSwTable">
                 <thead><tr><th style="width:35px;">No</th><th>품명</th><th style="width:90px;">적용율(%)</th><th>도입가</th><th>비고</th><th style="width:40px;"></th></tr></thead>
@@ -302,21 +303,21 @@
             </table>
 
             <!-- 산출 미리보기 -->
-            <div style="margin-top:20px; padding:12px 15px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px;">
-                <div style="font-weight:700; color:#2e7d32; margin-bottom:8px;">자동 산출 미리보기</div>
-                <div id="estPreview" style="font-size:0.88em; color:#333;">사업 선택 후 장비를 로드하면 자동 계산됩니다.</div>
+            <div style="margin-top:20px; padding:12px 15px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px;">
+                <div style="font-weight:700; color:#166534; margin-bottom:8px;">자동 산출 미리보기</div>
+                <div id="estPreview" style="font-size:0.88em; color:var(--text);">사업 선택 후 장비를 로드하면 자동 계산됩니다.</div>
             </div>
         </div>
 
         <!-- ⑨ 사업수행계획서 -->
         <div class="form-section" id="section-8">
             <h3><i class="fas fa-clipboard-list"></i> ⑨ 사업수행계획서 (P10~P13)
-                <button class="btn-preview" type="button" onclick="loadPlanData()" style="margin-left:auto; padding:4px 12px; background:#0F766E; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-sync"></i> DB 불러오기</button>
-                <button class="btn-preview" type="button" onclick="savePlanData()" style="padding:4px 12px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-save"></i> 계획서 저장</button>
+                <button class="btn-preview" type="button" onclick="loadPlanData()" style="margin-left:auto; padding:4px 12px; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-sync"></i> DB 불러오기</button>
+                <button class="btn-preview" type="button" onclick="savePlanData()" style="padding:4px 12px; background:var(--success); color:white; border:none; border-radius:4px; cursor:pointer;"><i class="fas fa-save"></i> 계획서 저장</button>
             </h3>
             <div class="help-text" style="margin-bottom:10px;">* 사업당 1회 입력하면 다른 문서(준공계/기성계)에서도 재사용됩니다. <strong>저장 버튼을 별도로 눌러야 sw_pjt 및 계획 테이블에 반영됩니다.</strong></div>
 
-            <h4 style="margin-top:14px; color:#1565c0;">P12 - 용역의 개요</h4>
+            <h4 style="margin-top:14px; color:var(--primary);">P12 - 용역의 개요</h4>
             <table class="form-table">
                 <tr><th style="width:160px;">용역의 목적</th>
                     <td colspan="3"><textarea id="plan_purpose" style="width:100%; height:55px;" placeholder="예: 도시계획정보체계용 GIS SW 유지관리의 최신 버전 유지와 원활한 서비스를 제공"></textarea></td></tr>
@@ -328,21 +329,21 @@
                     </select></td>
                     <th>점검방법</th>
                     <td><input type="text" id="plan_inspectMethod" placeholder="예: 년 2회 유지보수 방문"></td></tr>
-                <tr><th>용역 범위<br><span style="font-weight:normal; color:#888; font-size:0.85em;">(줄바꿈 구분, 최대 3줄 출력)</span></th>
+                <tr><th>용역 범위<br><span style="font-weight:normal; color:var(--muted); font-size:0.85em;">(줄바꿈 구분, 최대 3줄 출력)</span></th>
                     <td colspan="3"><textarea id="plan_scopeText" style="width:100%; height:75px;" placeholder="GIS SW 최신 버전 유지&#10;GIS SW 원활한 서비스 제공&#10;긴급/장애처리"></textarea></td></tr>
             </table>
 
-            <h4 style="margin-top:18px; color:#1565c0;">P12 - 유지관리 대상 제품
-                <button type="button" onclick="addPlanTargetRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            <h4 style="margin-top:18px; color:var(--primary);">P12 - 유지관리 대상 제품
+                <button type="button" onclick="addPlanTargetRow()" style="margin-left:10px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </h4>
             <table class="dynamic-table" id="planTargetTable">
                 <thead><tr><th>제품명</th><th style="width:90px;">수량</th><th style="width:40px;"></th></tr></thead>
                 <tbody id="planTargetBody"></tbody>
             </table>
-            <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다 (다중 행 cloning은 후속 작업 예정).</div>
+            <div class="help-text" style="color:var(--danger);">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다 (다중 행 cloning은 후속 작업 예정).</div>
 
-            <h4 style="margin-top:18px; color:#1565c0;">P2 - 예정공정표
-                <button type="button" onclick="addPlanScheduleRow(); updatePlanScheduleHeader();" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
+            <h4 style="margin-top:18px; color:var(--primary);">P2 - 예정공정표
+                <button type="button" onclick="addPlanScheduleRow(); updatePlanScheduleHeader();" style="margin-left:10px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 행 추가</button>
             </h4>
             <table class="dynamic-table" id="planScheduleTable">
                 <thead><tr><th style="min-width:150px;">공정명</th>
@@ -351,10 +352,10 @@
                     <th>비고</th><th style="width:35px;"></th></tr></thead>
                 <tbody id="planScheduleBody"></tbody>
             </table>
-            <div class="help-text" style="color:#d32f2f;">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다.</div>
+            <div class="help-text" style="color:var(--danger);">⚠ 현재 한글 출력 시에는 첫 번째 행만 반영됩니다.</div>
 
-            <h4 style="margin-top:18px; color:#1565c0;">P13 - 공정별 투입인력계획
-                <button type="button" onclick="addPlanManpowerRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 작업단계 추가</button>
+            <h4 style="margin-top:18px; color:var(--primary);">P13 - 공정별 투입인력계획
+                <button type="button" onclick="addPlanManpowerRow()" style="margin-left:10px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 작업단계 추가</button>
             </h4>
             <table class="dynamic-table" id="planManpowerTable">
                 <thead>
@@ -375,8 +376,8 @@
                 <tbody id="planManpowerBody"></tbody>
             </table>
 
-            <h4 style="margin-top:18px; color:#1565c0;">다. 투입인력 정보
-                <button type="button" onclick="addPlanPersonnelRow()" style="margin-left:10px; padding:3px 10px; background:#0F766E; color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 인원 추가</button>
+            <h4 style="margin-top:18px; color:var(--primary);">다. 투입인력 정보
+                <button type="button" onclick="addPlanPersonnelRow()" style="margin-left:10px; padding:3px 10px; background:var(--primary); color:white; border:none; border-radius:3px; font-size:0.78em; cursor:pointer;">+ 인원 추가</button>
             </h4>
             <table class="dynamic-table" id="planPersonnelTable">
                 <thead><tr>
@@ -490,7 +491,7 @@
                     picker.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; padding:4px 0; font-size:0.8em;';
                     taskList.forEach(function(t, i) {
                         var lbl = document.createElement('label');
-                        lbl.style.cssText = 'display:inline-flex; align-items:center; gap:3px; background:#e3f2fd; color:#1565c0; padding:2px 6px; border-radius:10px; cursor:pointer;';
+                        lbl.style.cssText = 'display:inline-flex; align-items:center; gap:3px; background:#ECFEFF; color:var(--primary); padding:2px 6px; border-radius:10px; cursor:pointer;';
                         lbl.innerHTML = '<input type="checkbox" checked data-task="'+ t.replace(/"/g,'&quot;') +'" onchange="updateParticipantTasks(this)"> ' + t;
                         picker.appendChild(lbl);
                     });
@@ -530,7 +531,7 @@
                 var ssn = r.querySelector('.pt-ssn').value || '';
                 var tasks = r.querySelector('.pt-tasks') ? r.querySelector('.pt-tasks').value || '' : '';
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + name + '</td><td>' + techGrade + '</td><td>' + ssn + '</td><td>' + tasks + '</td><td style="color:#aaa;">저장 후 서명</td>';
+                tr.innerHTML = '<td>' + name + '</td><td>' + techGrade + '</td><td>' + ssn + '</td><td>' + tasks + '</td><td style="color:var(--muted);">저장 후 서명</td>';
                 tbody.appendChild(tr);
             }
         }
@@ -1242,8 +1243,8 @@
             for (var i = 0; i < 12; i++) {
                 if (months > 0 && i >= months) {
                     ths[i + 1].textContent = '—';
-                    ths[i + 1].style.color = '#bbb';
-                    ths[i + 1].style.background = '#f5f5f5';
+                    ths[i + 1].style.color = 'var(--muted)';
+                    ths[i + 1].style.background = 'var(--surface-2)';
                 } else {
                     ths[i + 1].textContent = i === 0 ? 'N' : 'N+' + i;
                     ths[i + 1].style.color = '';
@@ -1260,7 +1261,7 @@
                     var outOfRange = (months > 0 && k > months);
                     cb.disabled = outOfRange;
                     if (outOfRange) cb.checked = false;
-                    cb.parentElement.style.background = outOfRange ? '#f5f5f5' : '';
+                    cb.parentElement.style.background = outOfRange ? 'var(--surface-2)' : '';
                 }
             });
         }
@@ -1625,8 +1626,8 @@
 
             var html = '<div class="letterhead">' +
                 '<h1>(주) 정도UIT</h1>' +
-                '<div style="font-size:11px; color:#666; margin-top:5px;">서울특별시 금천구 디지털로9길 32, B동 1201호 (가산동, 갑을그레이트밸리)</div>' +
-                '<div style="font-size:11px; color:#666;">TEL: 02-6675-2550 | FAX: 02-6675-2555</div>' +
+                '<div style="font-size:11px; color:var(--text2); margin-top:5px;">서울특별시 금천구 디지털로9길 32, B동 1201호 (가산동, 갑을그레이트밸리)</div>' +
+                '<div style="font-size:11px; color:var(--text2);">TEL: 02-6675-2550 | FAX: 02-6675-2555</div>' +
                 '</div>' +
                 '<table class="letter-info" style="width:100%;">' +
                 '<tr><td class="label">문서번호</td><td>' + docNo + '</td><td class="label" style="text-align:right;">시행일자</td><td style="text-align:right;">' + dateFld + '</td></tr>' +
@@ -1636,8 +1637,8 @@
                 '<h2 class="doc-title" style="font-size:18px; letter-spacing:5px; margin:25px 0;">제 목 : ' + title + '</h2>' +
                 '<div class="doc-body">' + body.replace(/\n/g, '<br>') + '</div>' +
                 '<div class="company-footer" style="margin-top:50px;">(주) 정도UIT 대표이사</div>' +
-                '<div class="stamp-area" style="text-align:center; margin-top:5px; font-size:11px; color:#999;">(직인생략)</div>' +
-                '<div style="margin-top:30px; font-size:11px; border-top:1px solid #ccc; padding-top:8px;">' +
+                '<div class="stamp-area" style="text-align:center; margin-top:5px; font-size:11px; color:var(--muted);">(직인생략)</div>' +
+                '<div style="margin-top:30px; font-size:11px; border-top:1px solid var(--border2); padding-top:8px;">' +
                 '<table style="width:100%; font-size:11px;"><tr>' +
                 '<td>담당: ' + manager + '</td><td style="text-align:right;">연락처: ' + tel + '</td>' +
                 '</tr></table></div>';
@@ -1670,9 +1671,9 @@
                 '<div style="text-align:center; margin-top:40px; font-size:14px;">' +
                 '<div style="margin-bottom:20px;">' + fmtDateDot(document.getElementById('comm_start_date').value) + '</div>' +
                 '<div style="font-size:16px; font-weight:700;">(주) 정도UIT 대표이사</div>' +
-                '<div style="font-size:11px; color:#999; margin-top:3px;">(직인)</div>' +
+                '<div style="font-size:11px; color:var(--muted); margin-top:3px;">(직인)</div>' +
                 '</div>' +
-                '<div style="margin-top:40px; border-top:1px solid #333; padding-top:15px;">' +
+                '<div style="margin-top:40px; border-top:1px solid var(--text); padding-top:15px;">' +
                 '<div style="font-size:14px; font-weight:600;">' + recipient + '</div>' +
                 '</div>' +
                 '<div style="margin-top:20px; font-size:12px;">' +
@@ -1712,7 +1713,7 @@
                 html += '<td>' + remark + '</td></tr>';
             }
             if (rows.length === 0) {
-                html += '<tr><td colspan="14" style="color:#aaa; text-align:center;">공정 항목 없음</td></tr>';
+                html += '<tr><td colspan="14" style="color:var(--muted); text-align:center;">공정 항목 없음</td></tr>';
             }
             html += '</tbody></table>';
 
@@ -1743,7 +1744,7 @@
                 '</div>' +
                 '<div style="text-align:center; margin-top:40px;">' +
                 '<div style="font-size:16px; font-weight:700;">(주) 정도UIT 대표이사</div>' +
-                '<div style="font-size:11px; color:#999; margin-top:3px;">(직인)</div>' +
+                '<div style="font-size:11px; color:var(--muted); margin-top:3px;">(직인)</div>' +
                 '</div>';
 
             openPreview('④ 현장대리인계', html);
@@ -1780,13 +1781,13 @@
                 html += '</tr>';
             }
             if (secRows.length === 0) {
-                html += '<tr><td colspan="5" style="color:#aaa; text-align:center;">과업참여자 등록 후 자동 반영</td></tr>';
+                html += '<tr><td colspan="5" style="color:var(--muted); text-align:center;">과업참여자 등록 후 자동 반영</td></tr>';
             }
 
             html += '</tbody></table>' +
                 '<div style="text-align:center; margin-top:40px;">' +
                 '<div style="font-size:16px; font-weight:700;">(주) 정도UIT 대표이사</div>' +
-                '<div style="font-size:11px; color:#999; margin-top:3px;">(직인)</div>' +
+                '<div style="font-size:11px; color:var(--muted); margin-top:3px;">(직인)</div>' +
                 '</div>';
 
             openPreview('⑤ 보안각서', html);
@@ -1821,7 +1822,7 @@
                     '<td>' + remark + '</td></tr>';
             }
             if (rows.length === 0) {
-                html += '<tr><td colspan="7" style="color:#aaa; text-align:center;">등록된 참여자 없음</td></tr>';
+                html += '<tr><td colspan="7" style="color:var(--muted); text-align:center;">등록된 참여자 없음</td></tr>';
             }
             html += '</tbody></table>';
 
@@ -1850,13 +1851,13 @@
             var html = '';
             if (persons.length === 0) {
                 html = '<h2 class="doc-title">보 안 서 약 서</h2>' +
-                    '<div style="text-align:center; color:#aaa; padding:40px;">과업참여자를 먼저 등록해주세요.</div>';
+                    '<div style="text-align:center; color:var(--muted); padding:40px;">과업참여자를 먼저 등록해주세요.</div>';
             } else {
                 for (var p = 0; p < persons.length; p++) {
-                    if (p > 0) html += '<div style="border-top:3px dashed #ccc; margin:40px 0;"></div>';
+                    if (p > 0) html += '<div style="border-top:3px dashed var(--border2); margin:40px 0;"></div>';
                     var typeLabel = p === 0 ? '대표자용' : persons[p].role;
                     html += '<h2 class="doc-title">보 안 서 약 서</h2>' +
-                        '<div style="text-align:right; font-size:11px; color:#888; margin-bottom:10px;">(' + typeLabel + ')</div>' +
+                        '<div style="text-align:right; font-size:11px; color:var(--muted); margin-bottom:10px;">(' + typeLabel + ')</div>' +
                         '<div style="margin-bottom:15px;">' +
                         '<strong>용역명:</strong> ' + pledgeName + '<br>' +
                         '<strong>계약기간:</strong> ' + pledgeFrom + ' ~ ' + pledgeTo +
@@ -1936,7 +1937,7 @@
             }
             html += '<tr><td style="text-align:center;">' + (no++) + '</td><td>소프트웨어 유지보수</td><td style="text-align:right;">' + Math.floor(swTotal).toLocaleString() + '</td><td></td></tr>';
             var subLabel = vatSep ? '소 계 (부가세 별도, 공급가액)' : '소 계 (부가세 포함)';
-            html += '<tr style="font-weight:700; background: #FAFAF9;"><td colspan="2" style="text-align:center;">' + subLabel + '</td><td style="text-align:right;">' + Math.floor(subTotal).toLocaleString() + '</td><td></td></tr>';
+            html += '<tr style="font-weight:700; background: var(--bg);"><td colspan="2" style="text-align:center;">' + subLabel + '</td><td style="text-align:right;">' + Math.floor(subTotal).toLocaleString() + '</td><td></td></tr>';
 
             var grandTotal;
             var rdSuffix = rdUnit > 0 ? ', ' + rounddownLabel(rdUnit) : '';
@@ -1952,7 +1953,7 @@
                 // 부가세 포함: subTotal 이 이미 부가세 포함
                 grandTotal = applyRounddown(subTotal * bidRate, rdUnit);
             }
-            html += '<tr style="font-weight:700; background:#e8f5e9;"><td colspan="2" style="text-align:center;">합 계 (낙찰율 ' + bidRateInput + '%' + rdSuffix + ')</td><td style="text-align:right;">' + grandTotal.toLocaleString() + '</td><td></td></tr>';
+            html += '<tr style="font-weight:700; background:#F0FDF4;"><td colspan="2" style="text-align:center;">합 계 (낙찰율 ' + bidRateInput + '%' + rdSuffix + ')</td><td style="text-align:right;">' + grandTotal.toLocaleString() + '</td><td></td></tr>';
             html += '</tbody></table>';
 
             // HW 상세
