@@ -10,7 +10,7 @@ created: "2026-06-01"
 - **작성팀**: 개발팀
 - **작성일**: 2026-06-01 (집 세션 / `IUHOME`)
 - **근거 기획서**: [[inspect-infra-diff-alert]] **v1.3 (사용자 최종승인 2026-06-01)** — codex 1·2차 반영분
-- **상태**: v2 (codex 1차 ⚠ 반영)
+- **상태**: v3 (codex 2차 검토 — "4-c 키별 추출 규칙 명시 시 승인 가능" 반영 → 승인 대기)
 - **다음 단계**: codex 검토 → 사용자 승인 → 구현
 
 ---
@@ -90,12 +90,23 @@ ALTER TABLE tb_infra_server DROP COLUMN IF EXISTS host_name;
 List<InspectMetricSnapshot> findLatestPerRoleHost(@Param("pjtId") Long pjtId);
 ```
 - `(server_role, COALESCE(host_name,''))` 별 `collected_at` 최신 1건 (동시각이면 snapshot_id 큰 것). 기존 적재 unique 키(`upsertIgnore` L121 `COALESCE(host_name,'')`)와 정렬 정합.
+- (codex 2차 안전권고) 외부 SELECT 는 `rn` 매핑 혼선 방지 위해 엔티티 컬럼 명시 가능 — Hibernate 가 보통 extra `rn` 무시하나 구현 시 선택.
 **4-c. allowlist 추출** — 서버측 단일 메서드가 raw_payload 에서 key 기준 추출 (R-8/R-15 — codex 검토 반영):
 - raw_payload = `Tier` 직렬화 (`HASH_MAPPER.writeValueAsString(tier)`, L426). **JSON 키 = `i`** (`Tier.items` 에 `@JsonProperty("i")`, L81), tuple = `[key, status, value]` → **key=index0, value=index2** (status=index1 무시). 호환: `i` 우선, 없으면 `items` fallback.
 - 호스트명 = raw_payload `h` (= host_name 컬럼 동일값, L70).
-- **하드웨어 스펙 키** (비교 대상): AP `ap.hw.cpu`·`ap.hw.memory`·`ap.os.disk_summary` / DB `db.os.cpu_info`·`db.os.mem_info`·`db.os.disk` (MANIFEST_SORT L193-216 검증).
-- **⚠ 컬럼 `cpu_pct/mem_pct/disk_pct` 는 성능 백분율**(차트용, L413-419)이라 **스펙 비교 미사용**. 비교는 위 hw 키의 value(index2)만.
-- value(index2) 실제 형태(문자열/객체)는 agent 산출물 의존 → **구현 시 실제 스냅샷 1건으로 검증** (R-15 잔여).
+- **⚠ 컬럼 `cpu_pct/mem_pct/disk_pct` 는 성능 백분율**(차트용, L413-419)이라 **스펙 비교 미사용**. 비교는 hw 키의 value(index2)만.
+- **value(index2) = Map(객체)** (codex 2차 확인 — 텍스트 아님). 키별 추출 규칙 = **기존 표시 로직 `ResultText` switch (L620-630) 재사용** (표시값과 비교값 동일 보장):
+
+  | key | Map subfield 추출 | 비교 입력 텍스트 |
+  |---|---|---|
+  | `ap.hw.cpu` | `name` + `cores` | `{name} {cores}코어` |
+  | `ap.hw.memory` | `installed_gb` | `{n}GB` |
+  | `ap.os.disk_summary` | `summary` | summary 텍스트 |
+  | `db.os.cpu_info` | `cores` + `clock_ghz` | `{c}코어 {g}GHz` |
+  | `db.os.mem_info` | `total_gb` | `{n}GB` |
+  | `db.os.disk` | `mounts` 배열 | mounts summary (배열 → 구현 시 실제 스냅샷 1건으로 추출식 확정) |
+
+  → 위 변환 텍스트를 `InfraServer.cpuSpec/memorySpec/diskSpec` 와 FR-10 정규화 비교. `db.os.disk` 만 배열이라 구현 시 샘플 검증 (R-15 잔여).
 - 응답 필드 = `serverRole·hostName·cpu·memory·disk` **만** (host_ip·status·기타 제외).
 **4-d. 컨트롤러** — `DocumentController` 에 `@GetMapping("/api/inspect-snapshots")` `@RequestParam Long pjtId`:
 - 권한 게이트 `if ("NONE".equals(getAuth())) 403` (getInfraServers 패턴 복제, NFR-8).
@@ -153,9 +164,13 @@ List<InspectMetricSnapshot> findLatestPerRoleHost(@Param("pjtId") Long pjtId);
 
 ## 4. codex 검토 결과
 - **codex 1차 (⚠ 수정필요) → v2 반영 완료**. 원문 = `docs/product-specs/reviews/inspect-infra-diff-execplan-codex-1st.md`.
-- 집중지점 3개 중 2개 보완: 4-a pjtId 직접수신 / 4-b tie-breaker / 4-c `i` 키·hw 추출 명세 + 누락(NFR-1/3/9 측정·T-10·FR-4(b) hook)·롤백 데이터손실 명시.
-- **⚠ 기획서 sync 필요**: 본 계획서가 Snapshot API 파라미터를 `distNm+sysNmEn` → **`pjtId`** 로 정정(codex 근거). 기획서 v1.3 의 FR-1/FR-3-1/NFR-9 도 v1.4 로 동기화 (별도 patch).
+  - 집중지점 3개 중 2개 보완: 4-a pjtId 직접수신 / 4-b tie-breaker / 4-c `i` 키·hw 추출 명세 + 누락(NFR-1/3/9 측정·T-10·FR-4(b) hook)·롤백 데이터손실 명시.
+  - 기획서 sync: Snapshot API param `distNm+sysNmEn` → `pjtId` → 기획서 v1.4.
+- **codex 2차 (⚠ — "수정 요구 작음, 4-c 키별 규칙 명시 시 승인 가능") → v3 반영 완료**. 원문 = `docs/product-specs/reviews/inspect-infra-diff-execplan-codex-2nd.md`.
+  - 4-a·4-b **해소 확인**. 4-c: `ap.hw.cpu` value 가 텍스트 아닌 `{name,cores}` 객체 → **키별 추출 규칙표 추가** (기존 `ResultText` L620-630 재사용). 4-b 외부 SELECT 컬럼명시 안전권고 반영.
+  - 잔여(비차단): infra-servers API 는 기존대로 distNm+sysNmEn 첫 인프라(기존동작 유지) · `db.os.disk` 배열 추출은 구현 시 샘플 확정.
 
 ## 5. 변경 이력
 - **2026-06-01 v1** (집 세션) — 기획서 v1.3 승인 기반 초안. 조사 결과(스냅샷 스키마 기보유·SwProject finder 부재·raw_payload items 구조) 반영. 다음 = codex 검토.
+- **2026-06-01 v3** (집 세션) — codex 2차 검토(⚠, "수정 요구 작음 → 승인 가능") 반영. 4-a·4-b 해소 확인. **4-c 키별 추출 규칙표** 추가 (`ap.hw.cpu`→`name`+`cores` 등, 기존 `ResultText` L620-630 재사용 — 표시값=비교값 보장). 4-b 외부 SELECT 컬럼명시 안전권고. 잔여(비차단): infra-servers 기존동작 유지·`db.os.disk` 배열 구현 시 샘플 확정. **다음 = 사용자 최종승인 → 구현**.
 - **2026-06-01 v2** (집 세션) — codex 1차 검토(⚠) 반영. **(1)** Snapshot API `distNm+sysNmEn`→`pjtId` 직접수신 (doc-inspect projId 보유 검증, 과거회차/연도중복 오선택 제거, SwProject finder 폐기). **(2)** 최신1건 쿼리 native window + snapshot_id tie-break. **(3)** raw_payload JSON 키 `i`(@JsonProperty) + hw 키 value(index2) 추출 명세, cpu_pct 컬럼=성능% 미사용 명시. **(4)** Step7 에 NFR-1/3/9 측정·T-10·FR-4(b) 저장 hook 추가. **(5)** 롤백 데이터손실성 명시. 기획서 v1.4 sync 항목 발생.
