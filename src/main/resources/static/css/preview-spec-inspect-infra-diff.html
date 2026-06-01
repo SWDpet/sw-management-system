@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>기획서 부속 시안 — inspect-infra-diff-alert</title>
+<link rel="stylesheet" href="/css/design-system.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  body { font-family: var(--font); background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+  .layout { max-width: 1080px; margin: 0 auto; padding: 28px 32px 64px; }
+
+  /* 상단 결정 요약 박스 (AGENTS.md §8 권고) */
+  .summary {
+    background: linear-gradient(135deg, var(--primary-lt) 0%, #fff 100%);
+    border: 1px solid #5EEAD4;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .summary h1 {
+    font-size: 1.3rem; margin: 0 0 4px; color: var(--primary2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .summary h1 i { color: var(--primary); }
+  .summary .meta { font-size: 0.82rem; color: var(--text2); margin-bottom: 14px; }
+  .summary .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; font-size: 0.88rem; }
+  .summary .grid > div { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  .summary .grid > div strong { color: var(--primary2); display: block; margin-bottom: 4px; font-size: 0.86rem; }
+  .summary .grid > div ul { margin: 4px 0 0 16px; padding: 0; color: var(--text2); font-size: 0.83rem; }
+  .summary .actions {
+    margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;
+    font-size: 0.85rem; color: var(--text2);
+  }
+  .summary .actions .ds-btn { font-size: 0.82rem; }
+
+  /* 마크다운 본문 렌더링 영역 */
+  .md-body {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px 32px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  .md-body h1 { font-size: 1.55rem; color: var(--primary2); border-bottom: 2px solid var(--primary-lt); padding-bottom: 8px; margin-top: 0; }
+  .md-body h2 { font-size: 1.2rem; color: var(--primary2); margin-top: 32px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .md-body h3 { font-size: 1rem; color: var(--text); margin-top: 22px; }
+  .md-body blockquote {
+    background: var(--surface-2); border-left: 4px solid var(--primary);
+    padding: 10px 16px; margin: 16px 0; color: var(--text2); font-size: 0.9rem; border-radius: 0 6px 6px 0;
+  }
+  .md-body code {
+    background: var(--surface-2); padding: 1px 6px; border-radius: 4px;
+    font-family: var(--font-mono); font-size: 0.86em; color: var(--primary2);
+  }
+  .md-body pre {
+    background: var(--text); color: #fff; padding: 14px 18px; border-radius: 8px;
+    overflow-x: auto; font-family: var(--font-mono); font-size: 0.85rem;
+  }
+  .md-body pre code { background: transparent; color: #fff; padding: 0; }
+  .md-body table {
+    width: 100%; border-collapse: collapse; margin: 14px 0;
+    font-size: 0.88rem;
+  }
+  .md-body table th {
+    background: var(--primary-lt); color: var(--primary2);
+    padding: 10px 12px; text-align: left; border-bottom: 1px solid #5EEAD4;
+    font-weight: 700;
+  }
+  .md-body table td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .md-body table tr:hover td { background: var(--surface-2); }
+  .md-body ul, .md-body ol { padding-left: 22px; }
+  .md-body li { margin: 4px 0; }
+  .md-body strong { color: var(--text); font-weight: 700; }
+  .md-body hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .md-body p { line-height: 1.7; }
+
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 0.72rem; font-weight: 700; color: #fff; margin-left: 6px;
+  }
+  .badge.warn { background: var(--warning); }
+  .badge.info { background: var(--info); }
+  .badge.draft { background: var(--text2); }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- 상단 결정 요약 -->
+  <div class="summary">
+    <h1>
+      <i class="fas fa-flag-checkered"></i>
+      기획서 v1 초안 — 점검내역서 인프라-현장 데이터 차이 알림
+      <span class="badge draft">draft v1</span>
+    </h1>
+    <div class="meta">
+      Sprint <code>inspect-infra-diff-alert</code> · SSoT: <code>docs/product-specs/inspect-infra-diff-alert.md</code> · 작성 2026-06-01 사무실 세션 · 워크플로우: 풀 (codex 포함)
+    </div>
+
+    <div class="grid">
+      <div>
+        <strong><i class="fas fa-bullseye"></i> 목적</strong>
+        인프라 DB (InfraServer) 값 ↔ 현장 수집값(InspectMetricSnapshot.raw_payload) 비교 → 차이 시 ⚠ 알림. <strong>액션 없음</strong> (자동 수정 X, 저장 차단 X) — 사용자 인지 + 수동 수정 유도.
+      </div>
+      <div>
+        <strong><i class="fas fa-list-check"></i> 확정된 핵심 FR (FR-4·5·6·7)</strong>
+        <ul>
+          <li>알림 시점 = 페이지 로드 + 저장 시 재확인</li>
+          <li>알림 표현 = 인라인 ⚠ + 상단 요약 박스 (둘 다)</li>
+          <li>액션 없음 / dismiss 가능</li>
+          <li>비교 로직 = 프론트 JS (백엔드 모델 변경 0)</li>
+        </ul>
+      </div>
+      <div>
+        <strong><i class="fas fa-database"></i> DB팀 자문 필요 (5건)</strong>
+        <ul>
+          <li>raw_payload JSON schema 매핑</li>
+          <li>hostname 컬럼 위치 (InfraServer 에 없음)</li>
+          <li>사용자 수동 입력 form 필드 포함 여부</li>
+          <li>InspectCheckResult 도 비교 source?</li>
+          <li>다중 호스트 매칭 키</li>
+        </ul>
+      </div>
+      <div>
+        <strong><i class="fas fa-palette"></i> 디자인팀 자문 필요 (4건)</strong>
+        <ul>
+          <li>알림 박스 위치 (3안 시안)</li>
+          <li>인라인 ⚠ + 툴팁 구현 방식</li>
+          <li>색 강도 (`--warning` vs `--scope-std` 톤)</li>
+          <li>dismiss UX (localStorage / 세션 / 매번)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="actions">
+      <strong style="color:var(--text);">👇 사용자 검토 액션:</strong>
+      <span>(i) 큰 방향 OK → DB팀 + 디자인팀 자문 시작</span>
+      <span>·</span>
+      <span>(ii) 수정/추가 요구사항 있으면 알려주세요</span>
+      <span>·</span>
+      <span>(iii) FR-9 (한글 라벨) / FR-10 (정규화 룰) / R-2 (단계적 도입) 세부 의견</span>
+    </div>
+  </div>
+
+  <!-- 마크다운 본문 렌더링 영역 -->
+  <div class="md-body" id="mdBody"></div>
+
+</div>
+
+<!-- 마크다운 raw 본문 — marked.js 가 변환 -->
+<script type="text/markdown" id="mdSrc">
+# 점검내역서 — 인프라 저장값 ↔ 현장 수집값 차이 알림 (inspect-infra-diff-alert)
+
+> **Status**: `draft v1` (2026-06-01, 사무실 세션 / 회사 PC = `IU` 호스트)
+> **Sprint**: `inspect-infra-diff-alert`
+> **선행/관련**: 직전 `design-token-migration` sprint 완료 (commit `8e1d801`)
+> **워크플로우**: 풀 (기획서 → DB팀 + 디자인팀 병렬 자문 → codex → 사용자 승인 → 개발계획 → codex → 구현 → codex 검증)
+
+---
+
+## 1. 목적
+
+점검내역서(`doc-inspect`) 작성·열람 시, **인프라 자산 DB(`InfraServer` / `tb_infra_server`)에 저장된 값**과 **현장 점검에서 수집/입력된 값**(자동 QR 배치 적재 `InspectMetricSnapshot.raw_payload` + 사용자 수동 입력 form 필드) 사이에 **차이가 있으면 사용자에게 알림**.
+
+**액션 없음** — 자동 수정 / 저장 차단 / 인프라 DB 자동 업데이트 X. 단순 알림으로 사용자(현장 담당자)가 인지 → 확인 → 인프라 정보 페이지에서 수동 수정 유도.
+
+## 2. 배경 / Why
+
+- 현재 `doc-inspect.html` 은 페이지 로드 시 `/document/api/infra-servers?distNm=...&sysNmEn=...` 로 인프라 13 필드 응답을 받아 점검 입력 영역에 미리 채움 (DocumentController L1707).
+- 그러나 현장에서 측정된 실제 값이 인프라 DB 값과 다를 때 자동 비교/알림이 없음 → 인프라 DB 가 stale 한 채로 누적되고, 다른 시스템(성과 리포트, 점검 자동화 RAG 등) 정확도에 영향.
+- 사용자 결정 (2026-06-01): **알림만**, 자동 수정은 위험 → 사용자 의사결정 유지.
+
+## 3. 사용자 / 이해관계자
+
+- **점검 담당자 (현장)** — 점검내역서 작성 시 차이 인지 → 확인 후 인프라 페이지에서 수정
+- **인프라 관리자** — 수정 권한
+- (간접) 운영팀 — 인프라 DB 정합성이 점진적으로 개선됨
+
+## 4. FR (Functional Requirements)
+
+| ID | 요건 |
+|---|---|
+| **FR-1** | 점검내역서 페이지 로드 시 인프라 정보 API 호출 (현재 동작 유지) + 동시에 해당 사업의 최근 `InspectMetricSnapshot` (또는 점검 form 입력값) 로드 |
+| **FR-2** | **양방향 비교** — 비교 대상 필드별로 (인프라값 vs 현장값) 비교. 양쪽 모두 있고 다르면 ⚠ 알림. 한쪽만 있고 다른 쪽은 빈 칸인 경우도 알림 (방향 라벨 포함) |
+| **FR-3** | **비교 대상 필드** (1차안 — DB팀 자문 후 확정): InfraServer API 응답 13 필드 중 비교 의미가 있는 항목 ↔ Snapshot.raw_payload 의 대응 필드. **직접 매핑 명확**: `ipAddr ↔ raw_payload.host.ip` · `osNm/osDetail ↔ raw_payload.os.*` · `(InfraServer에 hostname 컬럼 없음 — server_model 또는 별도 매핑 검토)` **spec 비교 필요**: `cpuSpec / memorySpec / diskSpec / networkSpec / powerSpec / serialNo / serverModel ↔ raw_payload.hw.*` (raw_payload schema 확정 후 정밀 매핑) **제외**: `note` (자유 메모), `acc_id/acc_pw` (API 응답에서 이미 제외), MAC (보안) |
+| **FR-4** | **알림 시점** — (a) 페이지 로드 직후 비교 → 차이 시 알림 표시 · (b) 저장 버튼 클릭 시 재비교 → 차이 있으면 한 번 더 알림(저장 차단 X, 사용자 dismiss 가능) |
+| **FR-5** | **알림 표현 — 인라인** — 차이가 있는 셀(혹은 입력 필드) 옆에 `fa-triangle-exclamation` ⚠ 아이콘 + hover/click 툴팁: `인프라값: [X] / 현장값: [Y]` |
+| **FR-6** | **알림 표현 — 상단 요약 박스** — `doc-inspect` 표 상단에 dismissible 박스 `⚠ 인프라와 다른 필드 N개` + 접기/펼치기. 펼치면 필드명·인프라값·현장값 목록 |
+| **FR-7** | **액션 없음** — 단순 알림. 인프라 DB 자동 업데이트 X. 저장 진행 차단 X. 인프라 페이지 바로가기 링크는 포함 가능 (선택) |
+| **FR-8** | **dismiss 동작** — 사용자가 상단 박스를 닫을 수 있음. 닫아도 인라인 ⚠ 아이콘은 유지 (개별 셀에서 즉시 확인 가능) |
+| **FR-9** | **필드명 한글 라벨** — 사용자에게는 한글 라벨로 표시 (예: `cpuSpec` → "CPU 사양") |
+| **FR-10** | **정규화 비교** — IP/hostname/OS 같은 필드는 공백 trim + 대소문자 무시 후 비교 (false positive 방지) |
+
+## 5. NFR (Non-Functional Requirements)
+
+| ID | 요건 |
+|---|---|
+| **NFR-1** | 페이지 로드 성능: 비교 로직 추가로 인한 page load time 증가 ≤ **200ms** (서버 N=1~5, 필드 ~13 기준) |
+| **NFR-2** | **알림 UI 는 `design-system.css` 토큰만 사용** — raw hex 금지. `--warning` (#D97706) 활용. 새 토큰 필요 시 design-system.css :root 에 신설 |
+| **NFR-3** | **WCAG AA 색 대비 통과** — 알림 배경/글씨 / 인라인 아이콘 모두 4.5:1 이상 |
+| **NFR-4** | **라이트/다크 모드 일관성** — 알림 표시 양쪽에서 정상 보임. 다크 변종 명시 |
+| **NFR-5** | **CSS specificity 충돌 없음** — 클래스 selector specificity 매트릭스 사전 점검 (2026-06-01 main-dashboard 사례 학습) |
+| **NFR-6** | **:root 토큰 self-reference 없음** — doc-inspect.html 도 :root 토큰 정의 시 design-system.css SoT 와 동일 hex 값 (main-dashboard 사례 학습) |
+| **NFR-7** | **기존 점검 흐름 회귀 0건** — 인프라 API 호출, 점검 입력, 저장 흐름 동일 |
+| **NFR-8** | **권한** — 점검내역서 VIEW 권한 이상에서 표시 (인프라 API 와 동일 정책) |
+
+## 6. T (Test scenarios)
+
+| ID | 시나리오 | 기대 |
+|---|---|---|
+| **T-1** | 인프라값 == 현장값 (모든 필드 일치) | 알림 없음 |
+| **T-2** | 1개 필드 차이 (예: cpuSpec) | 상단 박스 "1개" + 해당 셀 ⚠ |
+| **T-3** | 5개 필드 차이 | 상단 박스 "5개" + 각 셀 ⚠ |
+| **T-4** | 인프라값 있고 현장값 빈 칸 | 알림 + 라벨 "현장 미수집" |
+| **T-5** | 인프라값 빈 칸이고 현장값 있음 | 알림 + 라벨 "인프라 미등록" |
+| **T-6** | 정규화 차이 (`192.168.1.1` vs ` 192.168.1.1 `) | 알림 없음 (NFR FR-10) |
+| **T-7** | 페이지 로드 → 상단 박스 dismiss → 인라인 ⚠ 유지 확인 | OK |
+| **T-8** | 저장 버튼 클릭 → 차이 있을 때 한 번 더 알림 → dismiss/저장 진행 | OK |
+| **T-9** | 인프라 서버 N=0 (조회 결과 없음) | 알림 표시 없음 (현재 동작 유지) |
+| **T-10** | 다크모드 토글 → 알림 색·대비 정상 | OK |
+| **T-11** | 점검내역서 VIEW 권한 없음 (`NONE`) | 알림 표시 안 함 (현재 API 403 처리 그대로) |
+
+## 7. 데이터 모델 영향
+
+- **신규 테이블/컬럼 없음** — FR-7 (자동 업데이트 X) 에 따라 비교 결과를 별도 저장하지 않음
+- 비교 로직은 **프론트엔드 JavaScript** (doc-inspect.html 내) 에서 수행
+- 백엔드 변경 = 잠재적으로 `InspectMetricSnapshot.raw_payload` 의 일부 필드 추출 API 추가 가능 (기존 인프라 API 와 별도 또는 통합)
+
+## 8. UI / 디자인
+
+- **인라인 알림**: FontAwesome `fa-triangle-exclamation` + `--warning` 토큰 색 + 툴팁 (CSS `:hover` + `[data-tooltip]` 또는 small popover)
+- **상단 요약 박스**: design-system.css `--warning` 톤. 펼침/접힘 토글 (FontAwesome chevron). dismiss `×` 버튼
+- **다크 변종**: 알림 박스 배경 어둡게(amber-800), 글씨 amber-200 / 인라인 아이콘 amber-400
+- **디자인팀 자문 필요** — 시안 옵션 (a/b/c) 비교: 박스 위치 (표 위 vs 페이지 헤더 옆), 펼침 동작, 색 정도
+
+## 9. DB팀 자문 필요 사항 (📋)
+
+1. **`InspectMetricSnapshot.raw_payload` JSON schema** 확정 — agent-windows/agent-unix `snapshot.json` 의 정확한 구조 (`host.*`, `os.*`, `hw.cpu/memory/disk/network/power.*`)
+2. **`hostname` 필드 위치** — InfraServer 에 hostname 컬럼 없음. agent 가 측정한 hostname 은 어디 매핑? (server_model 또는 별도 컬럼 신설?)
+3. **사용자 수동 입력 form 필드** — doc-inspect 에서 점검 시 사용자가 직접 입력하는 필드(현장 측정 결과) 가 어디 저장되나? (`InspectCheckResult` ?) 비교 source 에 포함할지 결정
+4. **비교 source 선택** — `InspectMetricSnapshot.raw_payload` 만 vs `InspectCheckResult` 도 포함 vs 둘 다
+5. **다중 호스트(이중화/RAC) 처리** — `InfraServer` N개 ↔ `InspectMetricSnapshot` N개 매칭. 매칭 키 = `(host_name, server_role)` 또는 `(ip_addr, server_type)`?
+
+## 10. 디자인팀 자문 필요 사항 (🎨)
+
+1. **알림 박스 위치** — `doc-inspect` 페이지 헤더 바로 아래 vs 점검 표 바로 위 vs 사이드 패널 (3안 시안)
+2. **인라인 ⚠ 아이콘 + 툴팁** — popover 라이브러리 사용 (e.g. FontAwesome built-in tooltip) vs 순수 CSS `:hover`
+3. **색 강도** — `--warning` 그대로 vs 한 톤 부드럽게 (amber-100 배경 + amber-700 글씨, 2-a `--scope-std` 톤과 일관)
+4. **dismiss UX** — 닫은 박스 영구 기억(localStorage) vs 세션 한정 vs 페이지 reload 시 다시 표시
+
+## 11. 리스크
+
+| ID | 리스크 | 대응 |
+|---|---|---|
+| **R-1** | 비교 로직 성능 — 다중 서버 + 큰 raw_payload | NFR-1 측정. 임계 초과 시 비교를 백엔드로 이관 |
+| **R-2** | 알림 노이즈 — 모든 차이 표시 시 부담 | 단계적 도입: 우선 핵심 6~7개 필드만 → 사용 후 확장 |
+| **R-3** | False positive (정규화 차이) | FR-10 정규화 룰. 단위 테스트 필수 |
+| **R-4** | 인프라 DB null vs 현장값 있음 — 어느쪽이 진실? | T-5 시나리오 라벨 "인프라 미등록" 명시. 사용자가 판단 |
+| **R-5** | raw_payload schema 변경 시 깨짐 | 매핑 코드 1곳 집중. agent 버전 호환성 메모 |
+| **R-6** | dismiss 상태 저장 위치 | localStorage 권고 (사용자별·페이지별). 디자인팀 자문 |
+
+## 12. 자문 결과 (다음 단계에서 채움)
+
+- **DB팀 (📋)**: _작성 예정_
+- **디자인팀 (🎨)**: _작성 예정_
+- **codex 검토**: _작성 예정 (prompt 에 본 기획서 본문 embed 후 호출)_
+
+## 13. 변경 이력
+
+- **2026-06-01 v1 초안** (사무실 세션) — 사전 조사 (InfraServer / InspectMetricSnapshot / DocumentController.getInfraServers) 기반 작성. DB팀 자문에 raw_payload schema 매핑 위임. UI 시안은 디자인팀 자문에 위임.
+</script>
+
+<script>
+  const md = document.getElementById('mdSrc').textContent;
+  marked.setOptions({ gfm: true, breaks: false });
+  document.getElementById('mdBody').innerHTML = marked.parse(md);
+</script>
+
+</body>
+</html>
