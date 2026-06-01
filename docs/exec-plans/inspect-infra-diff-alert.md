@@ -182,7 +182,28 @@ List<InspectMetricSnapshot> findLatestPerRoleHost(@Param("pjtId") Long pjtId);
 - **⏭ FR-5 인라인 ⚠ popover = 보류(후속)**: 점검표 각 셀↔(서버,필드) DOM 매핑 추가분석 필요 + 표출 실데이터(스냅샷 0건) 없음 → 상단 요약박스(FR-6)로 기능 동작 확보 후 후속 sprint. 데이터 적재 시 함께 구현 권장.
 - **데이터 전제**: `inspect_metric_snapshot` 운영 0건 + infra host_name 전부 NULL → 실제 차이 표출은 스냅샷 적재 + host_name 입력 후 (R-13/R-15).
 
+## 4-2. Step 7 검증·측정 결과 (2026-06-02, 회사 PC / 내부망)
+
+서버 기동(`server-restart.sh`, local 프로파일, 운영DB 연결) 후 헤드리스 측정. 인증 세션 쿠키 = **`SWMANAGER_SESSION`** (JSESSIONID 아님 — 커스텀 세션 쿠키명).
+
+| 항목 | 목표 | 측정 | 판정 |
+|---|---|---|---|
+| **NFR-3** alert 대비 (계산) | ≥4.5:1 | 라이트 본문/아이콘(=fg) `#B45309`/`#FEF3C7` **4.51:1**, 다크 본문 `#FDE68A`/`#451A03` **12.03:1**, 다크 아이콘 `#FBBF24`/`#451A03` **8.97:1** | ✅ PASS |
+| **NFR-9** Snapshot API P95 | ≤300ms | P50 3.5 / **P95 4.5** / P99 20.3 / max 28.1ms (n=100) | ✅ PASS |
+| **NFR-1** 페이지 로드 증가 | ≤200ms | 추가 부하 = 신규 `inspect-snapshots` fetch(P95 4.5ms, 기존 infra fetch 와 `Promise.all` 병렬) + JS 비교(≤5서버×4필드). doc-inspect 페이지 렌더 P95 26.7ms | ✅ PASS (여유 막대 / 브라우저 on-off DevTools 정밀측정은 미실시) |
+| **회귀(NFR-7)** infra-servers API | 무회귀 | `hostName` 추가 후 dummy 파라미터 200 + `[]`, 크래시 없음. doc-inspect 페이지 200 | ✅ PASS |
+| **T-10** 다크모드 알림 시각 | alert 색·대비 | 색·대비는 NFR-3(라이트+다크 AA)로 검증. **실제 알림박스 시각 렌더는 미검증** | ⚠ 부분 — 데이터 종속 |
+
+### 측정으로 드러난 잔여/플래그
+1. **`--alert-icon #D97706` = 2.86:1 FAIL** (라이트, `#FEF3C7` 위). 현재 출고 컴포넌트(`#infraDiffAlert`)는 아이콘에 `--alert-fg` 사용(4.51:1 PASS)이라 무해하나, **죽은 토큰**. → **FR-5 인라인 popover 후속 구현 시 이 토큰을 그대로 쓰면 AA 위반** → `--alert-fg`/더 진한 값으로 교체 필요.
+2. **0건 데이터 baseline 한계**: 운영 `inspect_metric_snapshot` 0건 + infra host_name 전부 NULL → NFR-9/NFR-1 은 빈결과 경로 측정(대표성 제한), **T-10 시각 검증·FR-5 표출은 불가**. 실 차이 표출 검증은 스냅샷 적재 + host_name 입력 후 후속.
+3. **`db.os.disk` mounts 배열 추출**(R-15 잔여) — 실 스냅샷 샘플 필요(현재 0건).
+
+### Step 7 종합 판정
+정량 게이트(NFR-1/3/9)·회귀 **PASS**. **데이터 종속 항목**(T-10 시각·FR-5·db.os.disk 배열·alert-icon 교체)은 스냅샷 적재 + host_name 입력 시점의 후속 sprint 로 이월. → 본 sprint 의 **코드/품질 게이트는 마감 가능**.
+
 ## 5. 변경 이력
+- **2026-06-02** (회사 PC / 내부망) — Step 7 검증·측정 수행, §4-2 추가. NFR-1/3/9·회귀 PASS. alert-icon 죽은 토큰 AA FAIL 플래그(FR-5 시 교체). 데이터 종속 항목(T-10 시각·FR-5·db.os.disk 배열) 후속 이월. 코드/품질 게이트 마감 가능 판정.
 - **2026-06-01 v1** (집 세션) — 기획서 v1.3 승인 기반 초안. 조사 결과(스냅샷 스키마 기보유·SwProject finder 부재·raw_payload items 구조) 반영. 다음 = codex 검토.
 - **2026-06-01 v3** (집 세션) — codex 2차 검토(⚠, "수정 요구 작음 → 승인 가능") 반영. 4-a·4-b 해소 확인. **4-c 키별 추출 규칙표** 추가 (`ap.hw.cpu`→`name`+`cores` 등, 기존 `ResultText` L620-630 재사용 — 표시값=비교값 보장). 4-b 외부 SELECT 컬럼명시 안전권고. 잔여(비차단): infra-servers 기존동작 유지·`db.os.disk` 배열 구현 시 샘플 확정. **다음 = 사용자 최종승인 → 구현**.
 - **2026-06-01 v2** (집 세션) — codex 1차 검토(⚠) 반영. **(1)** Snapshot API `distNm+sysNmEn`→`pjtId` 직접수신 (doc-inspect projId 보유 검증, 과거회차/연도중복 오선택 제거, SwProject finder 폐기). **(2)** 최신1건 쿼리 native window + snapshot_id tie-break. **(3)** raw_payload JSON 키 `i`(@JsonProperty) + hw 키 value(index2) 추출 명세, cpu_pct 컬럼=성능% 미사용 명시. **(4)** Step7 에 NFR-1/3/9 측정·T-10·FR-4(b) 저장 hook 추가. **(5)** 롤백 데이터손실성 명시. 기획서 v1.4 sync 항목 발생.
