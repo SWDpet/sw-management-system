@@ -7,10 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* 2025 Cool-Warm Hybrid · Indigo accent */
-            --primary:   var(--primary);   /* indigo-600 */
-            --primary2:  var(--primary2);   /* indigo-700 */
-            --primary-lt:var(--primary-lt);   /* indigo-50 */
+            /* Deep Teal (design-system.css SoT 와 일치) */
+            --primary:    #0F766E;   /* teal-700 */
+            --primary2:   #115E59;   /* teal-800 */
+            --primary-lt: #F0FDFA;   /* teal-50 */
             --bg:        #FAFAF9;   /* 살짝 웜 오프화이트 */
             --surface:   #FFFFFF;
             --surface-2: #F5F5F4;   /* stone-100, hover/선택 */
@@ -172,9 +172,9 @@
         .table-title i { color: var(--primary); }
         table { width: 100%; border-collapse: collapse; min-width: 1300px; }
         th {
-            background: var(--surface); padding: 14px 10px;
+            background: var(--primary-lt); padding: 14px 10px;
             font-size: 0.74em; border-bottom: 1px solid var(--border);
-            text-align: center; white-space: nowrap; color: var(--muted);
+            text-align: center; white-space: nowrap; color: var(--primary2);
             font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
         }
         th.th-group-amt { background: var(--primary-lt); color: var(--primary2); text-transform: none; letter-spacing: 0.02em; font-size: 0.78em; }
@@ -193,13 +193,16 @@
         tbody tr { transition: background 0.12s, box-shadow 0.12s; }
         tbody tr:hover { background-color: #FAFAF9; box-shadow: inset 3px 0 0 0 var(--primary); }
 
-        /* 합계 행 */
+        /* 합계 행 — 진한 teal 강조 (B안) */
         tfoot td {
-            background: var(--primary-lt); font-weight: 700; color: var(--primary2);
-            border-top: 1px solid #5EEAD4; padding: 14px 10px;
+            background: var(--primary); font-weight: 700; color: #fff;
+            border-top: 1px solid var(--primary2); padding: 14px 10px;
             white-space: nowrap; font-family: 'Inter', sans-serif;
             font-variant-numeric: tabular-nums;
         }
+        tfoot td.td-total { background: var(--primary2); }
+        /* 합계 행 셀 글씨 색상 통일 (진한 teal 배경 위 흰 글씨 — 식인성 확보) */
+        tfoot td.td-sys, tfoot td.td-cnt, tfoot td.td-comp, tfoot td.td-prog, tfoot td.td-total { color: #fff; }
 
         /* 폼 — teal focus ring */
         input:focus, select:focus, textarea:focus {
@@ -318,8 +321,9 @@
         [data-theme="dark"] .td-total { background: #0D3F3A; color: #5EEAD4; }
         [data-theme="dark"] tbody tr:hover { background: var(--surface-2); }
         [data-theme="dark"] tfoot td {
-            background: #0D3F3A; color: #5EEAD4; border-top-color: var(--primary);
+            background: var(--primary); color: #fff; border-top-color: var(--primary2);
         }
+        [data-theme="dark"] tfoot td.td-total { background: var(--primary2); }
         [data-theme="dark"] .page-title h2 { color: var(--text); }
         [data-theme="dark"] nav {
             background: var(--surface) !important;
