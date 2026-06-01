@@ -1,6 +1,6 @@
 # 점검내역서 — 인프라 저장값 ↔ 현장 수집값 차이 알림 (inspect-infra-diff-alert)
 
-> **Status**: `draft v1.3` (2026-06-01, 집 세션 / 집 PC = `IUHOME` 호스트) — codex 2차 검토 (⚠ 수정필요) 반영: 매칭 키 `host_ip`→`host_name` 정정(코드 L398 hostIp=null), 1차 비교범위 4필드 통일, T-3·NFR-1 정합, raw_payload items 구조 명시, host_name 입력 UI 본 sprint 승격, 신규 리스크 R-12~R-15. **B안 (host_name 컬럼 신설) 확정 유지**
+> **Status**: `draft v1.4` (2026-06-01, 집 세션 / 집 PC = `IUHOME` 호스트) — v1.3=codex 2차 반영(매칭키 host_name·4필드·R-12~R-15). **v1.4=개발계획 codex 검토로 Snapshot API param `distNm+sysNmEn`→`pjtId` 정정** (FR-1/NFR-9). **B안 (host_name 컬럼 신설) 확정 유지**
 > codex 2차 원문: `docs/product-specs/reviews/inspect-infra-diff-codex-2nd.md`
 > **Sprint**: `inspect-infra-diff-alert`
 > **선행/관련**: 직전 `design-token-migration` sprint 완료 (commit `8e1d801`)
@@ -30,7 +30,7 @@
 
 | ID | 요건 |
 |---|---|
-| **FR-1** | 점검내역서 페이지 로드 시 인프라 정보 API 호출 (현재 동작 유지) + 동시에 신규 Snapshot API `GET /document/api/inspect-snapshots?distNm=...&sysNmEn=...` 호출. 매칭 키 = `(normalize(server_role), normalize(host_name))` (FR-3-1 참조 — codex 2차 R-12 로 `host_ip`→`host_name` 정정) |
+| **FR-1** | 점검내역서 페이지 로드 시 인프라 정보 API 호출 (현재 동작 유지) + 동시에 신규 Snapshot API `GET /document/api/inspect-snapshots?pjtId=...` 호출 (v1.4 — 개발계획 codex 검토로 `distNm+sysNmEn`→`pjtId` 정정. doc-inspect 가 projId 보유, 과거회차/연도중복 오선택 방지). 매칭 키 = `(normalize(server_role), normalize(host_name))` (FR-3-1 참조 — codex 2차 R-12 로 `host_ip`→`host_name` 정정) |
 | **FR-2** | **양방향 비교** — 비교 대상 필드별로 (인프라값 vs 현장값) 비교. 양쪽 모두 있고 다르면 ⚠ 알림. 한쪽만 있고 다른 쪽은 빈 칸인 경우도 알림 (방향 라벨 포함) |
 | **FR-3** | **비교 대상 필드 — 1차/2차 분리** (codex 1차 권고 #2): <br>**【1차 sprint 범위】** 4 필드만 비교: `host_name` (신규 컬럼 — §7 B안) · `cpuSpec` · `memorySpec` · `diskSpec` <br>**【2차 후보】** 후속 sprint 에서 확장: `osNm` / `osDetail` / `networkSpec` / `powerSpec` / `serialNo` / `serverModel` <br>**【영구 제외】** `ipAddr` (매칭 키로만 사용) · `note` (자유 메모) · `acc_id/acc_pw` · MAC (보안) |
 | **FR-3-1** | **매칭 키 & 정규화** — `(normalize(server_role), normalize(host_name))`. <br>**host_ip 미사용 이유 (codex 2차 R-12)**: `InspectionQrBatchService` L398 이 Snapshot 적재 시 `hostIp = null` (payload schema 에 IP 필드 없음) → `host_ip` 매칭은 현재 데이터로 항상 실패. host_name 은 동 L397 `hostName = tier.getH()` 로 정상 적재됨. <br>server_type "WEB" → server_role "ap" 정규화 (동 서비스 기존 패턴). host_name 정규화 = trim + 대소문자 무시 |
@@ -56,7 +56,7 @@
 | **NFR-6** | **:root 토큰 self-reference 없음** — doc-inspect.html 도 :root 토큰 정의 시 design-system.css SoT 와 동일 hex 값 (main-dashboard 사례 학습) |
 | **NFR-7** | **기존 점검 흐름 회귀 0건** — 인프라 API 호출, 점검 입력, 저장 흐름 동일 |
 | **NFR-8** | **권한** — 점검내역서 VIEW 권한 이상에서 표시 (인프라 API 와 동일 정책). 신규 Snapshot API 도 동일 VIEW 권한 (NONE 차단) |
-| **NFR-9** | **신규 Snapshot API 명세** (codex 1차 권고 #4 / 2차 보강): <br>URL: `GET /document/api/inspect-snapshots?distNm=...&sysNmEn=...` <br>응답: 매칭 가능 형태 (server_role / host_name / cpu / memory / disk allowlist 필드만, R-8 대응. **host_ip 제외** — 적재값 null) <br>**최신 row 선택 기준 (codex 2차 R-14)**: 동일 `(프로젝트, server_role, host_name)` 에 `collected_at` 다중 row 존재 시 **`collected_at` 최신 1건** 반환 (점검월 무관, 가장 최근 수집값 기준). 서버측 정렬·dedup. <br>**빈 결과 vs 실패 UX 분기 (codex 2차 문제6)**: HTTP **200 + 빈 배열** = "현장 미수집"(T-12, 알림 표시) / HTTP **4xx·5xx** = silent skip + console.error(T-14, 알림 미표시). 둘은 명확히 다른 경로 <br>권한: VIEW 이상 (NFR-8) <br>응답 시간 목표: P95 ≤ **300ms** (서버 N≤5) |
+| **NFR-9** | **신규 Snapshot API 명세** (codex 1차 권고 #4 / 2차 보강 / v1.4 param 정정): <br>URL: `GET /document/api/inspect-snapshots?pjtId=...` (개발계획 codex 검토 — `distNm+sysNmEn`→`pjtId`) <br>응답: 매칭 가능 형태 (server_role / host_name / cpu / memory / disk allowlist 필드만, R-8 대응. **host_ip 제외** — 적재값 null) <br>**최신 row 선택 기준 (codex 2차 R-14)**: 동일 `(프로젝트, server_role, host_name)` 에 `collected_at` 다중 row 존재 시 **`collected_at` 최신 1건** 반환 (점검월 무관, 가장 최근 수집값 기준). 서버측 정렬·dedup. <br>**빈 결과 vs 실패 UX 분기 (codex 2차 문제6)**: HTTP **200 + 빈 배열** = "현장 미수집"(T-12, 알림 표시) / HTTP **4xx·5xx** = silent skip + console.error(T-14, 알림 미표시). 둘은 명확히 다른 경로 <br>권한: VIEW 이상 (NFR-8) <br>응답 시간 목표: P95 ≤ **300ms** (서버 N≤5) |
 | **NFR-10** | **마이그레이션 안전 정책** (codex 1차 권고 R-11) — `host_name` 컬럼 추가는 Flyway 마이그레이션 1개 (V0XX_add_host_name_to_infra_server.sql, ALTER ADD COLUMN NULL 허용). 메모리 [[machines]] 의 "회사 PC 만 운영 DB 마이그레이션" 룰 적용. 마이그레이션 실행 전 사용자 confirm 2단계 (echo + 진행) |
 
 ## 6. T (Test scenarios)
@@ -270,4 +270,5 @@
 - **2026-06-01 v1 초안** (사무실 세션) — 사전 조사 (InfraServer / InspectMetricSnapshot / DocumentController.getInfraServers) 기반 작성. DB팀 자문에 raw_payload schema 매핑 위임. UI 시안은 디자인팀 자문에 위임.
 - **2026-06-01 v1.1** — DB팀·디자인팀 자문 결과 반영. raw_payload 키 패턴 확정 (`InspectionQrBatchService` L193-232 기반). hostname 컬럼 신설 권고. 비교 source 단일화 (Snapshot only, 1차). UI 결정 4건 확정 + 신규 토큰 검토 항목 추가. 다음 단계 = codex 기획서 검토.
 - **2026-06-01 v1.2** — codex 1차 검토 (⚠ 수정필요, 토큰 11,667) 권고 8건 + 누락 리스크 5건 반영. **B안 (host_name 컬럼 신설) 사용자 확정**. FR 10개 → 12개 (+ FR-3-1) / NFR 8개 → 10개 / T 11개 → 19개 / R 6개 → 11개. §7 데이터 모델 영향 전면 재작성 (B안 + 마이그레이션 + 도메인/API 영향). 다음 단계 = codex 2차 검토 → 사용자 최종승인.
+- **2026-06-01 v1.4** (집 세션) — 개발계획서 codex 1차 검토 반영으로 **Snapshot API 파라미터 `distNm+sysNmEn` → `pjtId` 정정** (FR-1, NFR-9). 근거: doc-inspect 가 projId 보유(L199·797·954) + 기존 문서 API pjtId 컨벤션, 과거회차/연도중복 오선택 방지. 그 외 본문 불변. 개발계획서 = `docs/exec-plans/inspect-infra-diff-alert.md` v2.
 - **2026-06-01 v1.3** (집 세션) — codex 2차 검토 (⚠ 수정필요, 집에서 재실행) 반영. **매칭 키 `host_ip`→`host_name` 정정** (코드 L398 `hostIp=null` 검증). 1차 비교범위 4필드로 통일 (FR-3 ↔ §12-1). T-3 "5개"→"4개", NFR-1 의 `NFR-9-2` 오참조 정정. **host_name 입력/수정 UI 본 sprint 필수 승격**. Snapshot 최신 row 선택 기준·빈배열 vs 실패 UX 명시. raw_payload `items` 배열 구조 명시. 신규 리스크 R-12~R-15, 신규 T-20·T-21. §9 결정완료 명시. codex 2차 원문 = `docs/product-specs/reviews/inspect-infra-diff-codex-2nd.md`. **다음 단계 = 사용자 최종 검토·승인 → 개발계획서**.
