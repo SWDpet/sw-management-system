@@ -23,6 +23,11 @@
   --danger:     #DC2626;  /* 삭제/에러 */
   --info:       #0891B2;  /* 정보 */
 
+  /* ── 유지보수 스코프 (InspectMaintProfile.badgeTone) — WCAG AA 통과 ── */
+  --scope-gis:  #0F766E;  /* teal-700 — GIS만 (= --primary 와 동일 톤) */
+  --scope-std:  #B45309;  /* amber-700 — GIS+표준 (--warning #D97706 보다 한 톤 진함) */
+  --scope-all:  #1E3A5F;  /* navy — 전체 (HS·DHS·미지정) */
+
   /* ── 반경 / 간격 / 전환 ── */
   --r-btn: 8px;  --r-card: 13px;  --r-sm: 6px;
   --tr: .16s ease;
