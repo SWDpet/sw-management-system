@@ -146,6 +146,29 @@
             </div>
     </div>
 
+    <!-- inspect-infra-diff-alert: 인프라 저장값 ↔ 현장 수집값 차이 알림 (FR-6, 디자인팀 (a) 헤더 바로 아래) -->
+    <div id="infraDiffAlert" class="infra-diff-alert" style="display:none;">
+        <div class="ida-head">
+            <span class="ida-title"><i class="fas fa-triangle-exclamation"></i> 인프라와 다른 필드 <b id="idaCount">0</b>개</span>
+            <button type="button" class="ida-toggle" onclick="toggleInfraDiff()" title="펼치기/접기"><i class="fas fa-chevron-down" id="idaChevron"></i></button>
+            <button type="button" class="ida-dismiss" onclick="dismissInfraDiff()" title="닫기"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="ida-body" id="idaBody"></div>
+    </div>
+    <style>
+        .infra-diff-alert{ margin:0 0 12px; border:1px solid var(--alert-border); background:var(--alert-bg); color:var(--alert-fg); border-radius:10px; padding:10px 14px; font-size:0.9em; }
+        .infra-diff-alert .ida-head{ display:flex; align-items:center; gap:10px; }
+        .infra-diff-alert .ida-title{ font-weight:700; flex:1; }
+        .infra-diff-alert .ida-title i{ color:var(--alert-fg); } /* AA 대비 — alert-bg 위 fg(5:1) */
+        .infra-diff-alert .ida-toggle, .infra-diff-alert .ida-dismiss{ background:none; border:none; cursor:pointer; color:var(--alert-fg); font-size:1em; padding:2px 6px; }
+        .infra-diff-alert .ida-body{ margin-top:8px; }
+        .infra-diff-alert.open .ida-body{ display:block; }
+        .infra-diff-alert:not(.open) .ida-body{ display:none; }
+        .infra-diff-alert table{ width:100%; border-collapse:collapse; font-size:0.92em; }
+        .infra-diff-alert th, .infra-diff-alert td{ border:1px solid var(--alert-border); padding:4px 8px; text-align:left; }
+        /* 다크 변종은 design-system.css 의 [data-theme="dark"] --alert-* 토큰 재정의로 처리 (raw hex 미사용, NFR-2/6) */
+    </style>
+
     <!-- Step Wizard Navigator (inspection-report-d-v5 wizard) -->
     <div class="step-nav" id="stepNav" style="display:flex;gap:6px;margin:0 0 14px;padding:10px;background:var(--surface-2);border-radius:10px;flex-wrap:wrap;">
         <div class="step-nav-item active" data-step="1" onclick="goStep(1)" style="flex:1;min-width:140px;cursor:pointer;padding:10px;border-radius:8px;background:#fff;border:2px solid var(--primary);text-align:center;font-size:0.92em;">
@@ -1182,12 +1205,92 @@ function loadProjectInfo() {
                 fillTargetHW(list);
                 fillServerCheckInfo(list);
                 fillSoftwareInfo(list);
+                window._infraServersCache = list;       // inspect-infra-diff-alert
+                loadInfraDiff(list, projId);            // 인프라 ↔ 현장 비교 (FR-1)
             })
             .catch(function() {});
     }
 
     startAutoDraft();
 }
+
+// ============================================================
+// inspect-infra-diff-alert: 인프라 저장값 ↔ 현장 수집값 차이 알림
+//   FR-12: 매핑/정규화/비교를 본 블록(단일 책임)에 집중. 4필드(host_name·cpu·memory·disk) allowlist.
+// ============================================================
+var _infraDiffResult = [];
+function loadInfraDiff(infraList, pjtId) {
+    if (!pjtId) return;
+    fetch('/document/api/inspect-snapshots?pjtId=' + encodeURIComponent(pjtId))
+        .then(function(r){ if(!r.ok) throw new Error('snapshot HTTP ' + r.status); return r.json(); })
+        .then(function(snaps){
+            window._snapshotCache = snaps;
+            _infraDiffResult = compareInfraVsSnapshot(infraList || [], snaps || []);
+            renderInfraDiff(_infraDiffResult);
+        })
+        .catch(function(e){ console.error('[infra-diff] snapshot skip:', e); }); // 실패=silent skip, 점검흐름 무영향 (T-14)
+}
+function _idNormHost(s){ return (s==null?'':String(s)).trim().toLowerCase(); }
+function _idNormRole(t){ var x=_idNormHost(t); if(x==='web'||x==='ap')return 'ap'; if(x==='db')return 'db'; return x; }
+function _idNumGB(s){ if(s==null)return null; var str=String(s); var m=str.match(/([0-9]+(?:\.[0-9]+)?)\s*GB/i)||str.match(/([0-9]+(?:\.[0-9]+)?)/); return m?parseFloat(m[1]):null; }
+function _idCmp(field, infraVal, fieldVal){
+    var a=(infraVal==null?'':String(infraVal)).trim(), b=(fieldVal==null?'':String(fieldVal)).trim();
+    if(!a && !b) return null;
+    if(!a && b) return 'infra-only';   // 인프라 미등록
+    if(a && !b) return 'field-only';   // 현장 미수집
+    if(field==='memory'){ var ga=_idNumGB(a), gb=_idNumGB(b); if(ga!=null&&gb!=null){ return (Math.abs(ga-gb)/Math.max(ga,gb) <= 0.05)?null:'diff'; } } // ±5% (FR-10 ③)
+    var al=a.toLowerCase().replace(/\s+/g,''), bl=b.toLowerCase().replace(/\s+/g,'');
+    if(al===bl) return null;                                  // trim+소문자 일치 (FR-10 ①)
+    if(al.indexOf(bl)>=0 || bl.indexOf(al)>=0) return null;   // cpu/disk 부분매칭 (FR-10 ②④)
+    return 'diff';
+}
+function compareInfraVsSnapshot(infraList, snaps){
+    snaps = snaps || [];
+    var byKey={};
+    snaps.forEach(function(s){ byKey[_idNormRole(s.serverRole)+'|'+_idNormHost(s.hostName)] = s; });
+    var LBL={hostName:'호스트명', cpu:'CPU 사양', memory:'메모리', disk:'디스크'};
+    // [outField, cmpType, infraProp, snapProp]
+    var FIELDS=[['hostName','host','hostName','hostName'],['cpu','cpu','cpuSpec','cpu'],['memory','memory','memorySpec','memory'],['disk','disk','diskSpec','disk']];
+    var out=[];
+    infraList.forEach(function(srv){
+        var snap = byKey[_idNormRole(srv.serverType)+'|'+_idNormHost(srv.hostName)];
+        if(!snap){
+            if(snaps.length===0){
+                // T-12: 현장 수집(스냅샷) 전무 → 인프라 필드 vs 빈값 = "현장 미수집"
+                FIELDS.forEach(function(p){
+                    var st=_idCmp(p[1], srv[p[2]], null);
+                    if(st){ out.push({role:srv.serverType||'', host:(srv.hostName||srv.ipAddr||''), field:p[0], label:LBL[p[0]], infraVal:(srv[p[2]]||'-'), fieldVal:'-', status:st}); }
+                });
+            } else {
+                // T-13/R-7: 일부 스냅샷 존재하나 이 host 는 매칭 불가
+                out.push({role:srv.serverType||'', host:(srv.hostName||srv.ipAddr||'(미상)'), field:'_match', label:'매칭', infraVal:(srv.hostName||'-'), fieldVal:'매칭 불가', status:'unmatched'});
+            }
+            return;
+        }
+        FIELDS.forEach(function(p){
+            var st=_idCmp(p[1], srv[p[2]], snap[p[3]]);
+            if(st){ out.push({role:srv.serverType||'', host:(srv.hostName||snap.hostName||''), field:p[0], label:LBL[p[0]], infraVal:(srv[p[2]]||'-'), fieldVal:(snap[p[3]]||'-'), status:st}); }
+        });
+    });
+    return out;
+}
+function _idStLabel(st){ return st==='field-only'?'현장 미수집':st==='infra-only'?'인프라 미등록':st==='unmatched'?'매칭 불가':'다름'; }
+function _idEsc(s){ return (s==null?'':String(s)).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+function renderInfraDiff(diffs){
+    var box=document.getElementById('infraDiffAlert'); if(!box) return;
+    if(!diffs || !diffs.length){ box.style.display='none'; return; }
+    document.getElementById('idaCount').textContent = diffs.length;
+    var rows='<table><thead><tr><th>서버</th><th>필드</th><th>인프라값</th><th>현장값</th><th>구분</th></tr></thead><tbody>';
+    diffs.forEach(function(d){
+        rows += '<tr><td>'+_idEsc((d.role||'')+' '+(d.host||''))+'</td><td>'+_idEsc(d.label||d.field)+'</td><td>'+_idEsc(d.infraVal)+'</td><td>'+_idEsc(d.fieldVal)+'</td><td>'+_idStLabel(d.status)+'</td></tr>';
+    });
+    rows += '</tbody></table>';
+    document.getElementById('idaBody').innerHTML = rows;
+    box.style.display='';
+}
+function toggleInfraDiff(){ var b=document.getElementById('infraDiffAlert'); b.classList.toggle('open'); var c=document.getElementById('idaChevron'); if(c) c.className = b.classList.contains('open')?'fas fa-chevron-up':'fas fa-chevron-down'; }
+function dismissInfraDiff(){ var b=document.getElementById('infraDiffAlert'); if(b) b.style.display='none'; } // 세션·페이지 한정, state 저장 X (FR-8/R-6)
+function recheckInfraDiff(){ if(window._infraServersCache && window._snapshotCache){ _infraDiffResult=compareInfraVsSnapshot(window._infraServersCache, window._snapshotCache); renderInfraDiff(_infraDiffResult); } } // 저장 재비교 (FR-4 b)
 
 // === 시스템 구성도 로딩 ===
 function loadSystemDiagram(sysType) {
@@ -1897,6 +2000,8 @@ function saveReport(status) {
     var projId = document.getElementById('projId').value;
     if (!projId) { alert('사업을 선택해주세요.'); return; }
 
+    recheckInfraDiff();  // inspect-infra-diff-alert: 저장 시 인프라↔현장 재비교 (FR-4 b, 저장 차단 X)
+
     var payload = collectFormData(status);
     var headers = { 'Content-Type': 'application/json' };
     if (CSRF_HEADER && CSRF_TOKEN) headers[CSRF_HEADER] = CSRF_TOKEN;
@@ -2046,6 +2151,8 @@ function loadReport(id) {
                                     fillTargetHW(list);
                                     fillServerCheckInfo(list);
                                     fillSoftwareInfo(list);
+                                    window._infraServersCache = list;                                  // inspect-infra-diff-alert
+                                    loadInfraDiff(list, document.getElementById('projId').value);      // 저장문서 로드 경로도 비교 (FR-1)
                                 })
                                 .catch(function() {});
                         }

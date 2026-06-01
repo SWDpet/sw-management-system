@@ -18,6 +18,7 @@ public class InfraServer {
     private Infra infra;
 
     @Column(name = "server_type") private String serverType; // "WEB" or "DB"
+    @Column(name = "host_name", length = 64) private String hostName; // 호스트명 — 현장 스냅샷 매칭/비교 키 (inspect-infra-diff-alert)
     @Column(name = "ip_addr") private String ipAddr;
     @Column(name = "acc_id") private String accId;
     @Column(name = "acc_pw") private String accPw;
@@ -46,6 +47,8 @@ public class InfraServer {
     public void setInfra(Infra infra) { this.infra = infra; }
     public String getServerType() { return serverType; }
     public void setServerType(String serverType) { this.serverType = serverType; }
+    public String getHostName() { return hostName; }
+    public void setHostName(String hostName) { this.hostName = hostName; }
     public String getIpAddr() { return ipAddr; }
     public void setIpAddr(String ipAddr) { this.ipAddr = ipAddr; }
     public String getAccId() { return accId; }

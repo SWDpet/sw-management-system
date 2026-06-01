@@ -75,6 +75,7 @@ public class DocumentController {
     @Autowired private InspectReportService inspectReportService;
     @Autowired private InspectPdfService inspectPdfService;
     @Autowired private com.swmanager.system.service.InspectMetricChartService inspectMetricChartService;
+    @Autowired private com.swmanager.system.repository.InspectMetricSnapshotRepository metricSnapshotRepository;
 
     // === 권한 ===
 
@@ -1698,8 +1699,8 @@ public class DocumentController {
 
     /** GET /document/api/infra-servers?distNm=양양군&sysNmEn=UPIS - 인프라 서버정보 조회
      *
-     * 응답 키 (감사 P2 1-4 조치, 스프린트 2c 2026-04-19):
-     *   serverId, serverType, ipAddr, osNm, serverModel, serialNo,
+     * 응답 키 (감사 P2 1-4 조치, 스프린트 2c 2026-04-19 / hostName 추가 2026-06-01 inspect-infra-diff-alert):
+     *   serverId, serverType, hostName, ipAddr, osNm, serverModel, serialNo,
      *   cpuSpec, memorySpec, diskSpec, networkSpec, powerSpec,
      *   osDetail, rackLocation, note, softwares.
      *   민감 식별정보(MAC 주소, 계정 ID/PW 등) 는 응답에서 제외됨.
@@ -1724,6 +1725,7 @@ public class DocumentController {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("serverId", s.getServerId());
             m.put("serverType", s.getServerType());
+            m.put("hostName", s.getHostName());
             m.put("ipAddr", s.getIpAddr());
             m.put("osNm", s.getOsNm());
             // [감사 P2 1-4] MAC 주소 응답 제외 (민감정보)
@@ -1750,6 +1752,79 @@ public class DocumentController {
             servers.add(m);
         }
         return ResponseEntity.ok(servers);
+    }
+
+    /** GET /document/api/inspect-snapshots?pjtId=123 - 현장 수집 스냅샷(최신 1건/host) 조회.
+     *  inspect-infra-diff-alert: 인프라 저장값 ↔ 현장 수집값 비교 source.
+     *  응답: [{serverRole, hostName, cpu, memory, disk}] (allowlist 4필드만 — host_ip·status 제외, R-8).
+     *  권한 VIEW 이상(NONE 403). 정상 경로 항상 200(빈 배열=현장 미수집, T-12). param=pjtId (codex 검토).
+     */
+    @GetMapping("/api/inspect-snapshots")
+    @ResponseBody
+    public ResponseEntity<?> getInspectSnapshots(@RequestParam Long pjtId) {
+        // VIEW 이상 권한 필요 (NONE 차단) — getInfraServers 와 동일 정책 (NFR-8)
+        if ("NONE".equals(getAuth())) {
+            Map<String, Object> forbidden = new LinkedHashMap<>();
+            forbidden.put("success", false);
+            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "조회 권한이 없습니다"));
+            return ResponseEntity.status(403).body(forbidden);
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (var s : metricSnapshotRepository.findLatestPerRoleHost(pjtId)) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("serverRole", s.getServerRole());
+            m.put("hostName", s.getHostName());
+            Map<String, String> specs = extractSnapshotSpecs(s.getRawPayload());
+            m.put("cpu", specs.get("cpu"));
+            m.put("memory", specs.get("memory"));
+            m.put("disk", specs.get("disk"));
+            result.add(m);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    /** raw_payload(Tier 직렬화 {h, os, i:[[key,status,value],...]}) 에서 비교용 H/W 스펙 텍스트 추출.
+     *  키별 규칙은 표시 로직 InspectionQrBatchService.buildResultText(L620-630) 와 동일하게 맞춤 (표시값=비교값).
+     *  value(index2) 는 Map 객체. db.os.disk(mounts 배열) 는 추후 실제 스냅샷으로 확정 (R-15 잔여). (inspect-infra-diff-alert)
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, String> extractSnapshotSpecs(Map<String, Object> raw) {
+        Map<String, String> out = new LinkedHashMap<>();
+        out.put("cpu", null); out.put("memory", null); out.put("disk", null);
+        if (raw == null) return out;
+        Object itemsObj = raw.containsKey("i") ? raw.get("i") : raw.get("items"); // @JsonProperty("i") 우선
+        if (!(itemsObj instanceof List)) return out;
+        for (Object itObj : (List<Object>) itemsObj) {
+            if (!(itObj instanceof List)) continue;
+            List<Object> it = (List<Object>) itObj;
+            if (it.size() < 3) continue;
+            String key = String.valueOf(it.get(0));
+            Object val = it.get(2); // [key, status, value] → value
+            if (!(val instanceof Map)) continue;
+            Map<String, Object> v = (Map<String, Object>) val;
+            switch (key) {
+                case "ap.hw.cpu" -> {
+                    String name = v.get("name") != null ? String.valueOf(v.get("name")) : "";
+                    String cores = v.get("cores") != null ? v.get("cores") + "코어" : "";
+                    out.put("cpu", (name + " " + cores).trim());
+                }
+                case "ap.hw.memory" -> { if (v.get("installed_gb") != null) out.put("memory", v.get("installed_gb") + "GB"); }
+                case "ap.os.disk_summary" -> { if (v.get("summary") != null) out.put("disk", String.valueOf(v.get("summary"))); }
+                case "db.os.cpu_info" -> {
+                    String cores = v.get("cores") != null ? v.get("cores") + "코어" : "";
+                    String clock = v.get("clock_ghz") != null ? " " + v.get("clock_ghz") + "GHz" : "";
+                    out.put("cpu", (cores + clock).trim());
+                }
+                case "db.os.mem_info" -> { if (v.get("total_gb") != null) out.put("memory", v.get("total_gb") + "GB"); }
+                case "db.os.disk" -> {
+                    if (v.get("summary") != null) out.put("disk", String.valueOf(v.get("summary")));
+                    else if (v.get("count") != null) out.put("disk", v.get("count") + "개"); // mounts 배열형은 추후 실제 스냅샷으로 확정 (R-15)
+                }
+                default -> { }
+            }
+        }
+        out.replaceAll((k, val) -> (val == null || val.trim().isEmpty()) ? null : val.trim());
+        return out;
     }
 
     // ============================================================

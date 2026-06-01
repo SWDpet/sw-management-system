@@ -39,6 +39,7 @@ public class InfraDTO {
     public static class InfraServerDTO {
         private Long serverId;
         private String serverType; // WEB / DB
+        private String hostName;   // 호스트명 — inspect-infra-diff-alert
         private String ipAddr;
         private String accId;
         private String accPw; // 권한에 따라 마스킹: "********"
@@ -178,6 +179,7 @@ public class InfraDTO {
         return InfraServerDTO.builder()
                 .serverId(server.getServerId())
                 .serverType(server.getServerType())
+                .hostName(server.getHostName())
                 .ipAddr(server.getIpAddr())
                 .accId(server.getAccId())
                 .accPw(mask ? "********" : server.getAccPw())

@@ -20,6 +20,11 @@
   --muted:      #A8A29E;  /* 힌트/라벨 */
   --success:    #059669;  /* 완료 */
   --warning:    #D97706;  /* 진행/주의 */
+  /* inspect-infra-diff-alert 알림 토큰 (NFR-2) — amber 계열, WCAG AA(amber-100+700=5.0:1) */
+  --alert-bg:     #FEF3C7;  /* amber-100 배경 */
+  --alert-fg:     #B45309;  /* amber-700 글씨 (= --scope-std) */
+  --alert-border: #FCD34D;  /* amber-300 테두리 */
+  --alert-icon:   #D97706;  /* amber-600 인라인 ⚠ (= --warning) */
   --danger:     #DC2626;  /* 삭제/에러 */
   --info:       #0891B2;  /* 정보 */
 
@@ -47,6 +52,14 @@
   /* ── 타이포 ── */
   --font: 'Inter','Noto Sans KR',system-ui,sans-serif;
   --font-mono: 'JetBrains Mono',monospace;
+}
+
+/* inspect-infra-diff-alert 다크 변종 — 토큰 재정의(SoT). 컴포넌트는 var(--alert-*) 만 사용 (NFR-2/6). */
+[data-theme="dark"] {
+  --alert-bg:     #451A03;  /* amber-950 */
+  --alert-fg:     #FDE68A;  /* amber-200 */
+  --alert-border: #92400E;  /* amber-800 */
+  --alert-icon:   #FBBF24;  /* amber-400 — 다크 surface 위 대비 확보 */
 }
 
 /* ============================================================

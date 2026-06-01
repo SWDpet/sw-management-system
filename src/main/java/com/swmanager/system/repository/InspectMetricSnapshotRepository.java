@@ -105,6 +105,23 @@ public interface InspectMetricSnapshotRepository extends JpaRepository<InspectMe
             @Param("since") OffsetDateTime since, @Param("until") OffsetDateTime until);
 
     /**
+     * (server_role, host_name) 별 <b>최신 1건</b> — inspect-infra-diff-alert 비교용 (NFR-9 / R-14).
+     *
+     * <p>동일 host 에 collected_at 다중 row 존재 시 가장 최근 1건만. 동시각(tie)이면 snapshot_id 큰 것.
+     * native window query — JPQL MAX() 는 tie 시 중복 반환하므로 row_number() 사용 (codex 검토).
+     * 외부 SELECT 의 extra {@code rn} 컬럼은 엔티티 매핑에서 무시됨.
+     */
+    @Query(value = """
+        SELECT * FROM (
+          SELECT s.*, row_number() OVER (
+            PARTITION BY pjt_id, server_role, COALESCE(host_name, '')
+            ORDER BY collected_at DESC, snapshot_id DESC) rn
+          FROM inspect_metric_snapshot s WHERE pjt_id = :pjtId
+        ) t WHERE rn = 1
+        """, nativeQuery = true)
+    List<InspectMetricSnapshot> findLatestPerRoleHost(@Param("pjtId") Long pjtId);
+
+    /**
      * 멱등 적재 — 동일 (pjt_id, server_role, host_name, collected_at) 재INSERT 시 무시.
      * PostgreSQL native query. raw_payload 는 jsonb 캐스팅.
      *

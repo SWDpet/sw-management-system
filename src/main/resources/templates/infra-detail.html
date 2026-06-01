@@ -76,7 +76,8 @@
             <div class="info-box box-web">
                 <div class="box-header" style="color: var(--info);"><i class="fas fa-globe"></i> WEB / WAS 서버</div>
                 <table class="view-table">
-                    <tr><th>IP 주소</th> <td th:text="${server.ipAddr}"></td> <th>OS</th> <td th:text="${server.osNm}"></td></tr>
+                    <tr><th>호스트명</th> <td th:text="${server.hostName} ?: '-'"></td> <th>IP 주소</th> <td th:text="${server.ipAddr}"></td></tr>
+                    <tr><th>OS</th> <td th:text="${server.osNm}"></td> <th></th> <td></td></tr>
                     <tr><th>계정 (ID)</th> <td th:text="${server.accId}"></td> <th>MAC Address</th> <td th:text="${server.macAddr}"></td></tr>
                 </table>
                 <!-- H/W 스펙 정보 (I-01): 항상 표시, 빈 값은 '-' fallback -->
@@ -105,7 +106,8 @@
              <div class="info-box box-db">
                 <div class="box-header" style="color: var(--warning);"><i class="fas fa-database"></i> DB 서버</div>
                 <table class="view-table">
-                    <tr><th>IP 주소</th> <td th:text="${server.ipAddr}"></td> <th>OS</th> <td th:text="${server.osNm}"></td></tr>
+                    <tr><th>호스트명</th> <td th:text="${server.hostName} ?: '-'"></td> <th>IP 주소</th> <td th:text="${server.ipAddr}"></td></tr>
+                    <tr><th>OS</th> <td th:text="${server.osNm}"></td> <th></th> <td></td></tr>
                     <tr><th>계정 (ID)</th> <td th:text="${server.accId}"></td> <th>MAC Address</th> <td th:text="${server.macAddr}"></td></tr>
                 </table>
                 <!-- H/W 스펙 정보 (I-01): 항상 표시, 빈 값은 '-' fallback -->

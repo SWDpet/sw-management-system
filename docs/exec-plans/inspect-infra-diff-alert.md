@@ -19,7 +19,8 @@ created: "2026-06-01"
 
 ### 0-1. DB / 마이그레이션 정책
 - PostgreSQL. 마이그레이션 디렉토리 = `swdept/sql/`. 최신 버전 = `V20260403_user_fields.sql` (날짜형 컨벤션) → 신규 = **`V20260601_add_host_name_to_infra_server.sql`**.
-- 운영 실행 정책 (기획서 NFR-10 / R-11): **회사 PC(`IU`) 에서만 운영 DB 마이그레이션** + 2단계 confirm. 집/출장 세션은 코드/계획까지만. ([[machines]] 룰)
+- **운영 실DB 1개** (개발DB 없음). 집/출장=공인 IP `211.104.137.55:5881`, 회사=내부 IP `192.168.10.194:5880` — 동일 DB. 모든 DDL=운영 변경.
+- **위치 정책 (2026-06-01 사용자 명시)**: 현재 속도 우선 — **어디서든 마이그레이션 실행 OK** (NFR-10 의 "회사 PC 한정" 은 사용자가 '사무실만' 선언 전까지 비활성). 단 운영 변경이라 실행 직전 명시 확인.
 - 위험도 0 — `ALTER ADD COLUMN ... NULL`, 기존 row 무영향.
 
 ### 0-2. 범위 고정 (기획서 v1.3 확정)
@@ -169,6 +170,17 @@ List<InspectMetricSnapshot> findLatestPerRoleHost(@Param("pjtId") Long pjtId);
 - **codex 2차 (⚠ — "수정 요구 작음, 4-c 키별 규칙 명시 시 승인 가능") → v3 반영 완료**. 원문 = `docs/product-specs/reviews/inspect-infra-diff-execplan-codex-2nd.md`.
   - 4-a·4-b **해소 확인**. 4-c: `ap.hw.cpu` value 가 텍스트 아닌 `{name,cores}` 객체 → **키별 추출 규칙표 추가** (기존 `ResultText` L620-630 재사용). 4-b 외부 SELECT 컬럼명시 안전권고 반영.
   - 잔여(비차단): infra-servers API 는 기존대로 distNm+sysNmEn 첫 인프라(기존동작 유지) · `db.os.disk` 배열 추출은 구현 시 샘플 확정.
+
+## 4-1. 구현 결과 (2026-06-02, 집 세션)
+- **Step 1~6 구현 완료** + 운영DB `host_name` 컬럼 적용(332 row 무영향). 컴파일·서버 기동·CSS 토큰·4-b 윈도우 SQL 유효성 검증 통과.
+- **codex 구현검증 (⚠ 6건) → 5건 수정 완료**. 원문 = `docs/product-specs/reviews/inspect-infra-diff-impl-codex.md`.
+  1. T-12 위반(스냅샷0건 무알림) → 분기 수정: snaps=0 시 "현장 미수집"(T-12), 일부매칭 시 "매칭 불가"(T-13) ✅
+  2. 저장문서 로드 경로 비교 미호출 → loadInfraDiff hook 추가 ✅
+  3. db.os.disk summary-only → count fallback 추가(mounts 배열은 R-15 잔여) ✅
+  4. CSS 다크 raw hex → design-system.css `[data-theme=dark]` --alert-* 토큰 재정의, 아이콘 대비 --alert-fg 로 보정 ✅
+  5. InfraServerDTO.hostName 누락 → 필드+매핑 추가 ✅
+- **⏭ FR-5 인라인 ⚠ popover = 보류(후속)**: 점검표 각 셀↔(서버,필드) DOM 매핑 추가분석 필요 + 표출 실데이터(스냅샷 0건) 없음 → 상단 요약박스(FR-6)로 기능 동작 확보 후 후속 sprint. 데이터 적재 시 함께 구현 권장.
+- **데이터 전제**: `inspect_metric_snapshot` 운영 0건 + infra host_name 전부 NULL → 실제 차이 표출은 스냅샷 적재 + host_name 입력 후 (R-13/R-15).
 
 ## 5. 변경 이력
 - **2026-06-01 v1** (집 세션) — 기획서 v1.3 승인 기반 초안. 조사 결과(스냅샷 스키마 기보유·SwProject finder 부재·raw_payload items 구조) 반영. 다음 = codex 검토.
