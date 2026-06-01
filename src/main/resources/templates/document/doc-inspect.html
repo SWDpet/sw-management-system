@@ -1250,7 +1250,8 @@ function compareInfraVsSnapshot(infraList, snaps){
     snaps.forEach(function(s){ byKey[_idNormRole(s.serverRole)+'|'+_idNormHost(s.hostName)] = s; });
     var LBL={hostName:'호스트명', cpu:'CPU 사양', memory:'메모리', disk:'디스크'};
     // [outField, cmpType, infraProp, snapProp]
-    var FIELDS=[['hostName','host','hostName','hostName'],['cpu','cpu','cpuSpec','cpu'],['memory','memory','memorySpec','memory'],['disk','disk','diskSpec','disk']];
+    // NOTE: 바깥 대괄호를 띄움([ [ ... ] ]) — Thymeleaf 인라인 표현식 구문 [[...]] 과의 충돌 회피 (백지 렌더 버그 fix)
+    var FIELDS=[ ['hostName','host','hostName','hostName'],['cpu','cpu','cpuSpec','cpu'],['memory','memory','memorySpec','memory'],['disk','disk','diskSpec','disk'] ];
     var out=[];
     infraList.forEach(function(srv){
         var snap = byKey[_idNormRole(srv.serverType)+'|'+_idNormHost(srv.hostName)];
