@@ -864,6 +864,8 @@ INSERT INTO sys_mst (cd, nm) VALUES ('IPSS', '통합인허가관리시스템') O
 INSERT INTO sys_mst (cd, nm) VALUES ('UPBSS', '기초조사정보시스템 v1.0') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO sys_mst (cd, nm) VALUES ('BSIS', '기초조사정보시스템 v1.5') ON CONFLICT (cd) DO NOTHING;
 INSERT INTO sys_mst (cd, nm) VALUES ('BSISP', '기초조사정보시스템 v2.0') ON CONFLICT (cd) DO NOTHING;
+INSERT INTO sys_mst (cd, nm) VALUES ('CIAMS', '도시공업지역관리시스템') ON CONFLICT (cd) DO NOTHING;
+INSERT INTO sys_mst (cd, nm) VALUES ('SPFMS', '소규모공공시설관리시스템') ON CONFLICT (cd) DO NOTHING;
 
 -- prj_types (3건)
 INSERT INTO prj_types (cd, nm) VALUES ('GISSW', '원천소프트웨어') ON CONFLICT (cd) DO NOTHING;
