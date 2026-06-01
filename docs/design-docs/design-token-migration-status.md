@@ -25,20 +25,14 @@
 
 ## ⏭ 다음 작업 (우선순위 순)
 
-### 1. 라이브 반영 (서버 재기동) — 최우선
-- 마지막 재기동(36개 페이지 시점) **이후 커밋분 11개+는 아직 라이브 미반영**:
-  doc-batch/completion/interim/commence/inspect, top-nav, main-dashboard, qr×3
-- **재기동 절차** (이 비대화형 셸에선 `cmd /c server-start.bat` 이 NoDefaultCurrentDirectoryInExePath 로 실패 → PowerShell 직접 수행):
-  1. 8080 점유 java 종료: `Get-NetTCPConnection -LocalPort 8080 -State Listen | %{ Stop-Process -Id $_.OwningProcess -Force }`
-  2. 기동: `.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local" *> server.log` (background)
-  3. 확인: server.log 에 `Started SwManagerApplication` + `/css/design-system.css` HTTP 200
-  - (사용자가 탐색기에서 server-restart.bat 더블클릭하면 정상)
-- 시크릿 모드로 GNB·메인대시보드·점검내역서 등 육안 확인
+### ✅ 1. 라이브 반영 (서버 재기동) — 2026-06-01 사무실 세션 완료
+- 사무실 세션 (회사 PC = `IU` 호스트, ASUS TUF Gaming A16) 에서 서버 재기동 + 시크릿 모드로 GNB·메인대시보드·점검내역서 육안 확인 완료
+- **부수 fix** (commit `a0f1868`): 메인 대시보드 `:root` 의 `--primary/--primary2/--primary-lt` 가 `var(--primary)` self-reference 라 invalid 였던 잠재 버그 → design-system.css SoT 와 동일한 실제 hex 값으로 정의
+- **추가 적용** (commit `a0f1868`): 시스템별 사업 현황 표 thead/tfoot teal 강조 (디자인팀 자문 통과, WCAG AAA/AA)
 
-### 2. 보류한 공유 색 시스템 — 별도 결정 후 일괄 통일
-- **유지보수 스코프 3색** (GIS만=teal `#0d9488` / 표준=amber `#d97706` / 전체=navy `#1e3a5f`):
-  점검내역서(doc-inspect)·ops-doc/list(.mtag)·PDF·`InspectMaintProfile.badgeTone` 에 공유. 분산 변경 대신 **앱 전체 한 번에** 통일 필요 (amber 는 이미 --warning 동일)
-- **칸반 스텝 7컬럼 그라데이션** (workplan/process-status L45-51): 무지개 Material 그라데이션 → 브랜드 순차 팔레트로 통일하려면 디자인 결정 필요
+### ✅ 2. 보류한 공유 색 시스템 — 2026-06-01 완료
+- **유지보수 스코프 3색** (commit `1861d5d`): design-system.css 에 `--scope-gis` (#0F766E teal-700) / `--scope-std` (#B45309 amber-700) / `--scope-all` (#1E3A5F navy) 토큰 신설. `ops-doc/list.html` `.mtag` 배지 raw hex → var() 교체. 기존 WCAG AA 미달이던 teal 3.5:1 / amber 3.0:1 → 모두 4.6:1 통과. `--warning` 과 의미 충돌도 한 톤 진한 amber-700 으로 해소. PDF (`templates/pdf/*`) 는 우선순위 3번 정책 따라 별도.
+- **칸반 스텝 7컬럼** (commit `1b38781`): design-system.css 에 `--step-1` ~ `--step-7` gradient 토큰 신설 (teal-50 → teal-800 단일 hue progression, 단계 진행 = 색 진해짐). `process-status.html` `.step-N .col-header` raw hex 14개 → var(--step-N) 교체. 기존 step-7 단독 글씨 색 `#333` 일관성 깨짐 해소. SoT: `WorkPlanController.stepLabels`.
 
 ### 3. PDF 납품 산출물 (요청 시에만)
 - `templates/pdf/*` 7종 — 고객 제출 PDF 본문. 공식 양식이라 보존 중. 통일 원하면 별도 진행
