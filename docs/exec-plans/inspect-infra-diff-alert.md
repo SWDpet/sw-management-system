@@ -190,7 +190,9 @@ List<InspectMetricSnapshot> findLatestPerRoleHost(@Param("pjtId") Long pjtId);
 |---|---|---|---|
 | **NFR-3** alert 대비 (계산) | ≥4.5:1 | 라이트 본문/아이콘(=fg) `#B45309`/`#FEF3C7` **4.51:1**, 다크 본문 `#FDE68A`/`#451A03` **12.03:1**, 다크 아이콘 `#FBBF24`/`#451A03` **8.97:1** | ✅ PASS |
 | **NFR-9** Snapshot API P95 | ≤300ms | P50 3.5 / **P95 4.5** / P99 20.3 / max 28.1ms (n=100) | ✅ PASS |
-| **NFR-1** 페이지 로드 증가 | ≤200ms | 추가 부하 = 신규 `inspect-snapshots` fetch(P95 4.5ms, 기존 infra fetch 와 `Promise.all` 병렬) + JS 비교(≤5서버×4필드). doc-inspect 페이지 렌더 P95 26.7ms | ✅ PASS (여유 막대 / 브라우저 on-off DevTools 정밀측정은 미실시) |
+| **NFR-1** 페이지 로드 증가 | ≤200ms | 추가 부하 = 신규 `inspect-snapshots` fetch(P95 4.5ms, 기존 infra fetch 와 `Promise.all` 병렬) + JS 비교(≤5서버×4필드) | ✅ PASS (여유 막대 / 브라우저 on-off DevTools 정밀측정은 미실시) |
+
+> ⚠ **측정 후 발견된 회귀 (2026-06-02, commit 69496c3 로 fix)**: 위 표의 "doc-inspect 페이지 렌더 200" 은 **오판이었음**. 실제로는 4a4ec4f 가 넣은 L1253 `var FIELDS=[[...]]` 의 `[[` 가 Thymeleaf 인라인 표현식 `[[...]]` 과 충돌 → `TemplateProcessingException` → 응답 커밋 후 예외라 **200+백지** 로 노출(점검내역서 작성 페이지 전체 렌더 불가). curl `%{http_code}`=200 만 보고 통과로 본 게 false positive. **fix**: 바깥 대괄호를 띄움(`[ [ ... ] ]`, JS 의미 동일). 회사 PC 브라우저 + server.log 로 재검증 완료. **교훈: Thymeleaf 페이지는 200 이 렌더 성공을 보장하지 않음 — 본문/로그 동반 확인 필수.**
 | **회귀(NFR-7)** infra-servers API | 무회귀 | `hostName` 추가 후 dummy 파라미터 200 + `[]`, 크래시 없음. doc-inspect 페이지 200 | ✅ PASS |
 | **T-10** 다크모드 알림 시각 | alert 색·대비 | 색·대비는 NFR-3(라이트+다크 AA)로 검증. **실제 알림박스 시각 렌더는 미검증** | ⚠ 부분 — 데이터 종속 |
 
