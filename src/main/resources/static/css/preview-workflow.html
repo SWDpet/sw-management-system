@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>swmanager 워크플로우 — 사용자 정의 가상팀 + codex + 자동화</title>
+<link rel="stylesheet" href="/css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); margin: 0; padding: 28px 32px 64px; }
+  h1 { font-size: 1.45rem; color: var(--primary2); margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+  h1::before { content: "🛠"; }
+  .lede { color: var(--text2); font-size: 0.88rem; margin: 0 0 24px; }
+  h2 { font-size: 1rem; color: var(--primary2); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--primary-lt); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 28px;
+    max-width: 1280px;
+  }
+
+  /* ─────── 메인 워크플로우 (수직 흐름) ─────── */
+  .flow { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+  .step {
+    position: relative; padding: 12px 14px 12px 56px;
+    border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 10px; background: #fff;
+    transition: var(--tr);
+  }
+  .step:hover { border-color: var(--primary); transform: translateX(2px); }
+  .step .num {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary-lt); color: var(--primary2);
+    font-weight: 800; font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step .title { font-weight: 700; color: var(--text); font-size: 0.92rem; }
+  .step .desc { font-size: 0.79rem; color: var(--text2); margin-top: 3px; }
+  .step.codex { background: var(--primary-lt); border-color: #5EEAD4; }
+  .step.codex .num { background: var(--primary); color: #fff; }
+  .step.codex .title::before { content: "🤖 "; }
+  .step.user-gate { background: #FEF3C7; border-color: #FDE68A; }
+  .step.user-gate .num { background: #B45309; color: #fff; }
+  .step.user-gate .title::before { content: "👤 "; }
+  .step.auto { background: #F0FDF4; border-color: #BBF7D0; }
+  .step.auto .num { background: #059669; color: #fff; }
+  .step.auto .title::before { content: "🤖 "; }
+  .arrow {
+    text-align: center; color: var(--muted); font-size: 1.2rem;
+    line-height: 0.6; margin: 4px 0;
+  }
+  .branch {
+    margin: 6px 0 6px 56px; padding: 8px 12px;
+    border-left: 3px solid var(--scope-std);
+    background: #FFFBEB;
+    font-size: 0.78rem; color: var(--text2);
+    border-radius: 0 6px 6px 0;
+  }
+  .branch strong { color: #B45309; }
+
+  /* ─────── 사이드 패널 (정책 카드들) ─────── */
+  .side { display: flex; flex-direction: column; gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+  }
+  .card h3 { margin: 0 0 8px; font-size: 0.92rem; color: var(--primary2); display: flex; align-items: center; gap: 6px; }
+  .card .ico { width: 18px; height: 18px; border-radius: 4px; background: var(--primary-lt); display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+  .card p, .card ul { font-size: 0.81rem; color: var(--text); margin: 0 0 8px; line-height: 1.55; }
+  .card ul { padding-left: 18px; }
+  .card li { margin: 3px 0; }
+  .card .meta { font-size: 0.74rem; color: var(--muted); margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+  .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 10px;
+    font-size: 0.7rem; font-weight: 700; margin-right: 4px;
+  }
+  .tag.new { background: var(--scope-std); color: #fff; }
+  .tag.deco { background: var(--primary-lt); color: var(--primary2); }
+  .tag.danger { background: var(--danger); color: #fff; }
+
+  /* ─────── 하단 부속 ─────── */
+  .footer-grid {
+    grid-column: 1 / -1;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+    margin-top: 28px;
+  }
+  code, kbd { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.82em; color: var(--primary2); }
+  .legend {
+    display: flex; gap: 16px; margin-top: 8px; font-size: 0.78rem; color: var(--text2);
+    flex-wrap: wrap;
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 14px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>swmanager 워크플로우</h1>
+<p class="lede">사용자(박욱진) 가 swmanager 프로젝트에 정의한 가상 팀 + codex 검토 + 자동화 룰. SoT = <code>AGENTS.md</code> §3~§8 + 오늘 신설 메모리 <code>feedback_ui_change_always_design_consult</code>.</p>
+
+<div class="legend">
+  <div class="item"><span class="swatch" style="background:#fff; border:1px solid var(--border);"></span>일반 단계</div>
+  <div class="item"><span class="swatch" style="background:var(--primary-lt);"></span>🤖 codex 검토 (FR/NFR/T 항목별 ⭕/⚠/❌)</div>
+  <div class="item"><span class="swatch" style="background:#FEF3C7;"></span>👤 사용자 게이트 (승인 / 결정)</div>
+  <div class="item"><span class="swatch" style="background:#F0FDF4;"></span>🤖 자동화 (commit/push, 서버 재시작)</div>
+</div>
+
+<div class="layout">
+
+  <!-- ============ 메인 워크플로우 ============ -->
+  <div>
+    <h2>📋 메인 워크플로우 — 풀 sprint</h2>
+    <div class="flow">
+
+      <div class="step"><span class="num">1</span><div class="title">요청</div><div class="desc">사용자 발화 / 기존 sprint 이어가기 / 트리거 단어</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step"><span class="num">2</span><div class="title">기획서 작성 (docs/product-specs/*.md)</div><div class="desc">FR / NFR / T 항목별 명시 · UI 키워드 자가 체크 (A+D 정책 트리거)</div></div>
+      <div class="branch"><strong>분기 — UI 키워드 1개+</strong> 면 다음 자문 단계 트리거. 키워드 0건이면 DB팀만 자문 또는 자문 단계 자동 skip.</div>
+      <div class="arrow">▼</div>
+
+      <div class="step"><span class="num">3</span><div class="title">DB팀 📋 + 디자인팀 🎨 병렬 자문</div><div class="desc">기획서 검토 → 권고/판정. 디자인팀 = A+D 정책 (오늘 신설: UI 작업이면 무조건 자문)</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step codex"><span class="num">4</span><div class="title">codex 기획서 검토 (1차)</div><div class="desc">prompt에 본문 embed (Windows sandbox 제약). FR-n / NFR-n / T-n 항목별 ⭕ / ⚠ / ❌. JSONL 기록.</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step user-gate"><span class="num">5</span><div class="title">사용자 최종승인 (1차 게이트)</div><div class="desc">⚠ 면 권고 반영 후 codex 재호출. ❌ 면 반려. ⭕ 면 다음 단계.</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step"><span class="num">6</span><div class="title">개발계획서 작성 (docs/exec-plans/*.md)</div><div class="desc">FR 반영 / 구현 순서 / 회귀 영향 / 롤백 / T 매핑</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step codex"><span class="num">7</span><div class="title">codex 개발계획 검토 (2차)</div><div class="desc">1) FR 반영 2) 순서 3) 회귀 4) 롤백 평가</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step user-gate"><span class="num">8</span><div class="title">사용자 최종승인 (2차 게이트)</div><div class="desc">개발계획 OK → 구현 진입</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step"><span class="num">9</span><div class="title">구현</div><div class="desc">Edit/Write 도구로 코드 변경. 메모리 룰 (sed -i 금지, root token self-reference 점검, specificity 매트릭스) 적용.</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step codex"><span class="num">10</span><div class="title">codex 구현 검증 (3차)</div><div class="desc">T-n 항목별 통과 확인. 회귀 점검.</div></div>
+      <div class="arrow">▼</div>
+
+      <div class="step auto"><span class="num">11</span><div class="title">"작업완료" 발화 → 자동 commit+push</div><div class="desc">harness-hardening-v1 부터 confirm 1회 추가 (echo + 진행 신호). git add 명시 파일만 (-A / . 금지). Co-Authored-By Claude 포함.</div></div>
+
+    </div>
+  </div>
+
+  <!-- ============ 사이드 — 정책 카드들 ============ -->
+  <div class="side">
+
+    <div class="card">
+      <h3><span class="ico">👥</span> 가상 팀 구성</h3>
+      <ul>
+        <li><strong>📋 DB팀</strong> — 모델 정합성, 마이그레이션, 쿼리 성능</li>
+        <li><strong>🎨 디자인팀</strong> — UI 토큰, 접근성(WCAG), 컴포넌트 일관성, 다크모드</li>
+        <li><strong>🤖 codex</strong> — 객관 검토자 (FR/NFR/T 판정). prompt embed 방식 (Windows sandbox 제약)</li>
+        <li><strong>👤 사용자</strong> — 최종 결정자 / 1·2차 게이트</li>
+      </ul>
+      <div class="meta">SoT: <code>AGENTS.md §3</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ico">🎨</span> 디자인팀 A+D 정책</h3>
+      <p><strong>A 정책</strong> — 기획서 본문에 UI 키워드 1개+ 면 자문 <span class="tag deco">필수</span></p>
+      <p><strong>D 정책</strong> — 키워드 0건이면 단계 skip (백엔드 전용)</p>
+      <p><strong>오늘 신설</strong> <span class="tag new">2026-06-01</span> — UI/CSS/페이지 작업이면 <em>기획서·키워드 무관 무조건 자문</em>. 토큰·specificity·다크 일관성·:root self-reference 점검 포함.</p>
+      <p style="font-size:0.78rem; color:var(--text2);">키워드 예: UI, css, style, hover, focus, 색상, 폰트, 배지, 버튼, 카드, 모달, 시안 ...</p>
+      <div class="meta">SoT: <code>AGENTS.md §3-1</code> + <code>feedback_ui_change_always_design_consult</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ico">🤖</span> 자동화 규칙</h3>
+      <p><strong>서버 재시작</strong> — 승인 없이 즉시 (<code>bash server-restart.sh</code>)</p>
+      <p><strong>"작업완료" 트리거</strong> — confirm 1회 추가 (단발 발화 즉시 push X):</p>
+      <ol style="font-size:0.78rem; padding-left:18px; margin:4px 0;">
+        <li>변경분 echo (status / diff / log preview)</li>
+        <li>사용자 confirm 요청</li>
+        <li>"yes"/"y"/"응"/"ok" → 진행 · 다른 응답 → cancel</li>
+      </ol>
+      <p><strong>저위험 트리거 (single-shot OK)</strong> — "집이야"/"사무실이야"/"출장중이야" → dev-environments push (시크릿 마스킹 검증 fail 시 자동 cancel)</p>
+      <p><span class="tag danger">금지</span> .env, credential, 대용량 바이너리, 민감 파일 commit</p>
+      <div class="meta">SoT: <code>AGENTS.md §5</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ico">📄</span> 시각 산출물 포맷</h3>
+      <p><strong>HTML 우선 검토</strong> (의사결정 인터페이스 목적):</p>
+      <ul>
+        <li>디자인팀 시안 비교 그리드</li>
+        <li>기획서 부속 시안 (인터랙티브 파라미터)</li>
+        <li>1회용 분류 보드 (Copy as MD)</li>
+      </ul>
+      <p><strong>MD SSoT 유지</strong> (HTML 전환 금지):</p>
+      <ul>
+        <li>CLAUDE.md / AGENTS.md / memory/*</li>
+        <li>product-specs/*.md / exec-plans/*.md</li>
+        <li>design-docs 결정 완료 문서, generated/erd.md</li>
+      </ul>
+      <p><strong>트리거 단어</strong> — "산출물로 줘" / "보고서로 줘" / "시안으로 보여줘" / "html로 보여줘" → HTML 우선</p>
+      <div class="meta">SoT: <code>AGENTS.md §8</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ico">🚫</span> 영구 패스 / 정책 보류</h3>
+      <p><strong>영구 패스 sprint</strong> — 수동 한글화 정책상 추천 금지:</p>
+      <ul style="font-size:0.78rem;">
+        <li>S4 license-country-cleanup-and-csv-fix</li>
+        <li>S11 license-registry-type-enum</li>
+        <li>S12 geonuris-license-type-enum</li>
+        <li>S14 qr-license-decision</li>
+      </ul>
+      <p><strong>Phase 4 대기</strong> — 완전 다크모드는 전체 CSS 변수 리팩터 선행 (사용자 명시 요청 시에만 진입)</p>
+      <div class="meta">SoT: <code>AGENTS.md §6 / §7</code></div>
+    </div>
+
+  </div>
+
+  <!-- ============ 하단 — 위치별 작업 + 메모리 룰 + 회복 패턴 ============ -->
+  <div class="footer-grid">
+
+    <div class="card">
+      <h3><span class="ico">🖥</span> 위치별 작업 규칙</h3>
+      <ul>
+        <li><strong>회사 PC</strong> — 운영DB 접근, Docker/PG 검증, 마이그레이션 실행</li>
+        <li><strong>집 PC / 출장 노트북</strong> — 코드 작성, 정적 검증, 문서까지. Docker/DB 설치 X. origin 기준 force OK</li>
+        <li>호스트명만으로 분기 불가 (집/회사 동일 IU) — BIOS_SERIAL / MODEL 로 식별</li>
+      </ul>
+      <div class="meta">SoT: <code>machines.md</code> + <code>feedback_company_only_resume_priority</code> + <code>feedback_home_travel_pull_force_ok</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ico">🧠</span> 메모리 적용 룰 (저장소 외)</h3>
+      <ul>
+        <li><code>sed -i</code> 금지 — Edit 도구만 (MSYS truncate 사고)</li>
+        <li>`:root` 토큰 self-reference 점검 (main-dashboard 사례)</li>
+        <li>CSS specificity 매트릭스 사전 점검 (클래스 &gt; element)</li>
+        <li>WAR 배포 파일명 = <code>ROOT.war</code> (context root /)</li>
+        <li>병렬 세션 commit 자동 통합 — 보고 불필요</li>
+      </ul>
+      <div class="meta">SoT: <code>memory/feedback_*.md</code></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="ico">⚙</span> codex 운용 제약 (Windows)</h3>
+      <ul>
+        <li>Windows PowerShell 정책상 codex sandbox 가 repo file read 차단 → <strong>prompt 에 spec/exec-plan 본문 embed</strong></li>
+        <li>OAuth 환경에서 <code>-m gpt-5</code> 명시 시 400 invalid_request_error — <code>-m</code> 생략 권장 (자동 라우팅 gpt-5.5)</li>
+        <li>trace wrapper <code>bash .team-workspace/codex-trace.sh</code> → JSONL 월별 롤링 (<code>~/.claude/trace/</code>)</li>
+        <li>verdict 자동 추출 — prompt 마지막 줄 <code>최종 판정: ⭕/⚠/❌</code> 요청</li>
+      </ul>
+      <div class="meta">SoT: <code>AGENTS.md §4</code> + <code>project_swmanager_setup</code></div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

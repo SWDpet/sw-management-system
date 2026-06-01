@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>박욱진 작업 환경 — 집 / 사무실 / 출장</title>
+<link rel="stylesheet" href="/css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); margin: 0; padding: 28px 32px 64px; }
+  h1 { font-size: 1.45rem; margin: 0 0 4px; color: var(--primary2); display: flex; align-items: center; gap: 10px; }
+  .lede { color: var(--text2); font-size: 0.88rem; margin: 0 0 24px; }
+
+  /* ─────── 3 환경 카드 그리드 ─────── */
+  .env-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; max-width: 1400px; }
+  .env-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .env-head {
+    padding: 16px 18px; color: #fff;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .env-head .ico { font-size: 1.6rem; line-height: 1; }
+  .env-head h2 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+  .env-head .sub { font-size: 0.82rem; opacity: 0.92; font-family: var(--font-mono); }
+  .env-head .updated { font-size: 0.72rem; opacity: 0.85; margin-top: 4px; }
+
+  .home    .env-head { background: linear-gradient(135deg, #6366F1 0%, #4338CA 100%); }
+  .office  .env-head { background: linear-gradient(135deg, var(--primary) 0%, var(--primary2) 100%); }
+  .travel  .env-head { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); }
+
+  .env-body { padding: 14px 18px; flex: 1; font-size: 0.82rem; }
+  .env-body h3 {
+    font-size: 0.78rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.06em; margin: 14px 0 6px;
+    padding-bottom: 3px; border-bottom: 1px dashed var(--border);
+  }
+  .env-body h3:first-child { margin-top: 0; }
+  .env-body table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .env-body th, .env-body td { text-align: left; padding: 4px 6px; vertical-align: top; }
+  .env-body th { color: var(--text2); font-weight: 600; white-space: nowrap; width: 88px; }
+  .env-body td { color: var(--text); }
+  .env-body td code { background: var(--surface-2); padding: 0 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.9em; color: var(--primary2); }
+  .env-body .highlight { background: var(--primary-lt); padding: 2px 6px; border-radius: 3px; font-weight: 700; color: var(--primary2); }
+  .env-body .diff { font-size: 0.74rem; color: var(--text2); font-style: italic; margin-top: 3px; }
+
+  .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 0.68rem; font-weight: 700; margin-right: 3px;
+  }
+  .badge.dev { background: var(--success); color: #fff; }
+  .badge.prod { background: var(--danger); color: #fff; }
+  .badge.lab { background: var(--info); color: #fff; }
+  .badge.miss { background: var(--text2); color: #fff; }
+
+  /* ─────── 하단 — 위치별 룰 + 불일치 알림 ─────── */
+  .footer { margin-top: 28px; max-width: 1400px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+  }
+  .card h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--primary2); display: flex; align-items: center; gap: 6px; }
+  .card.warn { border-color: #FDE68A; background: #FFFBEB; }
+  .card.warn h3 { color: #B45309; }
+  .card ul { font-size: 0.83rem; line-height: 1.6; padding-left: 20px; margin: 6px 0; }
+  .card li { margin: 4px 0; }
+  .card code { background: var(--surface-2); padding: 0 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.86em; color: var(--primary2); }
+  .rule-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 6px; }
+  .rule-table th { background: var(--primary-lt); color: var(--primary2); padding: 7px 10px; text-align: left; font-weight: 700; font-size: 0.78rem; }
+  .rule-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .rule-table tr:last-child td { border-bottom: none; }
+  .ok  { color: var(--success); font-weight: 700; }
+  .ng  { color: var(--danger);  font-weight: 700; }
+  .opt { color: var(--text2); }
+</style>
+</head>
+<body>
+
+<h1>🛠 박욱진 작업 환경 인벤토리</h1>
+<p class="lede">
+  SoT = <code>dev-environments</code> 저장소 (home.md / office.md / travel.md, 자체 수집 도구로 측정).
+  메모리 <code>machines.md</code> 와 일부 불일치 있음 — 본 화면에서 정확값 확인.
+</p>
+
+<div class="env-grid">
+
+  <!-- ============ 🏠 집 ============ -->
+  <div class="env-card home">
+    <div class="env-head">
+      <div class="ico">🏠</div>
+      <h2>집 (HOME)</h2>
+      <div class="sub">IUHOME · ukjin</div>
+      <div class="updated">env 갱신: 2026-05-29</div>
+    </div>
+    <div class="env-body">
+
+      <h3>식별</h3>
+      <table>
+        <tr><th>Hostname</th><td><code>IUHOME</code></td></tr>
+        <tr><th>Username</th><td><code>ukjin</code></td></tr>
+        <tr><th>OS</th><td>Windows 11 Pro 26200 (Git Bash + PS 5.1)</td></tr>
+      </table>
+
+      <h3>하드웨어 — 듀얼 QHD</h3>
+      <table>
+        <tr><th>Model</th><td>Acer <span class="highlight">Nitro AN515-45</span> (노트북)</td></tr>
+        <tr><th>CPU</th><td>AMD Ryzen 7 5800H (8C/16T)</td></tr>
+        <tr><th>RAM</th><td>15.4 GB</td></tr>
+        <tr><th>GPU</th><td>RTX 3060 Laptop + Radeon iGPU</td></tr>
+        <tr><th>모니터</th><td>듀얼 — 노트북 패널 + 외부 QHD 2560×1440 (primary)</td></tr>
+      </table>
+
+      <h3>개발 도구</h3>
+      <table>
+        <tr><th>Java PATH</th><td>21.0.11 LTS Oracle</td></tr>
+        <tr><th>JAVA_HOME</th><td><code>17.0.18 Adoptium</code> (swmanager 빌드용)</td></tr>
+        <tr><th>Maven</th><td><span class="badge miss">미설치</span> — <code>./mvnw</code> wrapper</td></tr>
+        <tr><th>Node</th><td>24.14.1 / npm 11.11.0</td></tr>
+        <tr><th>Claude Code</th><td><span class="highlight">2.1.156</span> latest 채널</td></tr>
+        <tr><th>Codex CLI</th><td>0.135.0 · <span class="highlight">API key</span> 모드</td></tr>
+        <tr><th>Docker</th><td><span class="badge miss">미설치</span></td></tr>
+        <tr><th>PostgreSQL</th><td><span class="badge miss">미설치</span> — 운영DB 사내망 접근 불가</td></tr>
+      </table>
+
+      <h3>핵심 정책</h3>
+      <ul style="padding-left:18px; margin:6px 0; font-size:0.8rem; color:var(--text2); line-height:1.55;">
+        <li>코드 작성·정적 검증·문서까지만</li>
+        <li>운영DB 접근 X, Docker/PG 설치 X</li>
+        <li>git pull 시 origin 기준 force OK (잔여물 폐기 OK)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ 🏢 사무실 ============ -->
+  <div class="env-card office">
+    <div class="env-head">
+      <div class="ico">🏢</div>
+      <h2>사무실 (OFFICE)</h2>
+      <div class="sub">IU · PUJ</div>
+      <div class="updated">env 갱신: 2026-04-27 (옛 — 갱신 필요)</div>
+    </div>
+    <div class="env-body">
+
+      <h3>식별</h3>
+      <table>
+        <tr><th>Hostname</th><td><code>IU</code></td></tr>
+        <tr><th>Username</th><td><code>PUJ</code></td></tr>
+        <tr><th>BIOS Serial</th><td><code>S1NRKD000353050</code> <span class="badge dev">유일 식별자</span></td></tr>
+        <tr><th>OS</th><td>Windows 11 Pro 26200 (Git Bash + PS 5.1)</td></tr>
+      </table>
+
+      <h3>하드웨어 — 트리플</h3>
+      <table>
+        <tr><th>Model</th><td>ASUS <span class="highlight">TUF Gaming A16 FA607PV</span></td></tr>
+        <tr><th>CPU</th><td>AMD Ryzen 9 7845HX (<span class="highlight">12C/24T</span>)</td></tr>
+        <tr><th>RAM</th><td>31.2 GB</td></tr>
+        <tr><th>GPU</th><td>RTX 4060 Laptop + Radeon iGPU</td></tr>
+        <tr><th>모니터</th><td><span class="highlight">트리플</span> — 노트북 + QHD primary + FHD</td></tr>
+      </table>
+
+      <h3>개발 도구</h3>
+      <table>
+        <tr><th>Java PATH</th><td>21.0.9 Oracle</td></tr>
+        <tr><th>JAVA_HOME</th><td><code>17.0.18 Adoptium</code></td></tr>
+        <tr><th>Maven</th><td><span class="highlight">3.9.12</span> 글로벌 설치 (집/출장과 차이)</td></tr>
+        <tr><th>Node</th><td>24.13.1 / npm 11.8.0</td></tr>
+        <tr><th>Claude Code</th><td>2.1.119 (옛 — 갱신 가능)</td></tr>
+        <tr><th>Codex CLI</th><td>0.125.0 · <span class="highlight">OAuth</span> 모드</td></tr>
+        <tr><th>Docker</th><td><span class="badge miss">미설치</span></td></tr>
+        <tr><th>PostgreSQL</th><td>
+          <span class="badge prod">운영</span> port <code>5880</code> = SW_Dept (이 PC = 운영 WAR 서버)<br>
+          <span class="badge lab">ephemeral</span> port <code>25880</code> = 검증 클러스터
+        </td></tr>
+      </table>
+
+      <h3>핵심 정책 (메인 작업 머신)</h3>
+      <ul style="padding-left:18px; margin:6px 0; font-size:0.8rem; color:var(--text2); line-height:1.55;">
+        <li><strong>운영DB 접근 + Docker/PG 검증 = 여기서만</strong></li>
+        <li>무거운 통합 테스트, 마이그레이션 실행 = 여기서만</li>
+        <li>"회사야 이어서 할거 뭐니" 트리거 — phase1-ddl 상태 우선 표시</li>
+        <li>git pull 시 force 금지 — 미커밋 보유 OK</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ ✈ 출장 ============ -->
+  <div class="env-card travel">
+    <div class="env-head">
+      <div class="ico">✈</div>
+      <h2>출장 (TRAVEL)</h2>
+      <div class="sub">IUIU · IUIU</div>
+      <div class="updated">env 갱신: 2026-05-20</div>
+    </div>
+    <div class="env-body">
+
+      <h3>식별</h3>
+      <table>
+        <tr><th>Hostname</th><td><code>IUIU</code></td></tr>
+        <tr><th>Username</th><td><code>IUIU</code> (집/사무실의 <code>ukjin/PUJ</code> 와 다른 Windows 계정)</td></tr>
+        <tr><th>OS</th><td>Windows 11 Pro 26200 (Portable Git + PS 5.1)</td></tr>
+      </table>
+
+      <h3>하드웨어 — 단일 FHD</h3>
+      <table>
+        <tr><th>Model</th><td>MSI <span class="highlight">GF75 Thin 10UC</span></td></tr>
+        <tr><th>CPU</th><td>Intel i7-10750H (6C/12T)</td></tr>
+        <tr><th>RAM</th><td>31.8 GB</td></tr>
+        <tr><th>GPU</th><td>RTX 3050 Laptop + UHD iGPU</td></tr>
+        <tr><th>모니터</th><td><span class="highlight">단일 FHD</span> 1920×1080</td></tr>
+      </table>
+
+      <h3>개발 도구</h3>
+      <table>
+        <tr><th>Java PATH</th><td>17.0.18 Adoptium (Oracle shim 없음)</td></tr>
+        <tr><th>JAVA_HOME</th><td><code>17.0.18 Adoptium</code></td></tr>
+        <tr><th>Maven</th><td><span class="badge miss">미설치</span> — <code>./mvnw</code> wrapper</td></tr>
+        <tr><th>Node</th><td>24.15.0 / npm 11.12.1</td></tr>
+        <tr><th>Git</th><td><span class="highlight">Portable</span> 2.54.0 @ <code>C:\Users\IUIU\Git\</code></td></tr>
+        <tr><th>Claude Code</th><td>2.1.145</td></tr>
+        <tr><th>Codex CLI</th><td>0.128.0 · <span class="highlight">OAuth</span> 모드</td></tr>
+        <tr><th>Docker</th><td><span class="badge miss">미설치</span></td></tr>
+        <tr><th>PostgreSQL</th><td><span class="badge miss">미설치</span> — 운영DB 사내망 접근 불가</td></tr>
+      </table>
+
+      <h3>핵심 정책</h3>
+      <ul style="padding-left:18px; margin:6px 0; font-size:0.8rem; color:var(--text2); line-height:1.55;">
+        <li>이동 중 코드 작성·문서까지만</li>
+        <li>운영DB 접근 X, Docker/PG 설치 X</li>
+        <li>git pull 시 origin 기준 force OK</li>
+        <li>Portable Git/ Windows 계정 다름 — 별도 동기화 주의</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ 하단 — 위치별 룰 비교 + 불일치 알림 ============ -->
+<div class="footer">
+
+  <div class="card">
+    <h3>📋 위치별 작업 규칙 비교</h3>
+    <table class="rule-table">
+      <thead><tr><th>항목</th><th>🏠 집</th><th>🏢 사무실</th><th>✈ 출장</th></tr></thead>
+      <tbody>
+        <tr><td>운영DB 접근</td><td class="ng">X</td><td class="ok">⭕ (포트 5880)</td><td class="ng">X</td></tr>
+        <tr><td>Docker / PG 설치</td><td class="ng">금지</td><td class="ok">⭕ (ephemeral 25880)</td><td class="ng">금지</td></tr>
+        <tr><td>마이그레이션 실행</td><td class="ng">X</td><td class="ok">⭕ (회사 PC 한정)</td><td class="ng">X</td></tr>
+        <tr><td>통합 테스트</td><td class="opt">정적만</td><td class="ok">⭕ 무거운 것까지</td><td class="opt">정적만</td></tr>
+        <tr><td>git pull force</td><td class="ok">⭕ OK (origin 기준)</td><td class="ng">금지 (미커밋 보유 OK)</td><td class="ok">⭕ OK</td></tr>
+        <tr><td>미커밋 보유</td><td class="ng">금지 (커밋 후 끝)</td><td class="ok">⭕ 가능</td><td class="ng">금지</td></tr>
+        <tr><td>트리거 단어</td><td>"집이야"</td><td>"사무실이야" / "회사야 이어서"</td><td>"출장중이야"</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.78rem; color:var(--text2); margin-top:8px;">
+      SoT: <code>memory/feedback_company_only_resume_priority.md</code> + <code>feedback_home_travel_pull_force_ok.md</code>
+    </p>
+  </div>
+
+  <div class="card warn">
+    <h3>⚠ memory ↔ dev-environments SoT 불일치</h3>
+    <p style="font-size:0.83rem; margin:0 0 8px;">
+      현재 <code>memory/machines.md</code> 가 <strong>옛 정보</strong> — dev-environments 가 SoT 라 본 화면이 정확값.
+    </p>
+    <ul style="font-size:0.82rem;">
+      <li><strong>집 PC</strong>: memory = <code>IU / PUJ</code> ❌ → 실제 = <code>IUHOME / ukjin</code> ⭕ (dev-environments home.md)</li>
+      <li><strong>모델</strong>: 집 = Acer Nitro AN515-45 / 사무실 = ASUS TUF Gaming A16 (BIOS_SERIAL <code>S1NRKD000353050</code>) / 출장 = MSI GF75 Thin 10UC</li>
+      <li><strong>분기 키 추가</strong>: 호스트명·USERNAME 모두 다름 (집 IUHOME·ukjin / 사무실 IU·PUJ / 출장 IUIU·IUIU) — 환경변수만으로 분기 가능, BIOS_SERIAL 보조</li>
+    </ul>
+    <p style="font-size:0.78rem; color:var(--text2); margin-top:10px;">
+      <strong>권고</strong>: memory/machines.md 의 "집 = IU/PUJ" 와 "호스트명만으로 분기 불가" 문구 갱신 필요. 본 HTML 확인 후 memory 갱신 진행 가능.
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

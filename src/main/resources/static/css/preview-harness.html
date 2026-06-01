@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>swmanager harness-hardening 인벤토리</title>
+<link rel="stylesheet" href="/css/design-system.css">
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); margin: 0; padding: 28px 32px 64px; }
+  h1 { font-size: 1.45rem; color: var(--primary2); margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+  h1::before { content: "🛡"; }
+  .lede { color: var(--text2); font-size: 0.88rem; margin: 0 0 8px; }
+  .meta { font-size: 0.78rem; color: var(--muted); margin: 0 0 24px; font-family: var(--font-mono); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1400px;
+  }
+
+  .category {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .cat-head {
+    padding: 14px 18px; color: #fff;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cat-head .ico { font-size: 1.5rem; line-height: 1; }
+  .cat-head h2 { margin: 0; font-size: 1.05rem; font-weight: 800; }
+  .cat-head .num { font-family: var(--font-mono); opacity: 0.85; margin-left: auto; font-size: 0.78rem; }
+
+  .cat-a .cat-head { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); }
+  .cat-b .cat-head { background: linear-gradient(135deg, #0891B2 0%, #155E75 100%); }
+  .cat-c .cat-head { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+  .cat-d .cat-head { background: linear-gradient(135deg, var(--primary) 0%, var(--primary2) 100%); }
+
+  .item {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .item:last-child { border-bottom: none; }
+  .item .h {
+    font-weight: 700; color: var(--text); margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .item .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 9px;
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .tag.sprint { background: var(--primary-lt); color: var(--primary2); }
+  .tag.new    { background: var(--scope-std); color: #fff; }
+  .tag.incident { background: var(--danger); color: #fff; }
+  .item .desc { color: var(--text2); font-size: 0.79rem; line-height: 1.55; }
+  .item code, .item kbd {
+    background: var(--surface-2); padding: 0 5px; border-radius: 3px;
+    font-family: var(--font-mono); font-size: 0.84em; color: var(--primary2);
+    word-break: break-all;
+  }
+  .item .why {
+    margin-top: 6px; padding: 6px 10px; background: var(--surface-2);
+    border-left: 3px solid var(--primary); border-radius: 0 4px 4px 0;
+    font-size: 0.76rem; color: var(--text);
+  }
+  .item .why b { color: var(--primary2); }
+
+  /* 하단 사고 사례 + 신설 룰 */
+  .footer-grid {
+    grid-column: 1 / -1;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    margin-top: 28px;
+  }
+  .incidents, .new-rules {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .incidents { border-color: #FCA5A5; background: #FEF2F2; }
+  .incidents h2 { color: var(--danger); margin: 0 0 10px; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+  .new-rules { border-color: #5EEAD4; background: var(--primary-lt); }
+  .new-rules h2 { color: var(--primary2); margin: 0 0 10px; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+  .incidents ul, .new-rules ul { padding-left: 20px; margin: 0; font-size: 0.84rem; line-height: 1.6; }
+  .incidents li, .new-rules li { margin: 6px 0; }
+  .incidents code, .new-rules code { background: rgba(255,255,255,0.7); padding: 0 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.86em; }
+</style>
+</head>
+<body>
+
+<h1>swmanager harness-hardening 인벤토리</h1>
+<p class="lede">사용자(박욱진) sprint <code style="font-family:var(--font-mono);background:var(--surface-2);padding:1px 6px;border-radius:3px;">harness-hardening-v1</code> 부터 누적된 시크릿/환경/도구/외부시스템 안전 룰.</p>
+<p class="meta">SoT: AGENTS.md §5 · application.properties · server-start.bat · .gitignore · memory/feedback_*.md · memory/project_swmanager_setup.md</p>
+
+<div class="grid">
+
+  <!-- ============ A. 시크릿/환경 마스킹 ============ -->
+  <div class="category cat-a">
+    <div class="cat-head">
+      <span class="ico">🔐</span><h2>A. 시크릿 / 환경 마스킹</h2>
+      <span class="num">4 항목</span>
+    </div>
+
+    <div class="item">
+      <div class="h">application.properties — dummy 좌표 마스킹 <span class="tag sprint">harness-hardening-v1</span></div>
+      <div class="desc">
+        <code>spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/swdept_local}</code> ·
+        <code>username=${DB_USERNAME:postgres}</code> ·
+        <code>password=${DB_PASSWORD}</code> (하드코딩 기본값 X → 미설정 시 의도된 부팅 실패)
+      </div>
+      <div class="why"><b>Why</b> — agent 가 example commit 본 보고 prod 좌표 추정/유추 차단. 실제 좌표는 <code>application-local.properties</code> (gitignored) 또는 환경변수만</div>
+    </div>
+
+    <div class="item">
+      <div class="h">.gitignore — 시크릿 패턴 일괄 차단</div>
+      <div class="desc">
+        <code>application-local.properties</code> · <code>.env</code> · <code>.env.local</code> · <code>.env.*.local</code> · <code>docs/exec-plans/*_backup_*.csv</code> (운영데이터 백업)
+      </div>
+      <div class="why"><b>예외</b> — <code>!src/main/resources/geonuris/GeoNURIS_License.jar</code> (negate, 라이선스 모듈은 필수 포함)</div>
+    </div>
+
+    <div class="item">
+      <div class="h">server-start.bat — Fail-Fast 부팅 + 자동 보정 <span class="tag sprint">commit 5e76a21</span></div>
+      <div class="desc">
+        ① <code>application-local.properties</code> 없으면 <code>.example</code> 자동 복사 + 안내 + fail-fast <br>
+        ② dummy 좌표(<code>localhost:5432/swdept_local</code>) 그대로 + <code>DB_URL</code> env 둘 다 없으면 ERROR · 1Password 안내 + 종료 <br>
+        ③ 정상이면 <code>mvnw spring-boot:run -Dspring-boot.run.profiles=local</code> + 60초 대기 + Started 마커 확인
+      </div>
+      <div class="why"><b>Why</b> — 신규 PC 셋업 시 1Password 좌표만 채우면 끝. agent 가 dummy 로 실수 부팅 X</div>
+    </div>
+
+    <div class="item">
+      <div class="h">환경별 시크릿 패턴 (dev-environments)</div>
+      <div class="desc">
+        <strong>집 (IUHOME)</strong>: <code>DB_PASSWORD</code> + <code>OPENAI_API_KEY</code> env<br>
+        <strong>사무실 (IU)</strong>: <code>DB_PASSWORD</code> env + codex OAuth<br>
+        <strong>출장 (IUIU)</strong>: <code>DB_PASSWORD</code> + <code>DB_USERNAME</code> + <code>DB_URL</code> env + codex OAuth
+      </div>
+      <div class="why"><b>SoT</b> — dev-environments home.md / office.md / travel.md "시크릿" 섹션 (값은 절대 미공개)</div>
+    </div>
+  </div>
+
+  <!-- ============ B. 자동화 게이트 ============ -->
+  <div class="category cat-b">
+    <div class="cat-head">
+      <span class="ico">🚪</span><h2>B. 자동화 게이트 (Trigger)</h2>
+      <span class="num">5 항목</span>
+    </div>
+
+    <div class="item">
+      <div class="h">"작업완료" → 자동 commit+push : confirm 1회 추가 <span class="tag sprint">harness-hardening-v1</span></div>
+      <div class="desc">
+        ① 사용자 첫 발화 ("작업완료") → Claude 가 echo: <code>git status</code> / <code>git diff --name-only</code> / <code>git log origin/master..HEAD</code><br>
+        ② push 대상 + 변경 보여주고 confirm 요청<br>
+        ③ 진행 신호 (<code>yes</code> / <code>y</code> / <code>응</code> / <code>ok</code> / 동일 트리거 재발화) → 진행<br>
+        ④ 다른 응답 (잠깐만 / 취소 / 추가 질문) → cancel + 일반 대화 모드
+      </div>
+      <div class="why"><b>Why</b> — 단발 발화 즉시 push 시 의도치 않은 commit 위험. confirm 1회로 사용자 검증 게이트</div>
+    </div>
+
+    <div class="item">
+      <div class="h">git add 명시 파일만 — <code>-A</code> / <code>.</code> 금지</div>
+      <div class="desc">
+        commit 시 변경 파일을 정확히 지정. 일괄 추가 시 .env / credential / target/ 등 의도치 않은 파일 포함 위험
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="h">저위험 트리거 (single-shot OK)</div>
+      <div class="desc">
+        <code>"집이야"</code> / <code>"사무실이야"</code> / <code>"출장중이야"</code> → dev-environments private repo push<br>
+        시크릿 마스킹 검증 fail 시 자동 cancel
+      </div>
+      <div class="why"><b>Why</b> — 환경 갱신은 자주 + 안전 (private repo + 마스킹 검증) → confirm 부담 제거</div>
+    </div>
+
+    <div class="item">
+      <div class="h">금지 commit 패턴 <span class="tag incident">위반 시 차단</span></div>
+      <div class="desc">
+        <code>.env</code> · credential 파일 · 대용량 바이너리 · 민감 파일 (CSV 백업 등)
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="h">빠른모드 opt-in</div>
+      <div class="desc">
+        <code>TRIGGER_FAST_MODE=1</code> env set 시 confirm 단계 skip (echo 는 유지). 신뢰된 일괄 작업용
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ C. 도구 안전 룰 ============ -->
+  <div class="category cat-c">
+    <div class="cat-head">
+      <span class="ico">🔧</span><h2>C. 도구 안전 룰</h2>
+      <span class="num">4 항목</span>
+    </div>
+
+    <div class="item">
+      <div class="h"><code>sed -i</code> 사용 금지 <span class="tag incident">사고 사례</span></div>
+      <div class="desc">
+        MSYS bash 의 <code>sed -i</code> 가 파일을 truncate 한 사고. 파일 수정은 <strong>Edit 도구만</strong>
+      </div>
+      <div class="why"><b>SoT</b> — memory/feedback_no_sed_inplace.md</div>
+    </div>
+
+    <div class="item">
+      <div class="h">Claude Code 도구 우선순위 — POSIX 명령 대체</div>
+      <div class="desc">
+        검색 → <strong>Grep</strong> (NOT <code>grep</code>/<code>rg</code>) · 파일 찾기 → <strong>Glob</strong> (NOT <code>find</code>/<code>ls</code>) ·
+        읽기 → <strong>Read</strong> (NOT <code>cat</code>) · 수정 → <strong>Edit</strong> (NOT <code>sed</code>/<code>awk</code>) · 쓰기 → <strong>Write</strong>
+      </div>
+      <div class="why"><b>Why</b> — 도구가 권한·로깅·diff 추적을 통합. shell 직접 호출 시 우회 위험</div>
+    </div>
+
+    <div class="item">
+      <div class="h">WAR 배포 파일명 = <code>ROOT.war</code></div>
+      <div class="desc">
+        context root <code>/</code> 운영을 위해 Downloads 복사 시 무조건 <code>ROOT.war</code> 로 rename. 다른 이름 시 context path 충돌
+      </div>
+      <div class="why"><b>SoT</b> — memory/feedback_swmanager_war_naming.md</div>
+    </div>
+
+    <div class="item">
+      <div class="h">실행 환경 분기 룰</div>
+      <div class="desc">
+        Docker / PG 설치 / 운영DB 접근 / 마이그레이션 = <strong>사무실 PC 한정</strong>. 집·출장 PC = 정적 작업만<br>
+        git pull force = <strong>집·출장 OK</strong> (origin 기준), <strong>사무실 금지</strong> (미커밋 보유)
+      </div>
+      <div class="why"><b>SoT</b> — memory/feedback_company_only_resume_priority.md + feedback_home_travel_pull_force_ok.md</div>
+    </div>
+  </div>
+
+  <!-- ============ D. 외부 시스템 안전 ============ -->
+  <div class="category cat-d">
+    <div class="cat-head">
+      <span class="ico">🌐</span><h2>D. 외부 시스템 안전</h2>
+      <span class="num">3 항목</span>
+    </div>
+
+    <div class="item">
+      <div class="h">codex sandbox 제약 (Windows) — prompt embed 방식</div>
+      <div class="desc">
+        Windows PowerShell 명령 정책상 codex 가 <code>-s workspace-write</code> 줘도 repo file read 차단 →
+        <strong>prompt 에 spec/exec-plan 본문 직접 embed</strong> 후 호출.<br>
+        OAuth 환경에서 <code>-m gpt-5</code> 명시 시 400 invalid_request_error → <code>-m</code> 생략 권장 (자동 라우팅 gpt-5.5)
+      </div>
+      <div class="why"><b>SoT</b> — memory/project_swmanager_setup.md "codex CLI 가용성" 섹션</div>
+    </div>
+
+    <div class="item">
+      <div class="h">codex-trace.sh wrapper — JSONL 월별 롤링</div>
+      <div class="desc">
+        <code>bash .team-workspace/codex-trace.sh exec -s workspace-write</code><br>
+        ① stdin pipe 로 prompt 받음 · ② codex CLI 호출 · ③ 응답 stdout · ④ JSONL append
+        (<code>~/.claude/trace/codex-trace-YYYY-MM.jsonl</code>)<br>
+        TRACE_SPRINT / TRACE_ROUND / TRACE_TAGS / TRACE_MODEL env 로 메타 기록.
+        verdict 자동 추출 — prompt 마지막에 <code>최종 판정: ⭕/⚠/❌</code> 형식 요청
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="h">R-14 — NIO atomic replace DELETE-only 보정 <span class="tag sprint">team-monitor-wildcard-watcher Phase 7</span></div>
+      <div class="desc">
+        Windows + JDK17 NIO + Git Bash <code>mv -f</code> 시 <code>ENTRY_DELETE</code> 만 발생하고 <code>ENTRY_CREATE/MODIFY</code> 누락 →
+        <code>JavaNioWatcher.handleStatusEvent</code> DELETE 분기에 <code>appearsReplacedQuickly()</code> (120ms backoff) 추가 + <code>stop()</code> 에 <code>thread.join(500)</code><br>
+        2026-04-27 라이브 스모크 통과: planner 카드 95→30→65→100% 자리유지 갱신 확인
+      </div>
+      <div class="why"><b>SoT</b> — memory/project_swmanager_setup.md "R-14" 섹션</div>
+    </div>
+  </div>
+
+  <!-- ============ 하단 — 사고 사례 + 2026-06-01 신설 ============ -->
+
+  <div class="footer-grid">
+
+    <div class="incidents">
+      <h2>⚠ 누적된 사고/위험 사례 (재발 방지 룰의 근거)</h2>
+      <ul>
+        <li><strong>MSYS sed -i truncate</strong> — sed -i 가 파일 내용 비움. → 룰 "Edit 도구만" (C-1)</li>
+        <li><strong>main-dashboard :root self-reference</strong> — <code>--primary: var(--primary)</code> invalid 토큰 → 라이트 모드 색 적용 X. 오늘(2026-06-01) commit <code>a0f1868</code> 에서 발견·fix</li>
+        <li><strong>다른 머신 미커밋 분산</strong> — commit <code>902e819</code> 별 세션 미커밋 일괄 정리. → 룰 "분기·인벤토리 추적" (machines.md)</li>
+        <li><strong>Windows NIO DELETE-only</strong> — atomic replace 시 watcher 가 변경 못 잡음. → 룰 R-14 (D-3)</li>
+        <li><strong>dummy 좌표 무심코 부팅</strong> — agent 가 example 복사 그대로 실행 위험. → 룰 fail-fast (A-3)</li>
+        <li><strong>codex Windows PowerShell 차단</strong> — file read 실패로 정적 분석 불가. → 룰 prompt embed (D-1)</li>
+      </ul>
+    </div>
+
+    <div class="new-rules">
+      <h2>🆕 2026-06-01 신설 룰 (오늘 사무실 세션)</h2>
+      <ul>
+        <li><strong>UI 변경 = 디자인팀 자문 무조건</strong> — AGENTS.md A+D 정책의 키워드 트리거 무관. 토큰·specificity·다크 일관성·:root self-reference 점검 자문 체크리스트. SoT: <code>memory/feedback_ui_change_always_design_consult.md</code></li>
+        <li><strong>:root 토큰 self-reference 점검</strong> — design-system.css 미링크 페이지가 자체 :root 정의 시 <code>var(--X)</code> self-reference 가 invalid 가 되는 함정. 디자인 자문 체크리스트에 포함</li>
+        <li><strong>CSS specificity 매트릭스 사전 점검</strong> — 클래스 selector (10) > element selector (1+1=2). <code>tfoot td</code> 의 color 가 <code>.td-comp</code> 에 override 당하는 사례. 디자인 자문 체크리스트에 포함</li>
+        <li><strong>병렬 세션 push 자동 통합 — 보고 불필요</strong> — origin master 에 우리가 안 만진 commit 이 fast-forward 통합되어도 충돌 없으면 사용자에게 보고 X. <code>memory/machines.md</code> 추가</li>
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
