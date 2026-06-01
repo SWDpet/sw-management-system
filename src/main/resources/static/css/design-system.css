@@ -28,6 +28,16 @@
   --scope-std:  #B45309;  /* amber-700 — GIS+표준 (--warning #D97706 보다 한 톤 진함) */
   --scope-all:  #1E3A5F;  /* navy — 전체 (HS·DHS·미지정) */
 
+  /* ── 사업 단계 칸반 (process-status .step-N) — teal 단일 hue 명도 progression ──
+     SoT: WorkPlanController.stepLabels (1=대상선정 … 7=대금신청). 진행 = 색 진해짐. */
+  --step-1: linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%);   /* teal-50  → teal-100 */
+  --step-2: linear-gradient(135deg, #CCFBF1 0%, #99F6E4 100%);   /* teal-100 → teal-200 */
+  --step-3: linear-gradient(135deg, #99F6E4 0%, #5EEAD4 100%);   /* teal-200 → teal-300 */
+  --step-4: linear-gradient(135deg, #5EEAD4 0%, #2DD4BF 100%);   /* teal-300 → teal-400 */
+  --step-5: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);   /* teal-400 → teal-500 */
+  --step-6: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);   /* teal-500 → teal-700 */
+  --step-7: linear-gradient(135deg, #0F766E 0%, #115E59 100%);   /* teal-700 → teal-800 */
+
   /* ── 반경 / 간격 / 전환 ── */
   --r-btn: 8px;  --r-card: 13px;  --r-sm: 6px;
   --tr: .16s ease;

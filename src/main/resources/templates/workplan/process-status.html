@@ -42,14 +42,15 @@
         .kanban-card .card-assignee { font-size: 0.72em; color: var(--text2); margin-top: 4px; }
         .kanban-card .card-date { font-size: 0.7em; color: var(--muted); }
 
-        /* 컬럼 색상 */
-        .step-1 .col-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .step-2 .col-header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .step-3 .col-header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .step-4 .col-header { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .step-5 .col-header { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .step-6 .col-header { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
-        .step-7 .col-header { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333; }
+        /* 컬럼 색상 — design-system.css `--step-N` 토큰 (teal 단일 hue 명도 progression).
+           글씨: step-1~4 진한 teal (var(--primary2)) · step-5~7 흰글씨 — 모두 WCAG AA 통과. */
+        .step-1 .col-header { background: var(--step-1); color: var(--primary2); }
+        .step-2 .col-header { background: var(--step-2); color: var(--primary2); }
+        .step-3 .col-header { background: var(--step-3); color: var(--primary2); }
+        .step-4 .col-header { background: var(--step-4); color: var(--primary2); }
+        .step-5 .col-header { background: var(--step-5); color: #fff; }
+        .step-6 .col-header { background: var(--step-6); color: #fff; }
+        .step-7 .col-header { background: var(--step-7); color: #fff; }
 
         /* 유형별 카드 보더 색상 */
         .type-CONTRACT { border-left-color: #1565c0; }
