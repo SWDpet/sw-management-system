@@ -20,6 +20,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- 재현 가능 빌드(reproducible) — 고정 timestamp. inspect-agent zip 결정성(NFR-5)에 사용. -->
+        <project.build.outputTimestamp>2026-06-02T00:00:00Z</project.build.outputTimestamp>
     </properties>
 
     <dependencies>
@@ -203,6 +205,135 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- ===== inspect-agent-download sprint: 수집모듈 zip 패키징 ===== -->
+            <!-- (1) agent-windows/VERSION (agent.version=x.y.z) → ${agent.version} 로드 -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>load-agent-version</id>
+                        <phase>initialize</phase>
+                        <goals><goal>read-project-properties</goal></goals>
+                        <configuration>
+                            <files>
+                                <file>${project.basedir}/inspection-poc/agent-windows/VERSION</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- (2) release-manifest.json 생성(파일목록 SHA-256, 자기자신 제외) + classpath sidecar(VERSION/manifest).
+                 assembly 보다 먼저 선언 → prepare-package 내 선행 실행 보장 -->
+            <plugin>
+                <groupId>org.codehaus.gmavenplus</groupId>
+                <artifactId>gmavenplus-plugin</artifactId>
+                <version>3.0.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.groovy</groupId>
+                        <artifactId>groovy</artifactId>
+                        <version>4.0.21</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>agent-release-manifest</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>execute</goal></goals>
+                        <configuration>
+                            <scripts>
+                                <script><![CDATA[
+import java.security.MessageDigest
+def base = new File(project.basedir, 'inspection-poc/agent-windows')
+def genDir = new File(project.build.directory, 'agent-gen')
+def sidecar = new File(project.build.outputDirectory, 'agent')
+genDir.mkdirs(); sidecar.mkdirs()
+def excludeExact = ['config/site.gj.json','config/site.dyg.json'] as Set
+def excludeTopDirs = ['out','snapshots','output'] as Set
+def excludeExt = ['.log','.tmp']
+def included = []
+base.eachFileRecurse { f ->
+    if (f.isDirectory()) return
+    def rel = base.toPath().relativize(f.toPath()).toString().replace('\\','/')
+    def top = rel.contains('/') ? rel.substring(0, rel.indexOf('/')) : ''
+    if (excludeTopDirs.contains(top)) return
+    if (excludeExact.contains(rel)) return
+    if (excludeExt.any { rel.toLowerCase().endsWith(it) }) return
+    included << [file: f, rel: rel]
+}
+included.sort { it.rel }
+def hashes = included.collect { e ->
+    def md = MessageDigest.getInstance('SHA-256')
+    e.file.eachByte(8192) { buf, n -> md.update(buf, 0, n) }
+    [path: e.rel, sha256: md.digest().encodeHex().toString()]
+}
+def ver = project.properties['agent.version'] ?: 'unknown'
+def ts = project.properties['project.build.outputTimestamp'] ?: ''
+def sb = new StringBuilder()
+sb << '{\n'
+sb << '  "version": "' << ver << '",\n'
+sb << '  "buildTimestamp": "' << ts << '",\n'
+sb << '  "fileCount": ' << hashes.size() << ',\n'
+sb << '  "files": [\n'
+hashes.eachWithIndex { h, i ->
+    sb << '    { "path": "' << h.path << '", "sha256": "' << h.sha256 << '" }' << (i < hashes.size()-1 ? ',' : '') << '\n'
+}
+sb << '  ]\n}\n'
+def manifest = sb.toString()
+new File(genDir, 'release-manifest.json').setText(manifest, 'UTF-8')
+new File(sidecar, 'release-manifest.json').setText(manifest, 'UTF-8')
+new File(sidecar, 'VERSION').setText(new File(base, 'VERSION').getText('UTF-8'), 'UTF-8')
+log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashes.size()}")
+                                ]]></script>
+                            </scripts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- (3) agent-windows → inspect-agent-${agent.version}.zip → target/classes/agent (= WEB-INF/classes/agent) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version>
+                <executions>
+                    <execution>
+                        <id>agent-zip</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>single</goal></goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>${project.basedir}/src/assembly/inspect-agent.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${project.build.outputDirectory}/agent</outputDirectory>
+                            <finalName>inspect-agent-${agent.version}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <attach>false</attach>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- (4) zip SHA-256 사이드카 (.zip.sha256) — assembly 후 선언 → prepare-package 내 후행 실행 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>agent-zip-sha256</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <checksum file="${project.build.outputDirectory}/agent/inspect-agent-${agent.version}.zip"
+                                          algorithm="SHA-256" fileext=".sha256" forceOverwrite="true"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- ===== /inspect-agent-download ===== -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

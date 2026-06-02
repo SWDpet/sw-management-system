@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  점검 수집모듈(agent-windows) 배포 zip 어셈블리.
+  - 소스: inspection-poc/agent-windows (리포 루트, src 밖)
+  - 실 site config(site.gj.json/site.dyg.json)·산출물(out/snapshots/output)·로그/임시파일 제외
+  - zip 내부 최상위에 inspect-agent/ 폴더 한 겹 (압축해제 splatter 방지)
+  - release-manifest.json 은 빌드 생성물(target/agent-gen)을 별도 file 로 포함
+  개발계획: docs/exec-plans/inspect-agent-download.md (v3)
+-->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
+    <id>inspect-agent</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <fileSets>
+        <!-- agent-windows 원본 (excludes 적용) -->
+        <fileSet>
+            <directory>${project.basedir}/inspection-poc/agent-windows</directory>
+            <outputDirectory>inspect-agent</outputDirectory>
+            <excludes>
+                <exclude>config/site.gj.json</exclude>
+                <exclude>config/site.dyg.json</exclude>
+                <exclude>out/**</exclude>
+                <exclude>snapshots/**</exclude>
+                <exclude>output/**</exclude>
+                <exclude>**/*.log</exclude>
+                <exclude>**/*.trace.log</exclude>
+                <exclude>**/*.tmp</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+
+    <files>
+        <!-- 빌드 생성 배포 manifest (source 트리 오염 방지 위해 target/agent-gen 에서 가져옴) -->
+        <file>
+            <source>${project.build.directory}/agent-gen/release-manifest.json</source>
+            <outputDirectory>inspect-agent</outputDirectory>
+            <destName>release-manifest.json</destName>
+        </file>
+    </files>
+</assembly>

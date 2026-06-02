@@ -1,0 +1,45 @@
+{
+  "_comment": "샘플 설정 파일 — 실제 배포 시 site.<코드>.json 으로 복사 후 현장 값으로 수정. 실 site.*.json(시크릿·실IP 포함)은 배포 zip 에서 제외됨.",
+  "site": "example",
+  "site_name": "예시 지자체 (샘플)",
+  "inspector": "점검담당자명",
+  "tier": "ap",
+  "sections": ["AP", "DB", "DBMS", "GIS"],
+  "hosts": {
+    "ap": { "expected_hostname": "EXAMPLE-AP", "ip_hint": "10.0.0.171" },
+    "db": { "expected_hostname": "EXAMPLE-DB", "ip_hint": "10.0.0.172" }
+  },
+  "remotes": {
+    "unix_db": {
+      "enabled": false,
+      "host": "10.0.0.172",
+      "port": 23,
+      "protocol": "telnet",
+      "user": "<원격계정>",
+      "os": "aix"
+    }
+  },
+  "thresholds": {
+    "perf.cpu_pct":   { "warn": 70, "crit": 85 },
+    "perf.mem_pct":   { "warn": 75, "crit": 90 },
+    "perf.swap_pct":  { "warn": 30, "crit": 60 },
+    "disk.pct":       { "warn": 80, "crit": 90 },
+    "event.error_count": { "warn": 1, "crit": 10 },
+    "gws.store_gb":   { "warn": 15, "crit": 25 }
+  },
+  "event_excludes": [
+    { "provider": "Schannel", "id": 36887 },
+    { "provider": "Schannel", "id": 36888 }
+  ],
+  "paths": {
+    "gss_log_dir":   "C:\\GeoNURIS_Spatial_Server\\logs",
+    "gws_log_dir":   "C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\logs",
+    "gws_store_dir": "C:\\Program Files\\GeoNURIS_GeoWeb_Server_64\\webapps\\uwes\\store",
+    "gws_url":       "http://localhost:8880/uwes"
+  },
+  "purge": {
+    "log_retain_days": 30,
+    "exclude_patterns": ["*DEM*", "*SLOP*"],
+    "dry_run": true
+  }
+}

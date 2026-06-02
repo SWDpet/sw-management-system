@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>점검 수집모듈 다운로드</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/design-system.css">
+    <style>
+        /* inspect-agent-download — 디자인팀 자문 준수: 시맨틱 토큰 전용(raw hex 0),
+           라벨=--text2(--muted 금지), CTA/배지=--primary, 체크섬=--font-mono,
+           클래스 스코프·!important 미사용·:root 재정의 금지·다크 자동대응 */
+        body { font-family: var(--font); background: var(--bg); color: var(--text); padding: 20px; }
+        .agent-page { max-width: 900px; margin: auto; }
+
+        .agent-page .page-header { background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r-card); padding: 18px 24px; margin-bottom: 16px;
+            box-shadow: var(--shadow-card); display: flex; justify-content: space-between; align-items: center; }
+        .agent-page .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
+        .agent-page .back-link { color: var(--text2); text-decoration: none; font-size: 0.85em; font-weight: 600; }
+        .agent-page .back-link:hover { color: var(--primary); }
+
+        .agent-page .card { background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--r-card); padding: 22px 24px; margin-bottom: 16px; box-shadow: var(--shadow-card); }
+        .agent-page .card h3 { margin: 0 0 14px; font-size: 1.02em; color: var(--text);
+            display: flex; align-items: center; gap: 8px; }
+
+        .agent-page .mod-title { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .agent-page .mod-name { font-size: 1.1em; font-weight: 700; color: var(--text); }
+        .agent-page .ver-badge { background: var(--primary); color: #fff; font-size: 0.78em; font-weight: 700;
+            padding: 2px 10px; border-radius: 20px; }
+        .agent-page .desc { color: var(--text2); font-size: 0.9em; margin: 0 0 16px; }
+
+        .agent-page .meta { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px;
+            font-size: 0.85em; margin-bottom: 18px; }
+        .agent-page .meta dt { color: var(--text2); font-weight: 600; }
+        .agent-page .meta dd { margin: 0; color: var(--text); }
+        .agent-page .sha { font-family: var(--font-mono); font-size: 0.82em; background: var(--surface-2);
+            color: var(--text); padding: 6px 10px; border-radius: var(--r-sm); word-break: break-all;
+            display: inline-flex; align-items: center; gap: 8px; }
+        .agent-page .copy-btn { background: none; border: 1px solid var(--border2); color: var(--text2);
+            border-radius: var(--r-sm); cursor: pointer; padding: 2px 7px; font-size: 0.9em; }
+        .agent-page .copy-btn:hover { color: var(--primary); border-color: var(--primary); }
+
+        .agent-page .cta { display: inline-flex; align-items: center; gap: 8px; background: var(--primary);
+            color: #fff; text-decoration: none; font-weight: 700; font-size: 0.95em;
+            padding: 11px 22px; border-radius: var(--r-btn); transition: var(--tr); }
+        .agent-page .cta:hover { background: var(--primary2); }
+        .agent-page .cta:focus-visible { outline: none; box-shadow: var(--ring); }
+
+        .agent-page .notice { color: var(--text2); font-size: 0.9em; padding: 14px;
+            background: var(--surface-2); border-radius: var(--r-sm); }
+        .agent-page ol.steps { margin: 0; padding-left: 20px; color: var(--text); font-size: 0.9em; line-height: 1.9; }
+        .agent-page .steps code { font-family: var(--font-mono); background: var(--surface-2);
+            padding: 1px 6px; border-radius: var(--r-sm); font-size: 0.9em; }
+        .agent-page .guide-note { color: var(--text2); font-size: 0.82em; margin-top: 12px; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+<div class="agent-page">
+
+    <div class="page-header">
+        <h2><i class="fas fa-box"></i> 점검 수집모듈 다운로드</h2>
+        <a class="back-link" href="/ops-doc/list"><i class="fas fa-arrow-left"></i> 목록으로</a>
+    </div>
+
+    <!-- 모듈 정보 + 다운로드 -->
+    <div class="card" th:if="${agent != null}">
+        <div class="mod-title">
+            <span class="mod-name">inspect-agent</span>
+            <span class="ver-badge" th:text="'v' + ${agent.version}">v0.0.0</span>
+        </div>
+        <p class="desc">지자체 서버(AP/DB/GIS)에서 점검 메트릭을 수집하는 Windows PowerShell 모듈입니다.</p>
+
+        <dl class="meta">
+            <dt>빌드 시각</dt><dd th:text="${agent.buildTimestamp}">-</dd>
+            <dt>파일 수</dt><dd th:text="${agent.fileCount} + '개'">-</dd>
+            <dt><i class="fas fa-shield-halved"></i> SHA-256</dt>
+            <dd>
+                <span class="sha">
+                    <span id="shaVal" th:text="${agent.sha256}">-</span>
+                    <button type="button" class="copy-btn" aria-label="SHA-256 체크섬 복사"
+                            onclick="copySha()"><i class="fas fa-copy"></i></button>
+                </span>
+            </dd>
+        </dl>
+
+        <a class="cta" th:href="@{/ops-doc/inspect-agent/download}">
+            <i class="fas fa-download"></i> 다운로드 (.zip)
+        </a>
+    </div>
+
+    <!-- 빌드 산출물 미존재 시 -->
+    <div class="card" th:if="${agent == null}">
+        <div class="notice"><i class="fas fa-circle-info"></i>
+            수집모듈 배포본이 아직 준비되지 않았습니다. (빌드 패키징 누락 — 관리자 문의)</div>
+    </div>
+
+    <!-- 설치/실행 가이드 요약 -->
+    <div class="card">
+        <h3><i class="fas fa-list-check"></i> 설치 / 실행 요약</h3>
+        <ol class="steps">
+            <li>다운로드한 zip 을 점검 대상 서버에 압축 해제 (<code>inspect-agent/</code> 폴더 생성)</li>
+            <li><code>setup.ps1</code> (또는 <code>setup-gui.ps1</code>) 실행 — 대화형 설정 wizard</li>
+            <li><code>config/site.example.json</code> 을 <code>site.&lt;코드&gt;.json</code> 으로 복사 후 현장 값 입력</li>
+            <li><code>inspect.ps1</code> 실행 → QR 생성 → SW Manager 점검내역서에 업로드</li>
+        </ol>
+        <p class="guide-note">상세 절차는 압축 내 <code>README.md</code> 를 참고하세요.
+            무결성 검증은 위 SHA-256 값과 다운로드 파일의 해시를 대조하세요.</p>
+    </div>
+
+</div>
+
+<script>
+    function copySha() {
+        var el = document.getElementById('shaVal');
+        if (!el) return;
+        var txt = el.textContent.trim();
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(txt).then(function () { flashCopied(); });
+        }
+    }
+    function flashCopied() {
+        var b = document.querySelector('.agent-page .copy-btn');
+        if (!b) return;
+        var orig = b.innerHTML;
+        b.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(function () { b.innerHTML = orig; }, 1200);
+    }
+</script>
+</body>
+</html>
