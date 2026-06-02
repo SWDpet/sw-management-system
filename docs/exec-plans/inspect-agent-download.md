@@ -10,8 +10,8 @@ created: "2026-06-02"
 - **작성팀**: 개발팀
 - **작성일**: 2026-06-02 (회사 PC)
 - **근거 기획서**: [[inspect-agent-download]] **v0.4 (사용자 최종승인 2026-06-02)** — codex 1·2차 + 디자인팀 자문 반영
-- **상태**: draft v2 — codex 검토(⚠수정필요) 5건 반영 완료
-- **codex 검토 원문**: `docs/product-specs/reviews/inspect-agent-download-execplan-codex-1st.md`
+- **상태**: draft v3 — codex 1·2·3차 반영 완료 (VERSION 로딩 방식 정정)
+- **codex 검토 원문**: `.../reviews/inspect-agent-download-execplan-codex-1st.md`(1차), `...-execplan-codex-2nd.md`(3차)
 - **다음 단계**: 사용자 승인 → 구현
 
 ---
@@ -38,18 +38,18 @@ created: "2026-06-02"
 ## 1. 작업 순서
 
 ### Step 1 — 수집모듈 측 산출물 (agent-windows)
-**1-1.** `inspection-poc/agent-windows/VERSION` 신규 — 배포 버전 SoT(예: `0.2.0`). 단일 라인.
+**1-1.** `inspection-poc/agent-windows/VERSION` 신규 — 배포 버전 SoT. ⚠ **properties 형식 `agent.version=0.2.0`** (codex 3차 — `read-project-properties` 가 `key=value` 를 읽으므로 단일 값 `0.2.0` 은 불가). 페이지 표기 버전은 release-manifest.json 의 `version` 필드에서 읽음.
 **1-2.** `inspection-poc/agent-windows/config/site.example.json` 신규 — 실 site config(`site.gj.json`/`site.dyg.json`) 구조의 **마스킹 샘플**(시크릿·실주소 제거). 배포 zip 엔 이것만 포함.
 - 기존 `manifest.json`(런타임) 미변경.
 
 ### Step 2 — 빌드 패키징 (pom.xml + assembly descriptor)
 > ⚠ codex 검토 반영 — assembly 문법·실행 순서·sidecar 배치·self-hash·exclude 정정.
 
-**2-1.** `pom.xml` `<properties>`: `<project.build.outputTimestamp>` 고정값(재현성) + agent 버전 property(= `agent-windows/VERSION` 값, `properties-maven-plugin` `read-project-properties` 로 로드).
+**2-1.** `pom.xml` `<properties>`: `<project.build.outputTimestamp>` 고정값(재현성). agent 버전 = `properties-maven-plugin` `read-project-properties` 로 **`inspection-poc/agent-windows/VERSION`**(=`agent.version=0.2.0` properties) 로드 → `${agent.version}` (codex 3차 정정).
 **2-2. assembly descriptor** `src/assembly/inspect-agent.xml` (codex #2 — 문법 정정):
-- 소스 = **`<fileSet><directory>${project.basedir}/inspection-poc/agent-windows</directory></fileSet>`** (★ `<baseDirectory>` 로 소스 지정 금지 — 그건 zip 내부 최상위 폴더명).
+- 소스 = **`<fileSet><directory>${project.basedir}/inspection-poc/agent-windows</directory><outputDirectory>inspect-agent</outputDirectory></fileSet>`** (★ `<baseDirectory>` 로 소스 지정 금지. fileSet `outputDirectory=inspect-agent` 로 **zip 내부 최상위 `inspect-agent/` 폴더** 한 겹 둬 압축해제 시 splatter 방지).
 - format `zip`.
-- **exclude**(codex #5 — `.gitignore` 대조): `config/site.gj.json`, `config/site.dyg.json`, `out/**`, `snapshots/**`, `output/**`, `**/*.log`, `*.trace.log`, `*.tmp`.
+- **exclude**(codex #5 — `.gitignore` 대조, 재귀패턴): `config/site.gj.json`, `config/site.dyg.json`, `out/**`, `snapshots/**`, `output/**`, `**/*.log`, `**/*.trace.log`, `**/*.tmp`.
 - **include**: 그 외 전체 + `config/site.example.json` + `VERSION` + `release-manifest.json`.
 **2-3. plugin config** `maven-assembly-plugin` **버전 고정** + execution `phase=prepare-package`:
 - plugin configuration 에 **`<outputDirectory>${project.build.outputDirectory}/agent</outputDirectory>`** (= target/classes/agent), **`<appendAssemblyId>false</appendAssemblyId>`**(파일명 `inspect-agent-<ver>.zip` 보장), `finalName=inspect-agent-${agent.version}`, reproducible(outputTimestamp·entry 정렬).
@@ -115,5 +115,6 @@ created: "2026-06-02"
 - agent 버전 property 와 VERSION 파일 동기 방식(properties-maven-plugin vs 수동).
 
 ## 5. 변경 이력
+- **2026-06-02 v3** (회사 PC) — codex 3차 반영: **VERSION 을 `agent.version=0.2.0` properties 형식**으로(read-project-properties 호환, 빌드차단 리스크 해소), exclude 재귀패턴(`**/*.tmp`·`**/*.trace.log`), assembly fileSet `outputDirectory=inspect-agent`(zip 내부 폴더 한 겹). 페이지 버전은 release-manifest.json 에서 읽음. #3은 POM 선언순서대로 구현 시 보장(조건부). 다음 = 사용자 승인.
 - **2026-06-02 v2** (회사 PC) — codex 검토(⚠수정필요) 5건 반영: #1 VERSION·release-manifest·.sha256 **classpath sidecar 배치**(페이지 메타 로딩), #2 assembly descriptor 문법(`fileSet.directory`·plugin `outputDirectory`·`appendAssemblyId=false`), #3 zip checksum **assembly 후** 순서, #4 release-manifest **self-hash 제외**, #5 exclude 에 `out/`·`snapshots/`·`*.trace.log`·`*.tmp` 추가. prepare-package 실행순서 명시 + 롤백 clean package 검증. 다음 = 사용자 승인.
 - **2026-06-02 v1** (회사 PC) — 기획서 v0.4 최종승인 기반 초안. prepare-package 패키징·VERSION/release-manifest 분리·재현성·권한 이중·디자인 자문 반영. 다음 = codex 검토.
