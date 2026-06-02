@@ -1,6 +1,6 @@
 # 점검 수집모듈 다운로드 제공 (inspect-agent-download)
 
-> **Status**: `draft v0.4` (2026-06-02, 회사 PC) — codex 1차+2차 + 디자인팀 자문 **모두 반영**. codex 2차 "최종승인 조건" 4건 정정 완료. 다음 = **사용자 최종승인** → 개발계획.
+> **Status**: ✅ `done` (2026-06-02, 회사 PC) — 승인된 v0.4 기반 구현·검증·커밋 완료 (commit `5d25948` master push, 다운로드 스모크 성공).
 > **디자인 자문 원문**: `docs/design-docs/components/inspect-agent-download-page.md`
 > **codex 2차 원문**: `docs/product-specs/reviews/inspect-agent-download-codex-2nd.md`
 > **Sprint**: `inspect-agent-download`

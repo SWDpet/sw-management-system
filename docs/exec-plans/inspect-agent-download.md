@@ -1,7 +1,7 @@
 ---
 tags: [dev-plan, sprint, feature, ops-doc, inspection]
 sprint: "inspect-agent-download"
-status: draft
+status: done
 created: "2026-06-02"
 ---
 
@@ -10,9 +10,9 @@ created: "2026-06-02"
 - **작성팀**: 개발팀
 - **작성일**: 2026-06-02 (회사 PC)
 - **근거 기획서**: [[inspect-agent-download]] **v0.4 (사용자 최종승인 2026-06-02)** — codex 1·2차 + 디자인팀 자문 반영
-- **상태**: draft v3 — codex 1·2·3차 반영 완료 (VERSION 로딩 방식 정정)
+- **상태**: ✅ done — 구현·검증·커밋 완료 (commit `5d25948`, 2026-06-02 13:11, origin master push)
 - **codex 검토 원문**: `.../reviews/inspect-agent-download-execplan-codex-1st.md`(1차), `...-execplan-codex-2nd.md`(3차)
-- **다음 단계**: 사용자 승인 → 구현
+- **완료 근거**: 빌드 산출물 `target/classes/agent/`(inspect-agent-0.2.0.zip + sidecar 3종) 생성 확인, 다운로드 스모크 성공(사용자 확인)
 
 ---
 
@@ -115,6 +115,7 @@ created: "2026-06-02"
 - agent 버전 property 와 VERSION 파일 동기 방식(properties-maven-plugin vs 수동).
 
 ## 5. 변경 이력
+- **2026-06-02 ✅ done** (회사 PC) — 사용자 승인 후 Step 1~5 구현, Step 6 검증(빌드 산출물 + 다운로드 스모크 성공). commit `5d25948` master push.
 - **2026-06-02 v3** (회사 PC) — codex 3차 반영: **VERSION 을 `agent.version=0.2.0` properties 형식**으로(read-project-properties 호환, 빌드차단 리스크 해소), exclude 재귀패턴(`**/*.tmp`·`**/*.trace.log`), assembly fileSet `outputDirectory=inspect-agent`(zip 내부 폴더 한 겹). 페이지 버전은 release-manifest.json 에서 읽음. #3은 POM 선언순서대로 구현 시 보장(조건부). 다음 = 사용자 승인.
 - **2026-06-02 v2** (회사 PC) — codex 검토(⚠수정필요) 5건 반영: #1 VERSION·release-manifest·.sha256 **classpath sidecar 배치**(페이지 메타 로딩), #2 assembly descriptor 문법(`fileSet.directory`·plugin `outputDirectory`·`appendAssemblyId=false`), #3 zip checksum **assembly 후** 순서, #4 release-manifest **self-hash 제외**, #5 exclude 에 `out/`·`snapshots/`·`*.trace.log`·`*.tmp` 추가. prepare-package 실행순서 명시 + 롤백 clean package 검증. 다음 = 사용자 승인.
 - **2026-06-02 v1** (회사 PC) — 기획서 v0.4 최종승인 기반 초안. prepare-package 패키징·VERSION/release-manifest 분리·재현성·권한 이중·디자인 자문 반영. 다음 = codex 검토.
