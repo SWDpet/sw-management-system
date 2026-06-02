@@ -54,6 +54,7 @@
 - `@docs/product-specs/ai-search.md` — AI 검색 기획서
 - `@docs/DESIGN.md` — 디자인 시스템
 - `@docs/SECURITY.md` / `@docs/RELIABILITY.md` — 보안·안정성
+- `@docs/DB_CONNECTION.md` — 운영DB 환경별(내부망/외부망) 접속 가이드
 - `@docs/exec-plans/archive/quotation-deploy.md` — 견적서 배포 가이드
 
 ---
