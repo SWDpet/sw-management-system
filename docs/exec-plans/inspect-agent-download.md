@@ -10,8 +10,9 @@ created: "2026-06-02"
 - **작성팀**: 개발팀
 - **작성일**: 2026-06-02 (회사 PC)
 - **근거 기획서**: [[inspect-agent-download]] **v0.4 (사용자 최종승인 2026-06-02)** — codex 1·2차 + 디자인팀 자문 반영
-- **상태**: draft v1 — codex 검토 대기
-- **다음 단계**: codex 검토 → 사용자 승인 → 구현
+- **상태**: draft v2 — codex 검토(⚠수정필요) 5건 반영 완료
+- **codex 검토 원문**: `docs/product-specs/reviews/inspect-agent-download-execplan-codex-1st.md`
+- **다음 단계**: 사용자 승인 → 구현
 
 ---
 
@@ -42,15 +43,24 @@ created: "2026-06-02"
 - 기존 `manifest.json`(런타임) 미변경.
 
 ### Step 2 — 빌드 패키징 (pom.xml + assembly descriptor)
-**2-1.** `pom.xml` `<properties>`: `<project.build.outputTimestamp>` 고정값(재현성) + agent 버전 property(= VERSION 파일값, `properties-maven-plugin` 으로 로드 또는 수동 동기).
-**2-2.** `src/assembly/inspect-agent.xml` descriptor:
-- `<baseDirectory>` = `inspection-poc/agent-windows`, format `zip`.
-- **exclude**: `config/site.gj.json`, `config/site.dyg.json`, `output/**`, `**/*.log`, temp.
+> ⚠ codex 검토 반영 — assembly 문법·실행 순서·sidecar 배치·self-hash·exclude 정정.
+
+**2-1.** `pom.xml` `<properties>`: `<project.build.outputTimestamp>` 고정값(재현성) + agent 버전 property(= `agent-windows/VERSION` 값, `properties-maven-plugin` `read-project-properties` 로 로드).
+**2-2. assembly descriptor** `src/assembly/inspect-agent.xml` (codex #2 — 문법 정정):
+- 소스 = **`<fileSet><directory>${project.basedir}/inspection-poc/agent-windows</directory></fileSet>`** (★ `<baseDirectory>` 로 소스 지정 금지 — 그건 zip 내부 최상위 폴더명).
+- format `zip`.
+- **exclude**(codex #5 — `.gitignore` 대조): `config/site.gj.json`, `config/site.dyg.json`, `out/**`, `snapshots/**`, `output/**`, `**/*.log`, `*.trace.log`, `*.tmp`.
 - **include**: 그 외 전체 + `config/site.example.json` + `VERSION` + `release-manifest.json`.
-- `<outputDirectory>` = `${project.build.outputDirectory}/agent` (= target/classes/agent).
-**2-3.** `maven-assembly-plugin` **버전 고정** + execution `phase=prepare-package`, `finalName=inspect-agent-${agent.version}`, reproducible(outputTimestamp 적용, entry 정렬).
-**2-4.** **release-manifest.json 생성** — `gmavenplus-plugin`(groovy) 등으로 `generate-resources`~`prepare-package`(assembly 직전)에 agent-windows 파일 walk → `{version, buildTimestamp(=outputTimestamp, 결정적), files:[{path, sha256}]}` 생성 → assembly include. (buildTimestamp 는 비결정 `now()` 금지 — 재현성 위해 outputTimestamp 사용)
-**2-5.** zip 자체 SHA-256 사이드카: `inspect-agent-<ver>.zip.sha256` 생성(페이지 표기용) — checksum plugin 또는 동일 groovy 단계.
+**2-3. plugin config** `maven-assembly-plugin` **버전 고정** + execution `phase=prepare-package`:
+- plugin configuration 에 **`<outputDirectory>${project.build.outputDirectory}/agent</outputDirectory>`** (= target/classes/agent), **`<appendAssemblyId>false</appendAssemblyId>`**(파일명 `inspect-agent-<ver>.zip` 보장), `finalName=inspect-agent-${agent.version}`, reproducible(outputTimestamp·entry 정렬).
+**2-4. release-manifest.json 생성** (assembly **전** — `gmavenplus-plugin` groovy, prepare-package 선언순서상 assembly execution 보다 먼저):
+- agent-windows 파일 walk → `{version, buildTimestamp(=outputTimestamp, 결정적), files:[{path, sha256}]}` 생성.
+- ★ codex #4 — **`release-manifest.json` 자기 자신은 files 해시 대상에서 제외**(순환 방지).
+- 생성 위치 = agent-windows 루트(assembly include 대상) **및** `target/classes/agent/` sidecar(아래 2-6).
+**2-5. zip SHA-256 사이드카** (assembly **후** + WAR 생성 전 — codex #3): `target/classes/agent/inspect-agent-<ver>.zip.sha256` 생성. assembly execution **이후** 선언된 groovy/checksum execution(같은 prepare-package, 선언순서 보장).
+**2-6. classpath sidecar 배치** (codex #1 — 페이지 메타 로딩) — 컨트롤러가 `ClassPathResource("agent/VERSION"·"agent/release-manifest.json"·"agent/...zip.sha256")` 로 읽으므로, 이 3개를 zip 내부뿐 아니라 **`target/classes/agent/` 에 sidecar 로도 복사**(VERSION·release-manifest = 2-4 단계에서, .sha256 = 2-5 단계에서).
+
+> **prepare-package 실행 순서 요약**: ① properties 로드 → ② release-manifest 생성(+sidecar) → ③ assembly zip → ④ zip .sha256(+sidecar) → (package) ⑤ war:war 가 target/classes/** 포함.
 
 ### Step 3 — 다운로드 컨트롤러 (신규 `InspectAgentController`, `controller/ops` 패키지)
 **3-1.** 권한 헬퍼 — `DocumentController.getAuth()` 동등(`isAdmin()?EDIT:authDocument?:NONE`). `NONE` 차단(NFR-1).
@@ -69,7 +79,7 @@ created: "2026-06-02"
 - `.header-actions` 에 `<a href="/ops-doc/inspect-agent" class="btn-primary"><i class="fas fa-box"></i> 수집모듈 다운로드</a>` 추가(드롭다운 옆). 기존 동작 무영향.
 
 ### Step 6 — 테스트 / 검증
-- **빌드**: `clean package` 후 `ROOT.war` 내 `WEB-INF/classes/agent/inspect-agent-<ver>.zip` + `.sha256` + (zip 내부) `release-manifest.json`·`VERSION`·`site.example.json` 존재 / `site.gj.json`·`site.dyg.json` **미포함** (T-4).
+- **빌드**: `clean package` 후 `ROOT.war` 내 `WEB-INF/classes/agent/` 에 ① `inspect-agent-<ver>.zip` ② **sidecar `VERSION`·`release-manifest.json`·`inspect-agent-<ver>.zip.sha256`**(컨트롤러 ClassPathResource 대상) 존재. zip 내부엔 `release-manifest.json`·`VERSION`·`site.example.json` 포함 / `site.gj.json`·`site.dyg.json`·`out/`·`snapshots/` **미포함** (T-4).
 - **재현성(NFR-5)**: `clean package` 2회 → 두 zip **바이트 동일**(sha 비교) (T-6).
 - **다운로드(T-1~T-3b,T-8)**: 페이지 200(버전·체크섬·가이드) / 다운로드 200 `application/zip`+`Content-Length` / 미인증 redirect / `authDocument==NONE` 403 / 산출물 누락 시 404.
 - **무결성(T-5)**: 페이지 SHA-256 == 실제 zip == `.sha256`. release-manifest 파일해시 일치.
@@ -95,8 +105,9 @@ created: "2026-06-02"
 | T-1~T-8 | Step 6 |
 
 ## 3. 롤백
-- 순수 추가 sprint — 커밋 단위 revert 안전. 제거 대상: pom assembly/groovy execution + `src/assembly/inspect-agent.xml`, `InspectAgentController`, `ops-doc/inspect-agent.html`, list.html 링크 1줄, `agent-windows/VERSION`·`site.example.json`·(빌드생성)release-manifest.
+- 순수 추가 sprint — 커밋 단위 revert 안전. 제거 대상: pom assembly/groovy/properties execution + `src/assembly/inspect-agent.xml`, `InspectAgentController`, `ops-doc/inspect-agent.html`, list.html 링크 1줄, `agent-windows/VERSION`·`site.example.json`·(빌드생성)release-manifest.
 - DB 변경 없음.
+- ⚠ pom 변경은 ROOT.war 빌드 전체 영향 → **revert 후 `clean package` 로 정상 빌드 복귀 검증**을 롤백 절차에 포함(codex).
 
 ## 4. 미해결/구현 시 확정
 - release-manifest 생성 플러그인 최종 선택(gmavenplus vs antrun+script) — 구현 시 PoC.
@@ -104,4 +115,5 @@ created: "2026-06-02"
 - agent 버전 property 와 VERSION 파일 동기 방식(properties-maven-plugin vs 수동).
 
 ## 5. 변경 이력
+- **2026-06-02 v2** (회사 PC) — codex 검토(⚠수정필요) 5건 반영: #1 VERSION·release-manifest·.sha256 **classpath sidecar 배치**(페이지 메타 로딩), #2 assembly descriptor 문법(`fileSet.directory`·plugin `outputDirectory`·`appendAssemblyId=false`), #3 zip checksum **assembly 후** 순서, #4 release-manifest **self-hash 제외**, #5 exclude 에 `out/`·`snapshots/`·`*.trace.log`·`*.tmp` 추가. prepare-package 실행순서 명시 + 롤백 clean package 검증. 다음 = 사용자 승인.
 - **2026-06-02 v1** (회사 PC) — 기획서 v0.4 최종승인 기반 초안. prepare-package 패키징·VERSION/release-manifest 분리·재현성·권한 이중·디자인 자문 반영. 다음 = codex 검토.
