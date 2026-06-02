@@ -1,6 +1,7 @@
 # 점검 수집모듈 다운로드 제공 (inspect-agent-download)
 
-> **Status**: `draft v0.2` (2026-06-02, 회사 PC) — codex 1차 검토(⚠수정필요) 반영. §7 결정 5건 확정(codex 권고 채택). 다음 = 디자인팀 자문 → codex 2차.
+> **Status**: `draft v0.3` (2026-06-02, 회사 PC) — codex 1차 반영(v0.2) + **디자인팀 자문 완료(조건부 승인)**. 다음 = codex 2차 → 사용자 최종승인.
+> **디자인 자문 원문**: `docs/design-docs/components/inspect-agent-download-page.md`
 > **Sprint**: `inspect-agent-download`
 > **워크플로우**: 기획서 → **디자인팀 자문(UI 신규 페이지)** → codex → 사용자 최종승인 → 개발계획 → codex → 구현 → codex 검증
 > **codex 1차 원문**: `docs/product-specs/reviews/inspect-agent-download-and-https-codex-1st.md`
@@ -41,7 +42,7 @@
 |---|---|
 | **NFR-1** | **권한 — 인증 + 업무권한 이중** (codex 지적) — `/ops-doc/**` 는 SecurityConfig상 인증만 → 다운로드 페이지·엔드포인트는 **컨트롤러에서 `authDocument != NONE` 추가 검사** (가능하면 `EDIT` 이상). 무인증 공개 금지. |
 | **NFR-2** | WAR 크기 영향 최소 — agent zip(<~수 MB) war(~100M) 대비 미미. 빌드 후 실측·기록. |
-| **NFR-3** | 디자인 일관성 — design-system.css 토큰 사용, 다크모드 일관, specificity·:root self-reference 점검 ([[feedback_ui_change_always_design_consult]] — 디자인팀 자문 필수). |
+| **NFR-3** | 디자인 일관성 (디자인팀 자문 반영) — ① **시맨틱 토큰만 사용**(raw hex 금지, `var(--surface)`/`var(--text)` 등), 신규 토큰 불필요 → **페이지 `:root` 재정의 금지**. ② **`--muted`(2.52:1) 의미텍스트 금지 → `--text2`(7.63:1) 사용**. ③ 시맨틱 토큰으로 **다크 자동대응**(페이지 전용 `[data-theme=dark]` 블록 미추가, NFR-4 범위). ④ 클래스 스코프 selector·`!important` 미사용(specificity 단일레벨). ⑤ CTA·버전배지 `--primary`+#fff(5.47:1), 체크섬 `--font-mono`. 형제 `ops-doc/list` 카드 패턴 계승. |
 | **NFR-4** | 회귀 0건 — `/ops-doc/list` 기존 동작 무영향, ROOT.war 정상 기동. |
 | **NFR-5** | **결정적 zip** — maven-assembly reproducible(고정 timestamp + 파일 정렬)로 **동일 입력 → 동일 zip 바이트** 보장. |
 
@@ -75,5 +76,6 @@
 - 자동 업데이트/버전체크 클라이언트 — 후속.
 
 ## 9. 변경 이력
+- **2026-06-02 v0.3** (회사 PC) — 디자인팀 자문 완료(조건부 승인): NFR-3 에 토큰전용·`--muted` 금지(→`--text2`)·다크 자동대응·specificity·CTA 대비 5.47:1 명시. 자문서 = `docs/design-docs/components/inspect-agent-download-page.md`. 다음 = codex 2차.
 - **2026-06-02 v0.2** (회사 PC) — codex 1차 검토 반영: §7 5건 확정, FR-1(assembly·package phase·재현성·제외목록)·FR-3(application/zip·Content-Length·404)·FR-5(버전 단일소스)·FR-6(manifest)·NFR-1(업무권한 이중)·NFR-5(결정적 zip)·T-3b/T-6/T-8 추가. 다음 = 디자인팀 자문 → codex 2차.
 - **2026-06-02 v0.1** (회사 PC) — 초안. 전용 페이지 + 빌드시 zip 방향 확정.
