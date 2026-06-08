@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HTTPS 전환 실행 가이드 — SW Manager</title>
+<title>HTTPS 전환 실행 가이드 — SW Manager (swbms.geonuris.net)</title>
 <style>
   :root{
     --bg:#f4f6f9; --surface:#fff; --surface2:#f0f3f7; --line:#dde3ea;
@@ -21,15 +21,17 @@
   .domainbar{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
     padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px;display:flex;
     align-items:center;gap:12px;flex-wrap:wrap;}
-  .domainbar label{font-weight:600;font-size:.92rem;}
-  .domainbar input{flex:1;min-width:220px;font-family:var(--mono);font-size:.95rem;
-    padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);}
-  .domainbar input:focus{outline:2px solid var(--primary);border-color:var(--primary);}
+  .domainbar .dlabel{font-weight:600;font-size:.92rem;}
+  .domainbar .dval{flex:1;min-width:220px;font-family:var(--mono);font-size:1rem;font-weight:600;
+    color:var(--primary-d);padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);}
   .progress{font-size:.85rem;color:var(--text2);}
   .progress b{color:var(--primary);}
   .reset{font-size:.8rem;color:var(--text2);background:none;border:1px solid var(--line);
     border-radius:6px;padding:5px 10px;cursor:pointer;}
   .reset:hover{background:var(--surface2);}
+  .flow{background:#0f1722;color:#cbd5e1;border-radius:var(--r);padding:14px 16px;margin:0 0 14px;
+    font-family:var(--mono);font-size:.8rem;overflow-x:auto;line-height:1.7;box-shadow:var(--shadow);}
+  .flow b{color:#7dd3fc;}
   .step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
     box-shadow:var(--shadow);margin:14px 0;overflow:hidden;}
   .step-h{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;cursor:pointer;}
@@ -77,31 +79,45 @@
 <div class="wrap">
   <header>
     <h1>🔒 전체 HTTPS 전환 — 실행 가이드</h1>
-    <p>SW Manager 운영(Windows + 외부 Tomcat 11 + ROOT.war) · nginx TLS 종단 + win-acme(Let's Encrypt) · iptime DDNS<br>
-    근거 런북: <code class="inl">docs/exec-plans/https-reverse-proxy-deploy.md</code> v0.4.1 (승인본)</p>
+    <p>SW Manager 운영(Windows + 외부 Tomcat 11 + ROOT.war) · nginx TLS 종단 + win-acme(Let's Encrypt)<br>
+    근거 런북: <code class="inl">docs/exec-plans/https-reverse-proxy-deploy.md</code> · 본인 도메인(가비아) 확정본</p>
   </header>
 
   <div class="domainbar">
-    <label for="domain">내 DDNS 도메인</label>
-    <input id="domain" type="text" placeholder="예: swmgr.iptime.org" autocomplete="off">
+    <span class="dlabel">확정 도메인</span>
+    <span class="dval">swbms.geonuris.net</span>
     <span class="progress">진행 <b id="pcount">0</b>/7</span>
     <button class="reset" id="reset">진행 초기화</button>
   </div>
-  <div class="note">위에 도메인을 입력하면 아래 모든 명령·설정의 <span class="dom">xxxx.iptime.org</span> 자리가 자동으로 바뀝니다. 각 단계 헤더를 클릭하면 펼쳐지고, 체크박스로 완료 표시(브라우저에 저장)됩니다.</div>
+
+  <div class="flow">목표 최종 형태 (포트 없이 표준 443):
+[외부 갤탭/PC] ──https://<b>swbms.geonuris.net</b>──▶ [iptime 공유기 공인IP <b>443</b>]
+   ──포트포워딩──▶ [Windows 서버 <b>443</b>  nginx TLS종단] ──http──▶ [Tomcat <b>127.0.0.1:8093</b> (ROOT.war)]</div>
+
+  <div class="note">각 단계 헤더를 클릭하면 펼쳐지고, 체크박스로 완료 표시(이 브라우저에 저장)됩니다. <b>순서대로</b> 진행하세요 — 특히 Step 1(공유기 포트 비우기) → Step 4(80 먼저) → Step 5(발급) → Step 6(443) 순서가 중요합니다.</div>
 
   <!-- STEP 1 -->
-  <section class="step" data-step="1">
+  <section class="step open" data-step="1">
     <div class="step-h">
       <div class="step-n">1</div>
-      <div class="step-t"><h2>iptime DDNS 등록</h2><div class="who">직접 — 공유기 관리자 웹 UI</div></div>
+      <div class="step-t"><h2>DNS A레코드 확인 + iptime 80/443 점유 해소 ★현재 막힌 지점</h2><div class="who">직접 — 가비아 DNS + iptime 공유기</div></div>
       <label class="step-chk" onclick="event.stopPropagation()"><input type="checkbox" class="sc">완료</label>
     </div>
     <div class="step-body">
+      <div class="warn"><b>원인:</b> 포트를 안 붙이면(=80/443) iptime 공유기가 그 포트를 <b>자기 관리자 페이지로 점유</b>해서, 서버가 아니라 공유기 화면이 떴습니다. 그래서 8092로 우회 중이었던 것. DNS/SRV 문제가 아니라 <b>공유기 포트 문제</b>입니다.</div>
+      <div class="cap">① 가비아 DNS — A레코드 확인 (SRV 아님):</div>
       <ul class="tasks">
-        <li>iptime 관리자(<code class="inl">192.168.0.1</code>) 접속 → 고급설정 → 특수기능 → <b>DDNS</b></li>
-        <li>호스트이름 <span class="dom">xxxx.iptime.org</span> 등록, 사용자 계정 입력 → <b>정상 갱신</b> 상태 확인</li>
+        <li>가비아 → 도메인 → DNS 관리 → 레코드 타입 <b>A</b>, 호스트 <code class="inl">swbms</code>, 값 = 운영 공인 IP</li>
+        <li>⚠ <b>SRV 레코드는 입력하지 마세요</b> — 브라우저는 SRV를 조회하지 않아 웹 접속엔 무효입니다. <span class="dom">swbms.geonuris.net:8092</span> 가 이미 붙으면 A레코드는 이미 정상입니다(확인만).</li>
       </ul>
-      <div class="note">이 도메인이 곧 외부에서 접속할 주소입니다. 위 입력칸에 같은 값을 넣어두세요.</div>
+      <div class="cap">② iptime 공유기 — 80/443 원격관리 포트 비우기:</div>
+      <ul class="tasks">
+        <li>iptime 관리자(<code class="inl">192.168.0.1</code>) → <b>고급 설정 → 보안 기능 → 공유기 접속/관리 포트 설정</b> (펌웨어에 따라 "원격 관리 포트")</li>
+        <li>HTTP 관리 포트 <code class="inl">80</code> → 다른 값(예 <code class="inl">8090</code>)으로 변경하거나 <b>외부 원격관리 해제</b></li>
+        <li>HTTPS 관리 포트가 <code class="inl">443</code>이면 그것도 다른 값으로 변경</li>
+        <li>⚠ 변경 후 공유기 관리자 접속도 새 포트로 (<code class="inl">192.168.0.1</code> 내부 접속은 그대로)</li>
+      </ul>
+      <div class="note">메뉴명은 iptime 펌웨어 버전마다 조금씩 다릅니다("보안 기능" 또는 "시스템 관리" 아래). "원격 관리 포트" / "공유기 접속 포트" 항목을 찾으세요.</div>
     </div>
   </section>
 
@@ -109,17 +125,18 @@
   <section class="step" data-step="2">
     <div class="step-h">
       <div class="step-n">2</div>
-      <div class="step-t"><h2>포트포워딩 + Tomcat 8080 외부차단</h2><div class="who">직접 — 공유기 + Windows 방화벽</div></div>
+      <div class="step-t"><h2>포트포워딩 80/443 → 서버 + 8093·8092 외부차단</h2><div class="who">직접 — 공유기 + Windows 방화벽</div></div>
       <label class="step-chk" onclick="event.stopPropagation()"><input type="checkbox" class="sc">완료</label>
     </div>
     <div class="step-body">
       <ul class="tasks">
         <li>iptime 포트포워딩: 외부 <b>80 → 서버 80</b>, 외부 <b>443 → 서버 443</b> (80은 win-acme http-01 챌린지에 필요)</li>
-        <li><b>8080 외부차단</b> — 둘 중 하나:</li>
+        <li>지금 쓰던 <b>8092 포워딩은 표준 443 완성 후 제거</b> (그 전까진 둬도 됨)</li>
+        <li><b>Tomcat 8093 외부차단</b> — 둘 중 하나:</li>
       </ul>
-      <div class="cap">① Windows Defender 방화벽 인바운드 규칙으로 8080 외부 차단 (PowerShell, 관리자):</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="New-NetFirewallRule -DisplayName &quot;Block-Tomcat-8080-External&quot; -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Block -RemoteAddress Internet">New-NetFirewallRule -DisplayName "Block-Tomcat-8080-External" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Block -RemoteAddress Internet</pre></div>
-      <div class="cap">② 또는 Tomcat <code class="inl">conf/server.xml</code> 의 8080 Connector 에 <code class="inl">address="127.0.0.1"</code> 추가 (로컬 바인드 제한).</div>
+      <div class="cap">① Windows Defender 방화벽 인바운드 규칙으로 8093 외부 차단 (관리자 PowerShell):</div>
+      <div class="code"><button class="copy">복사</button><pre>New-NetFirewallRule -DisplayName "Block-Tomcat-8093-External" -Direction Inbound -LocalPort 8093 -Protocol TCP -Action Block -RemoteAddress Internet</pre></div>
+      <div class="cap">② 또는 Tomcat <code class="inl">conf/server.xml</code> 의 8093 Connector 에 <code class="inl">address="127.0.0.1"</code> 추가 (로컬 바인드 제한).</div>
       <div class="warn">차단 방식을 <b>기억해두세요</b> — 롤백 절차가 방식별로 다릅니다(맨 아래).</div>
     </div>
   </section>
@@ -134,10 +151,15 @@
     <div class="step-body">
       <ul class="tasks">
         <li>nginx for Windows 를 <code class="inl">C:\nginx\</code> 에 설치</li>
+        <li>ACME 챌린지용 webroot + 인증서 폴더 생성</li>
         <li>서비스 등록(<code class="inl">nssm</code>/<code class="inl">winsw</code>)으로 부팅 자동시작 권장</li>
-        <li>ACME 챌린지용 webroot 폴더 생성: <code class="inl">C:\nginx\html\.well-known\acme-challenge\</code></li>
       </ul>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="New-Item -ItemType Directory -Force C:\nginx\html\.well-known\acme-challenge | Out-Null">New-Item -ItemType Directory -Force C:\nginx\html\.well-known\acme-challenge | Out-Null</pre></div>
+      <div class="code"><button class="copy">복사</button><pre>New-Item -ItemType Directory -Force C:\nginx\html\.well-known\acme-challenge | Out-Null
+New-Item -ItemType Directory -Force C:\nginx\ssl | Out-Null
+New-Item -ItemType Directory -Force C:\nginx\ssl-staging | Out-Null</pre></div>
+      <div class="cap">서비스 등록 예 (nssm 사용 시):</div>
+      <div class="code"><button class="copy">복사</button><pre>nssm install nginx C:\nginx\nginx.exe
+nssm set nginx AppDirectory C:\nginx</pre></div>
     </div>
   </section>
 
@@ -150,23 +172,32 @@
     </div>
     <div class="step-body">
       <div class="warn"><b>순서 중요:</b> 443 인증서가 아직 없으므로 <b>80 블록만</b> 먼저 올립니다. http-01 챌린지가 80에서 응답해야 발급됩니다.</div>
-      <div class="cap"><code class="inl">C:\nginx\conf\nginx.conf</code> 의 <code class="inl">http { }</code> 안에 추가:</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="server {
-  listen 80;
-  server_name {{D}};
-  location /.well-known/acme-challenge/ { root C:/nginx/html; }   # 챌린지 (redirect보다 우선)
-  location / { return 301 https://$host$request_uri; }            # http -> https
-}">server {
-  listen 80;
-  server_name xxxx.iptime.org;
-  location /.well-known/acme-challenge/ { root C:/nginx/html; }   # 챌린지 (redirect보다 우선)
-  location / { return 301 https://$host$request_uri; }            # http -> https
+      <div class="cap"><code class="inl">C:\nginx\conf\nginx.conf</code> 전체 (이 상태로 1차 기동):</div>
+      <div class="code"><button class="copy">복사</button><pre>worker_processes  auto;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    # === 80: ACME 챌린지 + HTTPS 리다이렉트 ===
+    server {
+        listen 80;
+        server_name swbms.geonuris.net;
+        location /.well-known/acme-challenge/ { root C:/nginx/html; }   # 챌린지 (redirect보다 우선)
+        location / { return 301 https://$host$request_uri; }            # http -> https
+    }
 }</pre></div>
-      <div class="cap">설정 검증 후 서비스 시작:</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="C:\nginx\nginx.exe -t
-# 이상 없으면 nginx 서비스 start (nssm start nginx 또는 C:\nginx\nginx.exe)">C:\nginx\nginx.exe -t
-# 이상 없으면 nginx 서비스 start (nssm start nginx 또는 C:\nginx\nginx.exe)</pre></div>
-      <ul class="tasks"><li>외부망(휴대폰 등)에서 <span class="dom">http://xxxx.iptime.org/.well-known/acme-challenge/ping</span> 접속 → 80 도달(404라도 nginx 응답) 확인</li></ul>
+      <div class="cap">설정 검증 후 기동:</div>
+      <div class="code"><button class="copy">복사</button><pre>cd C:\nginx
+.\nginx.exe -t
+.\nginx.exe              # 최초 기동 (또는  nssm start nginx)</pre></div>
+      <ul class="tasks"><li>외부망(휴대폰 등)에서 <span class="dom">http://swbms.geonuris.net/.well-known/acme-challenge/ping</span> 접속 → nginx 응답(404라도 OK) 확인. <b>여기서 공유기 페이지가 뜨면 Step 1·2 가 덜 된 것.</b></li></ul>
     </div>
   </section>
 
@@ -178,13 +209,22 @@
       <label class="step-chk" onclick="event.stopPropagation()"><input type="checkbox" class="sc">완료</label>
     </div>
     <div class="step-body">
-      <div class="cap">먼저 <b>staging 리허설</b>(운영 rate-limit 무소모, 전용 경로):</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="C:\tools\win-acme\wacs.exe --test --notaskscheduler --source manual --host {{D}} --validation filesystem --webroot C:\nginx\html --store pemfiles --pemfilespath C:\nginx\ssl-staging">C:\tools\win-acme\wacs.exe --test --notaskscheduler --source manual --host xxxx.iptime.org --validation filesystem --webroot C:\nginx\html --store pemfiles --pemfilespath C:\nginx\ssl-staging</pre></div>
+      <div class="cap">① 먼저 <b>staging 리허설</b> (운영 rate-limit 무소모, 전용 경로):</div>
+      <div class="code"><button class="copy">복사</button><pre>C:\tools\win-acme\wacs.exe --test --notaskscheduler `
+  --source manual --host swbms.geonuris.net `
+  --validation filesystem --webroot C:\nginx\html `
+  --store pemfiles --pemfilespath C:\nginx\ssl-staging</pre></div>
       <div class="warn">리허설 성공하면 <b>staging 폴더 삭제</b>: <code class="inl">Remove-Item -Recurse -Force C:\nginx\ssl-staging</code> · staging 인증서는 신뢰되지 않으니 절대 운영 경로에 두지 마세요.</div>
-      <div class="cap">실제 <b>운영 발급</b>(production):</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="C:\tools\win-acme\wacs.exe --source manual --host {{D}} --validation filesystem --webroot C:\nginx\html --store pemfiles --pemfilespath C:\nginx\ssl">C:\tools\win-acme\wacs.exe --source manual --host xxxx.iptime.org --validation filesystem --webroot C:\nginx\html --store pemfiles --pemfilespath C:\nginx\ssl</pre></div>
+      <div class="cap">② 실제 <b>운영 발급</b>(production):</div>
+      <div class="code"><button class="copy">복사</button><pre>C:\tools\win-acme\wacs.exe `
+  --source manual --host swbms.geonuris.net `
+  --validation filesystem --webroot C:\nginx\html `
+  --store pemfiles --pemfilespath C:\nginx\ssl `
+  --installation none</pre></div>
+      <div class="cap">③ 발급된 <b>실제 PEM 파일명 확인</b> (Step 6 경로에 반영):</div>
+      <div class="code"><button class="copy">복사</button><pre>Get-ChildItem C:\nginx\ssl</pre></div>
       <ul class="tasks">
-        <li>발급 후 <code class="inl">C:\nginx\ssl</code> 의 <b>실제 PEM 파일명 확인</b> (Step 6 경로에 반영)</li>
+        <li>보통 <code class="inl">swbms.geonuris.net-chain.pem</code>(fullchain) + <code class="inl">swbms.geonuris.net-key.pem</code>(키) 생성</li>
         <li>win-acme 가 자동갱신 예약작업(Task Scheduler) 생성 — post-renewal 로 <code class="inl">nginx -s reload</code> 등록 권장</li>
       </ul>
     </div>
@@ -198,53 +238,37 @@
       <label class="step-chk" onclick="event.stopPropagation()"><input type="checkbox" class="sc">완료</label>
     </div>
     <div class="step-body">
-      <div class="cap">Step 4 의 80 블록 아래에 추가 (PEM 파일명은 Step 5 실제 값으로):</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="server {
-  listen 443 ssl;
-  server_name {{D}};
-  ssl_certificate     C:/nginx/ssl/{{D}}-chain.pem;   # 실제 파일명으로
-  ssl_certificate_key C:/nginx/ssl/{{D}}-key.pem;     # 실제 파일명으로
-  ssl_protocols       TLSv1.2 TLSv1.3;
+      <div class="cap">Step 4 의 <code class="inl">http { }</code> 안, 80 server 블록 <b>아래</b>에 추가 (PEM 파일명은 Step 5 실제 값으로):</div>
+      <div class="code"><button class="copy">복사</button><pre>    # === 443: TLS 종단 → Tomcat ===
+    server {
+        listen 443 ssl;
+        server_name swbms.geonuris.net;
 
-  client_max_body_size 50m;   # 기본 1MB -> 업로드 413 방지 (앱 한도에 맞춰 조정)
-  add_header Strict-Transport-Security &quot;max-age=300&quot; always;  # 초도 짧게, 안정화 후 상향
+        ssl_certificate     C:/nginx/ssl/swbms.geonuris.net-chain.pem;   # 실제 파일명으로
+        ssl_certificate_key C:/nginx/ssl/swbms.geonuris.net-key.pem;     # 실제 파일명으로
+        ssl_protocols       TLSv1.2 TLSv1.3;
 
-  location / {
-    proxy_pass         http://127.0.0.1:8080;
-    proxy_http_version 1.1;
-    proxy_read_timeout 300s;
-    proxy_set_header   Host              $host;
-    proxy_set_header   X-Real-IP         $remote_addr;
-    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-    proxy_set_header   X-Forwarded-Proto https;
-    proxy_set_header   X-Forwarded-Host  $host;
-    proxy_set_header   X-Forwarded-Port  443;
-  }
-}">server {
-  listen 443 ssl;
-  server_name xxxx.iptime.org;
-  ssl_certificate     C:/nginx/ssl/xxxx.iptime.org-chain.pem;   # 실제 파일명으로
-  ssl_certificate_key C:/nginx/ssl/xxxx.iptime.org-key.pem;     # 실제 파일명으로
-  ssl_protocols       TLSv1.2 TLSv1.3;
+        client_max_body_size 50m;   # 기본 1MB -> 업로드 413 방지 (앱 한도에 맞춰 조정)
 
-  client_max_body_size 50m;   # 기본 1MB -> 업로드 413 방지 (앱 한도에 맞춰 조정)
-  add_header Strict-Transport-Security "max-age=300" always;  # 초도 짧게, 안정화 후 상향
+        # HSTS 초도엔 짧게. 안정화 후 31536000 상향
+        # ⚠ includeSubDomains/preload 금지 — geonuris.net 전 서브도메인에 강제됨
+        add_header Strict-Transport-Security "max-age=300" always;
 
-  location / {
-    proxy_pass         http://127.0.0.1:8080;
-    proxy_http_version 1.1;
-    proxy_read_timeout 300s;
-    proxy_set_header   Host              $host;
-    proxy_set_header   X-Real-IP         $remote_addr;
-    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-    proxy_set_header   X-Forwarded-Proto https;
-    proxy_set_header   X-Forwarded-Host  $host;
-    proxy_set_header   X-Forwarded-Port  443;
-  }
-}</pre></div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="C:\nginx\nginx.exe -t
-C:\nginx\nginx.exe -s reload">C:\nginx\nginx.exe -t
-C:\nginx\nginx.exe -s reload</pre></div>
+        location / {
+            proxy_pass         http://127.0.0.1:8093;
+            proxy_http_version 1.1;
+            proxy_read_timeout 300s;
+            proxy_set_header   Host              $host;
+            proxy_set_header   X-Real-IP         $remote_addr;
+            proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Proto https;
+            proxy_set_header   X-Forwarded-Host  $host;
+            proxy_set_header   X-Forwarded-Port  443;
+        }
+    }</pre></div>
+      <div class="code"><button class="copy">복사</button><pre>cd C:\nginx
+.\nginx.exe -t
+.\nginx.exe -s reload</pre></div>
     </div>
   </section>
 
@@ -258,9 +282,9 @@ C:\nginx\nginx.exe -s reload</pre></div>
     <div class="step-body">
       <div class="warn"><b>.properties 는 값 뒤 주석 금지</b> — 주석은 반드시 별도 줄로. (인라인 주석 쓰면 값이 통째로 잘못 파싱됨)</div>
       <div class="cap"><code class="inl">application-prod.properties</code> 에 추가:</div>
-      <div class="code"><button class="copy">복사</button><pre data-tpl="# 프록시 뒤 X-Forwarded-* 인식 (없으면 secure쿠키/리다이렉트/isSecure 오동작)
+      <div class="code"><button class="copy">복사</button><pre># 프록시 뒤 X-Forwarded-* 인식 (없으면 secure쿠키/리다이렉트/isSecure 오동작)
 server.forward-headers-strategy=framework
-# server.servlet.session.cookie.secure=true  (이미 설정됨)">server.forward-headers-strategy=framework</pre></div>
+# server.servlet.session.cookie.secure=true  (이미 설정됨)</pre></div>
       <ul class="tasks"><li>ROOT.war 재배포 (배포 절차는 기존 운영 배포 메모 그대로)</li></ul>
       <div class="note">이 한 줄 편집·재배포는 제가 해드릴 수 있습니다 — 말씀만 주세요.</div>
     </div>
@@ -270,11 +294,12 @@ server.forward-headers-strategy=framework
   <div class="verify">
     <h2>✅ 검증 체크리스트 (프록시 443 경유로)</h2>
     <label><input type="checkbox" class="vc"><span><code class="inl">nginx -t</code> 통과, 서비스 자동시작 동작</span></label>
-    <label><input type="checkbox" class="vc"><span><span class="dom">https://xxxx.iptime.org</span> 전 페이지 200, <code class="inl">http://</code> 접속 시 301 리다이렉트</span></label>
-    <label><input type="checkbox" class="vc"><span><b>8080 외부차단 확인</b> — 외부망에서 <code class="inl">http://&lt;공인IP&gt;:8080</code> 접속이 <b>연결거부/타임아웃</b>으로 실패</span></label>
+    <label><input type="checkbox" class="vc"><span><span class="dom">https://swbms.geonuris.net</span> (포트 없이) 전 페이지 200, <code class="inl">http://</code> 접속 시 301 리다이렉트</span></label>
+    <label><input type="checkbox" class="vc"><span><b>iptime 관리페이지가 더 이상 안 뜸</b> — 포트 없이 접속 시 공유기가 아니라 SW Manager 로그인 화면</span></label>
+    <label><input type="checkbox" class="vc"><span><b>8093·8092 외부차단 확인</b> — 외부망에서 <code class="inl">:8093</code>/<code class="inl">:8092</code> 직접 접속이 <b>연결거부/타임아웃</b>으로 실패</span></label>
     <label><input type="checkbox" class="vc"><span>로그인/세션 정상(반드시 443 경유), 무한 리다이렉트 없음, <code class="inl">request.isSecure()==true</code></span></label>
     <label><input type="checkbox" class="vc"><span>업로드 회귀 없음(최대 크기 파일 업로드 413 안 남)</span></label>
-    <label><input type="checkbox" class="vc"><span>갤럭시탭 외부망에서 QR 스캐너 <b>카메라 권한 정상</b></span></label>
+    <label><input type="checkbox" class="vc"><span>갤럭시탭 외부망에서 QR 스캐너 <b>카메라 권한 정상</b> (secure context 충족)</span></label>
     <label><input type="checkbox" class="vc"><span>콘솔 mixed-content 경고 0</span></label>
     <label><input type="checkbox" class="vc"><span>win-acme 갱신: Task Scheduler 작업 존재·다음 실행시각·인증서 만료일 확인</span></label>
     <label><input type="checkbox" class="vc"><span>(안정화 후) HSTS <code class="inl">max-age</code> 를 31536000 으로 상향</span></label>
@@ -284,39 +309,21 @@ server.forward-headers-strategy=framework
   <div class="rollback">
     <h2>↩ 롤백 (문제 시)</h2>
     <ul class="tasks">
-      <li><b>무중단</b>: nginx 서비스 중지 → Tomcat(8080) 그대로. 단 8080 외부차단 했으면 아래 방식별 복귀 필요</li>
-      <li><b>방화벽으로 차단</b>한 경우 → Defender 규칙 비활성화 + iptime 포트포워딩(외부 8080→서버 8080) 임시 복구</li>
+      <li><b>무중단</b>: nginx 서비스 중지 → Tomcat(8093) 그대로. 단 8093 외부차단 했으면 아래 방식별 복귀 필요</li>
+      <li><b>방화벽으로 차단</b>한 경우 → Defender 규칙 비활성화 + iptime 포트포워딩(외부 8092→서버 8093) 임시 복구</li>
       <li><b>Connector address=127.0.0.1 로 차단</b>한 경우 → address 제거 + <b>Tomcat 재기동</b> + 포트포워딩 복구</li>
       <li><b>properties 동반 롤백</b>: HTTP 로 완전 복귀 시 <code class="inl">forward-headers-strategy</code> 제거 + <code class="inl">cookie.secure=false</code> 로 재배포</li>
+      <li><b>iptime 원격관리 포트</b>를 80/443 으로 되돌리면 다시 공유기 페이지가 점유 — 롤백 시 그대로 둘지 판단</li>
     </ul>
-    <div class="warn">⚠ <code class="inl">*.iptime.org</code> 공유 도메인은 Let's Encrypt rate-limit 공유 위험 — 장기 운영이면 본인 도메인 권장. TLS 본격 하드닝(cipher/OCSP)은 별도 작업.</div>
+    <div class="warn">⚠ 본인 도메인(<span class="dom">swbms.geonuris.net</span>)이라 <code class="inl">*.iptime.org</code> 공유 rate-limit 위험은 해소됨. 다만 TLS 본격 하드닝(cipher/OCSP)·rate-limit·접근제한은 별도 보안 sprint 권장. HSTS <code class="inl">includeSubDomains</code>/<code class="inl">preload</code> 는 geonuris.net 전체에 영향 주므로 신중히.</div>
   </div>
 
-  <footer>SW Manager · HTTPS 전환 실행 가이드 · 런북 v0.4.1 기반 · 진행 상태는 이 브라우저에만 저장됩니다</footer>
+  <footer>SW Manager · HTTPS 전환 실행 가이드 · swbms.geonuris.net 확정본 · 진행 상태는 이 브라우저에만 저장됩니다</footer>
 </div>
 
 <script>
-const KEY="https-guide-progress-v1";
+const KEY="https-guide-progress-v2";
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const domInput=$("#domain");
-
-// 도메인 치환
-function applyDomain(){
-  const d=(domInput.value||"").trim();
-  const shown=d||"xxxx.iptime.org";
-  $$(".dom").forEach(el=>el.textContent= d? el.textContent.replace(/xxxx\.iptime\.org/g, d) || shown : el.dataset.orig||el.textContent);
-  // .dom 은 원본 보존이 까다로우니 간단히: 저장된 원본에서 매번 재생성
-  $$("[data-tpl]").forEach(pre=>{
-    pre.textContent = pre.dataset.tpl.replace(/\{\{D\}\}/g, d||"xxxx.iptime.org");
-  });
-}
-// .dom 원본 저장
-$$(".dom").forEach(el=>el.dataset.orig=el.textContent);
-function refreshDom(){
-  const d=(domInput.value||"").trim()||"xxxx.iptime.org";
-  $$(".dom").forEach(el=>el.textContent=el.dataset.orig.replace(/xxxx\.iptime\.org/g,d));
-  $$("[data-tpl]").forEach(pre=>pre.textContent=pre.dataset.tpl.replace(/\{\{D\}\}/g,d));
-}
 
 // 복사 버튼
 $$(".code .copy").forEach(btn=>{
@@ -334,9 +341,7 @@ $$(".step-h").forEach(h=>h.addEventListener("click",()=>h.parentElement.classLis
 
 // 진행 저장/복원
 function save(){
-  const st={domain:domInput.value,
-    steps:$$(".sc").map(c=>c.checked),
-    verify:$$(".vc").map(c=>c.checked)};
+  const st={steps:$$(".sc").map(c=>c.checked), verify:$$(".vc").map(c=>c.checked)};
   localStorage.setItem(KEY,JSON.stringify(st));
 }
 function updateCount(){
@@ -347,16 +352,14 @@ function updateCount(){
   });
 }
 $$(".sc,.vc").forEach(c=>c.addEventListener("change",()=>{updateCount();save();}));
-domInput.addEventListener("input",()=>{refreshDom();save();});
 
 (function restore(){
   try{
     const st=JSON.parse(localStorage.getItem(KEY)||"{}");
-    if(st.domain){domInput.value=st.domain;}
     (st.steps||[]).forEach((v,i)=>{if($$(".sc")[i])$$(".sc")[i].checked=v;});
     (st.verify||[]).forEach((v,i)=>{if($$(".vc")[i])$$(".vc")[i].checked=v;});
   }catch(e){}
-  refreshDom(); updateCount();
+  updateCount();
 })();
 
 $("#reset").addEventListener("click",()=>{
