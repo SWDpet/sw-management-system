@@ -38,6 +38,7 @@
 | 자동 생성 | `docs/generated/` | ERD, audit, 인벤토리 |
 | 문서 템플릿 | `docs/templates/` | 스프린트 템플릿 |
 | 영역별 | `docs/DESIGN.md`, `FRONTEND.md`, `SECURITY.md`, `RELIABILITY.md`, `QUALITY_SCORE.md`, `PRODUCT_SENSE.md`, `PLANS.md` | 영역별 SSoT |
+| git 신원·푸시 | `docs/GIT_REMOTE_SETUP.md` | 듀얼 저장소(SWDpet·ukjin914) 푸시 + author 이메일(`ukjin_park@jungdouit.com`) 머신별 셋업 런북 |
 
 ---
 
