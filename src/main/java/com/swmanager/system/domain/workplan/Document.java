@@ -82,6 +82,23 @@ public class Document {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    // [doc-signed-scan-upload] 최종 도장 날인본 스캔 PDF (문서당 1개, COMPLETED 일 때만, 파일시스템 저장)
+    @Column(name = "signed_scan_path", length = 500)
+    private String signedScanPath;
+
+    @Column(name = "signed_scan_orig_name", length = 255)
+    private String signedScanOrigName;
+
+    @Column(name = "signed_scan_size")
+    private Long signedScanSize;
+
+    @Column(name = "signed_scan_uploaded_at")
+    private LocalDateTime signedScanUploadedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "signed_scan_uploaded_by")
+    private User signedScanUploadedBy;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -55,6 +55,16 @@
         .empty-row td { text-align: center; color: var(--muted); padding: 40px; }
         .btn-link { color: var(--primary); text-decoration: none; font-weight: 600; }
 
+        /* 날인본 스캔 컬럼 (doc-signed-scan-upload) — 색 토큰만 사용(다크모드 자동) */
+        .scan-cell { white-space: nowrap; }
+        .scan-cell button { padding: 3px 7px; border: none; border-radius: 4px; font-size: 0.74em; font-weight: 600; cursor: pointer; margin-right: 3px; }
+        .scan-up  { background: var(--primary); color: #fff; }
+        .scan-dn  { background: var(--success); color: #fff; }
+        .scan-rep { background: var(--warning); color: #fff; }
+        .scan-del { background: var(--danger);  color: #fff; }
+        .scan-have { color: var(--success); margin-right: 4px; }
+        .scan-none { color: var(--text2); }
+
         /* 페이지네이션 */
         .pagination { display: flex; justify-content: center; gap: 5px; margin-top: 20px; }
         .pagination a { padding: 6px 12px; border: 1px solid var(--border2); border-radius: 4px; text-decoration: none; font-size: 0.82em; color: var(--text); }
@@ -148,6 +158,7 @@
                         <th>제목</th>
                         <th>작성자</th>
                         <th>작성일</th>
+                        <th>날인본</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -166,9 +177,24 @@
                         <td th:text="${d.title}">제목</td>
                         <td th:text="${d.authorName}">-</td>
                         <td th:text="${d.createdAt != null ? #strings.substring(d.createdAt, 0, 10) : '-'}">-</td>
+                        <td class="scan-cell" onclick="event.stopPropagation();">
+                            <th:block th:if="${d.status?.name() == 'COMPLETED' and (d.docType?.name() == 'COMMENCE' or d.docType?.name() == 'INTERIM' or d.docType?.name() == 'COMPLETION')}">
+                                <th:block th:if="${d.hasSignedScan}">
+                                    <i class="fas fa-check-circle scan-have" title="날인본 보관됨"></i>
+                                    <button type="button" class="scan-dn" th:onclick="|event.stopPropagation(); scanDownload(${d.docId})|" aria-label="날인본 다운로드"><i class="fas fa-download"></i></button>
+                                    <button type="button" class="scan-rep" th:if="${userAuth == 'EDIT'}" th:onclick="|event.stopPropagation(); scanUpload(${d.docId})|" aria-label="날인본 교체">교체</button>
+                                    <button type="button" class="scan-del" th:if="${userAuth == 'EDIT'}" th:onclick="|event.stopPropagation(); scanDelete(${d.docId})|" aria-label="날인본 삭제"><i class="fas fa-trash"></i></button>
+                                </th:block>
+                                <th:block th:unless="${d.hasSignedScan}">
+                                    <button type="button" class="scan-up" th:if="${userAuth == 'EDIT'}" th:onclick="|event.stopPropagation(); scanUpload(${d.docId})|" aria-label="날인본 업로드"><i class="fas fa-upload"></i> 업로드</button>
+                                    <span th:unless="${userAuth == 'EDIT'}" class="scan-none">미등록</span>
+                                </th:block>
+                            </th:block>
+                            <span th:unless="${d.status?.name() == 'COMPLETED' and (d.docType?.name() == 'COMMENCE' or d.docType?.name() == 'INTERIM' or d.docType?.name() == 'COMPLETION')}" class="scan-none">-</span>
+                        </td>
                     </tr>
                     <tr th:if="${documents.totalElements == 0}" class="empty-row">
-                        <td colspan="9"><i class="fas fa-inbox"></i> 등록된 문서가 없습니다.</td>
+                        <td colspan="10"><i class="fas fa-inbox"></i> 등록된 문서가 없습니다.</td>
                     </tr>
                 </tbody>
             </table>
@@ -182,5 +208,42 @@
             </div>
         </div>
     </div>
+
+    <!-- 날인본 스캔 업로드/다운로드/삭제 (doc-signed-scan-upload) — 순수 JS -->
+    <script>
+        function scanUpload(docId) {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/pdf,.pdf';
+            input.onchange = function () {
+                if (!input.files || !input.files[0]) return;
+                var f = input.files[0];
+                if (f.type && f.type !== 'application/pdf') { alert('PDF 파일만 올릴 수 있습니다.'); return; }
+                var fd = new FormData();
+                fd.append('file', f);
+                fetch('/document/api/signed-scan/upload/' + docId, { method: 'POST', body: fd })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (res) {
+                        if (res.ok && res.j.success) { alert('날인본이 저장되었습니다.'); location.reload(); }
+                        else { alert('업로드 실패: ' + (res.j.error || '알 수 없는 오류')); }
+                    })
+                    .catch(function (e) { alert('업로드 오류: ' + e); });
+            };
+            input.click();
+        }
+        function scanDownload(docId) {
+            window.location.href = '/document/api/signed-scan/' + docId;
+        }
+        function scanDelete(docId) {
+            if (!confirm('이 문서의 날인본 스캔을 삭제할까요?')) return;
+            fetch('/document/api/signed-scan/delete/' + docId, { method: 'POST' })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (res.ok && res.j.success) { alert('삭제되었습니다.'); location.reload(); }
+                    else { alert('삭제 실패: ' + (res.j.error || '알 수 없는 오류')); }
+                })
+                .catch(function (e) { alert('삭제 오류: ' + e); });
+        }
+    </script>
 </body>
 </html>

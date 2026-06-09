@@ -413,6 +413,14 @@ CREATE INDEX IF NOT EXISTS idx_tb_document_infra  ON tb_document(infra_id);
 CREATE INDEX IF NOT EXISTS idx_tb_document_type   ON tb_document(doc_type);
 CREATE INDEX IF NOT EXISTS idx_tb_document_status ON tb_document(status);
 
+-- [doc-signed-scan-upload] 최종 날인본 스캔 PDF 보관 (additive, nullable) — 2026-06-09
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS signed_scan_path        VARCHAR(500);
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS signed_scan_orig_name   VARCHAR(255);
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS signed_scan_size        BIGINT;
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS signed_scan_uploaded_at TIMESTAMP;
+ALTER TABLE tb_document ADD COLUMN IF NOT EXISTS signed_scan_uploaded_by BIGINT REFERENCES users(user_id);
+COMMENT ON COLUMN tb_document.signed_scan_path IS '최종 도장 날인본 스캔 PDF 절대경로(파일시스템) — doc-signed-scan-upload (2026-06-09)';
+
 -- 문서 섹션 상세 (jsonb)
 CREATE TABLE IF NOT EXISTS tb_document_detail (
     detail_id       BIGSERIAL PRIMARY KEY,
