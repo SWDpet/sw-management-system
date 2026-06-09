@@ -89,3 +89,11 @@
 ## 4. 진행 순서
 
 A(도메인·스키마) → B(설정·서비스) → C(API) → D(DTO·UI) → E(테스트). 각 묶음 후 컴파일 확인. 전체 후 codex 구현물 검증 → 회사 PC 통합검증.
+
+## 5. 구현 완료 (2026-06-09)
+
+- 묶음 A~E 전부 구현. 메인 컴파일 그린, **단위테스트 20개 통과**(`DocumentSignedScanServiceTest` 8 + `DocumentSignedScanServiceUploadTest` 12).
+- **codex 구현 검토 2라운드 반영**:
+  - 1차 [필수]: FR-10 원자성(saveAndFlush 선행 + 기존 target 백업/복구 + `rollbackFor=Exception`), FR-2 스트리밍(전체 메모리 로딩 제거)+30MB+contentType, FR-8 delete 게이트, FR-9 download `toRealPath` symlink 차단.
+  - 2차 [확인]: contentType `null` 허용 정책 확정(매직바이트가 1차 기준), 경계 테스트 6종 보강(크기 초과/octet-stream 허용/비-PDF MIME 거부/null 허용/base-밖 download 거부/base-밖 delete 미삭제).
+- **잔여(회사 PC 통합검증)**: 실 `D:\swmanager-scan` 쓰기·교체·다운로드, move 실패 시 DB rollback 통합테스트, 다크모드/접근성 육안. 운영 `DOC_SCAN_DIR` env + D드라이브 별도 백업 셋업.

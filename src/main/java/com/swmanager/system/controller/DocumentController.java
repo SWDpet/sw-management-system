@@ -700,6 +700,70 @@ public class DocumentController {
         return ResponseEntity.ok(Map.of("success", true));
     }
 
+    // === 날인본 스캔 (doc-signed-scan-upload) ===
+
+    @Autowired private com.swmanager.system.service.DocumentSignedScanService signedScanService;
+
+    @ResponseBody
+    @PostMapping("/api/signed-scan/upload/{docId}")
+    public ResponseEntity<Map<String, Object>> uploadSignedScan(
+            @PathVariable Integer docId,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        if (!"EDIT".equals(getAuth())) {
+            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
+        }
+        try {
+            CustomUserDetails cu = getCurrentUser();
+            Long uploaderSeq = (cu != null) ? cu.getUser().getUserSeq() : null;
+            var doc = signedScanService.uploadOrReplace(docId, file, uploaderSeq);
+            logService.log(MenuName.DOCUMENT, AccessActionType.UPLOAD, "날인본 스캔 업로드 (문서ID: " + docId + ")");
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "fileName", doc.getSignedScanOrigName(),
+                    "fileSize", doc.getSignedScanSize() != null ? doc.getSignedScanSize() : 0
+            ));
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/api/signed-scan/{docId}")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadSignedScan(@PathVariable Integer docId) {
+        if (getCurrentUser() == null) return ResponseEntity.status(403).build();
+        try {
+            var resource = signedScanService.loadForDownload(docId);
+            String origName = signedScanService.originalName(docId);
+            String encoded = java.net.URLEncoder.encode(origName, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+            logService.log(MenuName.DOCUMENT, AccessActionType.DOWNLOAD, "날인본 스캔 다운로드 (문서ID: " + docId + ")");
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename*=UTF-8''" + encoded)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(404).build();
+        }
+    }
+
+    @ResponseBody
+    @PostMapping("/api/signed-scan/delete/{docId}")
+    public ResponseEntity<Map<String, Object>> deleteSignedScan(@PathVariable Integer docId) {
+        if (!"EDIT".equals(getAuth())) {
+            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
+        }
+        try {
+            signedScanService.delete(docId);
+            logService.log(MenuName.DOCUMENT, AccessActionType.DELETE, "날인본 스캔 삭제 (문서ID: " + docId + ")");
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // === 사용자 정보 API (현장대리인/과업참여자용) ===
 
     /**

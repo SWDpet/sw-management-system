@@ -35,6 +35,7 @@ public class DocumentDTO {
     private String projEndDt;
     private String title;
     private DocumentStatus status;
+    private boolean hasSignedScan; // [doc-signed-scan-upload] 목록 표시용 — 날인본 스캔 보유 여부
     private Long authorId;
     private String authorName;
     private Long approverId;
@@ -91,6 +92,7 @@ public class DocumentDTO {
                 .sysType(doc.getSysType())
                 .title(doc.getTitle())
                 .status(doc.getStatus())
+                .hasSignedScan(doc.getSignedScanPath() != null)
                 .createdAt(doc.getCreatedAt() != null ? doc.getCreatedAt().toString() : null)
                 .updatedAt(doc.getUpdatedAt() != null ? doc.getUpdatedAt().toString() : null);
 
