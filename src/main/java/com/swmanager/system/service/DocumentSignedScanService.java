@@ -1,6 +1,5 @@
 package com.swmanager.system.service;
 
-import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.constant.enums.DocumentType;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.Document;
@@ -62,10 +61,11 @@ public class DocumentSignedScanService {
     }
 
     private void requireAllowed(Document doc) {
+        // 착수/기성/준공(사업문서 3종)만 대상. (DocumentType enum 이 3종뿐이라 방어적.)
         if (!ALLOWED_TYPES.contains(doc.getDocType()))
             throw new IllegalStateException("착수/기성/준공 문서만 날인본을 다룰 수 있습니다.");
-        if (doc.getStatus() != DocumentStatus.COMPLETED)
-            throw new IllegalStateException("작성완료(COMPLETED) 문서만 날인본을 다룰 수 있습니다.");
+        // COMPLETED 게이트 제거(2026-06-09 사용자 결정): 사업문서엔 완료전환 UI가 없어 상태 무관 허용.
+        // (실무상 종이 날인본이 준비되면 올리는 흐름 — 시스템 status 와 무관.)
     }
 
     /**

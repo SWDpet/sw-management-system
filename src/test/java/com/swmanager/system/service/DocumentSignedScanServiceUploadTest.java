@@ -78,10 +78,11 @@ class DocumentSignedScanServiceUploadTest {
     }
 
     @Test
-    void upload_rejects_draftStatus() {
+    void upload_allowsDraftStatus() throws IOException {
+        // 게이트 제거(2026-06-09): 사업문서는 상태 무관 업로드 허용
         Document d = doc(DocumentType.COMMENCE, DocumentStatus.DRAFT);
         when(docRepo.findById(1)).thenReturn(Optional.of(d));
-        assertThrows(IllegalStateException.class, () -> service.uploadOrReplace(1, pdf(), null));
+        assertNotNull(service.uploadOrReplace(1, pdf(), null).getSignedScanPath());
     }
 
     @Test
@@ -122,13 +123,6 @@ class DocumentSignedScanServiceUploadTest {
 
         assertFalse(Files.exists(f), "삭제 시 파일 제거");
         assertNull(d.getSignedScanPath(), "메타 null");
-    }
-
-    @Test
-    void delete_rejects_draftStatus() {
-        Document d = doc(DocumentType.COMMENCE, DocumentStatus.DRAFT);
-        when(docRepo.findById(1)).thenReturn(Optional.of(d));
-        assertThrows(IllegalStateException.class, () -> service.delete(1));
     }
 
     // === codex 2차 보강: FR-2 contentType/크기, FR-9 base 경계 ===
