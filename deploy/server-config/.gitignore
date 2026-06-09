@@ -1,0 +1,8 @@
+# 인증서/개인키 등 민감정보는 절대 커밋하지 않는다 (스냅샷 폴더 방어선)
+*.pem
+*.key
+*.pfx
+*.p12
+*.jks
+*.keystore
+tomcat-users.xml
