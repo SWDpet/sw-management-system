@@ -227,15 +227,12 @@ public class HwpxExportService {
             map.put("{{시행일자}}", getStr(letterData, "date", ""));
             map.put("{{용역명}}", projNm);
 
-            // 문서번호: commence/completion은 _앞/_뒤 분리, interim은 단일
+            // 문서번호 통일(2026-06-10): 모든 유형 단일 {{문서번호}}.
+            //   레거시 {{문서번호_앞}}/{{문서번호_뒤}}(뒤는 항상 빈값) 도 채워 기존 착수/준공 템플릿 하위호환.
             DocumentType docType = doc.getDocType();
-            if (DocumentType.COMMENCE == docType || DocumentType.COMPLETION == docType) {
-                map.put("{{문서번호_앞}}", docNo);
-                map.put("{{문서번호_뒤}}", "");
-            } else {
-                // INTERIM - 단일 문서번호
-                map.put("{{문서번호}}", docNo);
-            }
+            map.put("{{문서번호}}", docNo);
+            map.put("{{문서번호_앞}}", docNo);
+            map.put("{{문서번호_뒤}}", "");
 
             // 제목: 용역명 + 접미사 분리
             String titleSuffix = docType == null ? "" : switch (docType) {
