@@ -140,6 +140,19 @@ public class HwpxExportService {
         return String.format("%d년 %02d월 %02d일", dt.getYear(), dt.getMonthValue(), dt.getDayOfMonth());
     }
 
+    /** 연·월만 표기, 일 칸 비움: "2026-06" 또는 "2026-06-15" → "2026년 06월    일". 형식 외/빈값/파싱실패 → "". */
+    public static String formatYearMonthBlankDay(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return "";
+        String s = dateStr.trim();
+        if (!s.matches("\\d{4}-\\d{2}(-\\d{2})?")) return "";   // YYYY-MM 또는 YYYY-MM-DD 만 허용("2026-06-bad" 등 차단)
+        try {
+            java.time.YearMonth m = java.time.YearMonth.parse(s.substring(0, 7));
+            return String.format("%d년 %02d월    일", m.getYear(), m.getMonthValue());
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     /**
      * HWPX 문서 생성
      *
@@ -762,19 +775,9 @@ public class HwpxExportService {
                 map.put("{{준공예정일}}", "");
             }
 
-            // 준공일
+            // 준공일 = 실제준공일(actualDate), 연·월만(일 비움)
             Map<String, Object> compUpisData = getSectionData(doc, "completion");
-            String compUpisDateStr = getStr(compUpisData, "completionDate", "");
-            if (!compUpisDateStr.isEmpty()) {
-                try {
-                    LocalDate compDate = LocalDate.parse(compUpisDateStr);
-                    map.put("{{준공일}}", formatDateKorean(compDate));
-                } catch (Exception e) {
-                    map.put("{{준공일}}", compUpisDateStr);
-                }
-            } else {
-                map.put("{{준공일}}", String.format("%d년 12월   일", LocalDate.now().getYear()));
-            }
+            map.put("{{준공일}}", formatYearMonthBlankDay(getStr(compUpisData, "actualDate", "")));
         }
 
         if ("completion_body".equals(templateType)) {
@@ -804,19 +807,9 @@ public class HwpxExportService {
                 map.put("{{준공예정일2}}", "");
             }
 
-            // 준공일 - completion 섹션에서 가져오거나 현재 날짜
+            // 준공일 = 실제준공일(actualDate), 연·월만(일 비움)
             Map<String, Object> compData = getSectionData(doc, "completion");
-            String compDateStr = getStr(compData, "completionDate", "");
-            if (!compDateStr.isEmpty()) {
-                try {
-                    LocalDate compDate = LocalDate.parse(compDateStr);
-                    map.put("{{준공일}}", formatDateKorean(compDate));
-                } catch (Exception e) {
-                    map.put("{{준공일}}", compDateStr);
-                }
-            } else {
-                map.put("{{준공일}}", formatDateKorean(LocalDate.now()));
-            }
+            map.put("{{준공일}}", formatYearMonthBlankDay(getStr(compData, "actualDate", "")));
 
             // 착수일
             if (proj != null && proj.getStartDt() != null) {
@@ -849,17 +842,10 @@ public class HwpxExportService {
             // 준공예정일 / 실제준공일 / 제출일 (page1·2 동일)
             String scheduledDate = (proj != null && proj.getEndDt() != null) ? formatDateKoreanPadded(proj.getEndDt()) : "";
             Map<String, Object> compFullData = getSectionData(doc, "completion");
-            String actualDateStr = getStr(compFullData, "actualDate", "");
-            String submitDateStr = getStr(compFullData, "submitDate", "");
-            String actualDateK;
-            try {
-                // 실제준공일 미입력 시 공란 유지 (준공예정일 fallback 안 함)
-                actualDateK = !actualDateStr.isEmpty() ? formatDateKoreanPadded(LocalDate.parse(actualDateStr)) : "";
-            } catch (Exception e) { actualDateK = ""; }
-            String submitDateK;
-            try {
-                submitDateK = !submitDateStr.isEmpty() ? formatDateKoreanPadded(LocalDate.parse(submitDateStr)) : actualDateK;
-            } catch (Exception e) { submitDateK = actualDateK; }
+            // 실제준공일 = actualDate, 제출일 = 제출년월일(completionDate). 둘 다 연·월만(일 비움).
+            String actualDateK = formatYearMonthBlankDay(getStr(compFullData, "actualDate", ""));
+            String submitDateK = formatYearMonthBlankDay(getStr(compFullData, "completionDate", ""));
+            if (submitDateK.isEmpty()) submitDateK = actualDateK;   // 제출년월일 미입력 시 실제준공일로 대체
 
             map.put("{{준공예정일}}", scheduledDate);
             map.put("{{실제준공일}}", actualDateK);

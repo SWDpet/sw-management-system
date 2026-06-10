@@ -126,9 +126,9 @@
                 <tr><th>계약금액</th><td><input type="number" id="comp_amount" placeholder="숫자 입력" oninput="updateCompletionAmount()"></td>
                     <th>한글금액</th><td><span class="amount-text" id="comp_amount_kr">금 원정</span></td></tr>
                 <tr><th>계약년월일</th><td><input type="date" id="comp_contract_date"></td>
-                    <th>준공년월일</th><td><input type="date" id="comp_completion_date"></td></tr>
+                    <th>제출년월일</th><td><input type="month" id="comp_completion_date"></td></tr>
                 <tr><th>준공예정일</th><td><input type="date" id="comp_scheduled_date"></td>
-                    <th>실제준공일</th><td><input type="date" id="comp_actual_date"></td></tr>
+                    <th>실제준공일</th><td><input type="month" id="comp_actual_date"></td></tr>
                 <tr><th>수신</th><td colspan="3"><input type="text" id="comp_recipient" placeholder="지자체장 직함 귀하"></td></tr>
             </table>
         </div>
@@ -141,9 +141,9 @@
                 <tr><th>계약금액</th><td><input type="number" id="insp_amount" placeholder="숫자 입력" oninput="updateInspectorAmount()"></td>
                     <th>한글금액</th><td><span class="amount-text" id="insp_amount_kr">금 원정</span></td></tr>
                 <tr><th>계약년월일</th><td><input type="date" id="insp_contract_date"></td>
-                    <th>준공년월일</th><td><input type="date" id="insp_completion_date"></td></tr>
+                    <th>제출년월일</th><td><input type="month" id="insp_completion_date"></td></tr>
                 <tr><th>준공예정일</th><td><input type="date" id="insp_scheduled_date"></td>
-                    <th>실제준공일</th><td><input type="date" id="insp_actual_date"></td></tr>
+                    <th>실제준공일</th><td><input type="month" id="insp_actual_date"></td></tr>
             </table>
             <div class="fault-text">
                 <strong>하자서약:</strong> 발주자가 본 사업에 대해 준공을 인정함으로써 시공자는 선량한 관리자의 주의의무로 유지보수 기간 내 발견된 하자를 신속히 처리할 의무를 다하고, 발주자는 정상적인 사용범위 내에서의 제반 피해에 대해 시공자에게 책임을 지우지 않기로 함.
@@ -155,7 +155,7 @@
             <h3><i class="fas fa-tools"></i> ④ 유지보수대상</h3>
             <p style="margin-top:12px; font-weight:600; font-size:0.88em;">유지보수 대상 시스템</p>
             <table class="dynamic-table" id="targetTable">
-                <thead><tr><th>대상구분</th><th>제품명</th><th>세부사양</th><th>수량</th><th></th></tr></thead>
+                <thead><tr><th>대상구분</th><th>대상</th><th>세부사양</th><th>수량</th><th></th></tr></thead>
                 <tbody id="targetBody">
                     <tr>
                         <td><select><option value="SW">SW</option><option value="HW">HW</option></select></td>
@@ -357,15 +357,15 @@
 
             var c = sections.completion || {};
             setVal('comp_name', c.name); setVal('comp_amount', c.amount);
-            setVal('comp_contract_date', c.contractDate); setVal('comp_completion_date', c.completionDate);
-            setVal('comp_scheduled_date', c.scheduledDate); setVal('comp_actual_date', c.actualDate);
+            setVal('comp_contract_date', c.contractDate); setVal('comp_completion_date', (c.completionDate||'').substring(0,7));
+            setVal('comp_scheduled_date', c.scheduledDate); setVal('comp_actual_date', (c.actualDate||'').substring(0,7));
             setVal('comp_supervisor_remarks', c.supervisorRemarks); setVal('comp_recipient', c.recipient);
             if (typeof updateCompletionAmount === 'function') updateCompletionAmount();
 
             var ins = sections.inspector || {};
             setVal('insp_name', ins.name); setVal('insp_amount', ins.amount);
-            setVal('insp_contract_date', ins.contractDate); setVal('insp_completion_date', ins.completionDate);
-            setVal('insp_scheduled_date', ins.scheduledDate); setVal('insp_actual_date', ins.actualDate);
+            setVal('insp_contract_date', ins.contractDate); setVal('insp_completion_date', (ins.completionDate||'').substring(0,7));
+            setVal('insp_scheduled_date', ins.scheduledDate); setVal('insp_actual_date', (ins.actualDate||'').substring(0,7));
             setVal('insp_supervisor_remarks', ins.supervisorRemarks);
             if (typeof updateInspectorAmount === 'function') updateInspectorAmount();
 
