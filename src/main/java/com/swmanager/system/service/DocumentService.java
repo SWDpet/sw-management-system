@@ -60,15 +60,16 @@ public class DocumentService {
     public Page<DocumentDTO> searchDocuments(String docType, String status,
                                               String cityNm, String distNm,
                                               Long authorId, LocalDateTime from, LocalDateTime to,
-                                              String keyword, Pageable pageable) {
+                                              String keyword, String authorName, Pageable pageable) {
         if (docType != null && docType.trim().isEmpty()) docType = null;
         if (status != null && status.trim().isEmpty()) status = null;
         if (cityNm != null && cityNm.trim().isEmpty()) cityNm = null;
         if (distNm != null && distNm.trim().isEmpty()) distNm = null;
         if (keyword != null && keyword.trim().isEmpty()) keyword = null;
+        if (authorName != null && authorName.trim().isEmpty()) authorName = null;
 
         Page<Document> page = documentRepository.searchDocuments(
-                docType, status, cityNm, distNm, authorId, from, to, keyword, pageable);
+                docType, status, cityNm, distNm, authorId, from, to, keyword, authorName, pageable);
         return page.map(d -> enrichInspectMonth(enrichRegion(DocumentDTO.fromEntity(d))));
     }
 

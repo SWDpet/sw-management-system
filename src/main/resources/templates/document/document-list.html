@@ -26,6 +26,14 @@
         .btn-excel { padding: 7px 15px; background: var(--success); color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
         .btn-excel:hover { background: #047857; }
 
+        /* 검색 필터 핀(고정) — doc-list-filter-pin-author. 토큰만(다크모드 자동) */
+        .filter-cell { display: inline-flex; align-items: center; gap: 5px; }
+        .filter-cell.pinned { background: var(--primary-lt); border-radius: 6px; padding: 3px 6px; }
+        .pin-btn { border: 1px solid var(--border2); background: transparent; color: var(--text2); border-radius: 4px; padding: 4px 7px; cursor: pointer; font-size: 0.72em; line-height: 1; }
+        .pin-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .pin-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .btn-reset { padding: 7px 15px; background: var(--text2); color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+
         /* 문서 생성 드롭다운 */
         .dropdown { position: relative; display: inline-block; }
         .dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 8px; z-index: 10; overflow: hidden; }
@@ -93,28 +101,46 @@
             </div>
         </div>
 
-        <!-- 필터 -->
+        <!-- 필터 (각 필드 핀 고정 가능 — doc-list-filter-pin-author) -->
         <form class="filter-bar" id="filterForm" action="/document/list" method="get">
-            <label>문서유형</label>
-            <select name="docType">
-                <option value="">전체</option>
-                <option value="COMMENCE" th:selected="${docType == 'COMMENCE'}">착수계</option>
-                <option value="INTERIM" th:selected="${docType == 'INTERIM'}">기성계</option>
-                <option value="COMPLETION" th:selected="${docType == 'COMPLETION'}">준공계</option>
-            </select>
-            <label>시도</label>
-            <select name="cityNm" id="filterCity" onchange="onCityChange()">
-                <option value="">전체</option>
-                <option th:each="c : ${cityList}" th:value="${c}" th:text="${c}" th:selected="${c == cityNm}"></option>
-            </select>
-            <label>시군구</label>
-            <select name="distNm" id="filterDist">
-                <option value="">전체</option>
-                <option th:each="d : ${distList}" th:value="${d}" th:text="${d}" th:selected="${d == distNm}"></option>
-            </select>
-            <label>검색</label>
-            <input type="text" name="keyword" th:value="${keyword}" placeholder="문서번호/제목 검색">
+            <div class="filter-cell" data-field="docType">
+                <label>문서유형</label>
+                <select name="docType">
+                    <option value="">전체</option>
+                    <option value="COMMENCE" th:selected="${docType == 'COMMENCE'}">착수계</option>
+                    <option value="INTERIM" th:selected="${docType == 'INTERIM'}">기성계</option>
+                    <option value="COMPLETION" th:selected="${docType == 'COMPLETION'}">준공계</option>
+                </select>
+                <button type="button" class="pin-btn" data-target="docType" aria-pressed="false" aria-label="문서유형 필터 고정" title="필터 고정"><i class="fas fa-thumbtack"></i></button>
+            </div>
+            <div class="filter-cell" data-field="cityNm">
+                <label>시도</label>
+                <select name="cityNm" id="filterCity" onchange="onCityChange()">
+                    <option value="">전체</option>
+                    <option th:each="c : ${cityList}" th:value="${c}" th:text="${c}" th:selected="${c == cityNm}"></option>
+                </select>
+                <button type="button" class="pin-btn" data-target="cityNm" aria-pressed="false" aria-label="시도 필터 고정" title="필터 고정"><i class="fas fa-thumbtack"></i></button>
+            </div>
+            <div class="filter-cell" data-field="distNm">
+                <label>시군구</label>
+                <select name="distNm" id="filterDist">
+                    <option value="">전체</option>
+                    <option th:each="d : ${distList}" th:value="${d}" th:text="${d}" th:selected="${d == distNm}"></option>
+                </select>
+                <button type="button" class="pin-btn" data-target="distNm" aria-pressed="false" aria-label="시군구 필터 고정" title="필터 고정"><i class="fas fa-thumbtack"></i></button>
+            </div>
+            <div class="filter-cell" data-field="authorName">
+                <label>작성자</label>
+                <input type="text" name="authorName" th:value="${authorName}" placeholder="작성자명" style="width:100px;">
+                <button type="button" class="pin-btn" data-target="authorName" aria-pressed="false" aria-label="작성자 필터 고정" title="필터 고정"><i class="fas fa-thumbtack"></i></button>
+            </div>
+            <div class="filter-cell" data-field="keyword">
+                <label>검색</label>
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="문서번호/제목 검색">
+                <button type="button" class="pin-btn" data-target="keyword" aria-pressed="false" aria-label="검색어 필터 고정" title="필터 고정"><i class="fas fa-thumbtack"></i></button>
+            </div>
             <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
+            <button type="button" class="btn-reset" onclick="window.__resetDocFilters()"><i class="fas fa-rotate-left"></i> 초기화</button>
             <button type="button" class="btn-excel" onclick="downloadDocListExcel()"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
         </form>
 
@@ -124,24 +150,93 @@
                 var params = new URLSearchParams(new FormData(form)).toString();
                 window.location.href = '/document/excel-list?' + params;
             }
+            // 시군구 카스케이드 — createElement + 실패 시 기존 옵션 보존
             function onCityChange() {
                 var city = document.getElementById('filterCity').value;
                 var distSel = document.getElementById('filterDist');
-                // 시도 미선택 시 시군구도 전체로 리셋
                 if (!city) {
-                    distSel.innerHTML = '<option value="">전체</option>';
+                    distSel.innerHTML = '';
+                    var d0 = document.createElement('option'); d0.value = ''; d0.textContent = '전체';
+                    distSel.appendChild(d0);
                     return;
                 }
+                var prevHtml = distSel.innerHTML;
                 fetch('/document/api/dist-list?cityNm=' + encodeURIComponent(city))
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
                     .then(function(list) {
-                        var html = '<option value="">전체</option>';
+                        distSel.innerHTML = '';
+                        var def = document.createElement('option'); def.value = ''; def.textContent = '전체';
+                        distSel.appendChild(def);
                         list.forEach(function(d) {
-                            html += '<option value="' + d + '">' + d + '</option>';
+                            var opt = document.createElement('option'); opt.value = d; opt.textContent = d;
+                            distSel.appendChild(opt);
                         });
-                        distSel.innerHTML = html;
-                    });
+                    })
+                    .catch(function(err) { console.warn('dist-list 로드 실패', err); distSel.innerHTML = prevHtml; });
             }
+
+            // === 검색 필터 핀(고정) — localStorage 스티키 (project-list 패턴 이식) ===
+            (function () {
+                var PIN_KEY = 'swDocSearchPins';
+                var VAL_KEY = 'swDocSearchValues';
+                var FIELDS = ['docType', 'cityNm', 'distNm', 'authorName', 'keyword'];
+                function loadObj(k) { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch (e) { return {}; } }
+                function saveObj(k, o) { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} }
+                var urlParams = new URLSearchParams(location.search);
+                var pins = loadObj(PIN_KEY);
+                var vals = loadObj(VAL_KEY);
+
+                // 핀된 값이 URL 에 없으면 쿼리에 보강해 서버 재조회(고정=실제 적용, 화면·엑셀 일치).
+                // 루프 방지: 재로드 후 해당 파라미터가 URL 에 들어가면 changed=false 가 되어 더 리다이렉트 안 함.
+                var qp = new URLSearchParams(location.search);
+                var changed = false;
+                FIELDS.forEach(function (f) {
+                    if (pins[f] && vals[f] != null && vals[f] !== '' && !qp.has(f)) { qp.set(f, vals[f]); changed = true; }
+                });
+                if (changed) { location.replace(location.pathname + '?' + qp.toString()); return; }
+
+                FIELDS.forEach(function (f) {
+                    var el = document.querySelector('[name="' + f + '"]');
+                    var btn = document.querySelector('.pin-btn[data-target="' + f + '"]');
+                    var cell = document.querySelector('.filter-cell[data-field="' + f + '"]');
+                    if (!el || !btn || !cell) return;
+
+                    if (pins[f]) {
+                        btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true');
+                        cell.classList.add('pinned');
+                        if (!urlParams.has(f) && vals[f] != null && vals[f] !== '') {
+                            if (el.tagName === 'SELECT') {
+                                var exists = Array.prototype.some.call(el.options, function (o) { return o.value === vals[f]; });
+                                if (exists) el.value = vals[f];
+                            } else { el.value = vals[f]; }
+                        }
+                    }
+                    btn.addEventListener('click', function () {
+                        pins[f] = !pins[f];
+                        if (pins[f]) {
+                            btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true');
+                            cell.classList.add('pinned'); vals[f] = el.value;
+                        } else {
+                            btn.classList.remove('active'); btn.setAttribute('aria-pressed', 'false');
+                            cell.classList.remove('pinned'); delete vals[f];
+                        }
+                        saveObj(PIN_KEY, pins); saveObj(VAL_KEY, vals);
+                    });
+                    var sync = function () { if (pins[f]) { vals[f] = el.value; saveObj(VAL_KEY, vals); } };
+                    el.addEventListener('change', sync);
+                    if (el.tagName !== 'SELECT') el.addEventListener('input', sync);
+                });
+
+                // 초기화 — 핀 켜진 필드만 남기고 비운 뒤 폼 submit 으로 재조회(화면·엑셀 동기화)
+                window.__resetDocFilters = function () {
+                    FIELDS.forEach(function (f) {
+                        if (pins[f]) return;
+                        var el = document.querySelector('[name="' + f + '"]');
+                        if (el) el.value = '';
+                    });
+                    document.getElementById('filterForm').submit();
+                };
+            })();
         </script>
 
         <!-- 목록 -->
@@ -202,7 +297,7 @@
             <!-- 페이지네이션 -->
             <div th:if="${documents.totalPages > 1}" class="pagination">
                 <a th:each="i : ${#numbers.sequence(0, documents.totalPages - 1)}"
-                   th:href="@{/document/list(page=${i}, docType=${docType}, cityNm=${cityNm}, distNm=${distNm}, keyword=${keyword})}"
+                   th:href="@{/document/list(page=${i}, docType=${docType}, cityNm=${cityNm}, distNm=${distNm}, keyword=${keyword}, authorName=${authorName})}"
                    th:class="${documents.number == i} ? 'active' : ''"
                    th:text="${i + 1}">1</a>
             </div>

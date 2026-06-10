@@ -33,11 +33,13 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
     @Query(value = "SELECT d.* FROM tb_document d " +
            "LEFT JOIN tb_infra_master im ON d.infra_id = im.infra_id " +
            "LEFT JOIN sw_pjt p ON d.proj_id = p.proj_id " +
+           "LEFT JOIN users u ON d.author_id = u.user_id " +
            "WHERE (CAST(:docType AS VARCHAR) IS NULL OR d.doc_type = :docType) " +
            "AND (CAST(:status AS VARCHAR) IS NULL OR d.status = :status) " +
            "AND (CAST(:cityNm AS VARCHAR) IS NULL OR COALESCE(im.city_nm, p.city_nm) = :cityNm) " +
            "AND (CAST(:distNm AS VARCHAR) IS NULL OR COALESCE(im.dist_nm, p.dist_nm) = :distNm) " +
            "AND (CAST(:authorId AS BIGINT) IS NULL OR d.author_id = :authorId) " +
+           "AND (CAST(:authorName AS VARCHAR) IS NULL OR u.username ILIKE '%' || :authorName || '%') " +
            "AND (CAST(:fromDt AS TIMESTAMP) IS NULL OR d.created_at >= :fromDt) " +
            "AND (CAST(:toDt AS TIMESTAMP) IS NULL OR d.created_at <= :toDt) " +
            "AND (CAST(:kw AS VARCHAR) IS NULL OR (" +
@@ -48,11 +50,13 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
            countQuery = "SELECT COUNT(*) FROM tb_document d " +
            "LEFT JOIN tb_infra_master im ON d.infra_id = im.infra_id " +
            "LEFT JOIN sw_pjt p ON d.proj_id = p.proj_id " +
+           "LEFT JOIN users u ON d.author_id = u.user_id " +
            "WHERE (CAST(:docType AS VARCHAR) IS NULL OR d.doc_type = :docType) " +
            "AND (CAST(:status AS VARCHAR) IS NULL OR d.status = :status) " +
            "AND (CAST(:cityNm AS VARCHAR) IS NULL OR COALESCE(im.city_nm, p.city_nm) = :cityNm) " +
            "AND (CAST(:distNm AS VARCHAR) IS NULL OR COALESCE(im.dist_nm, p.dist_nm) = :distNm) " +
            "AND (CAST(:authorId AS BIGINT) IS NULL OR d.author_id = :authorId) " +
+           "AND (CAST(:authorName AS VARCHAR) IS NULL OR u.username ILIKE '%' || :authorName || '%') " +
            "AND (CAST(:fromDt AS TIMESTAMP) IS NULL OR d.created_at >= :fromDt) " +
            "AND (CAST(:toDt AS TIMESTAMP) IS NULL OR d.created_at <= :toDt) " +
            "AND (CAST(:kw AS VARCHAR) IS NULL OR (" +
@@ -69,6 +73,7 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
             @Param("fromDt") LocalDateTime from,
             @Param("toDt") LocalDateTime to,
             @Param("kw") String keyword,
+            @Param("authorName") String authorName,
             Pageable pageable);
 
     // 시도(광역시) 목록: infra + project 통합, 중복 제거

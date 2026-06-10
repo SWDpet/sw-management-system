@@ -111,6 +111,7 @@ public class DocumentController {
                                 @RequestParam(name = "cityNm", required = false) String cityNm,
                                 @RequestParam(name = "distNm", required = false) String distNm,
                                 @RequestParam(name = "keyword", required = false) String keyword,
+                                @RequestParam(name = "authorName", required = false) String authorName,
                                 @PageableDefault(size = 15) Pageable pageable,
                                 Model model, RedirectAttributes rttr) {
         String auth = getAuth();
@@ -122,7 +123,7 @@ public class DocumentController {
         Long authorId = null; // 관리자는 전체 조회
 
         Page<DocumentDTO> documents = documentService.searchDocuments(
-                docType, null, cityNm, distNm, authorId, null, null, keyword, pageable);
+                docType, null, cityNm, distNm, authorId, null, null, keyword, authorName, pageable);
 
         // 시도 목록 (드롭다운용), 시군구 목록 (선택된 시도 기준)
         List<String> cityList = documentService.getCityNames();
@@ -137,6 +138,7 @@ public class DocumentController {
         model.addAttribute("cityNm", cityNm);
         model.addAttribute("distNm", distNm);
         model.addAttribute("keyword", keyword);
+        model.addAttribute("authorName", authorName);
         model.addAttribute("userAuth", auth);
 
         logService.log(MenuName.DOCUMENT, AccessActionType.VIEW, "문서 목록 조회");
@@ -157,13 +159,14 @@ public class DocumentController {
             @RequestParam(name = "docType", required = false) String docType,
             @RequestParam(name = "cityNm", required = false) String cityNm,
             @RequestParam(name = "distNm", required = false) String distNm,
-            @RequestParam(name = "keyword", required = false) String keyword) {
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "authorName", required = false) String authorName) {
         if ("NONE".equals(getAuth())) {
             return ResponseEntity.status(403).build();
         }
         try {
             Page<DocumentDTO> documents = documentService.searchDocuments(
-                    docType, null, cityNm, distNm, null, null, null, keyword,
+                    docType, null, cityNm, distNm, null, null, null, keyword, authorName,
                     org.springframework.data.domain.PageRequest.of(0, 100000));
             byte[] excelBytes = excelExportService.generateDocumentList(documents.getContent());
 
