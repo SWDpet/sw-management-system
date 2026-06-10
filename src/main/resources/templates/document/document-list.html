@@ -33,6 +33,8 @@
         .pin-btn:hover { border-color: var(--primary); color: var(--primary); }
         .pin-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .btn-reset { padding: 7px 15px; background: var(--text2); color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .btn-bulk { padding: 7px 15px; background: var(--info); color: white; border: none; border-radius: 5px; font-size: 0.82em; cursor: pointer; font-weight: 600; }
+        .btn-bulk:disabled { opacity: 0.6; cursor: default; }
 
         /* 문서 생성 드롭다운 */
         .dropdown { position: relative; display: inline-block; }
@@ -142,6 +144,28 @@
             <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
             <button type="button" class="btn-reset" onclick="window.__resetDocFilters()"><i class="fas fa-rotate-left"></i> 초기화</button>
             <button type="button" class="btn-excel" onclick="downloadDocListExcel()"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+            <!-- 일괄 산출물 다운로드 (doc-bulk-export) — 현재 필터(핀·작성자 포함) 전체 대상 -->
+            <div class="dropdown" id="bulkDropdown">
+                <button type="button" class="btn-bulk" id="bulkBtn" aria-haspopup="true" aria-expanded="false"><i class="fas fa-file-archive"></i> 일괄 산출물 ▾</button>
+                <div class="dropdown-content" id="bulkMenu">
+                    <a href="#" onclick="bulkDownload('letter'); return false;">공문 일괄</a>
+                    <a href="#" onclick="bulkDownload('all'); return false;">전체 일괄</a>
+                    <th:block th:if="${docType == 'INTERIM'}">
+                        <hr style="margin:4px 0; border-color:var(--border);">
+                        <a href="#" onclick="bulkDownload('inspector'); return false;">기성검사원 일괄</a>
+                        <a href="#" onclick="bulkDownload('interim'); return false;">기성내역서 일괄</a>
+                    </th:block>
+                    <th:block th:if="${docType == 'COMMENCE'}">
+                        <hr style="margin:4px 0; border-color:var(--border);">
+                        <a href="#" onclick="bulkDownload('commence_body'); return false;">착수계본문 일괄</a>
+                        <a href="#" onclick="bulkDownload('design'); return false;">설계내역서 일괄</a>
+                    </th:block>
+                    <th:block th:if="${docType == 'COMPLETION'}">
+                        <hr style="margin:4px 0; border-color:var(--border);">
+                        <a href="#" onclick="bulkDownload('completion'); return false;">준공계본문 일괄</a>
+                    </th:block>
+                </div>
+            </div>
         </form>
 
         <script>
@@ -236,6 +260,51 @@
                     });
                     document.getElementById('filterForm').submit();
                 };
+            })();
+
+            // === 일괄 산출물 다운로드 (doc-bulk-export) — 현재 필터 전체 대상 ZIP ===
+            function bulkDownload(type) {
+                if (window.__bulkDownloading) return;   // 중복 다운로드 방지(메뉴 재클릭 차단)
+                window.__bulkDownloading = true;
+                var menu = document.getElementById('bulkMenu'); if (menu) menu.style.display = '';
+                var btn = document.getElementById('bulkBtn');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+                var form = document.getElementById('filterForm');
+                var params = new URLSearchParams(new FormData(form));
+                params.set('type', type);
+                var orig = btn ? btn.innerHTML : '';
+                if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 생성 중...'; }
+                fetch('/document/api/bulk-zip?' + params.toString())
+                    .then(function (r) {
+                        if (!r.ok) { return r.text().then(function (t) { throw new Error(t || ('오류 ' + r.status)); }); }
+                        var cd = r.headers.get('Content-Disposition') || '';
+                        var m = /filename\*=UTF-8''([^;]+)/.exec(cd);
+                        var name = m ? decodeURIComponent(m[1]) : '일괄.zip';
+                        return r.blob().then(function (b) { return { blob: b, name: name }; });
+                    })
+                    .then(function (res) {
+                        var url = URL.createObjectURL(res.blob);
+                        var a = document.createElement('a'); a.href = url; a.download = res.name;
+                        document.body.appendChild(a); a.click(); a.remove();
+                        URL.revokeObjectURL(url);
+                    })
+                    .catch(function (e) { alert('일괄 다운로드 실패: ' + e.message); })
+                    .finally(function () { window.__bulkDownloading = false; if (btn) { btn.disabled = false; btn.innerHTML = orig; } });
+            }
+            // 드롭다운 접근성 (키보드/aria) — hover 동작과 병행
+            (function () {
+                var btn = document.getElementById('bulkBtn');
+                var menu = document.getElementById('bulkMenu');
+                var dd = document.getElementById('bulkDropdown');
+                if (!btn || !menu || !dd) return;
+                function open(o) { menu.style.display = o ? 'block' : ''; btn.setAttribute('aria-expanded', o ? 'true' : 'false'); }
+                btn.addEventListener('click', function () { open(btn.getAttribute('aria-expanded') !== 'true'); });
+                btn.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(true); var f = menu.querySelector('a'); if (f) f.focus(); }
+                    else if (e.key === 'Escape') { open(false); }
+                });
+                document.addEventListener('keydown', function (e) { if (e.key === 'Escape') open(false); });
+                document.addEventListener('click', function (e) { if (!dd.contains(e.target)) open(false); });
             })();
         </script>
 

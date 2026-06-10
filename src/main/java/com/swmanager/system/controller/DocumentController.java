@@ -626,6 +626,151 @@ public class DocumentController {
         zos.closeEntry();
     }
 
+    // === 검색목록 산출물 일괄 ZIP 다운로드 (doc-bulk-export) ===
+    @ResponseBody
+    @GetMapping("/api/bulk-zip")
+    public ResponseEntity<byte[]> downloadBulkZip(
+            @RequestParam(name = "docType", required = false) String docType,
+            @RequestParam(name = "cityNm", required = false) String cityNm,
+            @RequestParam(name = "distNm", required = false) String distNm,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "authorName", required = false) String authorName,
+            @RequestParam(name = "type", defaultValue = "letter") String type) {
+
+        if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
+
+        java.util.Set<String> allowed = java.util.Set.of("letter", "all", "inspector", "interim", "commence_body", "design", "completion");
+        if (!allowed.contains(type)) return bulkErr(400, "허용되지 않은 type 입니다.");
+
+        final int LIMIT = 200;
+        Page<DocumentDTO> page = documentService.searchDocuments(
+                docType, null, cityNm, distNm, null, null, null, keyword, authorName,
+                org.springframework.data.domain.PageRequest.of(0, LIMIT + 1));
+        long total = page.getTotalElements();
+        if (total == 0) return bulkErr(400, "대상 문서가 없습니다.");
+        if (total > LIMIT) return bulkErr(413, "검색 결과 " + total + "건 — 최대 " + LIMIT + "건까지 가능합니다. 필터를 좁혀주세요.");
+
+        java.util.List<String> fails = new java.util.ArrayList<>();
+        java.util.Set<String> used = new java.util.HashSet<>();
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(baos)) {
+            for (DocumentDTO d : page.getContent()) {
+                Integer id = d.getDocId();
+                DocumentType dt = d.getDocType();
+                String base = zipSafe(d.getCityNm()) + "_" + zipSafe(d.getDistNm()) + "_" + zipSafe(d.getProjNm());
+                if ("all".equals(type)) {
+                    bulkAddAll(zos, base, used, id, dt, fails);
+                } else {
+                    bulkAddSingle(zos, base, used, id, dt, type, fails);
+                }
+            }
+            if (!fails.isEmpty()) {
+                addZipEntry(zos, "_실패목록.txt", ("생성 실패/건너뜀:\n" + String.join("\n", fails)).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+        } catch (Exception e) {
+            log.error("일괄 ZIP 생성 실패", e);
+            return ResponseEntity.status(500).build();
+        }
+
+        String filename = bulkTypeLabel(type) + "_일괄_" + java.time.LocalDate.now() + ".zip";
+        String encoded;
+        try { encoded = java.net.URLEncoder.encode(filename, "UTF-8").replace("+", "%20"); }
+        catch (Exception e) { encoded = "bulk.zip"; }
+        return ResponseEntity.ok()
+                .header("Content-Type", "application/zip")
+                .header("Content-Disposition", "attachment; filename*=UTF-8''" + encoded)
+                .body(baos.toByteArray());
+    }
+
+    private ResponseEntity<byte[]> bulkErr(int status, String msg) {
+        return ResponseEntity.status(status)
+                .header("Content-Type", "text/plain; charset=UTF-8")
+                .body(msg.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /** 단일 유형: {base}_{산출물}.{ext}. 유형 불일치 문서는 건너뜀(_실패목록 기록). */
+    private void bulkAddSingle(java.util.zip.ZipOutputStream zos, String base, java.util.Set<String> used,
+                               Integer id, DocumentType dt, String type, java.util.List<String> fails) {
+        try {
+            switch (type) {
+                case "letter" -> bulkPut(zos, used, base + "_공문", ".hwpx", hwpxExportService.generateHwpx(id, "letter"));
+                case "inspector" -> {
+                    if (dt == DocumentType.INTERIM) bulkPut(zos, used, base + "_기성검사원", ".hwpx", hwpxExportService.generateHwpx(id, "inspector"));
+                    else fails.add(base + " — 기성계 아님(기성검사원 생략)");
+                }
+                case "interim" -> {
+                    if (dt == DocumentType.INTERIM) bulkPut(zos, used, base + "_기성내역서", ".xlsx", excelExportService.generateInterimReport(id));
+                    else fails.add(base + " — 기성계 아님(기성내역서 생략)");
+                }
+                case "commence_body" -> {
+                    if (dt == DocumentType.COMMENCE) bulkPut(zos, used, base + "_착수계본문", ".hwpx", hwpxExportService.generateHwpx(id, "commence_body"));
+                    else fails.add(base + " — 착수계 아님(착수계본문 생략)");
+                }
+                case "design" -> {
+                    if (dt == DocumentType.COMMENCE) bulkPut(zos, used, base + "_설계내역서", ".xlsx", excelExportService.generateDesignEstimate(id));
+                    else fails.add(base + " — 착수계 아님(설계내역서 생략)");
+                }
+                case "completion" -> {
+                    if (dt == DocumentType.COMPLETION) {
+                        try { bulkPut(zos, used, base + "_준공계_KRAS", ".hwpx", hwpxExportService.generateHwpx(id, "completion_body")); } catch (Exception e) { fails.add(base + "_준공계_KRAS — " + e.getMessage()); }
+                        try { bulkPut(zos, used, base + "_준공계_UPIS", ".hwpx", hwpxExportService.generateHwpx(id, "completion_body_upis")); } catch (Exception e) { fails.add(base + "_준공계_UPIS — " + e.getMessage()); }
+                    } else fails.add(base + " — 준공계 아님(생략)");
+                }
+            }
+        } catch (Exception e) {
+            fails.add(base + " (" + type + ") — " + e.getMessage());
+        }
+    }
+
+    /** 전체 일괄: 평면(폴더 없음), 파일명 {사업명}_{산출물} (단건 다운로드 명명과 동일). */
+    private void bulkAddAll(java.util.zip.ZipOutputStream zos, String base, java.util.Set<String> used, Integer id, DocumentType dt, java.util.List<String> fails) {
+        try { bulkPut(zos, used, base + "_공문", ".hwpx", hwpxExportService.generateHwpx(id, "letter")); } catch (Exception e) { fails.add(base + "_공문 — " + e.getMessage()); }
+        if (dt == DocumentType.COMMENCE) {
+            try { bulkPut(zos, used, base + "_착수계", ".hwpx", hwpxExportService.generateHwpx(id, "commence_body")); } catch (Exception e) { fails.add(base + "_착수계 — " + e.getMessage()); }
+            try { bulkPut(zos, used, base + "_설계내역서", ".xlsx", excelExportService.generateDesignEstimate(id)); } catch (Exception e) { fails.add(base + "_설계내역서 — " + e.getMessage()); }
+        } else if (dt == DocumentType.INTERIM) {
+            try { bulkPut(zos, used, base + "_기성검사원", ".hwpx", hwpxExportService.generateHwpx(id, "inspector")); } catch (Exception e) { fails.add(base + "_기성검사원 — " + e.getMessage()); }
+            try { bulkPut(zos, used, base + "_기성내역서", ".xlsx", excelExportService.generateInterimReport(id)); } catch (Exception e) { fails.add(base + "_기성내역서 — " + e.getMessage()); }
+        } else if (dt == DocumentType.COMPLETION) {
+            try { bulkPut(zos, used, base + "_준공계_KRAS", ".hwpx", hwpxExportService.generateHwpx(id, "completion_body")); } catch (Exception e) { fails.add(base + "_준공계_KRAS — " + e.getMessage()); }
+            try { bulkPut(zos, used, base + "_준공계_UPIS", ".hwpx", hwpxExportService.generateHwpx(id, "completion_body_upis")); } catch (Exception e) { fails.add(base + "_준공계_UPIS — " + e.getMessage()); }
+        }
+    }
+
+    private void bulkPut(java.util.zip.ZipOutputStream zos, java.util.Set<String> used, String nameNoExt, String ext, byte[] data) throws java.io.IOException {
+        addZipEntry(zos, bulkUnique(used, nameNoExt) + ext, data);
+    }
+
+    private String bulkUnique(java.util.Set<String> used, String base) {
+        String name = base; int n = 2;
+        while (used.contains(name)) name = base + "_" + (n++);
+        used.add(name);
+        return name;
+    }
+
+    static String zipSafe(String raw) {
+        if (raw == null || raw.isBlank()) return "미상";
+        String s = raw.replaceAll("[\\\\/:*?\"<>|]", "")  // 경로 구분자·금지문자
+                      .replaceAll("[\\x00-\\x1F]", "")       // 제어문자
+                      .replaceAll("\\.{2,}", "")             // .. 연속점(traversal 흔적) 제거
+                      .replaceAll("\\s+", " ").trim();
+        if (s.length() > 60) s = s.substring(0, 60).trim();
+        return s.isEmpty() ? "미상" : s;
+    }
+
+    static String bulkTypeLabel(String type) {
+        return switch (type) {
+            case "letter" -> "공문";
+            case "all" -> "전체";
+            case "inspector" -> "기성검사원";
+            case "interim" -> "기성내역서";
+            case "commence_body" -> "착수계본문";
+            case "design" -> "설계내역서";
+            case "completion" -> "준공계";
+            default -> "산출물";
+        };
+    }
+
     // === 전자서명 API ===
 
     @ResponseBody
