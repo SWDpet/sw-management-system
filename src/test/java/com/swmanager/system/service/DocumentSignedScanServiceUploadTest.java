@@ -51,6 +51,9 @@ class DocumentSignedScanServiceUploadTest {
         SwProject p = new SwProject();
         p.setProjId(108L);
         p.setProjNm("강진군UPIS유지보수");
+        p.setYear(2026);
+        p.setCityNm("전라남도");
+        p.setDistNm("강진군");
         d.setProject(p);
         return d;
     }
@@ -72,9 +75,33 @@ class DocumentSignedScanServiceUploadTest {
         assertTrue(Files.exists(saved), "파일이 저장돼야 함");
         assertTrue(saved.startsWith(tempDir.toAbsolutePath().normalize()), "base 하위여야 함");
         assertEquals("scan.pdf", out.getSignedScanOrigName());
-        assertTrue(out.getSignedScanPath().contains("108_강진군UPIS유지보수"));
-        assertTrue(out.getSignedScanPath().contains("착수계"));
+        // 새 폴더 구조: {문서종류}/{사업연도}/{시도}/{시군구}/{사업명}_{문서종류}.pdf
+        String sep = java.io.File.separator;
+        assertTrue(out.getSignedScanPath().contains(
+                String.join(sep, "착수계", "2026", "전라남도", "강진군")),
+                "문서종류/연도/시도/시군구 경로여야 함: " + out.getSignedScanPath());
+        assertTrue(out.getSignedScanPath().endsWith("강진군UPIS유지보수_착수계.pdf"),
+                "파일명은 {사업명}_{문서종류}.pdf: " + out.getSignedScanPath());
         verify(docRepo).saveAndFlush(any(Document.class));
+    }
+
+    @Test
+    void upload_nullProjectFields_usesFallbackFolders() throws IOException {
+        Document d = new Document();
+        d.setDocType(DocumentType.INTERIM);
+        d.setStatus(DocumentStatus.DRAFT);
+        SwProject p = new SwProject();
+        p.setProjNm("연도지역미상사업"); // year/cityNm/distNm 모두 null
+        d.setProject(p);
+        when(docRepo.findById(1)).thenReturn(Optional.of(d));
+
+        Document out = service.uploadOrReplace(1, pdf(), null);
+
+        String sep = java.io.File.separator;
+        assertTrue(out.getSignedScanPath().contains(
+                String.join(sep, "기성계", "연도미상", "시도미상", "시군구미상")),
+                "null 필드는 미상 폴더로: " + out.getSignedScanPath());
+        assertTrue(out.getSignedScanPath().endsWith("연도지역미상사업_기성계.pdf"));
     }
 
     @Test

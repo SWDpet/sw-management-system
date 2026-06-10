@@ -43,6 +43,14 @@ class DocumentSignedScanServiceTest {
     }
 
     @Test
+    void seg_usesCustomFallbackForEmpty() {
+        assertEquals("연도미상", DocumentSignedScanService.seg(null, "연도미상"));
+        assertEquals("시도미상", DocumentSignedScanService.seg("   ", "시도미상"));
+        assertEquals("시군구미상", DocumentSignedScanService.seg("\\/:*?\"<>|", "시군구미상"));
+        assertEquals("전라남도", DocumentSignedScanService.seg("전라남도", "시도미상"));
+    }
+
+    @Test
     void label_mapsThreeTypes() {
         assertEquals("착수계", DocumentSignedScanService.label(DocumentType.COMMENCE));
         assertEquals("기성계", DocumentSignedScanService.label(DocumentType.INTERIM));

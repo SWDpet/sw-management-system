@@ -21,9 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -32,7 +30,7 @@ import java.util.Set;
  * 기획서/개발계획서: doc-signed-scan-upload. (codex 1차 구현검토 반영 v2)
  *
  * 범용 첨부(DocumentAttachmentService)와 분리 — 1:1 교체, COMPLETED 게이트(FR-8),
- * PDF 검증(FR-2), 사업->문서종류 폴더 트리, 경로 안전(FR-9), 원자적 교체+롤백(FR-10).
+ * PDF 검증(FR-2), {문서종류}/{사업연도}/{시도}/{시군구} 폴더 트리, 경로 안전(FR-9), 원자적 교체+롤백(FR-10).
  */
 @Service
 @Transactional
@@ -43,7 +41,6 @@ public class DocumentSignedScanService {
     private static final byte[] PDF_MAGIC = { 0x25, 0x50, 0x44, 0x46, 0x2D }; // %PDF-
     private static final int MAX_NAME_LEN = 80;
     private static final long MAX_BYTES = 30L * 1024 * 1024; // 30MB
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
@@ -90,12 +87,20 @@ public class DocumentSignedScanService {
             throw new IllegalArgumentException("PDF 파일만 허용됩니다.");
 
         Path base = baseDir();
-        Path dir = base.resolve(projectFolder(doc)).resolve(label(doc.getDocType())).normalize();
+        // 폴더 구조(2026-06-11 변경): {문서종류}/{사업연도}/{시도}/{시군구}/{사업명}_{문서종류}.pdf
+        //  (기존 {projId}_{사업명}/{문서종류}/…_{yyyyMMdd}.pdf → 문서종류·지역 기준 분류로 전환)
+        Path dir = base.resolve(label(doc.getDocType()))
+                .resolve(yearFolder(doc))
+                .resolve(seg(cityNm(doc), "시도미상"))
+                .resolve(seg(distNm(doc), "시군구미상"))
+                .normalize();
         if (!dir.startsWith(base)) throw new SecurityException("잘못된 저장 경로입니다.");
         Files.createDirectories(dir);
+        // FR-9 symlink/실경로 우회 차단: 중간 디렉터리가 base 밖(symlink 등)을 가리키면 거부 (download 와 동일 기준)
+        if (!dir.toRealPath().startsWith(base.toRealPath()))
+            throw new SecurityException("잘못된 저장 경로입니다.");
 
-        String fileName = label(doc.getDocType()) + "_" + sanitize(projNm(doc)) + "_"
-                + LocalDate.now().format(DAY) + ".pdf";
+        String fileName = sanitize(projNm(doc)) + "_" + label(doc.getDocType()) + ".pdf";
         Path target = dir.resolve(fileName).normalize();
         if (!target.startsWith(base)) throw new SecurityException("잘못된 파일 경로입니다.");
 
@@ -166,7 +171,11 @@ public class DocumentSignedScanService {
             Path base = baseDir();
             Path p = Paths.get(prev).normalize();
             if (p.startsWith(base)) { // base 밖이면 파일은 손대지 않고 메타만 정리(안전)
-                try { Files.deleteIfExists(p); } catch (IOException ignored) {}
+                try {
+                    // FR-9 symlink ancestor 우회 차단: 실경로가 base 밖이면 미삭제 (download/upload 와 동일 기준)
+                    if (!Files.exists(p) || p.toRealPath().startsWith(base.toRealPath()))
+                        Files.deleteIfExists(p);
+                } catch (IOException ignored) {}
             }
         }
         doc.setSignedScanPath(null);
@@ -218,20 +227,34 @@ public class DocumentSignedScanService {
         return (doc.getProject() != null) ? doc.getProject().getProjNm() : null;
     }
 
-    private static String projectFolder(Document doc) {
-        Long projId = (doc.getProject() != null) ? doc.getProject().getProjId() : null;
-        return (projId != null ? projId : 0L) + "_" + sanitize(projNm(doc));
+    private static String cityNm(Document doc) {
+        return (doc.getProject() != null) ? doc.getProject().getCityNm() : null;
     }
 
-    /** 경로 금지문자·제어문자 제거 + 공백압축 + 길이컷(80) + 빈문자 fallback. */
+    private static String distNm(Document doc) {
+        return (doc.getProject() != null) ? doc.getProject().getDistNm() : null;
+    }
+
+    /** 사업연도 폴더. null/미상은 '연도미상'. */
+    private static String yearFolder(Document doc) {
+        Integer y = (doc.getProject() != null) ? doc.getProject().getYear() : null;
+        return (y != null) ? String.valueOf(y) : "연도미상";
+    }
+
+    /** 사업명 정제 (빈값 fallback '사업미상'). */
     static String sanitize(String raw) {
-        if (raw == null) return "사업미상";
+        return seg(raw, "사업미상");
+    }
+
+    /** 경로 세그먼트 정제: 금지문자·제어문자 제거 + 공백압축 + 길이컷(80) + 빈값 fallback. */
+    static String seg(String raw, String fallback) {
+        if (raw == null) return fallback;
         String s = raw.replaceAll("[\\\\/:*?\"<>|]", "")  // 경로 금지문자
                       .replaceAll("[\\x00-\\x1F]", "")       // 제어문자
                       .replaceAll("\\s+", " ")
                       .trim();
         if (s.length() > MAX_NAME_LEN) s = s.substring(0, MAX_NAME_LEN).trim();
-        return s.isEmpty() ? "사업미상" : s;
+        return s.isEmpty() ? fallback : s;
     }
 
     static String label(DocumentType type) {
