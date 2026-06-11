@@ -69,28 +69,17 @@ public class MainController {
         List<Map<String, Object>> stats = swProjectRepository.getSystemStats(queryYear);
         if (stats == null) stats = new ArrayList<>();
 
-        // 전년 대비 증감 맵 (sysNm → [완료, 진행])
-        Map<String, long[]> prevMap = new HashMap<>();
-        if (queryYear != null) {
-            List<Map<String, Object>> prev = swProjectRepository.getSystemStats(queryYear - 1);
-            if (prev != null) for (Map<String, Object> r : prev)
-                prevMap.put(str(r.get("sysNm")), new long[]{ lng(r.get("compCnt")), lng(r.get("progCnt")) });
-        }
-
-        long tProj=0,tComp=0,tProg=0,tAmt=0,tCompD=0,tProgD=0,maxAmt=0;
+        long tProj=0,tComp=0,tProg=0,tAmt=0,maxAmt=0;
+        // 항목별 금액 소계 (합계행): SW/컨설팅/DB구축/패키지SW/시스템개발/HW/기타
+        long tSw=0,tCnslt=0,tDb=0,tPkg=0,tDev=0,tHw=0,tEtc=0;
         List<Map<String, Object>> view = new ArrayList<>();
         for (Map<String, Object> r : stats) {
             Map<String, Object> m = new HashMap<>(r);
             long comp=lng(r.get("compCnt")), prog=lng(r.get("progCnt")), total=lng(r.get("totalCnt")), amt=lng(r.get("sumCont"));
-            long[] pv = prevMap.get(str(r.get("sysNm")));
-            Long compDelta = (pv != null) ? (comp - pv[0]) : null;
-            Long progDelta = (pv != null) ? (prog - pv[1]) : null;
-            m.put("compDelta", compDelta);
-            m.put("progDelta", progDelta);
             view.add(m);
             tProj+=total; tComp+=comp; tProg+=prog; tAmt+=amt;
-            if (compDelta!=null) tCompD+=compDelta;
-            if (progDelta!=null) tProgD+=progDelta;
+            tSw+=lng(r.get("sumSw")); tCnslt+=lng(r.get("sumCnslt")); tDb+=lng(r.get("sumDb"));
+            tPkg+=lng(r.get("sumPkg")); tDev+=lng(r.get("sumDev")); tHw+=lng(r.get("sumHw")); tEtc+=lng(r.get("sumEtc"));
             if (amt>maxAmt) maxAmt=amt;
         }
 
@@ -99,9 +88,13 @@ public class MainController {
         model.addAttribute("totalCompleted", tComp);
         model.addAttribute("totalInProgress", tProg);
         model.addAttribute("totalContAmt", tAmt);
-        model.addAttribute("totalCompDelta", tCompD);
-        model.addAttribute("totalProgDelta", tProgD);
-        model.addAttribute("hasPrev", queryYear != null && !prevMap.isEmpty());
+        model.addAttribute("totalSumSw", tSw);
+        model.addAttribute("totalSumCnslt", tCnslt);
+        model.addAttribute("totalSumDb", tDb);
+        model.addAttribute("totalSumPkg", tPkg);
+        model.addAttribute("totalSumDev", tDev);
+        model.addAttribute("totalSumHw", tHw);
+        model.addAttribute("totalSumEtc", tEtc);
         model.addAttribute("maxAmt", maxAmt);
         model.addAttribute("compPercent", tProj>0 ? Math.round((double)tComp/tProj*1000)/10.0 : 0.0);
 
@@ -162,5 +155,4 @@ public class MainController {
     }
 
     private static long lng(Object o)   { return (o instanceof Number) ? ((Number) o).longValue() : 0L; }
-    private static String str(Object o) { return o == null ? "" : o.toString(); }
 }

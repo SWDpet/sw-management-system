@@ -78,8 +78,6 @@
   tfoot td{padding:13px 14px;border-top:2px solid var(--border);text-align:right;font-weight:800;font-variant-numeric:tabular-nums;background:var(--s2);}
   tfoot td:first-child{text-align:left;}
   .tbl-wrap{overflow-x:auto;}
-  .dlt{font-size:.72rem;font-weight:700;margin-left:5px;}
-  .dlt.up{color:var(--success);} .dlt.down{color:var(--danger);} .dlt.zero{color:var(--muted);}
   .skeleton{background:linear-gradient(90deg,#F5F5F4,#EDEDEC,#F5F5F4);border-radius:4px;color:transparent!important;}
   .note{margin-top:18px;font-size:.78rem;color:var(--muted);text-align:center;}
 </style>
@@ -185,48 +183,43 @@
 
   <!-- 시스템별 사업 현황 (완료/진행 증감) -->
   <div class="panel">
-    <div class="ph bd"><span class="t"><i class="fas fa-table"></i> 시스템별 사업 현황
-      <span th:if="${hasPrev}" style="font-weight:500;color:var(--muted);font-size:.78rem;">· 완료/진행 옆은 전년 대비 증감</span></span>
+    <div class="ph bd"><span class="t"><i class="fas fa-table"></i> 시스템별 사업 현황</span>
       <a href="/projects/status">전체 보기 →</a></div>
     <div class="tbl-wrap">
     <table>
       <thead><tr>
         <th>시스템명</th><th>총개수</th><th style="color:var(--success)">완료</th><th style="color:var(--primary)">진행중</th>
-        <th>금액 합계</th><th>SW금액</th><th>컨설팅</th><th>DB구축</th>
+        <th>금액 합계</th><th>SW금액</th><th>컨설팅</th><th>DB구축</th><th>패키지SW</th><th>시스템개발</th><th>HW금액</th><th>기타</th>
       </tr></thead>
       <tbody>
         <tr th:each="row : ${stats}">
           <td th:text="${row.sysNm}">시스템</td>
           <td th:text="${#numbers.formatInteger(row.totalCnt,1,'COMMA')}">0</td>
-          <td>
-            <span th:text="${#numbers.formatInteger(row.compCnt,1,'COMMA')}">0</span>
-            <span th:if="${hasPrev and row.compDelta != null and row.compDelta > 0}" class="dlt up">▲<span th:text="${row.compDelta}"></span></span>
-            <span th:if="${hasPrev and row.compDelta != null and row.compDelta < 0}" class="dlt down">▼<span th:text="${0 - row.compDelta}"></span></span>
-            <span th:if="${hasPrev and row.compDelta != null and row.compDelta == 0}" class="dlt zero">–</span>
-          </td>
-          <td>
-            <span th:text="${#numbers.formatInteger(row.progCnt,1,'COMMA')}">0</span>
-            <span th:if="${hasPrev and row.progDelta != null and row.progDelta > 0}" class="dlt up">▲<span th:text="${row.progDelta}"></span></span>
-            <span th:if="${hasPrev and row.progDelta != null and row.progDelta < 0}" class="dlt down">▼<span th:text="${0 - row.progDelta}"></span></span>
-            <span th:if="${hasPrev and row.progDelta != null and row.progDelta == 0}" class="dlt zero">–</span>
-          </td>
+          <td th:text="${#numbers.formatInteger(row.compCnt,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.progCnt,1,'COMMA')}">0</td>
           <td th:text="${#numbers.formatInteger(row.sumCont,1,'COMMA')}">0</td>
           <td th:text="${#numbers.formatInteger(row.sumSw,1,'COMMA')}">0</td>
           <td th:text="${#numbers.formatInteger(row.sumCnslt,1,'COMMA')}">0</td>
           <td th:text="${#numbers.formatInteger(row.sumDb,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumPkg,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumDev,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumHw,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumEtc,1,'COMMA')}">0</td>
         </tr>
       </tbody>
       <tfoot><tr>
         <td>합 계</td>
         <td th:text="${#numbers.formatInteger(totalProjects,1,'COMMA')}">0</td>
-        <td><span th:text="${#numbers.formatInteger(totalCompleted,1,'COMMA')}">0</span>
-          <span th:if="${hasPrev and totalCompDelta > 0}" class="dlt up">▲<span th:text="${totalCompDelta}"></span></span>
-          <span th:if="${hasPrev and totalCompDelta < 0}" class="dlt down">▼<span th:text="${0 - totalCompDelta}"></span></span></td>
-        <td><span th:text="${#numbers.formatInteger(totalInProgress,1,'COMMA')}">0</span>
-          <span th:if="${hasPrev and totalProgDelta > 0}" class="dlt up">▲<span th:text="${totalProgDelta}"></span></span>
-          <span th:if="${hasPrev and totalProgDelta < 0}" class="dlt down">▼<span th:text="${0 - totalProgDelta}"></span></span></td>
+        <td th:text="${#numbers.formatInteger(totalCompleted,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalInProgress,1,'COMMA')}">0</td>
         <td th:text="${#numbers.formatInteger(totalContAmt,1,'COMMA')}">0</td>
-        <td colspan="3"></td>
+        <td th:text="${#numbers.formatInteger(totalSumSw,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalSumCnslt,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalSumDb,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalSumPkg,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalSumDev,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalSumHw,1,'COMMA')}">0</td>
+        <td th:text="${#numbers.formatInteger(totalSumEtc,1,'COMMA')}">0</td>
       </tr></tfoot>
     </table>
     </div>
