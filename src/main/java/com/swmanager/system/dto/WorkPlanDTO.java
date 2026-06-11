@@ -18,9 +18,11 @@ import lombok.AllArgsConstructor;
 public class WorkPlanDTO {
 
     private Integer planId;
-    private Long infraId;
+    private Long projId;     // 대상 사업(sw_pjt) — 계약 대상 식별
+    private String projNm;   // 사업명(표시용)
+    private Long infraId;    // 레거시(기존 행)
 
-    // 인프라 정보 (표시용)
+    // 인프라/사업 정보 (표시용)
     private String cityNm;
     private String distNm;
     private String sysNm;
@@ -57,6 +59,8 @@ public class WorkPlanDTO {
 
         return WorkPlanDTO.builder()
                 .planId(entity.getPlanId())
+                .projId(entity.getProject() != null ? entity.getProject().getProjId() : null)
+                .projNm(entity.getProject() != null ? entity.getProject().getProjNm() : null)
                 .infraId(entity.getInfra() != null ? entity.getInfra().getInfraId() : null)
                 .cityNm(entity.getInfra() != null ? entity.getInfra().getCityNm() : null)
                 .distNm(entity.getInfra() != null ? entity.getInfra().getDistNm() : null)

@@ -101,6 +101,13 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
     List<SwProject> findByCityNmAndDistNmOrderByYearDescProjIdDesc(String cityNm, String distNm);
 
     /**
+     * [workplan-target-infra-cascade] 시도+시군구(들)별 사업 목록 — 캐스케이드 시스템 단계.
+     * 도청/본청 self-행 선택 시 distNms 에 {시도명, 도청, 본청} 을 넣어 역매칭.
+     */
+    @Query("SELECT p FROM SwProject p WHERE p.cityNm = :cityNm AND p.distNm IN :distNms ORDER BY p.year DESC, p.projId DESC")
+    List<SwProject> findByCityNmAndDistNmIn(@Param("cityNm") String cityNm, @Param("distNms") List<String> distNms);
+
+    /**
      * 3단계 필터: 연도+지자체+시스템영문명으로 프로젝트 조회
      */
     List<SwProject> findByYearAndCityNmAndDistNmAndSysNmEnOrderByProjIdDesc(

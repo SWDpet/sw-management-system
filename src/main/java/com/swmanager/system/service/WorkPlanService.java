@@ -3,11 +3,13 @@ package com.swmanager.system.service;
 import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.SigunguCode;
+import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
+import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
 
@@ -29,6 +31,7 @@ public class WorkPlanService {
     @Autowired private InfraRepository infraRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private SigunguCodeRepository sigunguCodeRepository;
+    @Autowired private SwProjectRepository swProjectRepository;
 
     /**
      * 캘린더 뷰: 기간 내 업무 조회 (FullCalendar용)
@@ -161,37 +164,38 @@ public class WorkPlanService {
      *           ③ 대상 없음 → infra null + region null(FR-9c-②)
      */
     private void applyTarget(WorkPlan plan, WorkPlanDTO dto) {
-        if (dto.getInfraId() != null) {
-            Infra infra = infraRepository.findById(dto.getInfraId()).orElse(null);
-            plan.setInfra(infra);
-            if (infra != null) {
-                plan.setRegionCityNm(infra.getCityNm());
-                plan.setRegionDistNm(infra.getDistNm());
-                plan.setTargetSysNm(infra.getSysNm());
-                plan.setRegionCode(resolveRegionCode(infra.getCityNm(), infra.getDistNm()));
+        // ① 계약 대상 = 사업(sw_pjt). region 4필드 서버 재계산(클라이언트 region 무시, FR-9b)
+        if (dto.getProjId() != null) {
+            SwProject proj = swProjectRepository.findById(dto.getProjId()).orElse(null);
+            plan.setProject(proj);
+            plan.setInfra(null);
+            if (proj != null) {
+                plan.setRegionCityNm(proj.getCityNm());
+                plan.setRegionDistNm(proj.getDistNm());
+                plan.setTargetSysNm(proj.getSysNm());
+                plan.setRegionCode(resolveRegionCode(proj.getCityNm(), proj.getDistNm()));
             } else {
                 clearRegion(plan);
             }
             return;
         }
 
+        // ② 미계약 직접입력 (SUPPORT 한정)
         boolean hasRegionInput = isNotBlank(dto.getRegionCode()) || isNotBlank(dto.getTargetSysNm());
         if (hasRegionInput) {
-            // FR-9c-① 업무지원 한정
             if (!"SUPPORT".equals(dto.getPlanType())) {
                 throw new IllegalArgumentException("미계약 직접입력 대상은 업무지원(SUPPORT) 업무유형에서만 지정할 수 있습니다.");
             }
-            // FR-11 region_code 존재 검증
             SigunguCode sgg = isNotBlank(dto.getRegionCode())
                     ? sigunguCodeRepository.findById(dto.getRegionCode()).orElse(null) : null;
             if (sgg == null) {
                 throw new IllegalArgumentException("올바른 시군구를 선택하세요.");
             }
-            // FR-11 시스템명 정제
             String sysNm = sanitizeSysNm(dto.getTargetSysNm());
             if (sysNm == null) {
                 throw new IllegalArgumentException("시스템명을 입력하세요(1~100자).");
             }
+            plan.setProject(null);
             plan.setInfra(null);
             plan.setRegionCode(sgg.getAdmSectC());
             plan.setRegionCityNm(sgg.getSidoNm());   // 서버 출처(클라이언트 이름 불신)
@@ -200,7 +204,8 @@ public class WorkPlanService {
             return;
         }
 
-        // 대상 없음
+        // ③ 대상 없음
+        plan.setProject(null);
         plan.setInfra(null);
         clearRegion(plan);
     }

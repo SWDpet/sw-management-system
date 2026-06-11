@@ -4,6 +4,7 @@
 -- db_init_phase2.sql 의 동일 DDL 과 1:1 일치(멱등). FK 미설정 — 앱 검증(FR-11).
 -- ============================================================
 
+ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS proj_id        BIGINT REFERENCES sw_pjt(proj_id);
 ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_code    VARCHAR(10);
 ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_city_nm VARCHAR(40);
 ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_dist_nm VARCHAR(40);

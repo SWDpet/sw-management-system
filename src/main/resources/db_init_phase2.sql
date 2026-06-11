@@ -501,8 +501,10 @@ CREATE TABLE IF NOT EXISTS tb_work_plan (
     created_by      BIGINT REFERENCES users(user_id)
 );
 
--- [workplan-target-infra-cascade 2026-06-11] 미계약 대상(업무지원) 지역+시스템 보관 (additive, nullable)
--- 계약 대상은 infra_id 로 식별, 미계약/표시·통계는 region_* 로. FK 미설정(앱 검증). swdept/sql/V20260611_add_region_to_work_plan.sql 동일.
+-- [workplan-target-infra-cascade 2026-06-11] 대상=사업(sw_pjt) 기준 + 미계약 지역+시스템 보관 (additive, nullable)
+-- 계약 대상은 proj_id(sw_pjt) 로 식별, 미계약/표시·통계는 region_* 로. swdept/sql/V20260611_add_region_to_work_plan.sql 동일.
+-- (사업 관련 기본 마스터 = sw_pjt. infra_id 는 레거시 표시용으로만 유지.)
+ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS proj_id        BIGINT REFERENCES sw_pjt(proj_id);
 ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_code    VARCHAR(10);
 ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_city_nm VARCHAR(40);
 ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_dist_nm VARCHAR(40);

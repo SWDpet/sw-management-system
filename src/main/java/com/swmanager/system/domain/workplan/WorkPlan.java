@@ -2,6 +2,7 @@ package com.swmanager.system.domain.workplan;
 
 import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.domain.Infra;
+import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -22,6 +23,12 @@ public class WorkPlan {
     @Column(name = "plan_id")
     private Integer planId;
 
+    // 대상 사업 (사업 기본 마스터 = sw_pjt). 계약 대상 식별. — workplan-target-infra-cascade
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proj_id")
+    private SwProject project;
+
+    // 레거시 표시용(기존 행). 신규는 project 사용.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "infra_id")
     private Infra infra;

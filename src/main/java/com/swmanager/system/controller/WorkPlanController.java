@@ -11,6 +11,7 @@ import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
+import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.service.WorkPlanService;
 import com.swmanager.system.service.LogService;
@@ -45,6 +46,7 @@ public class WorkPlanController {
     @Autowired private InfraRepository infraRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private SigunguCodeRepository sigunguCodeRepository;
+    @Autowired private SwProjectRepository swProjectRepository;
     @Autowired private LogService logService;
 
     // === 권한 체크 ===
@@ -339,22 +341,23 @@ public class WorkPlanController {
         return ResponseEntity.ok(list);
     }
 
-    /** 시군구코드 → 그 시군구의 등록 인프라 목록(value=infra_id, label=sys_nm). 미계약이면 빈 목록. */
+    /** 시군구코드 → 그 시군구의 사업(sw_pjt) 목록(value=proj_id, label=연도+사업명). 미계약이면 빈 목록. */
     @ResponseBody
-    @GetMapping("/api/infra-by-region")
-    public ResponseEntity<List<Map<String, Object>>> getInfraByRegion(@RequestParam("admSectC") String admSectC) {
+    @GetMapping("/api/pjt-by-region")
+    public ResponseEntity<List<Map<String, Object>>> getPjtByRegion(@RequestParam("admSectC") String admSectC) {
         if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
         SigunguCode sgg = sigunguCodeRepository.findById(admSectC).orElse(null);
         if (sgg == null) return ResponseEntity.ok(List.of());
-        // self-행(본청/도청) 선택 시 Infra 의 '도청'/'본청' 표기까지 역매칭
+        // self-행(본청/도청) 선택 시 sw_pjt 의 '도청'/'본청' 표기까지 역매칭
         List<String> dists = java.util.Objects.equals(sgg.getSggNm(), sgg.getSidoNm())
                 ? List.of(sgg.getSggNm(), "도청", "본청")
                 : List.of(sgg.getSggNm());
-        List<Map<String, Object>> list = infraRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists).stream()
-                .map(i -> {
+        List<Map<String, Object>> list = swProjectRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists).stream()
+                .map(p -> {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("infraId", i.getInfraId());
-                    m.put("sysNm", i.getSysNm());
+                    m.put("projId", p.getProjId());
+                    String nm = (p.getProjNm() != null && !p.getProjNm().isBlank()) ? p.getProjNm() : p.getSysNm();
+                    m.put("label", (p.getYear() != null ? p.getYear() + " " : "") + (nm != null ? nm : ""));
                     return m;
                 }).toList();
         return ResponseEntity.ok(list);

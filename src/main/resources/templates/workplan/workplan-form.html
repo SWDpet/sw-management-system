@@ -203,12 +203,12 @@
                             <input type="text" id="sysDirect" placeholder="시스템명 직접입력 (업무지원·미계약 대상)"
                                    maxlength="100" style="display:none; margin-top:6px;">
                             <!-- 실제 제출 값 -->
-                            <input type="hidden" name="infraId"     id="infraIdHidden"   th:value="${workPlan.infraId}">
+                            <input type="hidden" name="projId"      id="projIdHidden"    th:value="${workPlan.projId}">
                             <input type="hidden" name="regionCode"  id="regionCodeHidden" th:value="${workPlan.regionCode}">
                             <input type="hidden" name="targetSysNm" id="targetSysHidden"  th:value="${workPlan.targetSysNm}">
                             <!-- 수정 복원용 초기값(FR-7) -->
                             <span id="targetRestore" style="display:none;"
-                                  th:attr="data-infra=${workPlan.infraId},
+                                  th:attr="data-proj=${workPlan.projId},
                                            data-region=${workPlan.regionCode},
                                            data-city=${workPlan.regionCityNm != null ? workPlan.regionCityNm : workPlan.cityNm},
                                            data-dist=${workPlan.regionDistNm != null ? workPlan.regionDistNm : workPlan.distNm},
@@ -347,7 +347,7 @@
       const sgg  = document.getElementById('sggSel');
       const sys  = document.getElementById('sysSel');
       const direct = document.getElementById('sysDirect');
-      const hInfra = document.getElementById('infraIdHidden');
+      const hProj = document.getElementById('projIdHidden');
       const hRegion = document.getElementById('regionCodeHidden');
       const hSys = document.getElementById('targetSysHidden');
       const DIRECT = '__direct__';
@@ -362,9 +362,9 @@
 
       function syncSubmit(){
         const v = sys.value;
-        if (v === DIRECT){ hInfra.value = ''; hSys.value = direct.value || ''; direct.style.display = ''; }
-        else if (v){ hInfra.value = v; hSys.value = ''; direct.style.display = 'none'; direct.value = ''; }
-        else { hInfra.value = ''; hSys.value = ''; direct.style.display = 'none'; }
+        if (v === DIRECT){ hProj.value = ''; hSys.value = direct.value || ''; direct.style.display = ''; }
+        else if (v){ hProj.value = v; hSys.value = ''; direct.style.display = 'none'; direct.value = ''; }
+        else { hProj.value = ''; hSys.value = ''; direct.style.display = 'none'; }
         hRegion.value = sgg.value || '';
       }
 
@@ -388,11 +388,11 @@
         resetSelect(sys, '시스템');
         sys.disabled = true;
         if (!admSectC){ syncSubmit(); return; }
-        const res = await fetch('/workplan/api/infra-by-region?admSectC=' + encodeURIComponent(admSectC));
+        const res = await fetch('/workplan/api/pjt-by-region?admSectC=' + encodeURIComponent(admSectC));
         const list = res.ok ? await res.json() : [];
         list.forEach(function(o){
           const opt = document.createElement('option');
-          opt.value = o.infraId; opt.textContent = o.sysNm;
+          opt.value = o.projId; opt.textContent = o.label;
           sys.appendChild(opt);
         });
         if (isSupport()){
@@ -413,7 +413,7 @@
 
       document.querySelectorAll('input[name="planType"]').forEach(function(r){
         r.addEventListener('change', function(){
-          if (sgg.value){ loadSys(sgg.value, hInfra.value || null); }
+          if (sgg.value){ loadSys(sgg.value, hProj.value || null); }
           else if (!isSupport() && sys.value === DIRECT){ sys.value = ''; syncSubmit(); }
         });
       });
@@ -422,7 +422,7 @@
       (async function restore(){
         const r = document.getElementById('targetRestore');
         if (!r) return;
-        const infra = r.getAttribute('data-infra');
+        const proj = r.getAttribute('data-proj');
         const region = r.getAttribute('data-region');
         const city = r.getAttribute('data-city');
         const dist = r.getAttribute('data-dist');
@@ -435,7 +435,7 @@
             if (opt.textContent.replace(' (본청/도청)', '') === dist){ sgg.value = opt.value; break; }
           }
         }
-        if (sgg.value){ await loadSys(sgg.value, infra || null, (!infra ? sysNm : null)); }
+        if (sgg.value){ await loadSys(sgg.value, proj || null, (!proj ? sysNm : null)); }
       })();
     })();
     </script>

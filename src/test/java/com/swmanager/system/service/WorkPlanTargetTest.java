@@ -1,11 +1,12 @@
 package com.swmanager.system.service;
 
-import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.SigunguCode;
+import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
+import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ class WorkPlanTargetTest {
     InfraRepository infraRepository;
     UserRepository userRepository;
     SigunguCodeRepository sigunguCodeRepository;
+    SwProjectRepository swProjectRepository;
 
     @BeforeEach
     void setup() {
@@ -39,10 +41,12 @@ class WorkPlanTargetTest {
         infraRepository = mock(InfraRepository.class);
         userRepository = mock(UserRepository.class);
         sigunguCodeRepository = mock(SigunguCodeRepository.class);
+        swProjectRepository = mock(SwProjectRepository.class);
         ReflectionTestUtils.setField(service, "workPlanRepository", workPlanRepository);
         ReflectionTestUtils.setField(service, "infraRepository", infraRepository);
         ReflectionTestUtils.setField(service, "userRepository", userRepository);
         ReflectionTestUtils.setField(service, "sigunguCodeRepository", sigunguCodeRepository);
+        ReflectionTestUtils.setField(service, "swProjectRepository", swProjectRepository);
         when(workPlanRepository.save(any(WorkPlan.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
@@ -112,36 +116,41 @@ class WorkPlanTargetTest {
         assertNull(saved.getTargetSysNm());
     }
 
-    @Test
-    void infra_selected_serverRecalculatesRegion() {
-        WorkPlanDTO d = baseDto("INSTALL");
-        d.setInfraId(5L);
-        // 클라이언트가 엉뚱한 region 을 보내도 무시되어야 함(서버 재계산)
-        d.setRegionCityNm("조작된시도");
-        d.setTargetSysNm("조작된시스템");
-        Infra infra = new Infra();
-        infra.setInfraId(5L); infra.setCityNm("경기도"); infra.setDistNm("김포시"); infra.setSysNm("GeoNURIS");
-        when(infraRepository.findById(5L)).thenReturn(Optional.of(infra));
-        when(sigunguCodeRepository.findBySidoNmAndSggNm("경기도", "김포시"))
-                .thenReturn(List.of(sgg("41570", "경기도", "김포시")));
-
-        WorkPlan saved = service.saveWorkPlan(d, null);
-
-        assertNotNull(saved.getInfra());
-        assertEquals("경기도", saved.getRegionCityNm());
-        assertEquals("김포시", saved.getRegionDistNm());
-        assertEquals("GeoNURIS", saved.getTargetSysNm());
-        assertEquals("41570", saved.getRegionCode());
+    private SwProject proj(Long id, Integer year, String city, String dist, String sysNm, String projNm) {
+        SwProject p = new SwProject();
+        p.setProjId(id); p.setYear(year); p.setCityNm(city); p.setDistNm(dist); p.setSysNm(sysNm); p.setProjNm(projNm);
+        return p;
     }
 
     @Test
-    void infra_docheong_mapsToSidoSelfRow() {
+    void proj_selected_serverRecalculatesRegion() {
+        WorkPlanDTO d = baseDto("INSTALL");
+        d.setProjId(616L);
+        // 클라이언트가 엉뚱한 region 을 보내도 무시되어야 함(서버 재계산)
+        d.setRegionCityNm("조작된시도");
+        d.setTargetSysNm("조작된시스템");
+        when(swProjectRepository.findById(616L))
+                .thenReturn(Optional.of(proj(616L, 2026, "경기도", "화성시", "도시계획정보체계", "2026년 GIS 유지보수")));
+        when(sigunguCodeRepository.findBySidoNmAndSggNm("경기도", "화성시"))
+                .thenReturn(List.of(sgg("41590", "경기도", "화성시")));
+
+        WorkPlan saved = service.saveWorkPlan(d, null);
+
+        assertNotNull(saved.getProject());
+        assertNull(saved.getInfra());
+        assertEquals("경기도", saved.getRegionCityNm());
+        assertEquals("화성시", saved.getRegionDistNm());
+        assertEquals("도시계획정보체계", saved.getTargetSysNm());
+        assertEquals("41590", saved.getRegionCode());
+    }
+
+    @Test
+    void proj_docheong_mapsToSidoSelfRow() {
         // 도청(시군구 아님) → 시도 self-행 매핑(§5-4)
         WorkPlanDTO d = baseDto("INSTALL");
-        d.setInfraId(97L);
-        Infra infra = new Infra();
-        infra.setInfraId(97L); infra.setCityNm("경상남도"); infra.setDistNm("도청"); infra.setSysNm("도시계획정보체계");
-        when(infraRepository.findById(97L)).thenReturn(Optional.of(infra));
+        d.setProjId(97L);
+        when(swProjectRepository.findById(97L))
+                .thenReturn(Optional.of(proj(97L, 2025, "경상남도", "도청", "도시계획정보체계", "경남 도청 사업")));
         when(sigunguCodeRepository.findBySidoNmAndSggNm("경상남도", "경상남도"))
                 .thenReturn(List.of(sgg("64800", "경상남도", "경상남도")));
 
