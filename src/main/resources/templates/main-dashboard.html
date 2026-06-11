@@ -1,802 +1,251 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-    <meta charset="UTF-8">
-    <title>SW 사업 통합 대시보드</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            /* Deep Teal (design-system.css SoT 와 일치) */
-            --primary:    #0F766E;   /* teal-700 */
-            --primary2:   #115E59;   /* teal-800 */
-            --primary-lt: #F0FDFA;   /* teal-50 */
-            --bg:        #FAFAF9;   /* 살짝 웜 오프화이트 */
-            --surface:   #FFFFFF;
-            --surface-2: #F5F5F4;   /* stone-100, hover/선택 */
-            --border:    #E7E5E4;   /* stone-200 */
-            --border2:   #D6D3D1;   /* stone-300 */
-            --text:      #1C1917;   /* stone-900, near-black 웜 */
-            --text2:     #57534E;   /* stone-600 */
-            --muted:     #A8A29E;   /* stone-400 */
-            --muted2:    #D6D3D1;
-            --success:   #059669;   /* emerald-600 */
-            --warning:   #D97706;   /* amber-600 */
-            --danger:    #DC2626;   /* red-600 */
-            --info:      #0891B2;   /* cyan-600 */
-            /* 레거시 보조 변수 — 디자인 토큰에 정렬 */
-            --green:     var(--success);
-            --orange:    var(--warning);
-            --teal:      var(--info);
-            --purple:    var(--primary);
-        }
-
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); font-size: 13.5px; }
-        .container { max-width: 1700px; margin: auto; padding: 28px 32px 56px; }
-
-        /* ── 헤더 타이틀 ── */
-        .page-title {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 22px;
-        }
-        .page-title h2 {
-            margin: 0; font-size: 1.45rem; color: var(--text); font-weight: 700;
-        }
-        .page-title .year-badge {
-            background: var(--primary); color: #fff;
-            padding: 4px 14px; border-radius: 20px;
-            font-size: 0.82rem; font-weight: 600;
-            font-family: 'Inter', sans-serif; letter-spacing: 0.03em;
-        }
-
-        /* ── 상단 요약 카드 (2025 모던 모노크롬) ── */
-        .summary-container {
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
-            margin-bottom: 24px;
-        }
-        @media (max-width: 1280px) { .summary-container { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 720px)  { .summary-container { grid-template-columns: repeat(2, 1fr); } }
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px 20px 16px;
-            position: relative;
-            transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.18s ease;
-            display: flex; flex-direction: column; gap: 10px;
-            min-height: 138px;
-            box-shadow: 0 1px 2px rgba(17,17,27,0.03);
-        }
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 28px rgba(17,17,27,0.07);
-            border-color: var(--border2);
-        }
-        .card-head {
-            display: flex; align-items: center; gap: 9px;
-            color: var(--text2); font-size: 0.78rem; font-weight: 600;
-            letter-spacing: 0.005em;
-        }
-        .card-ico {
-            width: 28px; height: 28px; display: inline-flex;
-            align-items: center; justify-content: center;
-            border-radius: 8px; background: var(--surface-2); color: var(--text2);
-            font-size: 0.82rem; flex-shrink: 0;
-        }
-        .card .value {
-            font-size: 1.55rem; font-weight: 700; color: var(--text);
-            font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
-            line-height: 1.15; letter-spacing: -0.015em;
-        }
-        .card .value .unit {
-            font-size: 0.68em; color: var(--muted); margin-left: 3px; font-weight: 500;
-        }
-        .card .meta {
-            font-size: 0.76rem; color: var(--text2);
-            display: flex; align-items: center; gap: 7px;
-            margin-top: auto;
-        }
-        .card .meta strong { color: var(--text); font-weight: 700; }
-        .card .trend-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--muted); display: inline-block; flex-shrink: 0;
-        }
-
-        /* Primary card — 단일 브랜드 강조 (indigo) */
-        .card.is-primary {
-            background: linear-gradient(180deg, var(--primary-lt) 0%, #FFFFFF 65%);
-            border-color: #99F6E4;
-        }
-        .card.is-primary .card-ico { background: #CCFBF1; color: var(--primary); }
-        .card.is-primary .value { color: var(--primary); }
-        .card.is-primary:hover { border-color: #5EEAD4; box-shadow: 0 10px 28px rgba(15, 118, 110,0.15); }
-
-        /* 상태 dot — 은은한 액센트 */
-        .card.is-success .trend-dot { background: var(--success); }
-        .card.is-warning .trend-dot { background: var(--warning); }
-        .card.is-info .trend-dot    { background: var(--info); }
-
-        /* 클릭 가능 카드 */
-        .card.is-clickable { cursor: pointer; }
-        .card.is-clickable::after {
-            content: '→'; position: absolute; top: 16px; right: 18px;
-            font-size: 0.95rem; color: var(--muted);
-            opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease, color 0.18s ease;
-        }
-        .card.is-clickable:hover::after {
-            opacity: 1; transform: translateX(3px); color: var(--primary);
-        }
-        .btn-geonuris-icon { color: var(--primary) !important; margin-left: 4px !important; font-size: 1em !important; transition: 0.2s; }
-        .btn-geonuris-icon:hover { color: var(--primary) !important; transform: scale(1.1); }
-
-        /* ── 툴바 ── */
-        .toolbar {
-            background: var(--surface); padding: 12px 20px; border-radius: 12px;
-            margin-bottom: 18px; display: flex; align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-            border: 1px solid var(--border);
-        }
-        .filter-group { display: flex; align-items: center; gap: 12px; font-size: 0.84rem; font-weight: 500; }
-        select {
-            padding: 7px 13px; border-radius: 8px; border: 1.5px solid var(--border2);
-            font-size: 0.84rem; outline: none; background: var(--bg);
-            color: var(--text); font-family: 'Noto Sans KR', sans-serif;
-            transition: border-color 0.18s; cursor: pointer;
-        }
-        select:focus { border-color: var(--primary); }
-        .nav-links { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
-        .nav-links a {
-            text-decoration: none; color: var(--text2); font-weight: 600;
-            margin-left: 10px; font-size: 0.82em; display: flex; align-items: center; gap: 4px;
-            padding: 5px 8px; border-radius: 6px; transition: background 0.15s, color 0.15s;
-        }
-        .nav-links a:hover { background: var(--primary-lt); color: var(--primary); }
-        .btn-add-icon     { color: var(--success) !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
-        .btn-add-icon:hover { color: #047857 !important; transform: scale(1.15); }
-        .btn-add-icon-red { color: var(--danger) !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
-        .btn-add-icon-red:hover { color: #B91C1C !important; transform: scale(1.15); }
-        .btn-license-icon { color: var(--primary) !important; margin-left: 2px !important; font-size: 0.95em !important; transition: 0.2s; }
-        .btn-license-icon:hover { color: var(--primary2) !important; transform: scale(1.15); }
-
-        /* ── 테이블 ── */
-        .table-section {
-            background: var(--surface); padding: 20px 22px;
-            border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-            overflow-x: auto; border: 1px solid var(--border);
-        }
-        .table-title {
-            font-size: 0.95rem; font-weight: 700; color: var(--text);
-            margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
-        }
-        .table-title i { color: var(--primary); }
-        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
-        th {
-            background: var(--primary-lt); padding: 14px 10px;
-            font-size: 0.74em; border-bottom: 1px solid var(--border);
-            text-align: center; white-space: nowrap; color: var(--primary2);
-            font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-        }
-        th.th-group-amt { background: var(--primary-lt); color: var(--primary2); text-transform: none; letter-spacing: 0.02em; font-size: 0.78em; }
-        td {
-            padding: 14px 10px; border-bottom: 1px solid #F5F5F4;
-            text-align: right; font-size: 0.85em; white-space: nowrap;
-            font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; color: var(--text2);
-            transition: background 0.12s;
-        }
-        .td-sys    { text-align: left; font-weight: 700; color: var(--text); min-width: 110px; font-family: 'Noto Sans KR', sans-serif; }
-        .td-sysen  { text-align: left; color: var(--muted); font-size: 0.82em; min-width: 80px; }
-        .td-cnt    { text-align: center; font-weight: 700; color: var(--text); font-family: 'Inter', sans-serif; }
-        .td-comp   { text-align: center; color: var(--success); font-weight: 700; }
-        .td-prog   { text-align: center; color: var(--warning); font-weight: 700; }
-        .td-total  { background: var(--primary-lt); font-weight: 700; color: var(--primary2); }
-        tbody tr { transition: background 0.12s, box-shadow 0.12s; }
-        tbody tr:hover { background-color: #FAFAF9; box-shadow: inset 3px 0 0 0 var(--primary); }
-
-        /* 합계 행 — 진한 teal 강조 (B안) */
-        tfoot td {
-            background: var(--primary); font-weight: 700; color: #fff;
-            border-top: 1px solid var(--primary2); padding: 14px 10px;
-            white-space: nowrap; font-family: 'Inter', sans-serif;
-            font-variant-numeric: tabular-nums;
-        }
-        tfoot td.td-total { background: var(--primary2); }
-        /* 합계 행 셀 글씨 색상 통일 (진한 teal 배경 위 흰 글씨 — 식인성 확보) */
-        tfoot td.td-sys, tfoot td.td-cnt, tfoot td.td-comp, tfoot td.td-prog, tfoot td.td-total { color: #fff; }
-
-        /* 폼 — teal focus ring */
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: var(--primary) !important;
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
-        }
-
-        /* ── 스켈레톤 로딩 ── */
-        @keyframes skeleton-shimmer {
-            0% { background-position: -400px 0; }
-            100% { background-position: 400px 0; }
-        }
-        .skeleton {
-            display: inline-block;
-            background: linear-gradient(90deg, #F5F5F4 0%, #EDEDEC 50%, #F5F5F4 100%);
-            background-size: 800px 100%;
-            animation: skeleton-shimmer 1.4s linear infinite;
-            border-radius: 4px;
-            color: transparent !important;
-            user-select: none;
-        }
-        .skeleton.skel-num  { width: 80px;  height: 24px; }
-        .skeleton.skel-text { width: 160px; height: 12px; }
-
-        /* ── 엠프티 스테이트 ── */
-        .empty-state {
-            padding: 80px 24px; text-align: center; color: var(--muted);
-        }
-        .empty-state .empty-ico {
-            width: 72px; height: 72px; margin: 0 auto 18px;
-            border-radius: 16px; background: #F5F5F4; color: #A8A29E;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem;
-        }
-        .empty-state .empty-title {
-            font-size: 0.95rem; font-weight: 600; color: var(--text2); margin: 0 0 6px;
-        }
-        .empty-state .empty-desc {
-            font-size: 0.82rem; color: var(--muted);
-        }
-
-        /* ═════════════════════════════════════════════
-           ── Phase 3: 마이크로 인터랙션 ──
-           ═════════════════════════════════════════════ */
-        html { scroll-behavior: smooth; }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(6px); }
-            to   { opacity: 1; transform: none; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        .container { animation: fadeIn 0.3s ease both; }
-        .page-title, .summary-container, .toolbar, .table-section {
-            animation: fadeUp 0.45s cubic-bezier(0.2, 0.6, 0.2, 1) both;
-        }
-        .summary-container { animation-delay: 0.04s; }
-        .toolbar           { animation-delay: 0.08s; }
-        .table-section     { animation-delay: 0.12s; }
-
-        /* 버튼 press 피드백 */
-        button, .btn, .btn-login, .btn-top, .btn-search {
-            transition: transform 0.08s ease, background 0.15s, border-color 0.15s, box-shadow 0.15s;
-        }
-        button:active:not(:disabled), .btn:active, .btn-login:active,
-        .btn-top:active, .btn-search:active {
-            transform: scale(0.97);
-        }
-
-        /* 링크 subtle hover underline */
-        a { transition: color 0.15s; }
-
-        /* ═════════════════════════════════════════════
-           ── Phase 3: 다크모드 (실험) ──
-           메인 대시보드 전용. 인라인 스타일 많은 페이지는 미적용.
-           ═════════════════════════════════════════════ */
-        [data-theme="dark"] {
-            --bg:        #0C0A09;  /* stone-950 */
-            --surface:   #1C1917;  /* stone-900 */
-            --surface-2: #292524;  /* stone-800 */
-            --border:    var(--text2)03C;  /* stone-700 */
-            --border2:   #57534E;  /* stone-600 */
-            --text:      #FAFAF9;
-            --text2:     #D6D3D1;
-            --muted:     #A8A29E;
-        }
-        [data-theme="dark"] body { background: var(--bg); color: var(--text); }
-        [data-theme="dark"] .card {
-            background: var(--surface); border-color: var(--border);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-        [data-theme="dark"] .card:hover {
-            border-color: #57534E;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.4);
-        }
-        [data-theme="dark"] .card .value { color: var(--text); }
-        [data-theme="dark"] .card-ico { background: var(--surface-2); color: var(--text2); }
-        [data-theme="dark"] .card.is-primary {
-            background: linear-gradient(180deg, #0D3F3A 0%, #1C1917 65%);
-            border-color: var(--primary);
-        }
-        [data-theme="dark"] .card.is-primary .card-ico { background: #134E4A; color: #5EEAD4; }
-        [data-theme="dark"] .card.is-primary .value { color: #5EEAD4; }
-        [data-theme="dark"] .toolbar,
-        [data-theme="dark"] .table-section {
-            background: var(--surface); border-color: var(--border);
-            box-shadow: none;
-        }
-        [data-theme="dark"] th { background: var(--surface-2); color: var(--text2); border-bottom-color: var(--border); }
-        [data-theme="dark"] th.th-group-amt { background: #0D3F3A; color: #5EEAD4; }
-        [data-theme="dark"] td { border-bottom-color: var(--border); color: var(--text2); }
-        [data-theme="dark"] .td-sys, [data-theme="dark"] .td-cnt { color: var(--text); }
-        [data-theme="dark"] .td-total { background: #0D3F3A; color: #5EEAD4; }
-        [data-theme="dark"] tbody tr:hover { background: var(--surface-2); }
-        [data-theme="dark"] tfoot td {
-            background: var(--primary); color: #fff; border-top-color: var(--primary2);
-        }
-        [data-theme="dark"] tfoot td.td-total { background: var(--primary2); }
-        [data-theme="dark"] .page-title h2 { color: var(--text); }
-        [data-theme="dark"] nav {
-            background: var(--surface) !important;
-            border-bottom-color: var(--border) !important;
-        }
-        [data-theme="dark"] nav a { color: var(--text2) !important; }
-        [data-theme="dark"] nav a[href="/mypage"]:hover,
-        [data-theme="dark"] nav a[th\:href*="infra"]:hover,
-        [data-theme="dark"] nav a:hover { color: #5EEAD4 !important; }
-        [data-theme="dark"] select {
-            background: var(--surface-2); color: var(--text);
-            border-color: var(--border2);
-        }
-    </style>
+<meta charset="UTF-8">
+<title>SW 사업 통합 대시보드</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#FAFAF9;--surface:#fff;--s2:#F5F5F4;--border:#E7E5E4;--border2:#D6D3D1;--text:#1C1917;--text2:#57534E;--muted:#A8A29E;
+        --primary:#0F766E;--primary-lt:#F0FDFA;--green:#059669;--success:#059669;--amber:#D97706;--cyan:#0891B2;--blue:#2563eb;--violet:#7c3aed;--danger:#DC2626;
+        /* 데이터 카테고리 색 토큰 (design-system.css SoT 와 일치) */
+        --cat-1:#0F766E;--cat-2:#2563eb;--cat-3:#D97706;--cat-4:#0891B2;--cat-5:#7c3aed;--cat-6:#059669;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans KR',sans-serif;font-size:13.5px;}
+  a{text-decoration:none;color:inherit;}
+  .mtop{min-height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;}
+  .mtop h1{font-size:1.15rem;font-weight:800;margin:0;letter-spacing:-0.01em;}
+  .mtop .r{display:flex;gap:8px;align-items:center;}
+  .mtop select{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:.78rem;color:var(--text2);font-weight:600;}
+  .btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:700;}
+  .mbody{padding:22px 26px;}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;}
+  @media (max-width:1280px){.kpis{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr);}}
+  .kc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;}
+  .kc .l{font-size:.74rem;color:var(--text2);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:6px;}.kc .l i{color:var(--muted);}
+  .kc .n{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;}.kc .n .u{font-size:.5em;color:var(--muted);margin-left:2px;}
+  .kc .sub{font-size:.72rem;color:var(--muted);margin-top:4px;}
+  .kc.pri{background:linear-gradient(160deg,var(--primary-lt),#fff 65%);border-color:#99F6E4;}.kc.pri .n{color:var(--primary);}.kc.pri .l i{color:var(--primary);}
+  .kc.click{cursor:pointer;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .ph{padding:14px 18px;font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:space-between;}
+  .ph .t{display:flex;align-items:center;gap:8px;}.ph i{color:var(--primary);font-size:.85rem;}.ph a{font-size:.74rem;color:var(--muted);font-weight:600;}
+  .ph.bd{border-bottom:1px solid var(--border);}
+  .charts{display:grid;grid-template-columns:1.3fr 1.3fr 1fr;gap:14px;margin-bottom:16px;}.charts .panel{padding-bottom:18px;}
+  @media (max-width:1100px){.charts{grid-template-columns:1fr;}}
+  .area{display:flex;align-items:flex-end;gap:12px;padding:8px 20px 0;}
+  .area .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .area .cval{font-size:.74rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+  .area .track{width:100%;height:120px;display:flex;align-items:flex-end;}
+  .area .bar{width:100%;background:linear-gradient(180deg,var(--primary),#5eead4);border-radius:6px 6px 0 0;min-height:4px;}
+  .area .yr{font-size:.7rem;color:var(--muted);font-weight:600;}
+  .hbars{display:flex;flex-direction:column;gap:12px;padding:4px 20px 0;}
+  .hb{display:grid;grid-template-columns:90px 1fr 70px;align-items:center;gap:10px;font-size:.78rem;}
+  .hb .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hb .track{height:9px;background:var(--s2);border-radius:5px;overflow:hidden;}.hb .fill{display:block;height:100%;border-radius:5px;background:var(--primary);min-width:3px;}
+  /* 데이터 카테고리 색(디자인팀 권고: 데이터=기능색) — --cat-* 토큰 사용 */
+  .hbars .hb:nth-child(1) .fill{background:var(--cat-1);}
+  .hbars .hb:nth-child(2) .fill{background:var(--cat-2);}
+  .hbars .hb:nth-child(3) .fill{background:var(--cat-3);}
+  .hbars .hb:nth-child(4) .fill{background:var(--cat-4);}
+  .hbars .hb:nth-child(5) .fill{background:var(--cat-5);}
+  .hbars .hb:nth-child(6) .fill{background:var(--cat-6);}
+  .hb .amt{text-align:right;font-variant-numeric:tabular-nums;color:var(--text2);font-weight:600;}
+  .donut-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:2px;}
+  .donut{width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .donut .hole{width:90px;height:90px;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .donut .hole b{font-size:1.4rem;font-weight:800;color:var(--primary);}.donut .hole small{font-size:.7rem;color:var(--muted);}
+  .legend{display:flex;gap:14px;font-size:.74rem;}.legend i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;}
+  .feed-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;align-items:start;}
+  @media (max-width:1100px){.feed-row{grid-template-columns:1fr;}}
+  .body{padding:6px 18px 14px;}
+  .fitem{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--s2);}.fitem:last-child{border:none;}
+  .fic{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:.78rem;background:var(--primary-lt);color:var(--primary);}
+  .ft{font-size:.8rem;font-weight:600;line-height:1.35;}.fm{font-size:.72rem;color:var(--muted);margin-top:2px;}
+  .empty{padding:22px 18px;color:var(--muted);font-size:.78rem;text-align:center;}
+  .empty i{display:block;font-size:1.4rem;margin-bottom:8px;color:var(--border2);}
+  .ddl{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--s2);font-size:.8rem;}.ddl:last-child{border:none;}
+  .ddl .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ddl .dm{font-size:.72rem;color:var(--muted);margin-right:auto;margin-left:8px;}
+  .chipd{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:6px;flex-shrink:0;margin-left:8px;}
+  .c-dng{background:#FEF2F2;color:#B91C1C;}.c-warn{background:#FFFBEB;color:#92400E;}.c-ok{background:var(--primary-lt);color:var(--primary);}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  thead th{color:var(--muted);text-transform:uppercase;font-size:.66rem;letter-spacing:.05em;font-weight:700;text-align:right;padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  thead th:first-child{text-align:left;}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--s2);text-align:right;font-variant-numeric:tabular-nums;color:var(--text2);white-space:nowrap;}
+  tbody td:first-child{text-align:left;font-weight:700;color:var(--text);}
+  tbody tr:hover{background:var(--bg);}tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--primary);}
+  tfoot td{padding:13px 14px;border-top:2px solid var(--border);text-align:right;font-weight:800;font-variant-numeric:tabular-nums;background:var(--s2);}
+  tfoot td:first-child{text-align:left;}
+  .tbl-wrap{overflow-x:auto;}
+  .dlt{font-size:.72rem;font-weight:700;margin-left:5px;}
+  .dlt.up{color:var(--success);} .dlt.down{color:var(--danger);} .dlt.zero{color:var(--muted);}
+  .skeleton{background:linear-gradient(90deg,#F5F5F4,#EDEDEC,#F5F5F4);border-radius:4px;color:transparent!important;}
+  .note{margin-top:18px;font-size:.78rem;color:var(--muted);text-align:center;}
+</style>
 </head>
 <body>
 
-<!-- T world 스타일 GNB -->
-<nav style="background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
-        <a href="/" title="메인 대시보드로 이동" style="text-decoration:none; display:inline-flex; align-items:center; cursor:pointer;">
-            <span style="background:var(--primary); color:#fff; padding:7px 14px; border-radius:8px; font-weight:800; font-size:0.95rem; letter-spacing:-0.005em; font-family:'Inter','Noto Sans KR',sans-serif; line-height:1; transition:background 0.15s;" onmouseover="this.style.background='var(--primary2)'" onmouseout="this.style.background='var(--primary)'">SW Manager</span>
-        </a>
-        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
-            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/infra/list}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-server" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>서버관리</a>
-                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authInfra == 'EDIT'}" th:href="@{/infra/new}" class="btn-add-icon-red" title="인프라/서버 신규 등록"><i class="fas fa-plus-circle"></i></a>
-            </div>
+<!-- 공통 사이드바 (fragments/top-nav :: nav) -->
+<th:block th:replace="~{fragments/top-nav :: nav}"></th:block>
 
-            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/projects/status}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-briefcase" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>사업관리</a>
-                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authProject == 'EDIT'}" th:href="@{/projects/new}" class="btn-add-icon" title="신규 사업 바로 등록"><i class="fas fa-plus-circle"></i></a>
-            </div>
-
-            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/person/list}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-users" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>담당자관리</a>
-                <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authPerson == 'EDIT'}" th:href="@{/person/new}" class="btn-add-icon" title="신규 담당자 바로 등록"><i class="fas fa-plus-circle"></i></a>
-            </div>
-
-            <!-- [스프린트 6 후속] 라이선스 관리 드롭다운: 라이선스 대장 + GeoNURIS -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <div id="licenseMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleLicenseMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-key" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>라이선스 관리 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="licenseMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
-                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">라이선스 대장</div>
-                        <a th:href="@{/license/registry/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 라이선스 대장 목록</a>
-                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
-                           th:href="@{/license/registry/upload}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⬆ CSV 업로드</a>
-                        <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">GeoNURIS</div>
-                        <a th:href="@{/geonuris/license/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🔑 GeoNURIS 목록</a>
-                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
-                           th:href="@{/geonuris/license/new}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🔑 GeoNURIS 발급</a>
-                    </div>
-                </div>
-                <script>
-                    function toggleLicenseMenu(e) {
-                        if (e) e.preventDefault();
-                        var d = document.getElementById('licenseMenuDropdown');
-                        if (!d) return;
-                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                    }
-                    document.addEventListener('click', function(e) {
-                        var wrap = document.getElementById('licenseMenuWrap');
-                        if (wrap && !wrap.contains(e.target)) {
-                            var d = document.getElementById('licenseMenuDropdown');
-                            if (d) d.style.display = 'none';
-                        }
-                    });
-                </script>
-            </div>
-
-            <!-- [스프린트 6 후속] 견적서 드롭다운: 목록/대장/패턴/비고패턴/노임단가 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <div id="quotationMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleQuotationMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-file-invoice-dollar" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>견적서 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="quotationMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
-                        <a th:href="@{/quotation/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 견적서 목록</a>
-                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authQuotation == 'EDIT'}"
-                           th:href="@{/quotation/new}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--success); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">➕ 견적서 작성</a>
-                        <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">대장·기준정보</div>
-                        <a th:href="@{/quotation/ledger}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 견적대장</a>
-                        <a th:href="@{/quotation/patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧩 패턴관리</a>
-                        <a th:href="@{/quotation/remarks-patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 비고패턴</a>
-                        <a th:href="@{/quotation/wage-rates}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">💰 노임단가</a>
-                    </div>
-                </div>
-                <script>
-                    function toggleQuotationMenu(e) {
-                        if (e) e.preventDefault();
-                        var d = document.getElementById('quotationMenuDropdown');
-                        if (!d) return;
-                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                    }
-                    document.addEventListener('click', function(e) {
-                        var wrap = document.getElementById('quotationMenuWrap');
-                        if (wrap && !wrap.contains(e.target)) {
-                            var d = document.getElementById('quotationMenuDropdown');
-                            if (d) d.style.display = 'none';
-                        }
-                    });
-                </script>
-            </div>
-
-            <!-- 사업현황(계약관리) 메뉴 - 삭제됨: SW사업 추진현황과 중복 -->
-
-            <!-- 업무계획 메뉴 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-calendar-days" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>업무계획</a>
-            </div>
-
-            <!-- [스프린트 6 후속] 문서관리 드롭다운: 목록 + 8 문서 유형 작성 바로가기 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authDocument != null and #authentication.principal.user.authDocument != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <div id="documentMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleDocumentMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-file-lines" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>문서관리 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="documentMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
-                        <!-- doc-split-ops (2026-04-29): 사업 / 운영 두 그룹으로 분리 -->
-                        <a th:href="@{/document/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 사업문서 목록</a>
-                        <a th:href="@{/ops-doc/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🛠 운영문서 목록</a>
-                        <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authDocument == 'EDIT'}">
-                            <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                            <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">사업문서</div>
-                            <a th:href="@{/document/create(docType='COMMENCE')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📜 착수계</a>
-                            <a th:href="@{/document/create(docType='INTERIM')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧾 기성계</a>
-                            <a th:href="@{/document/create(docType='COMPLETION')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">✒ 준공계</a>
-                            <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                            <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">운영·유지보수 문서</div>
-                            <a th:href="@{/document/create(docType='INSPECT')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 점검내역서</a>
-                            <a th:href="@{/ops-doc/fault/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⚠ 장애처리</a>
-                            <a th:href="@{/ops-doc/support/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🤝 업무지원</a>
-                            <a th:href="@{/ops-doc/install/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⬇ 설치보고서</a>
-                            <a th:href="@{/ops-doc/patch/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧩 패치내역서</a>
-                        </th:block>
-                    </div>
-                </div>
-                <script>
-                    function toggleDocumentMenu(e) {
-                        if (e) e.preventDefault();
-                        var d = document.getElementById('documentMenuDropdown');
-                        if (!d) return;
-                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                    }
-                    document.addEventListener('click', function(e) {
-                        var wrap = document.getElementById('documentMenuWrap');
-                        if (wrap && !wrap.contains(e.target)) {
-                            var d = document.getElementById('documentMenuDropdown');
-                            if (d) d.style.display = 'none';
-                        }
-                    });
-                </script>
-            </div>
-
-            <!-- 성과통계 메뉴 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authPerformance != null and #authentication.principal.user.authPerformance != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/performance/personal}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-chart-line" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>성과통계</a>
-            </div>
-
-            <!-- [스프린트 5 v2] 관리자 드롭다운: 사용자승인·조직도관리·로그관리·시스템관계도 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" id="adminMenuWrap" style="position:relative; display:inline-block; margin-left:4px;">
-                <a href="#" onclick="toggleAdminMenu(event)" style="text-decoration:none; color:var(--danger); font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''"><i class="fas fa-gear" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>관리자 <span style="font-size:0.7em;">▾</span></a>
-                <div id="adminMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
-                    <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">사용자·조직</div>
-                    <a th:href="@{/admin/users}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">👥 사용자 승인</a>
-                    <a th:href="@{/admin/org-units}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🏢 조직도 관리</a>
-                    <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                    <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">시스템</div>
-                    <a th:href="@{/admin/logs}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 로그 관리</a>
-                    <a th:href="@{/admin/system-graph}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🕸️ 시스템 관계도</a>
-                </div>
-            </div>
-            <script>
-                function toggleAdminMenu(e) {
-                    if (e) e.preventDefault();
-                    var d = document.getElementById('adminMenuDropdown');
-                    if (!d) return;
-                    d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                }
-                document.addEventListener('click', function(e) {
-                    var wrap = document.getElementById('adminMenuWrap');
-                    if (wrap && !wrap.contains(e.target)) {
-                        var d = document.getElementById('adminMenuDropdown');
-                        if (d) d.style.display = 'none';
-                    }
-                });
-            </script>
-
-            <!-- [Phase 3] 다크모드 토글 (실험) -->
-            <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-            <button id="themeToggleBtn" type="button" onclick="window.__toggleTheme && window.__toggleTheme()"
-                title="라이트/다크 모드 전환"
-                style="background:transparent; border:1px solid #E7E5E4; color:#57534E;
-                       width:32px; height:32px; border-radius:8px; cursor:pointer;
-                       display:inline-flex; align-items:center; justify-content:center;
-                       transition: background 0.18s, border-color 0.18s, color 0.18s; padding:0;"
-                onmouseover="this.style.background='#F5F5F4'; this.style.borderColor='#D6D3D1';"
-                onmouseout="this.style.background='transparent'; this.style.borderColor='#E7E5E4';">
-                <i id="themeToggleIcon" class="fas fa-moon" style="font-size:0.78rem;"></i>
-            </button>
-
-            <!-- [스프린트 6 후속] 마이페이지를 로그아웃 바로 앞으로 이동 -->
-            <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-            <a href="/mypage" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-circle-user" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>마이페이지</a>
-
-            <span style="width:1px; height:18px; background:var(--border); margin:0 6px; display:inline-block;"></span>
-            <a href="/logout" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#a8a29e;background:transparent;font-size:0.82rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:all 0.18s;" onmouseover="this.style.background='#FEF2F2';this.style.color='var(--danger)'" onmouseout="this.style.background='transparent';this.style.color='#a8a29e'"><i class="fas fa-arrow-right-from-bracket" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>로그아웃</a>
-        </div>
-    </div>
-
-    <script>
-    /* Phase 3: 다크모드 토글 */
-    (function(){
-        var KEY = 'sw_theme';
-        function apply(t) {
-            if (t === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                var ic = document.getElementById('themeToggleIcon');
-                if (ic) { ic.classList.remove('fa-moon'); ic.classList.add('fa-sun'); }
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                var ic2 = document.getElementById('themeToggleIcon');
-                if (ic2) { ic2.classList.remove('fa-sun'); ic2.classList.add('fa-moon'); }
-            }
-        }
-        window.__toggleTheme = function() {
-            var cur = localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
-            var next = cur === 'dark' ? 'light' : 'dark';
-            localStorage.setItem(KEY, next);
-            apply(next);
-        };
-        try { apply(localStorage.getItem(KEY)); } catch(e) {}
-    })();
-    </script>
-</nav>
-
-<div class="container">
-
-    <!-- 페이지 타이틀 -->
-    <div class="page-title">
-        <i class="fas fa-chart-bar" style="color:#134E4A; font-size:1.4rem;"></i>
-        <h2>SW 사업 추진 현황 대시보드</h2>
-        <span class="year-badge" th:text="${selectedYear != null ? selectedYear + '년' : '전체'}">2026년</span>
-    </div>
-
-    <!-- 요약 카드 (2025 모던 모노크롬) -->
-    <div class="summary-container">
-
-        <!-- 전체 등록 사업 (Primary accent) -->
-        <div class="card is-primary">
-            <div class="card-head">
-                <span class="card-ico"><i class="fas fa-folder-open"></i></span>
-                전체 등록 사업
-            </div>
-            <div class="value">
-                <span th:text="${totalProjects}">0</span><span class="unit">건</span>
-            </div>
-            <div class="meta">
-                <span class="trend-dot" style="background:var(--primary);"></span>
-                <span th:text="${selectedYear != null ? selectedYear + '년 등록 전체' : '전체 연도'}">2026년 등록 전체</span>
-            </div>
-        </div>
-
-        <!-- 완료 사업 -->
-        <div class="card is-success">
-            <div class="card-head">
-                <span class="card-ico"><i class="fas fa-check-circle"></i></span>
-                완료 사업
-            </div>
-            <div class="value">
-                <span th:text="${totalCompleted}">0</span><span class="unit">건</span>
-            </div>
-            <div class="meta">
-                <span class="trend-dot"></span>
-                전체 대비 <strong th:text="${compPercent} + '%'">0%</strong>
-            </div>
-        </div>
-
-        <!-- 진행 사업 -->
-        <div class="card is-warning">
-            <div class="card-head">
-                <span class="card-ico"><i class="fas fa-spinner"></i></span>
-                진행 사업
-            </div>
-            <div class="value">
-                <span th:text="${totalInProgress}">0</span><span class="unit">건</span>
-            </div>
-            <div class="meta">
-                <span class="trend-dot"></span>
-                전체 대비 <strong th:text="${progPercent} + '%'">0%</strong>
-            </div>
-        </div>
-
-        <!-- 라이선스 대장 (클릭 이동) -->
-        <div class="card is-clickable is-info"
-             onclick="location.href='/license/registry/list'"
-             role="link" tabindex="0"
-             onkeydown="if(event.key==='Enter'){location.href='/license/registry/list';}">
-            <div class="card-head">
-                <span class="card-ico"><i class="fas fa-clipboard-list"></i></span>
-                라이선스 대장
-            </div>
-            <div class="value"><span id="licenseCount" class="skeleton skel-num">-</span></div>
-            <div class="meta" style="flex-direction:column; align-items:flex-start; gap:3px;">
-                <span>신규 <strong id="licenseNewCount">-</strong> · 기존 <strong id="licenseExistingCount">-</strong></span>
-                <span id="licenseUploadDate" class="skeleton skel-text" style="color:var(--muted); font-size:0.72rem;">기준일: -</span>
-            </div>
-        </div>
-
-        <!-- GeoNURIS 라이선스 (클릭 이동) -->
-        <div class="card is-clickable"
-             onclick="location.href='/geonuris/license/list'"
-             role="link" tabindex="0"
-             onkeydown="if(event.key==='Enter'){location.href='/geonuris/license/list';}">
-            <div class="card-head">
-                <span class="card-ico"><i class="fas fa-key"></i></span>
-                GeoNURIS 라이선스
-            </div>
-            <div class="value"><span id="geonurisCount" class="skeleton skel-num">-</span></div>
-            <div class="meta">
-                <span class="trend-dot"></span>
-                발급 대장 바로가기
-            </div>
-        </div>
-
-    </div>
-
-    <!-- 툴바: 연도 필터만 -->
-    <div class="toolbar">
-        <div class="filter-group">
-            <strong>📅 조회 연도:</strong>
-            <form id="yearForm" method="get" action="/">
-                <select name="year" onchange="this.form.submit()">
-                    <option value="0" th:selected="${selectedYear == null}">전체 연도</option>
-                    <option th:each="y : ${years}"
-                            th:value="${y}"
-                            th:text="${y} + '년'"
-                            th:selected="${y == selectedYear}">2026년</option>
-                </select>
-            </form>
-        </div>
-    </div>
-
-    <!-- 시스템별 통계 테이블 -->
-    <div class="table-section">
-        <div class="table-title">
-            <i class="fas fa-table"></i>
-            시스템별 사업 현황
-            <span style="font-size:0.85rem; color:var(--muted); font-weight:400;"
-                  th:text="${selectedYear != null ? '(' + selectedYear + '년 기준)' : '(전체 연도 기준)'}">
-                (2026년 기준)
-            </span>
-        </div>
-
-        <div>
-            <table>
-                <thead>
-                    <tr>
-                        <th rowspan="2">시스템명</th>
-                        <th rowspan="2">총개수</th>
-                        <th rowspan="2" style="color:var(--success);">완료</th>
-                        <th rowspan="2" style="color:var(--primary);">진행중</th>
-                        <th rowspan="2" class="th-group-amt">금액 합계</th>
-                        <th colspan="7" class="th-group-amt">항목별 금액 (단위: 원)</th>
-                    </tr>
-                    <tr>
-                        <th class="th-group-amt">SW금액</th>
-                        <th class="th-group-amt">컨설팅</th>
-                        <th class="th-group-amt">DB구축</th>
-                        <th class="th-group-amt">패키지SW</th>
-                        <th class="th-group-amt">시스템개발</th>
-                        <th class="th-group-amt">HW금액</th>
-                        <th class="th-group-amt">기타</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="row : ${stats}">
-                        <td class="td-sys" th:text="${row.sysNm}"></td>
-                        <td class="td-cnt" th:text="${#numbers.formatInteger(row.totalCnt, 1, 'COMMA')}"></td>
-                        <td class="td-comp" th:text="${#numbers.formatInteger(row.compCnt, 1, 'COMMA')}"></td>
-                        <td class="td-prog" th:text="${#numbers.formatInteger(row.progCnt, 1, 'COMMA')}"></td>
-                        <td class="td-total" th:text="${#numbers.formatInteger(row.sumCont, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumSw, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumCnslt, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumDb, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumPkg, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumDev, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumHw, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(row.sumEtc, 1, 'COMMA')}"></td>
-                    </tr>
-                </tbody>
-                <!-- 합계 행 -->
-                <tfoot>
-                    <tr>
-                        <td style="text-align:left;">합 계</td>
-                        <td class="td-cnt" th:text="${#numbers.formatInteger(totalProjects, 1, 'COMMA')}"></td>
-                        <td class="td-comp" th:text="${#numbers.formatInteger(totalCompleted, 1, 'COMMA')}"></td>
-                        <td class="td-prog" th:text="${#numbers.formatInteger(totalInProgress, 1, 'COMMA')}"></td>
-                        <td class="td-total" th:text="${#numbers.formatInteger(totalContAmt, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumSw, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumCnslt, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumDb, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumPkg, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumDev, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumHw, 1, 'COMMA')}"></td>
-                        <td th:text="${#numbers.formatInteger(totalSumEtc, 1, 'COMMA')}"></td>
-                    </tr>
-                </tfoot>
-            </table>
-
-            
-        </div>
-
-        
-    </div>
-
+<div class="mtop">
+  <h1>SW 사업 추진 현황 대시보드</h1>
+  <div class="r">
+    <form method="get" action="/">
+      <select name="year" onchange="this.form.submit()">
+        <option value="0" th:selected="${selectedYear == null}">전체 연도</option>
+        <option th:each="y : ${years}" th:value="${y}" th:text="${y} + '년'" th:selected="${y == selectedYear}">2026년</option>
+      </select>
+    </form>
+    <a class="btn" href="/projects/new"><i class="fas fa-plus"></i> 사업 등록</a>
+  </div>
 </div>
 
-<!-- 라이선스 통계 비동기 로드 -->
+<div class="mbody">
+  <!-- KPI -->
+  <div class="kpis">
+    <div class="kc pri"><div class="l"><i class="fas fa-folder-open"></i>전체 등록 사업</div><div class="n"><span th:text="${#numbers.formatInteger(totalProjects,1,'COMMA')}">0</span><span class="u">건</span></div><div class="sub" th:text="${selectedYear != null ? selectedYear + '년 기준' : '전체 연도'}">2026년 기준</div></div>
+    <div class="kc"><div class="l"><i class="fas fa-check-circle"></i>완료 사업</div><div class="n"><span th:text="${#numbers.formatInteger(totalCompleted,1,'COMMA')}">0</span><span class="u">건</span></div><div class="sub" th:text="${compPercent} + '%'">0%</div></div>
+    <div class="kc"><div class="l"><i class="fas fa-spinner"></i>진행 사업</div><div class="n"><span th:text="${#numbers.formatInteger(totalInProgress,1,'COMMA')}">0</span><span class="u">건</span></div><div class="sub">진행중</div></div>
+    <div class="kc click" onclick="location.href='/license/registry/list'"><div class="l"><i class="fas fa-clipboard-list"></i>라이선스 대장</div><div class="n"><span id="licenseCount" class="skeleton">-</span></div><div class="sub" id="licenseSub">불러오는 중…</div></div>
+    <div class="kc click" onclick="location.href='/geonuris/license/list'"><div class="l"><i class="fas fa-key"></i>GeoNURIS</div><div class="n"><span id="geonurisCount" class="skeleton">-</span></div><div class="sub">발급 라이선스</div></div>
+  </div>
+
+  <!-- 차트 행 -->
+  <div class="charts">
+    <div class="panel"><div class="ph"><span class="t"><i class="fas fa-chart-area"></i> 연도별 사업 추이</span></div>
+      <div class="area">
+        <div class="col" th:each="r : ${yearCounts}">
+          <div class="cval" th:text="${r.c}">0</div>
+          <div class="track"><div class="bar" th:style="'height:' + ${r.h} + '%'"></div></div>
+          <div class="yr" th:text="${#strings.substring(''+r.y,2)} + '년'">26년</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel"><div class="ph"><span class="t"><i class="fas fa-chart-bar"></i> 시스템별 계약금액 Top</span></div>
+      <div class="hbars">
+        <div class="hb" th:each="r : ${topAmount}">
+          <span class="nm" th:text="${r.sysNmEn != null and r.sysNmEn != '' ? r.sysNmEn : r.sysNm}">SYS</span>
+          <span class="track"><span class="fill" th:style="'width:' + ${maxAmt > 0 ? (r.sumCont * 100 / maxAmt) : 0} + '%'"></span></span>
+          <span class="amt" th:text="${#numbers.formatDecimal(r.sumCont / 100000000.0, 1, 1)} + '억'">0억</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel"><div class="ph"><span class="t"><i class="fas fa-chart-pie"></i> 진행 현황</span></div>
+      <div class="donut-wrap">
+        <div class="donut" th:style="'background:conic-gradient(var(--primary) 0 ' + ${compPercent} + '%, var(--amber) ' + ${compPercent} + '% 100%)'">
+          <div class="hole"><b th:text="${compPercent} + '%'">0%</b><small>완료율</small></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--primary)"></i>완료 <span th:text="${totalCompleted}">0</span></span>
+          <span><i style="background:var(--amber)"></i>진행 <span th:text="${totalInProgress}">0</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 활동 피드 행 -->
+  <div class="feed-row">
+    <div class="panel">
+      <div class="ph"><span class="t"><i class="fas fa-clock-rotate-left"></i> 최근 등록 사업</span></div>
+      <div class="body">
+        <div class="fitem" th:each="p : ${recentProjects}">
+          <span class="fic"><i class="fas fa-folder-plus"></i></span>
+          <div><div class="ft" th:text="${p.projNm}">사업명</div>
+            <div class="fm"><span th:text="${p.cityNm}">시도</span> <span th:text="${p.distNm}">시군구</span> · <span th:text="${p.year} + '년'">2026년</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="t"><i class="fas fa-calendar-check"></i> 임박 업무 일정</span></div>
+      <div class="body" th:if="${not #lists.isEmpty(upcoming)}">
+        <div class="ddl" th:each="m : ${upcoming}">
+          <span class="nm" th:text="${m.title}">업무</span>
+          <span class="dm" th:text="${#temporals.format(m.date,'MM-dd')}">06-12</span>
+          <span class="chipd" th:classappend="${m.dday <= 1 ? 'c-dng' : (m.dday <= 3 ? 'c-warn' : 'c-ok')}"
+                th:text="${m.dday == 0 ? 'D-DAY' : 'D-' + m.dday}">D-1</span>
+        </div>
+      </div>
+      <div class="empty" th:if="${#lists.isEmpty(upcoming)}"><i class="fas fa-calendar-xmark"></i>예정된 일정 없음</div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="t"><i class="fas fa-triangle-exclamation"></i> 만료 임박 라이선스</span></div>
+      <div class="body" th:if="${not #lists.isEmpty(expiring)}">
+        <div class="ddl" th:each="m : ${expiring}">
+          <span class="nm" th:text="${m.name}">기관</span>
+          <span class="dm" th:text="${m.type}">GSS</span>
+          <span class="chipd" th:classappend="${m.days <= 7 ? 'c-dng' : (m.days <= 30 ? 'c-warn' : 'c-ok')}"
+                th:text="${m.days} + '일'">7일</span>
+        </div>
+      </div>
+      <div class="empty" th:if="${#lists.isEmpty(expiring)}"><i class="fas fa-circle-check"></i>임박 만료 없음</div>
+    </div>
+  </div>
+
+  <!-- 시스템별 사업 현황 (완료/진행 증감) -->
+  <div class="panel">
+    <div class="ph bd"><span class="t"><i class="fas fa-table"></i> 시스템별 사업 현황
+      <span th:if="${hasPrev}" style="font-weight:500;color:var(--muted);font-size:.78rem;">· 완료/진행 옆은 전년 대비 증감</span></span>
+      <a href="/projects/status">전체 보기 →</a></div>
+    <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>시스템명</th><th>총개수</th><th style="color:var(--success)">완료</th><th style="color:var(--primary)">진행중</th>
+        <th>금액 합계</th><th>SW금액</th><th>컨설팅</th><th>DB구축</th>
+      </tr></thead>
+      <tbody>
+        <tr th:each="row : ${stats}">
+          <td th:text="${row.sysNm}">시스템</td>
+          <td th:text="${#numbers.formatInteger(row.totalCnt,1,'COMMA')}">0</td>
+          <td>
+            <span th:text="${#numbers.formatInteger(row.compCnt,1,'COMMA')}">0</span>
+            <span th:if="${hasPrev and row.compDelta != null and row.compDelta > 0}" class="dlt up">▲<span th:text="${row.compDelta}"></span></span>
+            <span th:if="${hasPrev and row.compDelta != null and row.compDelta < 0}" class="dlt down">▼<span th:text="${0 - row.compDelta}"></span></span>
+            <span th:if="${hasPrev and row.compDelta != null and row.compDelta == 0}" class="dlt zero">–</span>
+          </td>
+          <td>
+            <span th:text="${#numbers.formatInteger(row.progCnt,1,'COMMA')}">0</span>
+            <span th:if="${hasPrev and row.progDelta != null and row.progDelta > 0}" class="dlt up">▲<span th:text="${row.progDelta}"></span></span>
+            <span th:if="${hasPrev and row.progDelta != null and row.progDelta < 0}" class="dlt down">▼<span th:text="${0 - row.progDelta}"></span></span>
+            <span th:if="${hasPrev and row.progDelta != null and row.progDelta == 0}" class="dlt zero">–</span>
+          </td>
+          <td th:text="${#numbers.formatInteger(row.sumCont,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumSw,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumCnslt,1,'COMMA')}">0</td>
+          <td th:text="${#numbers.formatInteger(row.sumDb,1,'COMMA')}">0</td>
+        </tr>
+      </tbody>
+      <tfoot><tr>
+        <td>합 계</td>
+        <td th:text="${#numbers.formatInteger(totalProjects,1,'COMMA')}">0</td>
+        <td><span th:text="${#numbers.formatInteger(totalCompleted,1,'COMMA')}">0</span>
+          <span th:if="${hasPrev and totalCompDelta > 0}" class="dlt up">▲<span th:text="${totalCompDelta}"></span></span>
+          <span th:if="${hasPrev and totalCompDelta < 0}" class="dlt down">▼<span th:text="${0 - totalCompDelta}"></span></span></td>
+        <td><span th:text="${#numbers.formatInteger(totalInProgress,1,'COMMA')}">0</span>
+          <span th:if="${hasPrev and totalProgDelta > 0}" class="dlt up">▲<span th:text="${totalProgDelta}"></span></span>
+          <span th:if="${hasPrev and totalProgDelta < 0}" class="dlt down">▼<span th:text="${0 - totalProgDelta}"></span></span></td>
+        <td th:text="${#numbers.formatInteger(totalContAmt,1,'COMMA')}">0</td>
+        <td colspan="3"></td>
+      </tr></tfoot>
+    </table>
+    </div>
+  </div>
+
+  <p class="note">전 영역 실데이터(운영DB) · 완료/진행 전년대비 증감 · 임박 업무일정(업무계획)·만료 라이선스(GeoNURIS) 연동</p>
+</div>
+
 <script>
 /*<![CDATA[*/
-window.addEventListener('DOMContentLoaded', function() {
-    var authLicense = "EDIT";
-    function unskel(el) { if (el) el.classList.remove('skeleton', 'skel-num', 'skel-text'); }
-
-    if (authLicense && authLicense !== 'NONE') {
-        fetch('/geonuris/license/stats-count')
-            .then(function(r) { return r.ok ? r.json() : Promise.reject(); })
-            .then(function(data) {
-                var el = document.getElementById('geonurisCount');
-                if (el) { el.textContent = (data.total || 0) + '건'; unskel(el); }
-            })
-            .catch(function() {
-                var el = document.getElementById('geonurisCount');
-                if (el) { el.textContent = '0건'; unskel(el); }
-            });
-    }
-
-    if (authLicense && authLicense !== 'NONE') {
-        fetch('/license/registry/dashboard-stats')
-            .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
-            .then(function(data) {
-                var c = document.getElementById('licenseCount');
-                if (c) { c.textContent = (data.totalCount || 0) + '건'; unskel(c); }
-
-                var n = document.getElementById('licenseNewCount');
-                if (n) n.textContent = (data.newCount || 0);
-
-                var e = document.getElementById('licenseExistingCount');
-                if (e) e.textContent = (data.existingCount || 0);
-
-                var d = document.getElementById('licenseUploadDate');
-                if (d) {
-                    d.textContent = data.latestUploadDate
-                        ? '기준일: ' + data.latestUploadDate.split('T')[0]
-                        : '데이터 없음';
-                    unskel(d);
-                }
-            })
-            .catch(function() {
-                var c = document.getElementById('licenseCount');
-                if (c) { c.textContent = '0건'; unskel(c); }
-                var d = document.getElementById('licenseUploadDate');
-                if (d) { d.textContent = '업로드 필요'; unskel(d); }
-            });
-    }
+window.addEventListener('DOMContentLoaded', function(){
+  function unskel(el){ if(el) el.classList.remove('skeleton'); }
+  fetch('/geonuris/license/stats-count').then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(d){ var el=document.getElementById('geonurisCount'); if(el){el.textContent=(d.total||0)+'건';unskel(el);} })
+    .catch(function(){ var el=document.getElementById('geonurisCount'); if(el){el.textContent='0건';unskel(el);} });
+  fetch('/license/registry/dashboard-stats').then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(d){ var el=document.getElementById('licenseCount'); if(el){el.textContent=(d.totalCount||0)+'건';unskel(el);}
+      var s=document.getElementById('licenseSub'); if(s) s.textContent='신규 '+(d.newCount||0)+' · 기존 '+(d.existingCount||0); })
+    .catch(function(){ var el=document.getElementById('licenseCount'); if(el){el.textContent='0건';unskel(el);} var s=document.getElementById('licenseSub'); if(s) s.textContent='-'; });
 });
 /*]]>*/
 </script>

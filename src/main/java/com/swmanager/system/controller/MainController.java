@@ -47,108 +47,24 @@ public class MainController {
         // year=0   → "전체 연도" 선택 (전체 조회)
         // year=2026 등 → 해당 연도 조회
         Integer queryYear;
-        if (year == null) {
-            year = LocalDate.now().getYear();  // 첫 로드 시 현재 연도
-            queryYear = year;
-        } else if (year == 0) {
-            queryYear = null;  // 전체 조회
-            year = null;       // 화면에 "전체" 표시
-        } else {
-            queryYear = year;
-        }
+        if (year == null)   { year = LocalDate.now().getYear(); queryYear = year; }
+        else if (year == 0) { queryYear = null; year = null; }
+        else                { queryYear = year; }
 
-        long totalProjects   = 0;
-        long totalCompleted  = 0;
-        long totalInProgress = 0;
-        long totalContAmt    = 0; // 모든 시스템의 금액합계(sumCont) 총합
-        long totalSumSw    = 0;
-        long totalSumCnslt = 0;
-        long totalSumDb    = 0;
-        long totalSumPkg   = 0;
-        long totalSumDev   = 0;
-        long totalSumHw    = 0;
-        long totalSumEtc   = 0;
-
-        try {
-            List<Integer> years = swProjectRepository.findDistinctYears();
-            model.addAttribute("years", years);
-            model.addAttribute("selectedYear", year);        // null이면 "전체"
-
-            List<Map<String, Object>> stats = swProjectRepository.getSystemStats(queryYear);
-            model.addAttribute("stats", stats);
-
-            if (stats != null && !stats.isEmpty()) {
-                for (Map<String, Object> row : stats) {
-                    Object totalCntObj = row.get("totalCnt");
-                    Object compCntObj  = row.get("compCnt");
-                    Object progCntObj  = row.get("progCnt");
-                    Object sumContObj  = row.get("sumCont");
-
-                    if (totalCntObj != null) totalProjects   += ((Number) totalCntObj).longValue();
-                    if (compCntObj  != null) totalCompleted  += ((Number) compCntObj).longValue();
-                    if (progCntObj  != null) totalInProgress += ((Number) progCntObj).longValue();
-                    if (sumContObj  != null) totalContAmt    += ((Number) sumContObj).longValue();
-
-                    Object sumSwObj    = row.get("sumSw");
-                    Object sumCnsltObj = row.get("sumCnslt");
-                    Object sumDbObj    = row.get("sumDb");
-                    Object sumPkgObj   = row.get("sumPkg");
-                    Object sumDevObj   = row.get("sumDev");
-                    Object sumHwObj    = row.get("sumHw");
-                    Object sumEtcObj   = row.get("sumEtc");
-                    if (sumSwObj    != null) totalSumSw    += ((Number) sumSwObj).longValue();
-                    if (sumCnsltObj != null) totalSumCnslt += ((Number) sumCnsltObj).longValue();
-                    if (sumDbObj    != null) totalSumDb    += ((Number) sumDbObj).longValue();
-                    if (sumPkgObj   != null) totalSumPkg   += ((Number) sumPkgObj).longValue();
-                    if (sumDevObj   != null) totalSumDev   += ((Number) sumDevObj).longValue();
-                    if (sumHwObj    != null) totalSumHw    += ((Number) sumHwObj).longValue();
-                    if (sumEtcObj   != null) totalSumEtc   += ((Number) sumEtcObj).longValue();
-                }
-            }
-
-        } catch (Exception e) {
-            log.error("[대시보드 데이터 처리 에러] {}", e.getMessage(), e);
-        }
-
-        // 완료율 = 완료건수 / 전체건수
-        double compPercent = totalProjects > 0
-                ? Math.round((double) totalCompleted / totalProjects * 1000) / 10.0
-                : 0.0;
-
-        // 진행율 = 진행건수 / 전체건수
-        double progPercent = totalProjects > 0
-                ? Math.round((double) totalInProgress / totalProjects * 1000) / 10.0
-                : 0.0;
-
-        model.addAttribute("totalProjects",   totalProjects);
-        model.addAttribute("totalCompleted",  totalCompleted);
-        model.addAttribute("totalInProgress", totalInProgress);
-        model.addAttribute("compPercent",     compPercent);
-        model.addAttribute("progPercent",     progPercent);
-        model.addAttribute("totalContAmt",    totalContAmt);
-        model.addAttribute("totalSumSw",    totalSumSw);
-        model.addAttribute("totalSumCnslt", totalSumCnslt);
-        model.addAttribute("totalSumDb",    totalSumDb);
-        model.addAttribute("totalSumPkg",   totalSumPkg);
-        model.addAttribute("totalSumDev",   totalSumDev);
-        model.addAttribute("totalSumHw",    totalSumHw);
-        model.addAttribute("totalSumEtc",   totalSumEtc);
-
+        buildDashboardModel(queryYear, year, model);
         return "main-dashboard";
     }
 
-    // ===== [dashboard-preview] 통합 구조 + 완료/진행 전년대비 증감 (실데이터 미리보기) =====
+    // [global-sidebar-responsive Phase2] 미리보기 라우트는 메인 대시보드로 승격 → 영구 리다이렉트
     @GetMapping("/dashboard-preview")
-    public String dashboardPreview(
-            @RequestParam(value = "year", required = false) Integer year, Model model) {
+    public String dashboardPreview() {
+        return "redirect:/";
+    }
 
-        Integer queryYear;
-        if (year == null)      { year = LocalDate.now().getYear(); queryYear = year; }
-        else if (year == 0)    { queryYear = null; year = null; }
-        else                   { queryYear = year; }
-
+    // ===== 통합 대시보드 모델 빌더 (차트행+피드행+증감 테이블, 실데이터) — `/` 와 공용 =====
+    private void buildDashboardModel(Integer queryYear, Integer displayYear, Model model) {
         model.addAttribute("years", swProjectRepository.findDistinctYears());
-        model.addAttribute("selectedYear", year);
+        model.addAttribute("selectedYear", displayYear);
 
         List<Map<String, Object>> stats = swProjectRepository.getSystemStats(queryYear);
         if (stats == null) stats = new ArrayList<>();
@@ -243,8 +159,6 @@ public class MainController {
             expiring.add(m);
         }
         model.addAttribute("expiring", expiring);
-
-        return "dashboard-preview";
     }
 
     private static long lng(Object o)   { return (o instanceof Number) ? ((Number) o).longValue() : 0L; }
