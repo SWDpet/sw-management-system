@@ -1,8 +1,8 @@
 # 개발계획서 — 전사 사이드바 + 반응형 + 대시보드 승격 (global-sidebar-responsive)
 
-- **상태**: v1.2 (Phase 1·2 구현 완료 / Phase 3 점검 완료 — Phase 4 QA 대기)
-- **작성일**: 2026-06-11 (v1) / v1.1 동일자 (codex: 셸/예외클래스 정합·화면수 52 검증·권한active 매핑표·Phase2 공유메서드·Phase별 롤백) / v1.2 동일자 (Phase 1~3 진행상태 반영)
-- **진행**: Phase 1 `8b451da` · Phase 2 `b0fa7ad` · Phase 3 점검(아래 §3 결과)
+- **상태**: ✅ v1.3 (Phase 1~4 완료 — 스프린트 종료, 2026-06-11)
+- **작성일**: 2026-06-11 (v1) / v1.1 동일자 (codex: 셸/예외클래스 정합·화면수 52 검증·권한active 매핑표·Phase2 공유메서드·Phase별 롤백) / v1.2 동일자 (Phase 1~3 진행상태 반영) / v1.3 동일자 (Phase 4 QA 통과·스프린트 완료)
+- **진행**: Phase 1 `8b451da` · Phase 2 `b0fa7ad` · Phase 3 점검(§3) · 후속수정(금액 7항목 복원+증감 제거) `f85a55e` · Phase 4 시각 QA 통과(사용자 확인)
 - **스프린트명**: `global-sidebar-responsive`
 - **기획서**: `docs/product-specs/global-sidebar-responsive.md` (v0.2, commit fab5b2d)
 
@@ -82,6 +82,8 @@
 - 뷰포트 `375/768/1199/1920`(+필요시 2560) × 계정 3종(관리자/EDIT/제한) × 51+1 화면.
 - 특수: 문서·견적 **PDF/인쇄**, 팀모니터 풀스크린, 넓은 금액 테이블 가로스크롤, 모달, fixed alert/토스트.
 - 합격: 레이아웃 깨짐·메뉴 오노출·가로 overflow 0.
+
+> **[Phase 4 결과 — 2026-06-11]** ✅ 통과. 권한 게이트 정적 감사 PASS(`User.prePersist` null→NONE 정규화로 과노출 없음, 게이트 11종 매핑표 일치). 사용자 시각 확인 완료(전 화면 정상 동작). 후속 교정 반영: 시스템별 현황 테이블 금액 7항목(SW/컨설팅/DB/패키지SW/시스템개발/HW/기타) 복원 + 해석 혼란이던 전년대비 증감(▲▼) 제거.
 
 ## 5. 구현 순서
 Phase 1(T-1~T-3) → Phase 2(T-4~T-6, 대시보드 검증) → Phase 3(전파+특수화면) → Phase 4(QA) → codex 구현검토.
