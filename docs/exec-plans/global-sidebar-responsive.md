@@ -1,7 +1,8 @@
 # 개발계획서 — 전사 사이드바 + 반응형 + 대시보드 승격 (global-sidebar-responsive)
 
-- **상태**: v1.1 (codex 검토 반영 — 사용자 승인 대기)
-- **작성일**: 2026-06-11 (v1) / v1.1 동일자 (codex: 셸/예외클래스 정합·화면수 52 검증·권한active 매핑표·Phase2 공유메서드·Phase별 롤백)
+- **상태**: v1.2 (Phase 1·2 구현 완료 / Phase 3 점검 완료 — Phase 4 QA 대기)
+- **작성일**: 2026-06-11 (v1) / v1.1 동일자 (codex: 셸/예외클래스 정합·화면수 52 검증·권한active 매핑표·Phase2 공유메서드·Phase별 롤백) / v1.2 동일자 (Phase 1~3 진행상태 반영)
+- **진행**: Phase 1 `8b451da` · Phase 2 `b0fa7ad` · Phase 3 점검(아래 §3 결과)
 - **스프린트명**: `global-sidebar-responsive`
 - **기획서**: `docs/product-specs/global-sidebar-responsive.md` (v0.2, commit fab5b2d)
 
@@ -65,6 +66,14 @@
 ## 3. Phase 3 — 51개 화면 적용
 - T-2 프래그먼트 교체로 **대부분 자동 반영**(편집 불필요). 
 - 화면별 점검: 자체 고정폭/인라인 style 로 깨지는 곳만 컨테이너 보정. 특수화면에 예외 클래스 부여:
+
+> **[Phase 3 점검 결과 — 2026-06-11, 정적 분석]** 추가 코드 변경 없이 충족(빈 커밋 미생성).
+> - **전파**: 52화면(51 + 메인) 프래그먼트 사용. 중복 `<nav>`·잔존 인라인 GNB·옛 드롭다운 toggle 함수 **0건**(메인은 Phase 2에서 제거). preview식 `display:flex` 2단 레이아웃 가정 **0건**.
+> - **특수화면**: 팀모니터 = `fullscreen` 시 프래그먼트 미포함 + `body.fullscreen`(이미 구현) / PDF 7 + 프리뷰 4 + 로그인·회원가입 = 프래그먼트 미사용 → `body:has(.app-sidebar)` 오프셋 자동 제외 / 일반화면 인쇄 = 프래그먼트 `@media print` 가 사이드바 숨김·오프셋 0. 모두 정상.
+> - **가로 overflow**: 넓은 테이블(infra-list 1400px, person-list 1200px) 둘 다 `overflow-x` 스크롤 보유. `100vw` 사용 0건.
+> - **`position:fixed` 전수**: 전부 모달/프리뷰 오버레이(z-index 1000+, 전체 덮음=정상)·우상단 토스트(사이드바 무관)·인쇄 팝업. 사이드바 뒤로 깔리는 전체폭 헤더/툴바 **0건**.
+> - 잔여: 실제 구동 시각 검증은 Phase 4 QA 매트릭스에서 수행.
+
   - 인쇄/PDF: `document/*`, `quotation/*` PDF·preview → `@media print` 로 처리(대부분 자동), 필요 시 `.no-sidebar`.
   - 팀모니터(`admin/team-monitor`) 풀스크린 → `.fullscreen`.
 - **대상 51화면(그룹)**: admin(5), infra(3), document(8: list/detail/batch/commence/interim/completion/inspect-detail/doc-inspect), geonuris(4), license(3), person(2), project(3), ops-doc(6), performance(3), qrcode(3), quotation(7: list/form/detail/ledger/pattern/remarks/wage), workplan(2: form/process-status, calendar), mypage(1). (+main-dashboard 인라인 1)
