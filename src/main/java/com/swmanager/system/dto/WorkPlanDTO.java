@@ -25,6 +25,12 @@ public class WorkPlanDTO {
     private String distNm;
     private String sysNm;
 
+    // [workplan-target-infra-cascade] 대상 지역+시스템 (계약=Infra 복사 / 미계약=직접입력)
+    private String regionCode;
+    private String regionCityNm;
+    private String regionDistNm;
+    private String targetSysNm;
+
     // 업무 정보
     private String planType;       // CONTRACT, INSTALL, PATCH, INSPECT, PRE_CONTACT, FAULT, SUPPORT, SETTLE, COMPLETE
     private Integer processStep;   // 1~7
@@ -55,6 +61,10 @@ public class WorkPlanDTO {
                 .cityNm(entity.getInfra() != null ? entity.getInfra().getCityNm() : null)
                 .distNm(entity.getInfra() != null ? entity.getInfra().getDistNm() : null)
                 .sysNm(entity.getInfra() != null ? entity.getInfra().getSysNm() : null)
+                .regionCode(entity.getRegionCode())
+                .regionCityNm(entity.getRegionCityNm())
+                .regionDistNm(entity.getRegionDistNm())
+                .targetSysNm(entity.getTargetSysNm())
                 .planType(entity.getPlanType())
                 .processStep(entity.getProcessStep())
                 .title(entity.getTitle())
@@ -70,6 +80,29 @@ public class WorkPlanDTO {
                 .statusReason(entity.getStatusReason())
                 .color(getTypeColor(entity.getPlanType()))
                 .build();
+    }
+
+    /**
+     * [workplan-target-infra-cascade FR-10] 대상 표시 라벨 (시군구 - 시스템).
+     *  계약 대상은 infra 의 cityNm/distNm/sysNm, 미계약은 region 필드/target_sys_nm.
+     *  region 값이 채워졌으면 우선(저장 시 계약도 채움), 없으면 infra 값으로 fallback (기존 행 호환).
+     *  목록/캘린더/상세 모두 본 메서드 단일 사용.
+     */
+    public String getTargetLabel() {
+        String city = firstNonBlank(regionCityNm, cityNm);
+        String dist = firstNonBlank(regionDistNm, distNm);
+        String sys  = firstNonBlank(targetSysNm, sysNm);
+        String area = (dist != null) ? dist : city; // 시군구 우선, 없으면 시도
+        if (area == null && sys == null) return "";
+        if (area == null) return sys;
+        if (sys == null) return area;
+        return area + " - " + sys;
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        if (a != null && !a.isBlank()) return a;
+        if (b != null && !b.isBlank()) return b;
+        return null;
     }
 
     /**

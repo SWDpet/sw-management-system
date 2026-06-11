@@ -68,6 +68,20 @@ public class WorkPlan {
     @Column(name = "status_reason", length = 500)
     private String statusReason;
 
+    // [workplan-target-infra-cascade 2026-06-11] 대상 지역+시스템 (계약·미계약 공통, additive nullable)
+    //  계약=Infra 값 서버 재계산 복사 / 미계약(SUPPORT)=직접입력. 표시·통계 단일 출처.
+    @Column(name = "region_code", length = 10)
+    private String regionCode;       // sigungu_code.adm_sect_c
+
+    @Column(name = "region_city_nm", length = 40)
+    private String regionCityNm;     // 시도명
+
+    @Column(name = "region_dist_nm", length = 40)
+    private String regionDistNm;     // 시군구명
+
+    @Column(name = "target_sys_nm", length = 100)
+    private String targetSysNm;      // 시스템명
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -149,7 +149,7 @@
                                  >
                                 <div class="card-infra">
                                     <i class="fas fa-building"></i>
-                                    <span th:text="${plan.cityNm != null ? plan.cityNm + ' ' + (plan.distNm != null ? plan.distNm : '') : '미지정'}"></span>
+                                    <span th:text="${plan.targetLabel != '' ? plan.targetLabel : '미지정'}"></span>
                                 </div>
                                 <div class="card-title" th:text="${plan.title}">업무명</div>
                                 <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-bottom:4px;">

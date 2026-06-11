@@ -69,6 +69,10 @@
             </div>
         </div>
 
+        <!-- [workplan-target-infra-cascade FR-11] 저장 검증 실패 메시지 -->
+        <div th:if="${errorMessage}" th:text="${errorMessage}"
+             style="background:#FEF2F2; color:var(--danger); border:1px solid var(--danger); border-radius:6px; padding:10px 14px; margin-bottom:18px; font-size:0.88em;"></div>
+
         <form th:action="@{/workplan/save}" method="post" id="workPlanForm">
             <input type="hidden" name="planId" th:value="${workPlan.planId}" />
 
@@ -181,15 +185,34 @@
                         </td>
                     </tr>
                     <tr>
-                        <th>대상 인프라</th>
+                        <th>대상</th>
                         <td>
-                            <select name="infraId">
-                                <option value="">선택 안함</option>
-                                <option th:each="infra : ${infraList}"
-                                        th:value="${infra.infraId}"
-                                        th:text="${infra.cityNm + ' ' + infra.distNm + ' - ' + infra.sysNm}"
-                                        th:selected="${infra.infraId == workPlan.infraId}"></option>
-                            </select>
+                            <!-- [workplan-target-infra-cascade] 시도→시군구→시스템 캐스케이드 -->
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <select id="sidoSel" style="flex:1; min-width:110px;">
+                                    <option value="">시도</option>
+                                    <option th:each="s : ${sidoList}" th:value="${s}" th:text="${s}"></option>
+                                </select>
+                                <select id="sggSel" style="flex:1; min-width:110px;" disabled>
+                                    <option value="">시군구</option>
+                                </select>
+                                <select id="sysSel" style="flex:1.4; min-width:140px;" disabled>
+                                    <option value="">시스템</option>
+                                </select>
+                            </div>
+                            <input type="text" id="sysDirect" placeholder="시스템명 직접입력 (업무지원·미계약 대상)"
+                                   maxlength="100" style="display:none; margin-top:6px;">
+                            <!-- 실제 제출 값 -->
+                            <input type="hidden" name="infraId"     id="infraIdHidden"   th:value="${workPlan.infraId}">
+                            <input type="hidden" name="regionCode"  id="regionCodeHidden" th:value="${workPlan.regionCode}">
+                            <input type="hidden" name="targetSysNm" id="targetSysHidden"  th:value="${workPlan.targetSysNm}">
+                            <!-- 수정 복원용 초기값(FR-7) -->
+                            <span id="targetRestore" style="display:none;"
+                                  th:attr="data-infra=${workPlan.infraId},
+                                           data-region=${workPlan.regionCode},
+                                           data-city=${workPlan.regionCityNm != null ? workPlan.regionCityNm : workPlan.cityNm},
+                                           data-dist=${workPlan.regionDistNm != null ? workPlan.regionDistNm : workPlan.distNm},
+                                           data-sys=${workPlan.targetSysNm != null ? workPlan.targetSysNm : workPlan.sysNm}"></span>
                         </td>
                         <th>담당자</th>
                         <td>
@@ -315,6 +338,106 @@
                 document.getElementById('workPlanForm').submit();
             }
         });
+    </script>
+
+    <!-- [workplan-target-infra-cascade] 대상 캐스케이드 -->
+    <script>
+    (function(){
+      const sido = document.getElementById('sidoSel');
+      const sgg  = document.getElementById('sggSel');
+      const sys  = document.getElementById('sysSel');
+      const direct = document.getElementById('sysDirect');
+      const hInfra = document.getElementById('infraIdHidden');
+      const hRegion = document.getElementById('regionCodeHidden');
+      const hSys = document.getElementById('targetSysHidden');
+      const DIRECT = '__direct__';
+      if (!sido) return;
+
+      function currentPlanType(){
+        const r = document.querySelector('input[name="planType"]:checked');
+        return r ? r.value : null;
+      }
+      function isSupport(){ return currentPlanType() === 'SUPPORT'; }
+      function resetSelect(sel, ph){ sel.innerHTML = '<option value="">' + ph + '</option>'; }
+
+      function syncSubmit(){
+        const v = sys.value;
+        if (v === DIRECT){ hInfra.value = ''; hSys.value = direct.value || ''; direct.style.display = ''; }
+        else if (v){ hInfra.value = v; hSys.value = ''; direct.style.display = 'none'; direct.value = ''; }
+        else { hInfra.value = ''; hSys.value = ''; direct.style.display = 'none'; }
+        hRegion.value = sgg.value || '';
+      }
+
+      async function loadSgg(sidoVal, preAdm){
+        resetSelect(sgg, '시군구'); resetSelect(sys, '시스템');
+        sgg.disabled = true; sys.disabled = true;
+        if (!sidoVal){ syncSubmit(); return; }
+        const res = await fetch('/workplan/api/sgg?sido=' + encodeURIComponent(sidoVal));
+        if (!res.ok){ return; }
+        (await res.json()).forEach(function(o){
+          const opt = document.createElement('option');
+          opt.value = o.admSectC;
+          opt.textContent = o.isUnit ? (o.sggNm + ' (본청/도청)') : o.sggNm;
+          sgg.appendChild(opt);
+        });
+        sgg.disabled = false;
+        if (preAdm){ sgg.value = preAdm; }
+      }
+
+      async function loadSys(admSectC, preInfra, preDirectSys){
+        resetSelect(sys, '시스템');
+        sys.disabled = true;
+        if (!admSectC){ syncSubmit(); return; }
+        const res = await fetch('/workplan/api/infra-by-region?admSectC=' + encodeURIComponent(admSectC));
+        const list = res.ok ? await res.json() : [];
+        list.forEach(function(o){
+          const opt = document.createElement('option');
+          opt.value = o.infraId; opt.textContent = o.sysNm;
+          sys.appendChild(opt);
+        });
+        if (isSupport()){
+          const opt = document.createElement('option');
+          opt.value = DIRECT; opt.textContent = '목록에 없음 (직접입력)';
+          sys.appendChild(opt);
+        }
+        sys.disabled = false;
+        if (preInfra){ sys.value = preInfra; }
+        else if (preDirectSys){ sys.value = DIRECT; direct.value = preDirectSys; }
+        syncSubmit();
+      }
+
+      sido.addEventListener('change', async function(){ await loadSgg(sido.value); syncSubmit(); });
+      sgg.addEventListener('change', async function(){ await loadSys(sgg.value); });
+      sys.addEventListener('change', syncSubmit);
+      direct.addEventListener('input', function(){ hSys.value = direct.value || ''; });
+
+      document.querySelectorAll('input[name="planType"]').forEach(function(r){
+        r.addEventListener('change', function(){
+          if (sgg.value){ loadSys(sgg.value, hInfra.value || null); }
+          else if (!isSupport() && sys.value === DIRECT){ sys.value = ''; syncSubmit(); }
+        });
+      });
+
+      // 수정 복원(FR-7)
+      (async function restore(){
+        const r = document.getElementById('targetRestore');
+        if (!r) return;
+        const infra = r.getAttribute('data-infra');
+        const region = r.getAttribute('data-region');
+        const city = r.getAttribute('data-city');
+        const dist = r.getAttribute('data-dist');
+        const sysNm = r.getAttribute('data-sys');
+        if (!city){ return; }   // 대상 없음
+        sido.value = city;
+        await loadSgg(city, region || null);
+        if (!region && dist){
+          for (const opt of sgg.options){
+            if (opt.textContent.replace(' (본청/도청)', '') === dist){ sgg.value = opt.value; break; }
+          }
+        }
+        if (sgg.value){ await loadSys(sgg.value, infra || null, (!infra ? sysNm : null)); }
+      })();
+    })();
     </script>
 </body>
 </html>

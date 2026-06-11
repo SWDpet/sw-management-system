@@ -32,6 +32,11 @@ public interface InfraRepository extends JpaRepository<Infra, Long> {
     @Query("SELECT DISTINCT i.sysNmEn FROM Infra i WHERE i.cityNm = :cityNm AND i.distNm = :distNm AND i.sysNmEn IS NOT NULL ORDER BY i.sysNmEn")
     List<String> findDistinctSystemsByRegion(@Param("cityNm") String cityNm, @Param("distNm") String distNm);
 
+    /** [workplan-target-infra-cascade] 시도+시군구(들) 기준 등록 인프라 목록 (value=infra_id, label=sys_nm).
+     *  도청/본청 self-행 선택 시 distNms 에 {시도명, 도청, 본청} 을 넣어 역매칭. */
+    @Query("SELECT i FROM Infra i WHERE i.cityNm = :cityNm AND i.distNm IN :distNms AND i.sysNm IS NOT NULL ORDER BY i.sysNm")
+    List<Infra> findByCityNmAndDistNmIn(@Param("cityNm") String cityNm, @Param("distNms") List<String> distNms);
+
     /** 시도+시군구+시스템명으로 단일 infra 조회 (동일 조합 첫 번째) */
     @Query("SELECT i FROM Infra i WHERE i.cityNm = :cityNm AND i.distNm = :distNm AND i.sysNmEn = :sysNmEn ORDER BY i.infraId")
     List<Infra> findByCityDistSystem(@Param("cityNm") String cityNm,

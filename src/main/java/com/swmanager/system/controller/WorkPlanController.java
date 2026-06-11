@@ -4,11 +4,13 @@ import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.Infra;
+import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.repository.InfraRepository;
+import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.service.WorkPlanService;
 import com.swmanager.system.service.LogService;
@@ -42,6 +44,7 @@ public class WorkPlanController {
     @Autowired private WorkPlanService workPlanService;
     @Autowired private InfraRepository infraRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private SigunguCodeRepository sigunguCodeRepository;
     @Autowired private LogService logService;
 
     // === 권한 체크 ===
@@ -175,7 +178,7 @@ public class WorkPlanController {
                 "status", p.getStatus() != null ? p.getStatus() : "",
                 "statusLabel", WorkPlanDTO.getStatusLabel(p.getStatus()),
                 "assigneeName", p.getAssigneeName() != null ? p.getAssigneeName() : "",
-                "infraName", (p.getCityNm() != null ? p.getCityNm() + " " : "") + (p.getDistNm() != null ? p.getDistNm() : ""),
+                "infraName", p.getTargetLabel(),
                 "processStep", p.getProcessStep() != null ? p.getProcessStep() : 0,
                 "stepLabel", WorkPlanDTO.getStepLabel(p.getProcessStep())
             ));
@@ -197,11 +200,13 @@ public class WorkPlanController {
             return "redirect:/workplan/calendar";
         }
 
-        WorkPlanDTO dto = new WorkPlanDTO();
-        if (date != null) dto.setStartDate(date);
-        if (infraId != null) dto.setInfraId(infraId);
-
-        model.addAttribute("workPlan", dto);
+        // 검증 실패 redirect 시 flash 로 넘어온 workPlan(입력값) 우선 유지
+        if (!model.containsAttribute("workPlan")) {
+            WorkPlanDTO dto = new WorkPlanDTO();
+            if (date != null) dto.setStartDate(date);
+            if (infraId != null) dto.setInfraId(infraId);
+            model.addAttribute("workPlan", dto);
+        }
         addFormAttributes(model);
         return "workplan/workplan-form";
     }
@@ -215,8 +220,10 @@ public class WorkPlanController {
             return "redirect:/workplan/calendar";
         }
 
-        WorkPlan entity = workPlanService.getWorkPlanById(id);
-        model.addAttribute("workPlan", WorkPlanDTO.fromEntity(entity));
+        if (!model.containsAttribute("workPlan")) {
+            WorkPlan entity = workPlanService.getWorkPlanById(id);
+            model.addAttribute("workPlan", WorkPlanDTO.fromEntity(entity));
+        }
         addFormAttributes(model);
         return "workplan/workplan-form";
     }
@@ -226,6 +233,7 @@ public class WorkPlanController {
     @ResponseBody
     @GetMapping("/api/detail/{id}")
     public ResponseEntity<WorkPlanDTO> getDetail(@PathVariable Integer id) {
+        if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
         WorkPlanDTO dto = workPlanService.getWorkPlanDTOById(id);
         return ResponseEntity.ok(dto);
     }
@@ -243,7 +251,15 @@ public class WorkPlanController {
         User user = (currentUser != null) ? currentUser.getUser() : null;
 
         boolean isNew = (dto.getPlanId() == null);
-        WorkPlan saved = workPlanService.saveWorkPlan(dto, user);
+        WorkPlan saved;
+        try {
+            saved = workPlanService.saveWorkPlan(dto, user);
+        } catch (IllegalArgumentException e) {
+            // [workplan-target-infra-cascade FR-11] 검증 실패는 500 금지 — 폼으로 redirect + 오류 + 입력값 유지
+            rttr.addFlashAttribute("errorMessage", e.getMessage());
+            rttr.addFlashAttribute("workPlan", dto);
+            return isNew ? "redirect:/workplan/new" : "redirect:/workplan/edit/" + dto.getPlanId();
+        }
 
         AccessActionType action = isNew ? AccessActionType.CREATE : AccessActionType.UPDATE;
         logService.log(MenuName.WORK_PLAN, action, "업무계획 " + action.getLabel() + " (ID: " + saved.getPlanId() + ", " + saved.getTitle() + ")");
@@ -301,5 +317,46 @@ public class WorkPlanController {
         List<User> users = userRepository.findByEnabledTrue();
         model.addAttribute("infraList", infraList);
         model.addAttribute("users", users);
+        // [workplan-target-infra-cascade] 시도 목록(전국, 행정구역 마스터)
+        model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());
+    }
+
+    // === [workplan-target-infra-cascade] 캐스케이드 조회 API (FR-8: NONE 차단) ===
+
+    /** 시도 → 시군구 목록. self-행(sgg=sido)은 본청/도청으로 함께 노출(FR-12, 라벨은 화면 처리). */
+    @ResponseBody
+    @GetMapping("/api/sgg")
+    public ResponseEntity<List<Map<String, Object>>> getSggBySido(@RequestParam("sido") String sido) {
+        if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
+        List<Map<String, Object>> list = sigunguCodeRepository.findBySidoNmOrderBySggNm(sido).stream()
+                .map(s -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("admSectC", s.getAdmSectC());
+                    m.put("sggNm", s.getSggNm());
+                    m.put("isUnit", s.getSggNm() != null && s.getSggNm().equals(s.getSidoNm())); // 본청/도청 여부
+                    return m;
+                }).toList();
+        return ResponseEntity.ok(list);
+    }
+
+    /** 시군구코드 → 그 시군구의 등록 인프라 목록(value=infra_id, label=sys_nm). 미계약이면 빈 목록. */
+    @ResponseBody
+    @GetMapping("/api/infra-by-region")
+    public ResponseEntity<List<Map<String, Object>>> getInfraByRegion(@RequestParam("admSectC") String admSectC) {
+        if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
+        SigunguCode sgg = sigunguCodeRepository.findById(admSectC).orElse(null);
+        if (sgg == null) return ResponseEntity.ok(List.of());
+        // self-행(본청/도청) 선택 시 Infra 의 '도청'/'본청' 표기까지 역매칭
+        List<String> dists = java.util.Objects.equals(sgg.getSggNm(), sgg.getSidoNm())
+                ? List.of(sgg.getSggNm(), "도청", "본청")
+                : List.of(sgg.getSggNm());
+        List<Map<String, Object>> list = infraRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists).stream()
+                .map(i -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("infraId", i.getInfraId());
+                    m.put("sysNm", i.getSysNm());
+                    return m;
+                }).toList();
+        return ResponseEntity.ok(list);
     }
 }

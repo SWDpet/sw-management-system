@@ -16,4 +16,7 @@ public interface SigunguCodeRepository extends JpaRepository<SigunguCode, String
 
     // (기존 메서드 유지: 정렬이 필요할 때 사용 가능)
     List<SigunguCode> findBySidoNmOrderBySggNm(String sidoNm);
+
+    // [workplan-target-infra-cascade] 시도명+시군구명 → 행정코드 해석(이름 매칭). 동명 시군구는 시도로 유일화.
+    List<SigunguCode> findBySidoNmAndSggNm(String sidoNm, String sggNm);
 }

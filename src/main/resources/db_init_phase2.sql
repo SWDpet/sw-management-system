@@ -501,6 +501,16 @@ CREATE TABLE IF NOT EXISTS tb_work_plan (
     created_by      BIGINT REFERENCES users(user_id)
 );
 
+-- [workplan-target-infra-cascade 2026-06-11] 미계약 대상(업무지원) 지역+시스템 보관 (additive, nullable)
+-- 계약 대상은 infra_id 로 식별, 미계약/표시·통계는 region_* 로. FK 미설정(앱 검증). swdept/sql/V20260611_add_region_to_work_plan.sql 동일.
+ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_code    VARCHAR(10);
+ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_city_nm VARCHAR(40);
+ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS region_dist_nm VARCHAR(40);
+ALTER TABLE tb_work_plan ADD COLUMN IF NOT EXISTS target_sys_nm  VARCHAR(100);
+CREATE INDEX IF NOT EXISTS idx_work_plan_region_code ON tb_work_plan(region_code);
+COMMENT ON COLUMN tb_work_plan.region_code   IS '대상 시군구코드(sigungu_code.adm_sect_c). 계약·미계약 모두 채움 — workplan-target-infra-cascade (2026-06-11)';
+COMMENT ON COLUMN tb_work_plan.target_sys_nm IS '대상 시스템명. 계약=Infra.sys_nm 복사, 미계약=직접입력 — workplan-target-infra-cascade (2026-06-11)';
+
 CREATE INDEX IF NOT EXISTS idx_tb_work_plan_infra    ON tb_work_plan(infra_id);
 CREATE INDEX IF NOT EXISTS idx_tb_work_plan_assignee ON tb_work_plan(assignee_id);
 CREATE INDEX IF NOT EXISTS idx_tb_work_plan_parent   ON tb_work_plan(parent_plan_id);

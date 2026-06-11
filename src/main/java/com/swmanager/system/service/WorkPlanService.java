@@ -2,10 +2,12 @@ package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.WorkPlanStatus;
 import com.swmanager.system.domain.Infra;
+import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.repository.InfraRepository;
+import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
 
@@ -26,6 +28,7 @@ public class WorkPlanService {
     @Autowired private WorkPlanRepository workPlanRepository;
     @Autowired private InfraRepository infraRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private SigunguCodeRepository sigunguCodeRepository;
 
     /**
      * 캘린더 뷰: 기간 내 업무 조회 (FullCalendar용)
@@ -114,13 +117,8 @@ public class WorkPlanService {
             plan.setCreatedBy(currentUser);
         }
 
-        // 인프라 연동
-        if (dto.getInfraId() != null) {
-            Infra infra = infraRepository.findById(dto.getInfraId()).orElse(null);
-            plan.setInfra(infra);
-        } else {
-            plan.setInfra(null);
-        }
+        // 대상(인프라/지역) 연동 — workplan-target-infra-cascade (FR-9/9b/9c)
+        applyTarget(plan, dto);
 
         // 담당자 연동
         if (dto.getAssigneeId() != null) {
@@ -152,6 +150,113 @@ public class WorkPlanService {
 
         return workPlanRepository.save(plan);
     }
+
+    // ===== [workplan-target-infra-cascade] 대상(인프라/지역) 해석 =====
+
+    private static final java.util.Set<String> REGION_UNIT_LABELS = java.util.Set.of("도청", "본청");
+
+    /**
+     * 대상 연동: ① 계약(infra_id) → infra 연결 + region 4필드 서버 재계산(클라이언트 region 무시, FR-9b)
+     *           ② 미계약 직접입력 → SUPPORT 한정 게이트(FR-9c-①) + region_code 검증(FR-11) + 시스템명 정제
+     *           ③ 대상 없음 → infra null + region null(FR-9c-②)
+     */
+    private void applyTarget(WorkPlan plan, WorkPlanDTO dto) {
+        if (dto.getInfraId() != null) {
+            Infra infra = infraRepository.findById(dto.getInfraId()).orElse(null);
+            plan.setInfra(infra);
+            if (infra != null) {
+                plan.setRegionCityNm(infra.getCityNm());
+                plan.setRegionDistNm(infra.getDistNm());
+                plan.setTargetSysNm(infra.getSysNm());
+                plan.setRegionCode(resolveRegionCode(infra.getCityNm(), infra.getDistNm()));
+            } else {
+                clearRegion(plan);
+            }
+            return;
+        }
+
+        boolean hasRegionInput = isNotBlank(dto.getRegionCode()) || isNotBlank(dto.getTargetSysNm());
+        if (hasRegionInput) {
+            // FR-9c-① 업무지원 한정
+            if (!"SUPPORT".equals(dto.getPlanType())) {
+                throw new IllegalArgumentException("미계약 직접입력 대상은 업무지원(SUPPORT) 업무유형에서만 지정할 수 있습니다.");
+            }
+            // FR-11 region_code 존재 검증
+            SigunguCode sgg = isNotBlank(dto.getRegionCode())
+                    ? sigunguCodeRepository.findById(dto.getRegionCode()).orElse(null) : null;
+            if (sgg == null) {
+                throw new IllegalArgumentException("올바른 시군구를 선택하세요.");
+            }
+            // FR-11 시스템명 정제
+            String sysNm = sanitizeSysNm(dto.getTargetSysNm());
+            if (sysNm == null) {
+                throw new IllegalArgumentException("시스템명을 입력하세요(1~100자).");
+            }
+            plan.setInfra(null);
+            plan.setRegionCode(sgg.getAdmSectC());
+            plan.setRegionCityNm(sgg.getSidoNm());   // 서버 출처(클라이언트 이름 불신)
+            plan.setRegionDistNm(sgg.getSggNm());
+            plan.setTargetSysNm(sysNm);
+            return;
+        }
+
+        // 대상 없음
+        plan.setInfra(null);
+        clearRegion(plan);
+    }
+
+    /** (시도명,시군구명) → adm_sect_c. 도청/본청→시도 self-행, 동명 접미사 제거, 군위군 행정개편 alias(§5-4). */
+    private String resolveRegionCode(String cityNm, String distNm) {
+        if (isBlank(cityNm)) return null;
+        // 도청/본청 → 시도 self-행(sgg_name = sido_name)
+        if (distNm != null && REGION_UNIT_LABELS.contains(distNm.trim())) {
+            return firstAdmSectC(cityNm, cityNm);
+        }
+        String dist = stripSuffix(distNm);
+        String city = cityNm;
+        // 군위군: 2023 경북→대구 편입
+        if ("군위군".equals(dist) && cityNm.startsWith("경상북도")) {
+            city = "대구광역시";
+        }
+        String code = firstAdmSectC(city, dist);
+        if (code != null) return code;
+        // fallback: 시도 self-행
+        return firstAdmSectC(cityNm, cityNm);
+    }
+
+    private String firstAdmSectC(String sido, String sgg) {
+        if (isBlank(sido) || isBlank(sgg)) return null;
+        List<SigunguCode> list = sigunguCodeRepository.findBySidoNmAndSggNm(sido, sgg);
+        return list.isEmpty() ? null : list.get(0).getAdmSectC();
+    }
+
+    /** 괄호 접미사 제거: 고성군(강원도)→고성군, 당진시(가상화)→당진시 */
+    static String stripSuffix(String s) {
+        if (s == null) return null;
+        return s.replaceAll("\\(.*?\\)", "").trim();
+    }
+
+    /** 시스템명 정제: 제어문자·HTML 특수문자 제거 + 공백압축 + trim + 1~100자. 빈값 null. */
+    static String sanitizeSysNm(String raw) {
+        if (raw == null) return null;
+        String s = raw.replaceAll("[\\x00-\\x1F]", "")
+                      .replaceAll("[<>\"'&]", "")
+                      .replaceAll("\\s+", " ")
+                      .trim();
+        if (s.isEmpty()) return null;
+        if (s.length() > 100) s = s.substring(0, 100).trim();
+        return s;
+    }
+
+    private void clearRegion(WorkPlan plan) {
+        plan.setRegionCode(null);
+        plan.setRegionCityNm(null);
+        plan.setRegionDistNm(null);
+        plan.setTargetSysNm(null);
+    }
+
+    private static boolean isBlank(String s) { return s == null || s.isBlank(); }
+    private static boolean isNotBlank(String s) { return !isBlank(s); }
 
     /**
      * 업무계획 삭제
