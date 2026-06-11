@@ -52,6 +52,11 @@
   /* ── 타이포 ── */
   --font: 'Inter','Noto Sans KR',system-ui,sans-serif;
   --font-mono: 'JetBrains Mono',monospace;
+
+  /* ── [global-sidebar-responsive] 데이터 카테고리 색 (차트/막대/증감) ── */
+  --cat-1:#0F766E; --cat-2:#2563EB; --cat-3:#D97706; --cat-4:#0891B2; --cat-5:#7C3AED; --cat-6:#059669;
+  /* ── [global-sidebar-responsive] 사이드바 폭 (반응형으로 미디어쿼리에서 재정의) ── */
+  --sb-w: 230px;
 }
 
 /* inspect-infra-diff-alert 다크 변종 — 토큰 재정의(SoT). 컴포넌트는 var(--alert-*) 만 사용 (NFR-2/6). */
@@ -61,6 +66,69 @@
   --alert-border: #92400E;  /* amber-800 */
   --alert-icon:   #FBBF24;  /* amber-400 — 다크 surface 위 대비 확보 */
 }
+
+/* ============================================================
+ *  [global-sidebar-responsive] 전사 사이드바 셸 + 반응형
+ * ============================================================ */
+/* 본문 오프셋: 사이드바 있는 화면만(로그인/에러 자동 제외). 예외 body.no-sidebar */
+body:has(.app-sidebar):not(.no-sidebar){ padding-left:var(--sb-w); transition:padding-left .18s ease; }
+.app-sidebar{ position:fixed; left:0; top:0; height:100vh; width:var(--sb-w); z-index:300;
+  background:var(--surface); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; padding:16px 12px; overflow-y:auto; overflow-x:hidden; font-family:var(--font); }
+.app-sidebar .sb-brand{ display:flex; align-items:center; gap:9px; padding:6px 8px 16px; }
+.app-sidebar .sb-brand .chip{ background:var(--primary); color:#fff; font-weight:800; width:30px;height:30px;border-radius:9px; display:inline-flex;align-items:center;justify-content:center; flex-shrink:0; }
+.app-sidebar .sb-brand b{ font-size:.98rem; white-space:nowrap; }
+.app-sidebar .sb-group{ font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700; padding:14px 10px 6px; white-space:nowrap; }
+.app-sidebar .sb-link{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; color:var(--text2); font-weight:600; font-size:.84rem; text-decoration:none; white-space:nowrap; }
+.app-sidebar .sb-link i{ width:18px; text-align:center; color:var(--muted); font-size:.9rem; flex-shrink:0; }
+.app-sidebar .sb-link:hover{ background:var(--surface-2); color:var(--text); }
+.app-sidebar .sb-link.active{ background:var(--primary-lt); color:var(--primary); }
+.app-sidebar .sb-link.active i{ color:var(--primary); }
+.app-sidebar .sb-sub{ padding-left:30px; font-size:.8rem; }
+.app-sidebar .sb-parent{ display:flex; align-items:center; gap:10px; padding:9px 10px 3px; color:var(--text2); font-weight:700; font-size:.82rem; }
+.app-sidebar .sb-parent i{ width:18px; text-align:center; color:var(--muted); font-size:.9rem; flex-shrink:0; }
+.app-sidebar .sb-bottom{ margin-top:auto; }
+.app-sidebar .sb-link.lo:hover{ background:#FEF2F2; color:var(--danger); }
+.app-sidebar .sb-link.lo:hover i{ color:var(--danger); }
+.app-sidebar .sb-user{ display:flex; align-items:center; gap:9px; padding:10px; margin-top:6px; border-top:1px solid var(--border); font-size:.82rem; color:var(--text2); white-space:nowrap; }
+.app-sidebar .sb-user .av{ width:28px;height:28px;border-radius:50%; background:var(--surface-2); display:inline-flex;align-items:center;justify-content:center; flex-shrink:0; }
+.mobile-bar{ display:none; }
+.sb-backdrop{ display:none; }
+/* 태블릿: 아이콘 축소 */
+@media (max-width:1199px){
+  :root{ --sb-w:64px; }
+  .app-sidebar{ padding:16px 8px; }
+  .app-sidebar .sb-brand b, .app-sidebar .sb-group, .app-sidebar .sb-link span, .app-sidebar .sb-parent span, .app-sidebar .sb-user .nm{ display:none; }
+  .app-sidebar .sb-link, .app-sidebar .sb-parent{ justify-content:center; padding:10px 0; }
+  .app-sidebar .sb-link i, .app-sidebar .sb-parent i{ width:auto; font-size:1.05rem; }
+  .app-sidebar .sb-sub{ padding-left:0; }
+}
+/* 모바일: 드로어 */
+@media (max-width:767px){
+  :root{ --sb-w:0px; }
+  body:has(.app-sidebar):not(.no-sidebar){ padding-left:0; padding-top:52px; }
+  .mobile-bar{ display:flex; position:fixed; top:0; left:0; right:0; height:52px; z-index:280;
+    align-items:center; gap:12px; padding:0 16px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .mobile-bar .ham{ background:none; border:none; font-size:1.2rem; color:var(--text); cursor:pointer; }
+  .mobile-bar .chip{ background:var(--primary); color:#fff; font-weight:800; padding:5px 11px; border-radius:8px; font-size:.85rem; }
+  .app-sidebar{ width:230px; transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 0 30px rgba(0,0,0,.18); }
+  .app-sidebar.open{ transform:none; }
+  .app-sidebar .sb-brand b, .app-sidebar .sb-group, .app-sidebar .sb-link span, .app-sidebar .sb-parent span, .app-sidebar .sb-user .nm{ display:inline; }
+  .app-sidebar .sb-link, .app-sidebar .sb-parent{ justify-content:flex-start; padding:9px 10px; }
+  .app-sidebar .sb-link i{ width:18px; font-size:.9rem; }
+  .app-sidebar .sb-sub{ padding-left:30px; }
+  .sb-backdrop.show{ display:block; position:fixed; inset:0; z-index:270; background:rgba(0,0,0,.4); }
+}
+/* 인쇄 */
+@media print{
+  .app-sidebar, .mobile-bar, .sb-backdrop{ display:none !important; }
+  body:has(.app-sidebar){ padding-left:0 !important; padding-top:0 !important; }
+}
+/* 풀스크린(팀모니터 등) 예외 */
+body.fullscreen:has(.app-sidebar){ padding-left:0; }
+body.fullscreen .app-sidebar, body.fullscreen .mobile-bar{ display:none; }
+/* 와이드(≥1920): 본문 중앙정렬 */
+@media (min-width:1920px){ .container, .admin-container{ max-width:1760px; margin-left:auto; margin-right:auto; } }
 
 /* ============================================================
  *  공용 컴포넌트 — 클래스 opt-in (페이지 마이그레이션 시 채택)

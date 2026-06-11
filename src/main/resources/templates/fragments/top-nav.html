@@ -2,269 +2,175 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
-<!-- 공통 GNB 프래그먼트 (main-dashboard 기준 동기화) -->
-<nav th:fragment="nav" style="background:#fff; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:200; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-    <!-- 디자인 토큰 자급: design-system.css 미링크 페이지에서도 nav/페이지 색이 깨지지 않도록 프래그먼트에 :root 내장 (SoT: docs/DESIGN.md / static/css/design-system.css) -->
-    <style>
-    :root{
-      --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA;
-      --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
-      --border:#E7E5E4; --border2:#D6D3D1;
-      --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
-      --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
-    }
-    </style>
-    <div style="max-width:1700px; margin:auto; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:58px;">
-        <a href="/" title="메인 대시보드로 이동" style="text-decoration:none; display:inline-flex; align-items:center; cursor:pointer;">
-            <span style="background:var(--primary); color:#fff; padding:7px 14px; border-radius:8px; font-weight:800; font-size:0.95rem; letter-spacing:-0.005em; font-family:'Inter','Noto Sans KR',sans-serif; line-height:1; transition:background 0.15s;" onmouseover="this.style.background='var(--primary2)'" onmouseout="this.style.background='var(--primary)'">SW Manager</span>
-        </a>
-        <div style="display:flex; align-items:center; gap:2px; flex-wrap:wrap;">
-            <div th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/infra/list}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-server" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>서버관리</a>
-            </div>
+<!-- [global-sidebar-responsive] 공통 사이드바 (기존 top-nav :: nav 이름 유지 → 51개 화면 무편집 전파) -->
+<th:block th:fragment="nav">
 
-            <div th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/projects/status}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-briefcase" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>사업관리</a>
-            </div>
+  <!-- [global-sidebar-responsive] self-contained: 토큰 + 사이드바/셸/반응형 CSS 내장 (design-system.css 미링크 페이지에서도 동작) -->
+  <style>
+  :root{
+    --primary:#0F766E; --primary2:#115E59; --primary-lt:#F0FDFA;
+    --bg:#FAFAF9; --surface:#fff; --surface-2:#F5F5F4;
+    --border:#E7E5E4; --border2:#D6D3D1;
+    --text:#1C1917; --text2:#57534E; --muted:#A8A29E;
+    --success:#059669; --warning:#D97706; --danger:#DC2626; --info:#0891B2;
+    --sb-w:230px;
+  }
+  body:has(.app-sidebar):not(.no-sidebar){ padding-left:var(--sb-w); transition:padding-left .18s ease; }
+  .app-sidebar{ position:fixed; left:0; top:0; height:100vh; width:var(--sb-w); z-index:300;
+    background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:16px 12px; overflow-y:auto; overflow-x:hidden;
+    font-family:'Inter','Noto Sans KR',sans-serif; box-sizing:border-box; }
+  .app-sidebar *{ box-sizing:border-box; }
+  .app-sidebar .sb-brand{ display:flex; align-items:center; gap:9px; padding:6px 8px 16px; }
+  .app-sidebar .sb-brand .chip{ background:var(--primary); color:#fff; font-weight:800; width:30px;height:30px;border-radius:9px; display:inline-flex;align-items:center;justify-content:center; flex-shrink:0; }
+  .app-sidebar .sb-brand b{ font-size:.98rem; white-space:nowrap; }
+  .app-sidebar .sb-group{ font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700; padding:14px 10px 6px; white-space:nowrap; }
+  .app-sidebar .sb-link{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; color:var(--text2); font-weight:600; font-size:.84rem; text-decoration:none; white-space:nowrap; }
+  .app-sidebar .sb-link i{ width:18px; text-align:center; color:var(--muted); font-size:.9rem; flex-shrink:0; }
+  .app-sidebar .sb-link:hover{ background:var(--surface-2); color:var(--text); }
+  .app-sidebar .sb-link.active{ background:var(--primary-lt); color:var(--primary); }
+  .app-sidebar .sb-link.active i{ color:var(--primary); }
+  .app-sidebar .sb-sub{ padding-left:30px; font-size:.8rem; }
+  .app-sidebar .sb-parent{ display:flex; align-items:center; gap:10px; padding:9px 10px 3px; color:var(--text2); font-weight:700; font-size:.82rem; }
+  .app-sidebar .sb-parent i{ width:18px; text-align:center; color:var(--muted); font-size:.9rem; flex-shrink:0; }
+  .app-sidebar .sb-bottom{ margin-top:auto; }
+  .app-sidebar .sb-link.lo:hover{ background:#FEF2F2; color:var(--danger); }
+  .app-sidebar .sb-link.lo:hover i{ color:var(--danger); }
+  .app-sidebar .sb-user{ display:flex; align-items:center; gap:9px; padding:10px; margin-top:6px; border-top:1px solid var(--border); font-size:.82rem; color:var(--text2); white-space:nowrap; }
+  .app-sidebar .sb-user .av{ width:28px;height:28px;border-radius:50%; background:var(--surface-2); display:inline-flex;align-items:center;justify-content:center; flex-shrink:0; }
+  .mobile-bar{ display:none; }
+  .sb-backdrop{ display:none; }
+  @media (max-width:1199px){
+    :root{ --sb-w:64px; }
+    .app-sidebar{ padding:16px 8px; }
+    .app-sidebar .sb-brand b, .app-sidebar .sb-group, .app-sidebar .sb-link span, .app-sidebar .sb-parent span, .app-sidebar .sb-user .nm{ display:none; }
+    .app-sidebar .sb-link, .app-sidebar .sb-parent{ justify-content:center; padding:10px 0; }
+    .app-sidebar .sb-link i, .app-sidebar .sb-parent i{ width:auto; font-size:1.05rem; }
+    .app-sidebar .sb-sub{ padding-left:0; }
+  }
+  @media (max-width:767px){
+    :root{ --sb-w:0px; }
+    body:has(.app-sidebar):not(.no-sidebar){ padding-left:0; padding-top:52px; }
+    .mobile-bar{ display:flex; position:fixed; top:0; left:0; right:0; height:52px; z-index:280;
+      align-items:center; gap:12px; padding:0 16px; background:var(--surface); border-bottom:1px solid var(--border); }
+    .mobile-bar .ham{ background:none; border:none; font-size:1.2rem; color:var(--text); cursor:pointer; }
+    .mobile-bar .chip{ background:var(--primary); color:#fff; font-weight:800; padding:5px 11px; border-radius:8px; font-size:.85rem; }
+    .app-sidebar{ width:230px; transform:translateX(-100%); transition:transform .22s ease; box-shadow:0 0 30px rgba(0,0,0,.18); }
+    .app-sidebar.open{ transform:none; }
+    .app-sidebar .sb-brand b, .app-sidebar .sb-group, .app-sidebar .sb-link span, .app-sidebar .sb-parent span, .app-sidebar .sb-user .nm{ display:inline; }
+    .app-sidebar .sb-link, .app-sidebar .sb-parent{ justify-content:flex-start; padding:9px 10px; }
+    .app-sidebar .sb-link i{ width:18px; font-size:.9rem; }
+    .app-sidebar .sb-sub{ padding-left:30px; }
+    .sb-backdrop.show{ display:block; position:fixed; inset:0; z-index:270; background:rgba(0,0,0,.4); }
+  }
+  @media print{
+    .app-sidebar, .mobile-bar, .sb-backdrop{ display:none !important; }
+    body:has(.app-sidebar){ padding-left:0 !important; padding-top:0 !important; }
+  }
+  body.fullscreen:has(.app-sidebar){ padding-left:0; }
+  body.fullscreen .app-sidebar, body.fullscreen .mobile-bar{ display:none; }
+  </style>
 
-            <div th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/person/list}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-users" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>담당자관리</a>
-            </div>
+  <!-- 모바일 상단바 (햄버거) -->
+  <div class="mobile-bar">
+    <button type="button" class="ham" aria-label="메뉴 열기" onclick="swToggleSidebar()"><i class="fas fa-bars"></i></button>
+    <a href="/" style="text-decoration:none;"><span class="chip">SW Manager</span></a>
+  </div>
+  <div class="sb-backdrop" onclick="swToggleSidebar(false)"></div>
 
-            <!-- 라이선스 관리 드롭다운 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <div id="licenseMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleLicenseMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-key" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>라이선스 관리 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="licenseMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
-                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">라이선스 대장</div>
-                        <a th:href="@{/license/registry/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 라이선스 대장 목록</a>
-                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
-                           th:href="@{/license/registry/upload}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⬆ CSV 업로드</a>
-                        <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">GeoNURIS</div>
-                        <a th:href="@{/geonuris/license/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🔑 GeoNURIS 목록</a>
-                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authLicense == 'EDIT'}"
-                           th:href="@{/geonuris/license/new}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🔑 GeoNURIS 발급</a>
-                    </div>
-                </div>
-                <script>
-                    function toggleLicenseMenu(e) {
-                        if (e) e.preventDefault();
-                        var d = document.getElementById('licenseMenuDropdown');
-                        if (!d) return;
-                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                    }
-                    document.addEventListener('click', function(e) {
-                        var wrap = document.getElementById('licenseMenuWrap');
-                        if (wrap && !wrap.contains(e.target)) {
-                            var d = document.getElementById('licenseMenuDropdown');
-                            if (d) d.style.display = 'none';
-                        }
-                    });
-                </script>
-            </div>
+  <!-- 사이드바 -->
+  <nav class="app-sidebar" aria-label="주 메뉴">
+    <a href="/" class="sb-brand" style="text-decoration:none; color:inherit;">
+      <span class="chip">SW</span><b>SW Manager</b>
+    </a>
 
-            <!-- 견적서 드롭다운 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <div id="quotationMenuWrap" style="position:relative; display:inline-block;">
-                    <a href="#" onclick="toggleQuotationMenu(event)" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-file-invoice-dollar" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>견적서 <span style="font-size:0.7em;">▾</span></a>
-                    <div id="quotationMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
-                        <a th:href="@{/quotation/list}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 견적서 목록</a>
-                        <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authQuotation == 'EDIT'}"
-                           th:href="@{/quotation/new}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">➕ 견적서 작성</a>
-                        <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                        <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">대장·기준정보</div>
-                        <a th:href="@{/quotation/ledger}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 견적대장</a>
-                        <a th:href="@{/quotation/patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧩 패턴관리</a>
-                        <a th:href="@{/quotation/remarks-patterns}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 비고패턴</a>
-                        <a th:href="@{/quotation/wage-rates}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">💰 노임단가</a>
-                    </div>
-                </div>
-                <script>
-                    function toggleQuotationMenu(e) {
-                        if (e) e.preventDefault();
-                        var d = document.getElementById('quotationMenuDropdown');
-                        if (!d) return;
-                        d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                    }
-                    document.addEventListener('click', function(e) {
-                        var wrap = document.getElementById('quotationMenuWrap');
-                        if (wrap && !wrap.contains(e.target)) {
-                            var d = document.getElementById('quotationMenuDropdown');
-                            if (d) d.style.display = 'none';
-                        }
-                    });
-                </script>
-            </div>
+    <!-- 개요 -->
+    <div class="sb-group">개요</div>
+    <a class="sb-link" href="/" data-prefix="/__home" sec:authorize="isAuthenticated()"><i class="fas fa-gauge-high"></i><span>대시보드</span></a>
+    <a class="sb-link" href="/performance/personal" data-prefix="/performance"
+       th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authPerformance != null and #authentication.principal.user.authPerformance != 'NONE')}" sec:authorize="isAuthenticated()"><i class="fas fa-chart-line"></i><span>성과통계</span></a>
 
-            <!-- 업무계획 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/workplan/calendar}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-calendar-days" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>업무계획</a>
-            </div>
+    <!-- 사업 -->
+    <div class="sb-group">사업</div>
+    <a class="sb-link" href="/projects/status" data-prefix="/projects"
+       th:if="${#authentication.principal.user?.authProject != 'NONE'}" sec:authorize="isAuthenticated()"><i class="fas fa-briefcase"></i><span>사업관리</span></a>
+    <a class="sb-link" href="/workplan/calendar" data-prefix="/workplan"
+       th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authWorkPlan != null and #authentication.principal.user.authWorkPlan != 'NONE')}" sec:authorize="isAuthenticated()"><i class="fas fa-calendar-days"></i><span>업무계획</span></a>
+    <!-- 문서관리 그룹 (상위 헤더 + 하위 사업문서/운영문서) -->
+    <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authDocument != null and #authentication.principal.user.authDocument != 'NONE')}" sec:authorize="isAuthenticated()">
+      <div class="sb-parent"><i class="fas fa-file-lines"></i><span>문서관리</span></div>
+      <a class="sb-link sb-sub" href="/document/list" data-prefix="/document"><i class="fas fa-folder-open"></i><span>사업문서</span></a>
+      <a class="sb-link sb-sub" href="/ops-doc/list" data-prefix="/ops-doc"><i class="fas fa-screwdriver-wrench"></i><span>운영문서</span></a>
+    </th:block>
+    <a class="sb-link" href="/person/list" data-prefix="/person"
+       th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()"><i class="fas fa-users"></i><span>담당자관리</span></a>
 
-            <!-- 문서관리 드롭다운 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authDocument != null and #authentication.principal.user.authDocument != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <div id="documentMenuWrap" style="position:relative; display:inline-block;">
-                    <!-- doc-split-ops (FR-8): disclosure navigation 패턴 (codex 권고로 role=menu 회피).
-                         button + aria-expanded + aria-controls + Tab/Enter/Space/Esc 키보드 지원. -->
-                    <button type="button"
-                            id="documentMenuToggle"
-                            aria-expanded="false"
-                            aria-controls="documentMenuDropdown"
-                            aria-haspopup="true"
-                            onclick="toggleDocumentMenu(event)"
-                            onkeydown="if(event.key==='Escape'){closeDocumentMenu();this.focus();}"
-                            style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; background:transparent; border:none; cursor:pointer; font-family:inherit;"
-                            onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'"
-                            onmouseout="this.style.background='';this.style.color='var(--text2)'">
-                        <i class="fas fa-file-lines" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>문서관리 <span style="font-size:0.7em;">▾</span>
-                    </button>
-                    <nav id="documentMenuDropdown"
-                         aria-label="문서관리"
-                         hidden
-                         style="position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:220px; z-index:100; padding:6px 0;">
-                        <a th:href="@{/document/list}"
-                           th:attr="aria-current=${activeMenu == 'business'} ? 'page' : null"
-                           style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;"
-                           onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 사업문서 목록</a>
-                        <a th:href="@{/ops-doc/list}"
-                           th:attr="aria-current=${activeMenu == 'ops'} ? 'page' : null"
-                           style="display:block; padding:8px 14px; text-decoration:none; color:var(--primary); font-size:0.85rem; font-weight:600;"
-                           onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🛠 운영문서 목록</a>
-                        <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or #authentication.principal.user?.authDocument == 'EDIT'}">
-                            <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                            <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">사업문서</div>
-                            <a th:href="@{/document/create(docType='COMMENCE')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📜 착수계</a>
-                            <a th:href="@{/document/create(docType='INTERIM')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧾 기성계</a>
-                            <a th:href="@{/document/create(docType='COMPLETION')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">✒ 준공계</a>
-                            <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                            <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">운영·유지보수 문서</div>
-                            <a th:href="@{/document/create(docType='INSPECT')}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📝 점검내역서</a>
-                            <a th:href="@{/ops-doc/fault/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⚠ 장애처리</a>
-                            <a th:href="@{/ops-doc/support/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🤝 업무지원</a>
-                            <a th:href="@{/ops-doc/install/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">⬇ 설치보고서</a>
-                            <a th:href="@{/ops-doc/patch/form}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🧩 패치내역서</a>
-                        </th:block>
-                    </nav>
-                </div>
-                <script>
-                    function toggleDocumentMenu(e) {
-                        if (e) e.preventDefault();
-                        var d = document.getElementById('documentMenuDropdown');
-                        var t = document.getElementById('documentMenuToggle');
-                        if (!d || !t) return;
-                        var open = !d.hidden;
-                        if (open) { d.hidden = true; t.setAttribute('aria-expanded', 'false'); }
-                        else { d.hidden = false; t.setAttribute('aria-expanded', 'true'); }
-                    }
-                    function closeDocumentMenu() {
-                        var d = document.getElementById('documentMenuDropdown');
-                        var t = document.getElementById('documentMenuToggle');
-                        if (d) d.hidden = true;
-                        if (t) t.setAttribute('aria-expanded', 'false');
-                    }
-                    document.addEventListener('click', function(e) {
-                        var wrap = document.getElementById('documentMenuWrap');
-                        if (wrap && !wrap.contains(e.target)) closeDocumentMenu();
-                    });
-                    document.addEventListener('keydown', function(e) {
-                        if (e.key === 'Escape') closeDocumentMenu();
-                    });
-                </script>
-            </div>
+    <!-- 자산 -->
+    <div class="sb-group">자산</div>
+    <a class="sb-link" href="/infra/list" data-prefix="/infra"
+       th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()"><i class="fas fa-server"></i><span>서버관리</span></a>
+    <!-- 라이선스 그룹 -->
+    <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()">
+      <a class="sb-link" href="/license/registry/list" data-prefix="/license"><i class="fas fa-clipboard-list"></i><span>라이선스 대장</span></a>
+      <a class="sb-link sb-sub" href="/geonuris/license/list" data-prefix="/geonuris"><i class="fas fa-key"></i><span>GeoNURIS</span></a>
+    </th:block>
+    <!-- 견적서 그룹 -->
+    <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()">
+      <a class="sb-link" href="/quotation/list" data-prefix="/quotation"><i class="fas fa-file-invoice-dollar"></i><span>견적서</span></a>
+    </th:block>
 
-            <!-- 성과통계 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authPerformance != null and #authentication.principal.user.authPerformance != 'NONE')}" sec:authorize="isAuthenticated()" style="display:contents;">
-                <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-                <a th:href="@{/performance/personal}" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-chart-line" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>성과통계</a>
-            </div>
+    <!-- 관리자 -->
+    <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">
+      <div class="sb-group">관리자</div>
+      <a class="sb-link" href="/admin/users" data-prefix="/admin/users"><i class="fas fa-user-check"></i><span>사용자 승인</span></a>
+      <a class="sb-link" href="/admin/org-units" data-prefix="/admin/org-units"><i class="fas fa-sitemap"></i><span>조직도</span></a>
+      <a class="sb-link" href="/admin/logs" data-prefix="/admin/logs"><i class="fas fa-list-check"></i><span>로그</span></a>
+      <a class="sb-link" href="/admin/system-graph" data-prefix="/admin/system-graph"><i class="fas fa-diagram-project"></i><span>시스템 관계도</span></a>
+      <a class="sb-link" href="/admin/team-monitor" data-prefix="/admin/team-monitor"><i class="fas fa-satellite-dish"></i><span>팀 모니터</span></a>
+    </th:block>
 
-            <!-- 관리자 드롭다운 -->
-            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" id="adminMenuWrap" style="position:relative; display:inline-block; margin-left:4px;">
-                <a href="#" onclick="toggleAdminMenu(event)" style="text-decoration:none; color:var(--danger); font-size:0.82rem; font-weight:700; padding:6px 11px; border-radius:6px; display:inline-block;" onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''"><i class="fas fa-gear" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>관리자 <span style="font-size:0.7em;">▾</span></a>
-                <div id="adminMenuDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 4px); background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.12); min-width:200px; z-index:100; padding:6px 0;">
-                    <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">사용자·조직</div>
-                    <a th:href="@{/admin/users}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">👥 사용자 승인</a>
-                    <a th:href="@{/admin/org-units}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🏢 조직도 관리</a>
-                    <div style="height:1px; background:var(--border); margin:6px 0;"></div>
-                    <div style="padding:4px 14px; font-size:0.7rem; color:var(--muted); font-weight:700; letter-spacing:0.5px;">시스템</div>
-                    <a th:href="@{/admin/logs}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📋 로그 관리</a>
-                    <a th:href="@{/admin/system-graph}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">🕸️ 시스템 관계도</a>
-                    <a th:href="@{/admin/team-monitor}" style="display:block; padding:8px 14px; text-decoration:none; color:var(--text); font-size:0.85rem;" onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background=''">📡 팀 모니터</a>
-                </div>
-            </div>
-            <script>
-                function toggleAdminMenu(e) {
-                    if (e) e.preventDefault();
-                    var d = document.getElementById('adminMenuDropdown');
-                    if (!d) return;
-                    d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-                }
-                document.addEventListener('click', function(e) {
-                    var wrap = document.getElementById('adminMenuWrap');
-                    if (wrap && !wrap.contains(e.target)) {
-                        var d = document.getElementById('adminMenuDropdown');
-                        if (d) d.style.display = 'none';
-                    }
-                });
-            </script>
-
-            <!-- 다크모드 토글 (실험 · 메인 대시보드 최적) -->
-            <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-            <button id="themeToggleBtn" type="button" onclick="window.__toggleTheme && window.__toggleTheme()"
-                title="라이트/다크 모드 전환"
-                style="background:transparent; border:1px solid #E7E5E4; color:#57534E;
-                       width:32px; height:32px; border-radius:8px; cursor:pointer;
-                       display:inline-flex; align-items:center; justify-content:center;
-                       transition: background 0.18s, border-color 0.18s, color 0.18s; padding:0;"
-                onmouseover="this.style.background='#F5F5F4'; this.style.borderColor='#D6D3D1';"
-                onmouseout="this.style.background='transparent'; this.style.borderColor='#E7E5E4';">
-                <i id="themeToggleIcon" class="fas fa-moon" style="font-size:0.78rem;"></i>
-            </button>
-
-            <!-- 마이페이지 (로그아웃 바로 앞) -->
-            <span style="width:1px; height:18px; background:var(--border); margin:0 4px; display:inline-block;"></span>
-            <a href="/mypage" style="text-decoration:none; color:var(--text2); font-size:0.82rem; font-weight:600; padding:6px 11px; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--primary-lt)';this.style.color='var(--primary)'" onmouseout="this.style.background='';this.style.color='var(--text2)'"><i class="fas fa-circle-user" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>마이페이지</a>
-
-            <!-- 로그아웃 (항상 최우측) -->
-            <span style="width:1px; height:18px; background:var(--border); margin:0 6px; display:inline-block;"></span>
-            <a href="/logout" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:var(--muted);background:transparent;font-size:0.82rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:all 0.18s;" onmouseover="this.style.background='#FEF2F2';this.style.color='var(--danger)'" onmouseout="this.style.background='transparent';this.style.color='var(--muted)'"><i class="fas fa-arrow-right-from-bracket" style="margin-right:5px; font-size:0.85em; opacity:0.85;"></i>로그아웃</a>
-        </div>
+    <!-- 하단: 계정 -->
+    <div class="sb-bottom">
+      <div class="sb-group">계정</div>
+      <a class="sb-link" href="/mypage" data-prefix="/mypage"><i class="fas fa-circle-user"></i><span>마이페이지</span></a>
+      <a class="sb-link lo" href="/logout" data-prefix="/__logout"><i class="fas fa-arrow-right-from-bracket"></i><span>로그아웃</span></a>
+      <div class="sb-user" sec:authorize="isAuthenticated()">
+        <span class="av"><i class="fas fa-user"></i></span>
+        <span class="nm" sec:authentication="name">사용자</span>
+      </div>
     </div>
-</nav>
+  </nav>
 
-<script>
-/* 다크모드 토글 — localStorage 지속 */
-(function(){
-    var KEY = 'sw_theme';
-    function apply(t) {
-        if (t === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            var ic = document.getElementById('themeToggleIcon');
-            if (ic) { ic.classList.remove('fa-moon'); ic.classList.add('fa-sun'); }
-        } else {
-            document.documentElement.removeAttribute('data-theme');
-            var ic2 = document.getElementById('themeToggleIcon');
-            if (ic2) { ic2.classList.remove('fa-sun'); ic2.classList.add('fa-moon'); }
-        }
+  <script th:inline="none">
+    // 모바일 드로어 토글
+    function swToggleSidebar(force){
+      var sb = document.querySelector('.app-sidebar');
+      var bd = document.querySelector('.sb-backdrop');
+      if(!sb) return;
+      var open = (typeof force === 'boolean') ? force : !sb.classList.contains('open');
+      sb.classList.toggle('open', open);
+      if(bd) bd.classList.toggle('show', open);
     }
-    window.__toggleTheme = function() {
-        var cur = localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
-        var next = cur === 'dark' ? 'light' : 'dark';
-        localStorage.setItem(KEY, next);
-        apply(next);
-    };
-    // 초기 적용
-    try { apply(localStorage.getItem(KEY)); } catch(e) {}
-})();
-</script>
+    // 활성 메뉴 (현재 경로 prefix 매칭)
+    (function(){
+      var path = window.location.pathname;
+      var links = document.querySelectorAll('.app-sidebar .sb-link[data-prefix]');
+      var best = null, bestLen = -1;
+      links.forEach(function(a){
+        var p = a.getAttribute('data-prefix');
+        if(p === '/__home'){ if(path === '/' && bestLen < 1){ best = a; bestLen = 1; } return; }
+        if(p === '/__logout') return;
+        if(path === p || path.indexOf(p + '/') === 0 || path === p){
+          if(p.length > bestLen){ best = a; bestLen = p.length; }
+        }
+      });
+      if(best) best.classList.add('active');
+      // Esc 로 드로어 닫기
+      document.addEventListener('keydown', function(e){ if(e.key === 'Escape') swToggleSidebar(false); });
+    })();
+  </script>
+
+</th:block>
 
 </body>
 </html>
