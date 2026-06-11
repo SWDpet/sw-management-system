@@ -27,4 +27,7 @@ public interface GeonurisLicenseRepository extends JpaRepository<GeonurisLicense
 
     /** 타입별 건수 */
     long countByLicenseType(String licenseType);
+
+    /** [dashboard-preview] 만료 임박 (만료일 오늘 이후, 빠른 순 6건) */
+    List<GeonurisLicense> findTop6ByExpiryDateGreaterThanEqualOrderByExpiryDateAsc(java.time.LocalDateTime now);
 }

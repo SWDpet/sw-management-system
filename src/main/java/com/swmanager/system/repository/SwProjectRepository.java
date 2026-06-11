@@ -100,6 +100,13 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
      */
     List<SwProject> findByCityNmAndDistNmOrderByYearDescProjIdDesc(String cityNm, String distNm);
 
+    /** [dashboard-preview] 연도별 사업 수 (추이 차트) */
+    @Query("SELECT p.year AS y, COUNT(p) AS c FROM SwProject p WHERE p.year IS NOT NULL GROUP BY p.year ORDER BY p.year")
+    List<Map<String, Object>> countByYear();
+
+    /** [dashboard-preview] 최근 등록 사업 (proj_id 역순 = 최신) */
+    List<SwProject> findTop6ByOrderByProjIdDesc();
+
     /**
      * [workplan-target-infra-cascade] 시도+시군구(들)별 사업 목록 — 캐스케이드 시스템 단계.
      * 도청/본청 self-행 선택 시 distNms 에 {시도명, 도청, 본청} 을 넣어 역매칭.

@@ -49,6 +49,10 @@ public interface WorkPlanRepository extends JpaRepository<WorkPlan, Integer> {
     // 부모 플랜의 자식 조회
     List<WorkPlan> findByParentPlan_PlanId(Integer parentPlanId);
 
+    // [dashboard-preview] 임박 업무 일정 (오늘 이후 시작, 완료/취소 제외, 시작일 오름차순 6건)
+    List<WorkPlan> findTop6ByStartDateGreaterThanEqualAndStatusNotInOrderByStartDateAsc(
+            LocalDate today, List<String> statuses);
+
     // 유형별 조회 (점검 방문 현황용)
     List<WorkPlan> findByPlanTypeInOrderByStartDateDesc(List<String> planTypes);
 
