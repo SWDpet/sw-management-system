@@ -21,11 +21,13 @@
 
 **In**
 - `project-form.html` 의 6 fieldset → **탭 6개** 전환 (등록·수정 공용 화면).
+- `project-detail.html`(상세조회+수정모드, **동일 6 fieldset 구조**) → **탭 6개** 전환. (2026-06-11 사용자 추가요청)
+  - 상세는 `required`·Enter 다음필드 이동 없음 → FR-4/FR-6 불필요. CSS + 탭바 + `showSection` 만.
 - 문서작성의 `.tab-nav`/`.form-section`/`showSection(idx, btn)` 패턴 재사용.
-- 검증(required) 실패 시 **해당 필드가 있는 탭으로 자동 전환** 후 표시.
+- 검증(required) 실패 시 **해당 필드가 있는 탭으로 자동 전환** 후 표시(폼 한정).
 
 **Out**
-- 목록조회(`project-list`)·상세조회(`project-detail`) 는 본 건 Out (사용자 결정 — 폼만 우선).
+- 목록조회(`project-list`) 는 본 건 Out (필터/검색 성격).
 - 필드 추가/삭제·저장 로직·DB·자동채움(시도→시군구, 코드 자동) **변경 없음**.
 - 탭 간 데이터 의존/마법사(wizard) 단계 강제 없음 — 자유 이동.
 

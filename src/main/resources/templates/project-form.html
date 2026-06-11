@@ -72,6 +72,14 @@
             box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
         }
 
+        /* [project-form-tabs] 탭 (문서작성 패턴·토큰 재사용 → 다크모드 자동) */
+        .tab-nav { display: flex; flex-wrap: wrap; gap: 0; background: var(--surface); border-radius: 8px 8px 0 0; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .tab-nav button { flex: 1; min-width: 120px; padding: 14px 8px; border: none; background: var(--surface-2); font-size: 0.85em; font-weight: 600; cursor: pointer; color: var(--text2); border-bottom: 3px solid transparent; }
+        .tab-nav button:hover { color: var(--primary); }
+        .tab-nav button.active { background: var(--surface); color: var(--primary); border-bottom-color: var(--primary); }
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+
     </style>
 </head>
 <body>
@@ -92,7 +100,18 @@
             <i class="fas fa-exclamation-circle"></i> <span th:text="${errorMessage}"></span>
         </div>
 
+        <!-- [project-form-tabs] 탭 네비게이션 -->
+        <div class="tab-nav">
+            <button type="button" class="active" onclick="showSection(0,this)">① 기본·담당자</button>
+            <button type="button" onclick="showSection(1,this)">② 행정·기관</button>
+            <button type="button" onclick="showSection(2,this)">③ 사업식별</button>
+            <button type="button" onclick="showSection(3,this)">④ 계약정보</button>
+            <button type="button" onclick="showSection(4,this)">⑤ 일정정보</button>
+            <button type="button" onclick="showSection(5,this)">⑥ 제품·금액</button>
+        </div>
+
         <!-- ① 기본 및 담당자 정보 -->
+        <div class="form-section active" id="section-0">
         <fieldset>
             <legend><i class="fas fa-user-check"></i> 기본 및 담당자 정보</legend>
             <div class="form-row">
@@ -121,8 +140,10 @@
                 </div>
             </div>
         </fieldset>
+        </div>
 
         <!-- ② 행정 및 기관 정보 -->
+        <div class="form-section" id="section-1">
         <fieldset>
             <legend><i class="fas fa-university"></i> 행정 및 기관 정보</legend>
             <div class="form-row">
@@ -185,8 +206,10 @@
                 </div>
             </div>
         </fieldset>
+        </div>
 
         <!-- ③ 사업 식별 정보 -->
+        <div class="form-section" id="section-2">
         <fieldset>
             <legend><i class="fas fa-project-diagram"></i> 사업 식별 정보</legend>
             <div class="form-row">
@@ -250,8 +273,10 @@
                 </div>
             </div>
         </fieldset>
+        </div>
 
         <!-- ④ 계약정보 -->
+        <div class="form-section" id="section-3">
         <fieldset>
             <legend><i class="fas fa-file-contract"></i> 계약정보</legend>
             <div class="form-row">
@@ -270,8 +295,10 @@
                 </div>
             </div>
         </fieldset>
+        </div>
 
         <!-- ⑤ 일정정보 -->
+        <div class="form-section" id="section-4">
         <fieldset>
             <legend><i class="fas fa-calendar-alt"></i> 일정정보</legend>
             <div class="form-row">
@@ -281,8 +308,10 @@
                 <div class="form-group"><label>최초설치일</label><input type="text" name="instDt" th:value="${project.instDt != null ? #temporals.format(project.instDt, 'yyyy-MM-dd') : ''}" maxlength="10" placeholder="YYYY-MM-DD" autocomplete="off" oninput="formatDate(this)" onchange="formatDate(this)"></div>
             </div>
         </fieldset>
+        </div>
 
         <!-- ⑥ 제품 및 금액정보 -->
+        <div class="form-section" id="section-5">
         <fieldset>
             <legend><i class="fas fa-coins"></i> 제품 및 금액정보</legend>
             <div class="form-row">
@@ -364,6 +393,8 @@
             </div>
         </fieldset>
 
+        </div><!-- /section-5 -->
+
         <!-- S15 pjt-equip-decision (2026-04-22): 운영장비(HW/SW) 섹션 제거 (pjt_equip 테이블 DROP) -->
 
         <div class="page-footer">
@@ -388,6 +419,15 @@
 
 <script th:inline="javascript">
 /*<![CDATA[*/
+
+// ── [project-form-tabs] 탭 전환 ───────────────────────────────────
+function showSection(idx, btn) {
+    document.querySelectorAll('.form-section').forEach(function(el){ el.classList.remove('active'); });
+    document.querySelectorAll('.tab-nav button').forEach(function(el){ el.classList.remove('active'); });
+    const sec = document.getElementById('section-' + idx);
+    if (sec) sec.classList.add('active');
+    if (btn) btn.classList.add('active');
+}
 
 // ── 날짜 자동 포맷 (다양한 형식 → YYYY-MM-DD) ──────────────────────
 function formatDate(input) {
@@ -492,7 +532,18 @@ function togglePayProgFr() {
 async function saveProject(event) {
     event.preventDefault();
     const form = document.getElementById('projectForm');
-    if (!form.checkValidity()) { form.reportValidity(); return; }
+    // [FR-4] required 필드가 숨김 탭에 있어도 검증되도록: 첫 invalid 의 탭으로 전환 후 reportValidity
+    if (!form.checkValidity()) {
+        const bad = form.querySelector(':invalid');
+        const sec = bad ? bad.closest('.form-section') : null;
+        if (bad && sec) {
+            const idx = Number(sec.id.replace('section-', ''));
+            const btn = document.querySelectorAll('.tab-nav button')[idx];
+            if (btn) showSection(idx, btn);
+        }
+        (bad || form).reportValidity();
+        return;
+    }
 
     const projIdEl = document.getElementById('projId');
     if (projIdEl && projIdEl.value) {
@@ -522,13 +573,19 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON' && e.target.type !== 'submit') {
             e.preventDefault();
-            const els = Array.from(e.target.form?.querySelectorAll("input:not([type='hidden']), select") || []);
+            // [FR-6] 활성 탭의 실제 visible·enabled 필드로만 이동(숨김 탭 점프 방지)
+            const scope = e.target.closest('.form-section.active') || e.target.form;
+            if (!scope) return;   // 폼 밖 요소면 무시(예외 방지)
+            const els = Array.from(scope.querySelectorAll("input:not([type='hidden']):not([disabled]), select:not([disabled])"))
+                          .filter(function(el){ return el.offsetParent !== null; });
             const idx = els.indexOf(e.target);
             if (idx > -1 && idx < els.length - 1) els[idx + 1].focus();
         }
     }
     if (e.key === 'Insert') {
         e.preventDefault();
+        // 연도는 ① 탭 → 비활성이면 전환 후 포커스
+        showSection(0, document.querySelectorAll('.tab-nav button')[0]);
         document.getElementById('yearInput')?.focus();
     }
     if (e.key === 'End') {
