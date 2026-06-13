@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>외부업체 관리</title>
+    <link rel="stylesheet" href="/css/design-system.css">
+    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: var(--bg); color: var(--text); }
+        .pm-wrap { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .pm-head { display:flex; justify-content:space-between; align-items:center;
+            background: var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 22px; margin-bottom:16px; box-shadow:var(--shadow-card); }
+        .pm-head h2 { margin:0; color:var(--primary); font-size:1.15em; }
+        .pm-card { background: var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:12px; box-shadow:var(--shadow-card); }
+        .pm-form input, .pm-form select { padding:7px; border:1px solid var(--border2); border-radius:5px; font-size:0.85em; margin:0 6px 6px 0; background:var(--surface); color:var(--text); }
+        .pm-row { display:flex; justify-content:space-between; align-items:flex-start; }
+        .pm-pname { font-weight:700; font-size:1.02em; }
+        .pm-contacts { margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+        .pm-contact { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.88em; }
+        .pm-muted { color: var(--muted); font-size:0.85em; }
+        .pm-x { cursor:pointer; color:var(--danger); }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+<div class="pm-wrap">
+    <div class="pm-head">
+        <h2><i class="fas fa-building"></i> 외부업체 관리</h2>
+        <button class="ds-btn" th:if="${canEdit}" onclick="toggleAddForm()"><i class="fas fa-plus"></i> 업체 추가</button>
+    </div>
+
+    <div class="pm-card pm-form" id="addForm" style="display:none;" th:if="${canEdit}">
+        <input type="text" id="pName" placeholder="업체명 *" style="width:200px;">
+        <select id="pType">
+            <option value="">유형</option>
+            <option>사업단</option><option>유지보수</option><option>DB</option><option>SI</option><option>기타</option>
+        </select>
+        <input type="text" id="pTel" placeholder="대표연락처" style="width:140px;">
+        <input type="text" id="pBiz" placeholder="사업자번호" style="width:130px;">
+        <input type="text" id="pNote" placeholder="비고" style="width:200px;">
+        <button class="ds-btn ds-btn--primary" onclick="addPartner()">저장</button>
+    </div>
+
+    <div id="list"><div class="pm-muted">로딩 중...</div></div>
+</div>
+
+<script th:inline="javascript">
+    const CAN_EDIT = /*[[${canEdit}]]*/ false;
+
+    function toggleAddForm() { var f = document.getElementById('addForm'); f.style.display = f.style.display === 'none' ? 'block' : 'none'; }
+
+    function loadList() {
+        fetch('/partner/api/list', { credentials:'same-origin' }).then(r=>r.json()).then(function(list){
+            var c = document.getElementById('list');
+            if (!list.length) { c.innerHTML = '<div class="pm-muted">등록된 외부업체가 없습니다.</div>'; return; }
+            c.innerHTML = list.map(renderPartner).join('');
+        });
+    }
+
+    function renderPartner(p) {
+        var contacts = (p.contacts||[]).map(function(c){
+            var pos = c.position ? ' ('+esc(c.position)+')' : '';
+            var tel = c.tel ? ' · '+esc(c.tel) : '';
+            var del = CAN_EDIT ? ' <span class="pm-x" onclick="delContact('+c.contact_id+')"><i class="fas fa-times"></i></span>' : '';
+            return '<div class="pm-contact"><i class="fas fa-user pm-muted"></i> '+esc(c.name)+pos+tel+del+'</div>';
+        }).join('') || '<div class="pm-muted">담당자 없음</div>';
+        var addC = CAN_EDIT ? '<div style="margin-top:8px;"><input type="text" placeholder="담당자명" id="cn'+p.partner_id+'" style="padding:5px;border:1px solid var(--border2);border-radius:5px;font-size:0.82em;">'
+            + '<input type="text" placeholder="직급" id="cp'+p.partner_id+'" style="padding:5px;border:1px solid var(--border2);border-radius:5px;font-size:0.82em;width:80px;">'
+            + '<input type="text" placeholder="연락처" id="ct'+p.partner_id+'" style="padding:5px;border:1px solid var(--border2);border-radius:5px;font-size:0.82em;width:110px;">'
+            + ' <button class="ds-btn" onclick="addContact('+p.partner_id+')">담당자 추가</button></div>' : '';
+        var typeBadge = p.partner_type ? '<span class="ds-badge ds-badge--info">'+esc(p.partner_type)+'</span> ' : '';
+        var delP = CAN_EDIT ? '<button class="ds-btn" onclick="delPartner('+p.partner_id+')"><i class="fas fa-trash"></i></button>' : '';
+        return '<div class="pm-card"><div class="pm-row"><div>'
+            + '<span class="pm-pname">'+esc(p.name)+'</span> '+typeBadge
+            + (p.main_tel ? '<span class="pm-muted"> · '+esc(p.main_tel)+'</span>' : '')
+            + (p.note ? '<div class="pm-muted">'+esc(p.note)+'</div>' : '')
+            + '</div>'+delP+'</div>'
+            + '<div class="pm-contacts">'+contacts+addC+'</div></div>';
+    }
+
+    function addPartner() {
+        var name = document.getElementById('pName').value.trim();
+        if (!name) { alert('업체명은 필수입니다.'); return; }
+        var body = { name:name, partner_type:document.getElementById('pType').value,
+            main_tel:document.getElementById('pTel').value, biz_no:document.getElementById('pBiz').value,
+            note:document.getElementById('pNote').value };
+        post('/partner/api', body, function(){ ['pName','pTel','pBiz','pNote'].forEach(i=>document.getElementById(i).value=''); loadList(); });
+    }
+
+    function addContact(pid) {
+        var name = document.getElementById('cn'+pid).value.trim();
+        if (!name) { alert('담당자명은 필수입니다.'); return; }
+        var body = { name:name, position:document.getElementById('cp'+pid).value, tel:document.getElementById('ct'+pid).value };
+        post('/partner/api/'+pid+'/contact', body, loadList);
+    }
+
+    function delPartner(id) { if (confirm('이 업체를 삭제(비활성)할까요?')) del('/partner/api/'+id, loadList); }
+    function delContact(id) { if (confirm('담당자를 삭제할까요?')) del('/partner/api/contact/'+id, loadList); }
+
+    function post(url, body, ok) {
+        fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) })
+            .then(r=>r.json()).then(function(d){ if (d.success) ok(); else alert((d.error&&d.error.message)||'실패'); }).catch(e=>alert('오류: '+e));
+    }
+    function del(url, ok) {
+        fetch(url, { method:'DELETE', credentials:'same-origin' }).then(r=>r.json())
+            .then(function(d){ if (d.success) ok(); else alert((d.error&&d.error.message)||'실패'); });
+    }
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+
+    document.addEventListener('DOMContentLoaded', loadList);
+</script>
+</body>
+</html>

@@ -8,12 +8,14 @@ import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
+import com.swmanager.system.domain.ops.PartnerContact;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.repository.ops.PartnerContactRepository;
 import org.springframework.data.domain.PageRequest;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
@@ -55,6 +57,7 @@ public class OpsDocController {
     private final UserRepository userRepository;             // [M2]
     private final PersonInfoRepository personInfoRepository; // [M2]
     private final OrgUnitRepository orgUnitRepository;        // [M2]
+    private final PartnerContactRepository partnerContactRepository; // [M2/P3]
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -435,6 +438,23 @@ public class OpsDocController {
         result.put("id", saved.getId());
         result.put("name", saved.getUserNm());
         return ResponseEntity.ok(result);
+    }
+
+    /** 요청자(업체담당자) 검색 — tb_partner_contact (FR-M2-4, P3). */
+    @GetMapping("/api/partner-contact/search")
+    @ResponseBody
+    public List<Map<String, Object>> partnerContactSearch(@RequestParam("kw") String kw) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (PartnerContact c : partnerContactRepository.searchActive(kw == null ? "" : kw)) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", c.getContactId());
+            m.put("name", c.getName());
+            m.put("org", c.getPartner() != null ? c.getPartner().getName() : null);
+            m.put("pos", c.getPosition());
+            m.put("tel", c.getTel());
+            result.add(m);
+        }
+        return result;
     }
 
     /** [M2] 수정 폼 관계자 프리필 (engineer/requester). */

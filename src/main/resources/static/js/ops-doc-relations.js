@@ -41,7 +41,10 @@ function reqSearchInput() {
     if (opsReqTimer) clearTimeout(opsReqTimer);
     if (kw.length < 1) { opsHideResults(); return; }
     opsReqTimer = setTimeout(function () {
-        fetch('/ops-doc/api/requester/search?kw=' + encodeURIComponent(kw), { credentials: 'same-origin' })
+        var url = (opsSelectedReq.kind === 'CONTACT')
+            ? '/ops-doc/api/partner-contact/search?kw='   // 업체담당자
+            : '/ops-doc/api/requester/search?kw=';        // 공무원(ps_info)
+        fetch(url + encodeURIComponent(kw), { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(opsRenderReqResults);
     }, 250);

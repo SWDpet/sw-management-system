@@ -685,6 +685,53 @@ DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_ops_doc
 END IF; END $$;
 CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_engineer ON tb_ops_doc(engineer_id);
 
+-- ============================================================
+-- [ops-fault-support M2/Step 3] 외부업체 + 담당자 + 문서-협력업체 다대다
+-- 순서: tb_partner -> tb_partner_contact -> fk_ops_doc_req_contact -> tb_ops_doc_partner
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_partner (
+    partner_id   BIGSERIAL PRIMARY KEY,
+    name         VARCHAR(200) NOT NULL,
+    partner_type VARCHAR(20),
+    biz_no       VARCHAR(20),
+    main_tel     VARCHAR(40),
+    note         VARCHAR(1000),
+    use_yn       VARCHAR(1) NOT NULL DEFAULT 'Y',
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_partner_type CHECK (partner_type IS NULL OR partner_type IN ('사업단','유지보수','DB','SI','기타'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_biz_no ON tb_partner(biz_no) WHERE biz_no IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_partner_use ON tb_partner(use_yn);
+
+CREATE TABLE IF NOT EXISTS tb_partner_contact (
+    contact_id BIGSERIAL PRIMARY KEY,
+    partner_id BIGINT NOT NULL REFERENCES tb_partner(partner_id) ON DELETE RESTRICT,
+    name       VARCHAR(100) NOT NULL,
+    position   VARCHAR(50),
+    tel        VARCHAR(40),
+    email      VARCHAR(100),
+    use_yn     VARCHAR(1) NOT NULL DEFAULT 'Y',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_partner_contact_partner ON tb_partner_contact(partner_id);
+
+-- P2 에서 미룬 요청자=업체담당자 FK (tb_partner_contact 생성 후)
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_ops_doc_req_contact') THEN
+    ALTER TABLE tb_ops_doc ADD CONSTRAINT fk_ops_doc_req_contact
+        FOREIGN KEY (requester_contact_id) REFERENCES tb_partner_contact(contact_id);
+END IF; END $$;
+
+-- 문서-협력업체 다대다 (역할 라벨, 동일 업체 복수역할 허용)
+CREATE TABLE IF NOT EXISTS tb_ops_doc_partner (
+    doc_id     BIGINT NOT NULL REFERENCES tb_ops_doc(doc_id) ON DELETE CASCADE,
+    partner_id BIGINT NOT NULL REFERENCES tb_partner(partner_id) ON DELETE RESTRICT,
+    role_label VARCHAR(50) NOT NULL DEFAULT '',
+    PRIMARY KEY (doc_id, partner_id, role_label)
+);
+CREATE INDEX IF NOT EXISTS idx_ops_doc_partner_partner ON tb_ops_doc_partner(partner_id);
+
 -- 운영문서 섹션 상세 (jsonb)
 CREATE TABLE IF NOT EXISTS tb_ops_doc_detail (
     detail_id    BIGSERIAL PRIMARY KEY,
