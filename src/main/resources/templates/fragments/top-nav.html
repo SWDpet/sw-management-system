@@ -101,6 +101,7 @@
       <div class="sb-parent"><i class="fas fa-file-lines"></i><span>문서관리</span></div>
       <a class="sb-link sb-sub" href="/document/list" data-prefix="/document"><i class="fas fa-folder-open"></i><span>사업문서</span></a>
       <a class="sb-link sb-sub" href="/ops-doc/list" data-prefix="/ops-doc"><i class="fas fa-screwdriver-wrench"></i><span>운영문서</span></a>
+      <a class="sb-link sb-sub" href="/ops-kb" data-prefix="/ops-kb"><i class="fas fa-book-medical"></i><span>지식베이스</span></a>
     </th:block>
     <a class="sb-link" href="/person/list" data-prefix="/person"
        th:if="${#authentication.principal.user?.authPerson != 'NONE'}" sec:authorize="isAuthenticated()"><i class="fas fa-users"></i><span>담당자관리</span></a>

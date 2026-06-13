@@ -25,8 +25,10 @@ public class RuleKbMatcher implements KbMatcher {
     @Override
     @Transactional(readOnly = true)
     public List<Map<String, Object>> recommend(String gubun, String sysType, String query, int topN) {
+        // [ops-kb-workbench] ACTIVE 만 추천(소프트삭제·미검증 제외). 시드는 status='ACTIVE' 라 ops-doc 추천 불변.
         List<OpsKb> candidates = (gubun != null && !gubun.isBlank())
-                ? opsKbRepository.findByGubun(gubun) : opsKbRepository.findAll();
+                ? opsKbRepository.findByGubunAndStatus(gubun, "ACTIVE")
+                : opsKbRepository.findByStatusOrderByCaseCountDesc("ACTIVE");
 
         // sysType 필터 (있으면 엄격 적용 — 선택 시스템의 KB 만. 없으면 미적용)
         List<OpsKb> pool = candidates;

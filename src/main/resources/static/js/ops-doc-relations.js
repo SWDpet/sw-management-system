@@ -190,6 +190,7 @@ function opsKbRecommend(docType, query, sysType, applyFn) {
 
 // [P5] 추천 채택 피드백 (fire-and-forget)
 function opsKbFeedback(kbId, action) {
+    if (window.OPS_KB_BROWSE) return;   // 조회 화면(지식베이스)의 '적용'=상세보기 — 채택 오기록 방지
     if (!kbId) return;
     fetch('/ops-doc/api/kb/feedback', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',

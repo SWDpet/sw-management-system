@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>지식 등록</title>
+    <link rel="stylesheet" href="/css/design-system.css">
+    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+
+<main class="ops-page">
+    <div class="ops-breadcrumb">
+        <a th:href="@{/}">홈</a> &rsaquo; <a th:href="@{/ops-kb}">지식베이스</a> &rsaquo;
+        <span th:text="${isEdit} ? '수정' : '신규 등록'">신규 등록</span>
+    </div>
+    <div class="ops-page-header">
+        <span class="group-chip">지식베이스</span>
+        <h1><i class="fas fa-book-medical"></i> <span th:text="${isEdit} ? '지식 수정' : '지식 등록'">지식 등록</span></h1>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">지식 항목</h3>
+        <table class="ops-form-table">
+            <tr><th>시스템 *</th>
+                <td><select id="sysType">
+                    <option value="">선택</option>
+                    <option th:each="s : ${systems}" th:value="${s.cd}" th:text="${s.nm + ' (' + s.cd + ')'}"
+                            th:selected="${kb != null && kb.sysType == s.cd}"></option>
+                </select></td>
+                <th>구분 *</th>
+                <td>
+                    <span class="ops-seg">
+                        <button type="button" id="gbFault" class="active" onclick="setGubun('장애')">장애</button>
+                        <button type="button" id="gbSupport" onclick="setGubun('지원')">지원</button>
+                    </span>
+                    <input type="hidden" id="gubun" th:value="${kb != null ? kb.gubun : '장애'}">
+                </td>
+            </tr>
+            <tr><th>증상 *</th><td colspan="3"><textarea id="symptom" th:text="${kb?.symptom}"></textarea></td></tr>
+            <tr><th>원인 *</th><td colspan="3"><textarea id="cause" th:text="${kb?.cause}"></textarea></td></tr>
+            <tr><th>조치 *</th><td colspan="3"><textarea id="action" th:text="${kb?.action}"></textarea></td></tr>
+            <tr><th>예방</th><td colspan="3"><textarea id="prevention" th:text="${kb?.prevention}"></textarea></td></tr>
+            <tr><th>키워드</th><td colspan="3"><input type="text" id="keywords" th:value="${kb?.keywords}" placeholder="쉼표 구분(선택)"></td></tr>
+        </table>
+    </div>
+
+    <div class="ops-actions">
+        <a class="ops-btn" th:href="@{/ops-kb}">취소</a>
+        <button class="ops-btn ops-btn-primary" onclick="saveKb()">저장</button>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    const isEdit = /*[[${isEdit}]]*/ false;
+    const kbId   = /*[[${kb?.kbId}]]*/ null;
+
+    function setGubun(g) {
+        document.getElementById('gubun').value = g;
+        document.getElementById('gbFault').classList.toggle('active', g === '장애');
+        document.getElementById('gbSupport').classList.toggle('active', g === '지원');
+    }
+    // 수정 시 구분 복원
+    document.addEventListener('DOMContentLoaded', function () {
+        setGubun(document.getElementById('gubun').value || '장애');
+    });
+
+    function saveKb() {
+        var body = {
+            sys_type: document.getElementById('sysType').value,
+            gubun: document.getElementById('gubun').value,
+            symptom: document.getElementById('symptom').value,
+            cause: document.getElementById('cause').value,
+            action: document.getElementById('action').value,
+            prevention: document.getElementById('prevention').value,
+            keywords: document.getElementById('keywords').value
+        };
+        var url = isEdit ? ('/ops-kb/api/' + kbId) : '/ops-kb/api';
+        fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin', body: JSON.stringify(body) })
+            .then(r => r.json()).then(function (d) {
+                if (d.success) location.href = '/ops-kb';
+                else alert((d.error && d.error.message) || '저장 실패');
+            }).catch(e => alert('오류: ' + e));
+    }
+</script>
+</body>
+</html>

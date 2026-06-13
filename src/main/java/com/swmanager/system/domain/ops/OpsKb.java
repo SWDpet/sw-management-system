@@ -39,4 +39,24 @@ public class OpsKb {
 
     @Column(name = "case_count") private Integer caseCount;
     private Boolean rewritten;
+
+    // [ops-kb-workbench] 직접등록 확장
+    @Column(length = 10) private String source = "SEED";    // SEED / MANUAL
+    @Column(name = "created_by", length = 50) private String createdBy;
+    @Column(length = 10) private String status = "ACTIVE";  // ACTIVE / DELETED
+
+    @Column(name = "created_at", updatable = false) private java.time.LocalDateTime createdAt;
+    @Column(name = "updated_at") private java.time.LocalDateTime updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (createdAt == null) createdAt = now;
+        updatedAt = now;
+        if (source == null) source = "SEED";
+        if (status == null) status = "ACTIVE";
+    }
+
+    @PreUpdate
+    public void preUpdate() { updatedAt = java.time.LocalDateTime.now(); }
 }

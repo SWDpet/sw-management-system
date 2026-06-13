@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>장애·지원 지식베이스</title>
+    <link rel="stylesheet" href="/css/design-system.css">
+    <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+
+<main class="ops-page">
+    <div class="ops-breadcrumb"><a th:href="@{/}">홈</a> &rsaquo; 지식베이스</div>
+    <div class="ops-page-header">
+        <span class="group-chip">지식베이스</span>
+        <h1><i class="fas fa-book-medical"></i> 장애·지원 지식베이스</h1>
+        <a th:if="${canEdit}" class="ops-btn ops-btn-primary" th:href="@{/ops-kb/new}" style="margin-left:auto;">
+            <i class="fas fa-plus"></i> 신규 등록</a>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">검색</h3>
+        <table class="ops-form-table">
+            <tr><th>시스템</th>
+                <td><select id="kbSys" onchange="kbRefresh()">
+                    <option value="">전체</option>
+                    <option th:each="s : ${systems}" th:value="${s.cd}" th:text="${s.nm + ' (' + s.cd + ')'}"></option>
+                </select></td>
+                <th>구분</th>
+                <td><select id="kbGubun" onchange="kbRefresh()">
+                    <option value="">전체</option><option value="장애">장애</option><option value="지원">지원</option>
+                </select></td>
+            </tr>
+            <tr><th>증상</th>
+                <td colspan="3"><input type="text" id="kbSymptom" placeholder="증상 입력 시 추천이 실시간으로 좁혀집니다" oninput="kbDebounce()"></td></tr>
+        </table>
+        <div class="ops-reco-bar"><div class="ops-reco-box" id="kbRecoBox"></div></div>
+    </div>
+
+    <div class="ops-section">
+        <h3 class="ops-section-title">목록</h3>
+        <div id="kbList"><div class="ops-reco-loading">불러오는 중...</div></div>
+    </div>
+</main>
+
+<script src="/js/ops-doc-relations.js"></script>
+<script th:inline="javascript">
+    window.OPS_KB_BROWSE = true;   // 조회 화면 — 추천 적용이 feedback 으로 기록되지 않도록
+    const CAN_EDIT = /*[[${canEdit}]]*/ false;
+    var kbTimer = null;
+
+    function docType() { var g = document.getElementById('kbGubun').value; return g === '장애' ? 'FAULT' : (g === '지원' ? 'SUPPORT' : ''); }
+    function kbDebounce() { if (kbTimer) clearTimeout(kbTimer); kbTimer = setTimeout(kbRefresh, 350); }
+    function kbRefresh() {
+        var sys = document.getElementById('kbSys').value, kw = document.getElementById('kbSymptom').value;
+        // 상단 실시간 추천 (기존 엔진 재사용, applyFn=상세열기)
+        opsKbRecommend(docType(), kw, sys, openKbDetail);
+        // 전체 목록
+        var url = '/ops-kb/api/list?sysType=' + encodeURIComponent(sys)
+            + '&gubun=' + encodeURIComponent(document.getElementById('kbGubun').value)
+            + '&kw=' + encodeURIComponent(kw);
+        fetch(url, { credentials: 'same-origin' }).then(r => r.json()).then(renderList);
+    }
+    function renderList(list) {
+        var c = document.getElementById('kbList');
+        if (!list || !list.length) { c.innerHTML = '<div class="ops-empty-state">조건에 맞는 지식이 없습니다. 신규 등록으로 추가하세요.</div>'; return; }
+        c.innerHTML = list.map(function (k) {
+            var src = k.source === 'MANUAL' ? '<span class="ds-badge ds-badge--info">직접등록</span>' : '<span class="ds-badge ds-badge--muted">백서</span>';
+            var edit = CAN_EDIT ? ' <a class="ops-btn" href="/ops-kb/' + k.kb_id + '/edit"><i class="fas fa-pen"></i></a> <button class="ops-btn" onclick="kbDelete(' + k.kb_id + ')"><i class="fas fa-trash"></i></button>' : '';
+            return '<div class="ops-reco-card"><div class="ops-reco-head">'
+                + '<span class="group-chip">' + esc(k.kb_code) + '</span> ' + src
+                + '<span class="ops-reco-meta">' + esc(k.sys_type || '') + ' · ' + esc(k.gubun || '') + ' · 사례 ' + (k.case_count || 0) + '</span></div>'
+                + '<div class="ops-reco-title">' + esc(k.symptom || '') + ' › ' + esc(k.cause || '') + '</div>'
+                + (k.action ? '<div class="ops-reco-sum">' + esc((k.action || '').substring(0, 200)) + '</div>' : '')
+                + '<div>' + edit + '</div></div>';
+        }).join('');
+    }
+    function openKbDetail(k) {
+        // 추천 카드 '적용'=상세 보기 (조회 화면). 전체 조치 표시.
+        alert('[' + (k.kb_code || '') + '] ' + (k.symptom || '') + ' › ' + (k.cause || '') + '\n\n[조치]\n' + (k.action || k.summary || '(없음)'));
+    }
+    function kbDelete(id) {
+        if (!confirm('이 지식을 삭제(비활성)할까요?')) return;
+        fetch('/ops-kb/api/' + id, { method: 'DELETE', credentials: 'same-origin' })
+            .then(r => r.json()).then(function (d) { if (d.error) alert(d.error.message || '실패'); else kbRefresh(); });
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+
+    document.addEventListener('DOMContentLoaded', kbRefresh);
+</script>
+</body>
+</html>

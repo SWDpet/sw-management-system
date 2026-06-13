@@ -798,6 +798,19 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 CREATE INDEX IF NOT EXISTS idx_ops_kb_filter ON tb_ops_kb(gubun, sys_type);
 
+-- [ops-kb-workbench] MANUAL 직접등록 확장 (멱등 + 부분적용 보정)
+ALTER TABLE tb_ops_kb ADD COLUMN IF NOT EXISTS source     VARCHAR(10) DEFAULT 'SEED';
+ALTER TABLE tb_ops_kb ADD COLUMN IF NOT EXISTS created_by VARCHAR(50);
+ALTER TABLE tb_ops_kb ADD COLUMN IF NOT EXISTS status     VARCHAR(10) DEFAULT 'ACTIVE';  -- ACTIVE/DELETED
+ALTER TABLE tb_ops_kb ALTER COLUMN source SET DEFAULT 'SEED';
+ALTER TABLE tb_ops_kb ALTER COLUMN status SET DEFAULT 'ACTIVE';
+UPDATE tb_ops_kb SET source='SEED'   WHERE source IS NULL;
+UPDATE tb_ops_kb SET status='ACTIVE' WHERE status IS NULL;
+ALTER TABLE tb_ops_kb ALTER COLUMN source SET NOT NULL;
+ALTER TABLE tb_ops_kb ALTER COLUMN status SET NOT NULL;
+CREATE SEQUENCE IF NOT EXISTS seq_ops_kb_manual START 1;
+CREATE INDEX IF NOT EXISTS idx_ops_kb_status_source ON tb_ops_kb(status, source);
+
 -- 운영문서 섹션 상세 (jsonb)
 CREATE TABLE IF NOT EXISTS tb_ops_doc_detail (
     detail_id    BIGSERIAL PRIMARY KEY,
