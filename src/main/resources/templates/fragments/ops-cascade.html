@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- [ops-doc-region-cascade] 시도→시군구→시스템 대상 선택 (업무계획 패턴). doc(수정/상세) 있으면 프리필. -->
+<div th:fragment="cascade" class="ops-cascade-wrap">
+    <div class="ops-cascade">
+        <select id="casSido">
+            <option value="">시도</option>
+            <option th:each="s : ${sidoList}" th:value="${s}" th:text="${s}"></option>
+        </select>
+        <select id="casSgg" disabled><option value="">시군구</option></select>
+        <select id="casSys" disabled><option value="">시스템</option></select>
+    </div>
+    <input type="text" id="casSysDirect" placeholder="시스템 직접입력 (미계약·목록에 없을 때)" style="display:none;">
+    <!-- 실제 제출 값(기존 저장 로직과 동일 id) -->
+    <input type="hidden" id="region_code" th:value="${doc?.regionCode}">
+    <input type="hidden" id="sys_type" th:value="${doc?.sysType}">
+    <span id="casRestore" style="display:none"
+          th:attr="data-region=${doc?.regionCode}, data-sys=${doc?.sysType}"></span>
+</div>
+</body>
+</html>

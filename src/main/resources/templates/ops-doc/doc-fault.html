@@ -34,9 +34,8 @@
                     </select>
                 </td>
             </tr>
-            <tr><th>지역코드 *</th><td><input type="text" id="region_code" placeholder="예: 11000"></td>
-                <th>시스템 *</th><td><input type="text" id="sys_type" placeholder="UPIS / KRAS / IPSS / GIS_SW / APIMS / ETC"></td>
-            </tr>
+            <tr><th>대상(시도·시군구·시스템) *</th>
+                <td colspan="3"><div th:replace="~{fragments/ops-cascade :: cascade}"></div></td></tr>
             <tr><th>장애시간(분)</th><td><input type="number" id="downtime_minutes" min="0"></td>
                 <th>고객영향도</th>
                 <td>
@@ -117,6 +116,7 @@
 </main>
 
 <script src="/js/ops-doc-relations.js"></script>
+<script src="/js/ops-doc-cascade.js"></script>
 <script th:inline="javascript">
     const isEdit = /*[[${isEdit}]]*/ false;
     const docId  = /*[[${doc?.docId}]]*/ null;

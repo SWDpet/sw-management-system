@@ -640,9 +640,9 @@ CREATE TABLE IF NOT EXISTS tb_ops_doc (
     CONSTRAINT ck_tb_ops_doc_combo  CHECK (
         -- INSPECT: 점검내역서 본 데이터(inspect_report)가 infra 와 직접 연결되지 않으므로
         --         doc_type 만 검사. sys_type 도 nullable (점검 폼이 sys_type 미입력 케이스 있음).
+        -- [ops-doc-region-cascade] 4종 모두 시도→시군구→시스템 기반(region_code+sys_type). INSTALL/PATCH 도 region 기반으로 통일.
         doc_type = 'INSPECT' OR
-        (doc_type IN ('FAULT','SUPPORT') AND region_code IS NOT NULL AND sys_type IS NOT NULL) OR
-        (doc_type IN ('INSTALL','PATCH') AND infra_id IS NOT NULL AND environment IS NOT NULL)
+        (doc_type IN ('FAULT','SUPPORT','INSTALL','PATCH') AND region_code IS NOT NULL AND sys_type IS NOT NULL)
     )
 );
 
@@ -653,9 +653,9 @@ BEGIN
         ALTER TABLE tb_ops_doc DROP CONSTRAINT ck_tb_ops_doc_combo;
     END IF;
     ALTER TABLE tb_ops_doc ADD CONSTRAINT ck_tb_ops_doc_combo CHECK (
+        -- [ops-doc-region-cascade] 4종 모두 시도→시군구→시스템 기반(region_code+sys_type). INSTALL/PATCH 도 region 기반으로 통일.
         doc_type = 'INSPECT' OR
-        (doc_type IN ('FAULT','SUPPORT') AND region_code IS NOT NULL AND sys_type IS NOT NULL) OR
-        (doc_type IN ('INSTALL','PATCH') AND infra_id IS NOT NULL AND environment IS NOT NULL)
+        (doc_type IN ('FAULT','SUPPORT','INSTALL','PATCH') AND region_code IS NOT NULL AND sys_type IS NOT NULL)
     );
 END $$;
 

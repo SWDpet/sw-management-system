@@ -212,6 +212,7 @@ public class OpsDocController {
         model.addAttribute("docType", docType);
         model.addAttribute("isEdit", false);
         model.addAttribute("activeMenu", "ops");
+        model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
     }
 
@@ -231,6 +232,7 @@ public class OpsDocController {
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);
         model.addAttribute("activeMenu", "ops");
+        model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
     }
 
@@ -249,6 +251,7 @@ public class OpsDocController {
         model.addAttribute("docType", docType);
         model.addAttribute("doc", doc);
         model.addAttribute("activeMenu", "ops");
+        model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
     }
 
@@ -552,6 +555,58 @@ public class OpsDocController {
                 }
             }
         }
+    }
+
+    // ===== [ops-doc-region-cascade] 시도→시군구→시스템 =====
+
+    /** 시도 → 시군구 목록 (self-행=본청/도청 포함). */
+    @GetMapping("/api/sgg")
+    @ResponseBody
+    public List<Map<String, Object>> cascadeSgg(@RequestParam("sido") String sido) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (SigunguCode s : sigunguCodeRepository.findBySidoNmOrderBySggNm(sido)) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("admSectC", s.getAdmSectC());
+            m.put("sggNm", s.getSggNm());
+            m.put("isUnit", s.getSggNm() != null && s.getSggNm().equals(s.getSidoNm()));
+            out.add(m);
+        }
+        return out;
+    }
+
+    /** 시군구코드 → 그 시군구의 sw_pjt 시스템 목록(distinct sysNm). 업무계획과 동일 소스. */
+    @GetMapping("/api/systems")
+    @ResponseBody
+    public List<Map<String, Object>> cascadeSystems(@RequestParam("admSectC") String admSectC) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        SigunguCode sgg = sigunguCodeRepository.findById(admSectC).orElse(null);
+        if (sgg == null) return out;
+        List<String> dists = java.util.Objects.equals(sgg.getSggNm(), sgg.getSidoNm())
+                ? List.of(sgg.getSggNm(), "도청", "본청") : List.of(sgg.getSggNm());
+        java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
+        for (var p : swProjectRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists)) {
+            String sys = p.getSysNm();
+            if (sys != null && !sys.isBlank() && seen.add(sys)) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("sysNm", sys);
+                out.add(m);
+            }
+        }
+        return out;
+    }
+
+    /** 행정구역코드 → 시도/시군구 (수정·상세 프리필). */
+    @GetMapping("/api/region")
+    @ResponseBody
+    public Map<String, Object> cascadeRegion(@RequestParam("admSectC") String admSectC) {
+        Map<String, Object> m = new HashMap<>();
+        SigunguCode s = sigunguCodeRepository.findById(admSectC).orElse(null);
+        if (s != null) {
+            m.put("admSectC", s.getAdmSectC());
+            m.put("sido", s.getSidoNm());
+            m.put("sgg", s.getSggNm());
+        }
+        return m;
     }
 
     /** [M2] 수정 폼 관계자 프리필 (engineer/requester). */

@@ -23,6 +23,8 @@
         <h3 class="ops-section-title">패치 정보</h3>
         <table class="ops-form-table">
             <tr><th>제목</th><td><input type="text" id="title"></td></tr>
+            <tr><th>대상(시도·시군구·시스템) *</th>
+                <td colspan="3"><div th:replace="~{fragments/ops-cascade :: cascade}"></div></td></tr>
             <tr><th>패치일</th><td><input type="date" id="patch_date"></td>
                 <th>환경 *</th>
                 <td>
@@ -45,7 +47,7 @@
                 <th>버전 *</th>
                 <td><input type="text" id="version" placeholder="예: 2.5.1 → 2.5.2"></td>
             </tr>
-            <tr><th>대상 *</th>
+            <tr><th>패치 대상(서버 등)</th>
                 <td><input type="text" id="target" placeholder="예: 운영서버 2 대 / DB"></td>
                 <th>영향 사용자(명)</th>
                 <td><input type="number" id="affected_users_count" min="0"></td>
@@ -71,6 +73,7 @@
     </div>
 </main>
 
+<script src="/js/ops-doc-cascade.js"></script>
 <script th:inline="javascript">
     const isEdit = /*[[${isEdit}]]*/ false;
     const docId  = /*[[${doc?.docId}]]*/ null;
@@ -79,7 +82,8 @@
         if (!rollbackPlan) { alert('롤백 계획은 필수입니다'); return; }
         const body = {
             title: document.getElementById('title').value,
-            sys_type: '',
+            sys_type: document.getElementById('sys_type').value,
+            region_code: document.getElementById('region_code').value,
             environment: document.getElementById('environment').value,
             section_data: {
                 patch_date: document.getElementById('patch_date').value,

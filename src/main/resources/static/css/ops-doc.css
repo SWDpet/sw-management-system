@@ -268,3 +268,10 @@
 .ops-partner-chip .pc-role { flex: 1; max-width: 220px; padding: 4px 8px; border: 1px solid var(--ops-border);
     border-radius: 5px; font-size: 0.82rem; background: var(--ops-surface); color: var(--ops-text); }
 .ops-partner-chip .x { cursor: pointer; color: var(--ops-text-secondary); font-weight: 700; }
+
+/* [ops-doc-region-cascade] 시도→시군구→시스템 */
+.ops-cascade { display: flex; gap: 6px; flex-wrap: wrap; }
+.ops-cascade select { flex: 1; min-width: 110px; padding: 6px 8px; border: 1px solid var(--ops-border);
+    border-radius: 5px; font-size: 0.86rem; background: var(--ops-surface); color: var(--ops-text); }
+.ops-cascade-wrap #casSysDirect { width: 100%; margin-top: 6px; padding: 6px 8px; border: 1px solid var(--ops-border);
+    border-radius: 5px; font-size: 0.86rem; box-sizing: border-box; background: var(--ops-surface); color: var(--ops-text); }
