@@ -21,13 +21,24 @@ public interface OpsKbRepository extends JpaRepository<OpsKb, Long> {
     @Query(value = "SELECT nextval('seq_ops_kb_manual')", nativeQuery = true)
     Long nextManualSeq();
 
-    /** 지식베이스 조회 검색 (ACTIVE, 시스템·구분·키워드 선택). 파라미터 null = 미적용. */
-    @Query("SELECT k FROM OpsKb k WHERE k.status = 'ACTIVE' " +
+    /**
+     * 지식베이스 조회 검색. status 는 필수(기본 'ACTIVE'). 시스템·구분·키워드·작성자 선택(null=미적용).
+     * createdBy 는 비ACTIVE(PENDING/REJECTED) 를 본인 것만 보여줄 때 사용(관리자는 null 로 전체).
+     */
+    @Query("SELECT k FROM OpsKb k WHERE k.status = :status " +
            "AND (:sysType IS NULL OR k.sysType = :sysType) " +
            "AND (:gubun IS NULL OR k.gubun = :gubun) " +
+           "AND (:createdBy IS NULL OR k.createdBy = :createdBy) " +
            "AND (:kw IS NULL OR LOWER(k.symptom) LIKE LOWER(CONCAT('%', :kw, '%')) " +
            "     OR LOWER(k.keywords) LIKE LOWER(CONCAT('%', :kw, '%')) " +
            "     OR LOWER(k.cause) LIKE LOWER(CONCAT('%', :kw, '%'))) " +
            "ORDER BY k.caseCount DESC, k.kbId DESC")
-    List<OpsKb> search(@Param("sysType") String sysType, @Param("gubun") String gubun, @Param("kw") String kw);
+    List<OpsKb> search(@Param("status") String status, @Param("sysType") String sysType,
+                       @Param("gubun") String gubun, @Param("kw") String kw,
+                       @Param("createdBy") String createdBy);
+
+    /** 승인 대기(PENDING) 건수 — 관리자 배지. */
+    long countByStatus(String status);
+    /** 본인 제출의 특정 상태 건수 — 편집권한자 배지. */
+    long countByStatusAndCreatedBy(String status, String createdBy);
 }

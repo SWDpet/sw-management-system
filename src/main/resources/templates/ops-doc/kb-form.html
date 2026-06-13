@@ -80,8 +80,10 @@
         fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin', body: JSON.stringify(body) })
             .then(r => r.json()).then(function (d) {
-                if (d.success) location.href = '/ops-kb';
-                else alert((d.error && d.error.message) || '저장 실패');
+                if (d.success) {
+                    if (d.status === 'PENDING') alert('등록되었습니다. 관리자 승인 후 게시됩니다.');
+                    location.href = '/ops-kb';
+                } else alert((d.error && d.error.message) || '저장 실패');
             }).catch(e => alert('오류: ' + e));
     }
 </script>

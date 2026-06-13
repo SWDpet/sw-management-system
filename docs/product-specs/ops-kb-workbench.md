@@ -128,6 +128,18 @@ CREATE INDEX IF NOT EXISTS idx_ops_kb_status_source ON tb_ops_kb(status, source)
 -- 매처: findByGubunAndStatus(gubun,'ACTIVE') / findByStatus('ACTIVE')
 ```
 
+### 11-5. Addendum — 등록 승인 워크플로 (ops-kb-approval, 2026-06-14 확정)
+편집권한자가 등록은 하되, **최종 게시는 관리자 승인 후**에만 이루어지도록 모더레이션 게이트 추가.
+
+- **상태(status)**: `ACTIVE`(게시) / `PENDING`(승인대기) / `REJECTED`(반려) / `DELETED`(삭제). VARCHAR(10) 그대로(REJECTED=8자).
+- **등록**: 관리자=즉시 `ACTIVE` / 편집권한자(EDIT, 비관리자)=`PENDING`.
+- **수정**: 관리자=`ACTIVE` 유지(reviewed 갱신, 반려사유 초기화) / 편집권한자=`PENDING` 재승인 전환(reviewed·반려사유 초기화).
+- **승인/반려**: 관리자 전용. `POST /ops-kb/api/{id}/approve` → ACTIVE. `POST /ops-kb/api/{id}/reject`(reason) → REJECTED + `reject_reason` 보관(작성자 보완 재요청 가능).
+- **추천 영향 없음(핵심)**: 매처는 `status='ACTIVE'` 만 후보로 사용 → PENDING/REJECTED 자동 제외. 시드 126건 전부 ACTIVE 라 ops-doc 폼 추천 불변.
+- **큐 접근 통제**: 조회 API `status` 파라미터. `ACTIVE`=모두. `PENDING/REJECTED`=편집권한 필요, 관리자=전체·편집권한자=본인 제출만(`created_by` 스코프). VIEW 전용은 큐 접근 불가(서버 차단). `DELETED`=조회 불가.
+- **DDL(멱등 추가)**: `reviewed_by VARCHAR(50)`, `reviewed_at TIMESTAMP`, `reject_reason TEXT`.
+- **UI**: kb-list 상태 필터(게시/승인대기/반려), 상태 배지, 관리자 승인/반려 버튼, 반려 사유 표시, 헤더 승인대기 배지. kb-form 등록 후 PENDING 안내.
+
 ### 11-4. 사용자 확정 필요 (열린 질문)
 1. **등록 위젯/페이지**: 등록을 별도 페이지(/ops-kb/new) 로? (디자인 권장 — 기본안)
 2. **category(분류) 채움**: 폼에 분류 입력칸 없음 → 자동(미입력/공란) vs 시스템 기반 자동매핑? (기본안: 공란 허용, 상세는 시스템·구분 표시)

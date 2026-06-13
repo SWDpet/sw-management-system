@@ -15,6 +15,8 @@
     <div class="ops-page-header">
         <span class="group-chip">지식베이스</span>
         <h1><i class="fas fa-book-medical"></i> 장애·지원 지식베이스</h1>
+        <span th:if="${canEdit and pendingCount > 0}" class="ds-badge ds-badge--warning" style="margin-left:.5rem;"
+              th:text="${(isAdmin ? '승인 대기 ' : '내 승인대기 ') + pendingCount + '건'}">승인 대기</span>
         <a th:if="${canEdit}" class="ops-btn ops-btn-primary" th:href="@{/ops-kb/new}" style="margin-left:auto;">
             <i class="fas fa-plus"></i> 신규 등록</a>
     </div>
@@ -34,6 +36,15 @@
             </tr>
             <tr><th>증상</th>
                 <td colspan="3"><input type="text" id="kbSymptom" placeholder="증상 입력 시 추천이 실시간으로 좁혀집니다" oninput="kbDebounce()"></td></tr>
+            <tr th:if="${canEdit}"><th>상태</th>
+                <td colspan="3">
+                    <select id="kbStatus" onchange="kbRefresh()">
+                        <option value="ACTIVE">게시</option>
+                        <option value="PENDING">승인 대기</option>
+                        <option value="REJECTED">반려</option>
+                    </select>
+                    <span id="kbStatusHint" class="ops-hint" style="margin-left:.5rem;color:var(--ds-text-muted,#888);"></span>
+                </td></tr>
         </table>
         <div class="ops-reco-bar"><div class="ops-reco-box" id="kbRecoBox"></div></div>
     </div>
@@ -48,33 +59,71 @@
 <script th:inline="javascript">
     window.OPS_KB_BROWSE = true;   // 조회 화면 — 추천 적용이 feedback 으로 기록되지 않도록
     const CAN_EDIT = /*[[${canEdit}]]*/ false;
+    const IS_ADMIN = /*[[${isAdmin}]]*/ false;
+    const MY_USERNAME = /*[[${myUsername}]]*/ '';
     var kbTimer = null;
 
+    function curStatus() { var s = document.getElementById('kbStatus'); return s ? s.value : 'ACTIVE'; }
     function docType() { var g = document.getElementById('kbGubun').value; return g === '장애' ? 'FAULT' : (g === '지원' ? 'SUPPORT' : ''); }
     function kbDebounce() { if (kbTimer) clearTimeout(kbTimer); kbTimer = setTimeout(kbRefresh, 350); }
     function kbRefresh() {
         var sys = document.getElementById('kbSys').value, kw = document.getElementById('kbSymptom').value;
-        // 상단 실시간 추천 (기존 엔진 재사용, applyFn=상세열기)
+        var st = curStatus();
+        // 상단 실시간 추천 — 게시(ACTIVE) 기준 유사 지식. 추천 엔진은 ACTIVE 만 반환.
         opsKbRecommend(docType(), kw, sys, openKbDetail);
+        // 상태 안내문
+        var hint = document.getElementById('kbStatusHint');
+        if (hint) hint.textContent = st === 'PENDING' ? (IS_ADMIN ? '승인 대기 전체' : '내가 제출한 승인 대기')
+            : st === 'REJECTED' ? (IS_ADMIN ? '반려 전체' : '내가 제출한 반려(보완 후 재요청 가능)') : '';
         // 전체 목록
         var url = '/ops-kb/api/list?sysType=' + encodeURIComponent(sys)
             + '&gubun=' + encodeURIComponent(document.getElementById('kbGubun').value)
-            + '&kw=' + encodeURIComponent(kw);
+            + '&kw=' + encodeURIComponent(kw) + '&status=' + encodeURIComponent(st);
         fetch(url, { credentials: 'same-origin' }).then(r => r.json()).then(renderList);
+    }
+    function statusBadge(s) {
+        if (s === 'PENDING') return '<span class="ds-badge ds-badge--warning">승인 대기</span>';
+        if (s === 'REJECTED') return '<span class="ds-badge ds-badge--danger">반려</span>';
+        return '';
     }
     function renderList(list) {
         var c = document.getElementById('kbList');
-        if (!list || !list.length) { c.innerHTML = '<div class="ops-empty-state">조건에 맞는 지식이 없습니다. 신규 등록으로 추가하세요.</div>'; return; }
+        if (!list || !list.length) { c.innerHTML = '<div class="ops-empty-state">조건에 맞는 지식이 없습니다.</div>'; return; }
         c.innerHTML = list.map(function (k) {
             var src = k.source === 'MANUAL' ? '<span class="ds-badge ds-badge--info">직접등록</span>' : '<span class="ds-badge ds-badge--muted">백서</span>';
-            var edit = CAN_EDIT ? ' <a class="ops-btn" href="/ops-kb/' + k.kb_id + '/edit"><i class="fas fa-pen"></i></a> <button class="ops-btn" onclick="kbDelete(' + k.kb_id + ')"><i class="fas fa-trash"></i></button>' : '';
+            var btns = '';
+            if (CAN_EDIT) {
+                btns += ' <a class="ops-btn" href="/ops-kb/' + k.kb_id + '/edit"><i class="fas fa-pen"></i> 수정</a>';
+                // 삭제는 관리자 또는 본인 등록분만(서버도 동일 통제)
+                if (IS_ADMIN || (k.created_by && k.created_by === MY_USERNAME))
+                    btns += ' <button class="ops-btn" onclick="kbDelete(' + k.kb_id + ')"><i class="fas fa-trash"></i></button>';
+            }
+            // 관리자: 승인 대기 건에 승인/반려
+            if (IS_ADMIN && k.status === 'PENDING') btns = ' <button class="ops-btn ops-btn-primary" onclick="kbApprove(' + k.kb_id + ')"><i class="fas fa-check"></i> 승인</button>'
+                + ' <button class="ops-btn" style="color:var(--ds-danger,#c0392b);border-color:var(--ds-danger,#c0392b);" onclick="kbReject(' + k.kb_id + ')"><i class="fas fa-xmark"></i> 반려</button>' + btns;
+            var reason = (k.status === 'REJECTED' && k.reject_reason)
+                ? '<div class="ops-reco-sum" style="color:var(--ds-danger,#c0392b);"><i class="fas fa-circle-exclamation"></i> 반려 사유: ' + esc(k.reject_reason) + '</div>' : '';
             return '<div class="ops-reco-card"><div class="ops-reco-head">'
-                + '<span class="group-chip">' + esc(k.kb_code) + '</span> ' + src
+                + '<span class="group-chip">' + esc(k.kb_code) + '</span> ' + src + ' ' + statusBadge(k.status)
                 + '<span class="ops-reco-meta">' + esc(k.sys_type || '') + ' · ' + esc(k.gubun || '') + ' · 사례 ' + (k.case_count || 0) + '</span></div>'
                 + '<div class="ops-reco-title">' + esc(k.symptom || '') + ' › ' + esc(k.cause || '') + '</div>'
                 + (k.action ? '<div class="ops-reco-sum">' + esc((k.action || '').substring(0, 200)) + '</div>' : '')
-                + '<div>' + edit + '</div></div>';
+                + reason
+                + '<div>' + btns + '</div></div>';
         }).join('');
+    }
+    function kbApprove(id) {
+        if (!confirm('이 지식을 승인하여 게시할까요?')) return;
+        fetch('/ops-kb/api/' + id + '/approve', { method: 'POST', credentials: 'same-origin' })
+            .then(r => r.json()).then(function (d) { if (d.error) alert(d.error.message || '실패'); else kbRefresh(); });
+    }
+    function kbReject(id) {
+        var reason = prompt('반려 사유를 입력하세요 (작성자에게 표시됩니다)');
+        if (reason === null) return;
+        if (!reason.trim()) { alert('반려 사유는 필수입니다.'); return; }
+        fetch('/ops-kb/api/' + id + '/reject', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin', body: JSON.stringify({ reason: reason }) })
+            .then(r => r.json()).then(function (d) { if (d.error) alert(d.error.message || '실패'); else kbRefresh(); });
     }
     function openKbDetail(k) {
         // 추천 카드 '적용'=상세 보기 (조회 화면). 전체 조치 표시.

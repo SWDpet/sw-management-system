@@ -43,7 +43,12 @@ public class OpsKb {
     // [ops-kb-workbench] 직접등록 확장
     @Column(length = 10) private String source = "SEED";    // SEED / MANUAL
     @Column(name = "created_by", length = 50) private String createdBy;
-    @Column(length = 10) private String status = "ACTIVE";  // ACTIVE / DELETED
+    @Column(length = 10) private String status = "ACTIVE";  // ACTIVE / PENDING / REJECTED / DELETED
+
+    // [ops-kb-approval] 등록 승인 워크플로
+    @Column(name = "reviewed_by", length = 50) private String reviewedBy;     // 승인/반려 처리자
+    @Column(name = "reviewed_at") private java.time.LocalDateTime reviewedAt; // 처리 일시
+    @Column(name = "reject_reason", columnDefinition = "text") private String rejectReason;
 
     @Column(name = "created_at", updatable = false) private java.time.LocalDateTime createdAt;
     @Column(name = "updated_at") private java.time.LocalDateTime updatedAt;

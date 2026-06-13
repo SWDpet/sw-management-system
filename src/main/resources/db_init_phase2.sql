@@ -811,6 +811,12 @@ ALTER TABLE tb_ops_kb ALTER COLUMN status SET NOT NULL;
 CREATE SEQUENCE IF NOT EXISTS seq_ops_kb_manual START 1;
 CREATE INDEX IF NOT EXISTS idx_ops_kb_status_source ON tb_ops_kb(status, source);
 
+-- [ops-kb-approval] 등록 승인 워크플로 (편집권한자 등록 → PENDING → 관리자 승인 → ACTIVE)
+-- status 값 확장: ACTIVE / PENDING / REJECTED / DELETED. status 는 VARCHAR(10) (REJECTED=8자, 적합).
+ALTER TABLE tb_ops_kb ADD COLUMN IF NOT EXISTS reviewed_by   VARCHAR(50);
+ALTER TABLE tb_ops_kb ADD COLUMN IF NOT EXISTS reviewed_at   TIMESTAMP;
+ALTER TABLE tb_ops_kb ADD COLUMN IF NOT EXISTS reject_reason TEXT;
+
 -- 운영문서 섹션 상세 (jsonb)
 CREATE TABLE IF NOT EXISTS tb_ops_doc_detail (
     detail_id    BIGSERIAL PRIMARY KEY,
