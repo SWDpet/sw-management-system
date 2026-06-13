@@ -251,6 +251,7 @@
 .ops-reco-bar { margin-bottom: 8px; }
 .ops-reco-toggle { font-size: 0.84rem; color: var(--ops-primary); cursor: pointer; background: none; border: 0; padding: 0; }
 .ops-reco-box { margin-top: 6px; }
+.ops-reco-box.collapsed { display: none; }
 .ops-reco-loading { color: var(--ops-text-secondary); font-size: 0.84rem; padding: 6px 0; }
 .ops-reco-card { background: var(--ops-surface-2); border: 1px solid var(--ops-border); border-radius: 8px;
     padding: 10px 12px; margin-bottom: 8px; }

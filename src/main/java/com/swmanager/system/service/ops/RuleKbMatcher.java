@@ -28,12 +28,11 @@ public class RuleKbMatcher implements KbMatcher {
         List<OpsKb> candidates = (gubun != null && !gubun.isBlank())
                 ? opsKbRepository.findByGubun(gubun) : opsKbRepository.findAll();
 
-        // sysType 필터 (있으면). 0건이면 폴백(해제)
+        // sysType 필터 (있으면 엄격 적용 — 선택 시스템의 KB 만. 없으면 미적용)
         List<OpsKb> pool = candidates;
         if (sysType != null && !sysType.isBlank()) {
-            List<OpsKb> filtered = new ArrayList<>();
-            for (OpsKb k : candidates) if (sysType.equalsIgnoreCase(k.getSysType())) filtered.add(k);
-            if (!filtered.isEmpty()) pool = filtered;
+            pool = new ArrayList<>();
+            for (OpsKb k : candidates) if (sysType.equalsIgnoreCase(k.getSysType())) pool.add(k);
         }
 
         List<String> tokens = tokenize(query);

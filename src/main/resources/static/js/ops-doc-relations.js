@@ -125,10 +125,43 @@ function opsValidateRelations() {
     return true;
 }
 
-// [M3] KB 추천 — docType(FAULT/SUPPORT), query(증상텍스트), sysType, applyFn(선택 카드 적용)
+// [M3] KB 추천 실시간 바인딩 — 증상 입력 시 디바운스로 자동 갱신(시스템 필터 포함)
+var opsKb = { docType: null, symptomElId: null, sysElId: null, applyFn: null, timer: null };
+function opsKbSetup(docType, symptomElId, sysElId, applyFn) {
+    opsKb = { docType: docType, symptomElId: symptomElId, sysElId: sysElId, applyFn: applyFn, timer: null };
+    var el = document.getElementById(symptomElId);
+    if (el) el.addEventListener('input', function () {
+        if (opsKb.timer) clearTimeout(opsKb.timer);
+        opsKb.timer = setTimeout(opsKbRun, 350);
+    });
+}
+function opsKbQuery() {
+    var s = document.getElementById(opsKb.symptomElId);
+    var q = (s && s.value && s.value.trim()) ? s.value.trim() : '';
+    if (!q) { var t = document.getElementById('title'); q = t ? t.value.trim() : ''; }
+    return q;
+}
+function opsKbRun() {
+    var sys = opsKb.sysElId ? (document.getElementById(opsKb.sysElId) || {}).value : '';
+    opsKbRecommend(opsKb.docType, opsKbQuery(), sys, opsKb.applyFn);
+}
+// "추천 보기/접기" 토글
+function opsKbToggle() {
+    var box = document.getElementById('kbRecoBox');
+    if (!box) return;
+    if (box.classList.contains('collapsed') || !box.innerHTML.trim()) {
+        box.classList.remove('collapsed');
+        opsKbRun();
+    } else {
+        box.classList.add('collapsed');
+    }
+}
+
+// [M3] KB 추천 fetch+render — docType, query(증상텍스트), sysType, applyFn(선택 카드 적용)
 function opsKbRecommend(docType, query, sysType, applyFn) {
     var box = document.getElementById('kbRecoBox');
     if (!box) return;
+    box.classList.remove('collapsed');
     box.innerHTML = '<div class="ops-reco-loading">추천 검색 중...</div>';
     var url = '/ops-doc/api/kb/recommend?docType=' + encodeURIComponent(docType)
         + '&sysType=' + encodeURIComponent(sysType || '')
