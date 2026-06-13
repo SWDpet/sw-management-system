@@ -1,5 +1,7 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.domain.ops.Staff;
+import com.swmanager.system.repository.ops.StaffRepository;
 import com.swmanager.system.service.OrgUnitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,9 @@ public class OrgUnitController {
 
     @Autowired
     private OrgUnitService orgUnitService;
+
+    @Autowired
+    private StaffRepository staffRepository;   // [staff] 직원 관리
 
     // ======== 조회 API (인증 사용자) ========
 
@@ -99,6 +104,53 @@ public class OrgUnitController {
         } catch (IllegalStateException e) {
             return error(400, "HAS_CHILDREN", e.getMessage());
         }
+    }
+
+    // ======== [staff] 직원 관리 (ADMIN) — 조직도 인원 추가/수정/삭제 ========
+
+    @PostMapping("/admin/api/staff")
+    @ResponseBody
+    public ResponseEntity<?> createStaff(@RequestBody Map<String, Object> body) {
+        String name = (String) body.get("name");
+        if (name == null || name.isBlank()) return error(400, "INVALID_INPUT", "이름은 필수입니다.");
+        Staff s = new Staff();
+        applyStaff(s, body);
+        Map<String, Object> ok = new LinkedHashMap<>();
+        ok.put("success", true);
+        ok.put("staff_id", staffRepository.save(s).getStaffId());
+        return ResponseEntity.ok(ok);
+    }
+
+    @PutMapping("/admin/api/staff/{id}")
+    @ResponseBody
+    public ResponseEntity<?> updateStaff(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Staff s = staffRepository.findById(id).orElse(null);
+        if (s == null) return error(404, "NOT_FOUND", "직원 없음: " + id);
+        applyStaff(s, body);
+        staffRepository.save(s);
+        return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    @DeleteMapping("/admin/api/staff/{id}")
+    @ResponseBody
+    public ResponseEntity<?> deleteStaff(@PathVariable Long id) {
+        try {
+            staffRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (Exception e) {
+            return error(400, "IN_USE", "문서 요청자로 사용 중인 직원은 삭제할 수 없습니다.");
+        }
+    }
+
+    private void applyStaff(Staff s, Map<String, Object> body) {
+        if (body.get("name") != null) s.setName((String) body.get("name"));
+        s.setPosition((String) body.get("position"));
+        if (body.containsKey("org_unit_id")) {
+            Object v = body.get("org_unit_id");
+            s.setOrgUnitId(v instanceof Number ? ((Number) v).longValue() : null);
+        }
+        if (body.get("active") != null) s.setActive(Boolean.TRUE.equals(body.get("active")));
+        s.setTel((String) body.get("tel"));
     }
 
     private ResponseEntity<?> error(int status, String code, String message) {

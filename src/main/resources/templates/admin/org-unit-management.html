@@ -19,6 +19,12 @@
         .member-row { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:0.88em; }
         .member-row .m-name { font-weight:600; color: var(--text); }
         .member-row .m-pos { color: var(--text2); font-size:0.9em; }
+        .member-row .m-act { margin-left:auto; color: var(--text2); }
+        .member-row .m-act i { cursor:pointer; padding:2px 4px; }
+        .member-row .m-act i:hover { color: var(--primary); }
+        .staff-add { display:flex; gap:6px; margin-top:10px; }
+        .staff-add input { padding:6px; border:1px solid var(--border2); border-radius:5px; font-size:0.85em; }
+        .staff-add input:first-child { flex:1; }
         .layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
         /* [ops-fault-support] 접이식 조직도 트리 (폴더/펼침·접기) — 토큰만 사용 */
         ul.tree, ul.tree ul { list-style: none; margin: 0; padding: 0; }
@@ -218,20 +224,50 @@
                     var box = document.getElementById('memberBox');
                     if (!box) return;
                     var head = '<h4><i class="fas fa-users"></i> 소속 인원 (' + list.length + ')</h4>';
-                    if (!list || list.length === 0) {
-                        box.innerHTML = head + '<div class="muted">매핑된 인원이 없습니다.</div>';
-                        return;
-                    }
-                    box.innerHTML = head + list.map(function(m) {
+                    var rows = (list && list.length) ? list.map(function(m) {
                         var badge = m.active
                             ? '<span class="ds-badge ds-badge--success">재직</span>'
-                            : '<span class="ds-badge ds-badge--muted">퇴사</span>';
+                            : '<span class="ds-badge ds-badge--muted">비활성</span>';
                         var pos = m.position ? '<span class="m-pos">' + escapeHtml(m.position) + '</span>' : '';
                         return '<div class="member-row">' + badge +
-                               '<span class="m-name">' + escapeHtml(m.username) + '</span>' + pos + '</div>';
-                    }).join('');
+                               '<span class="m-name">' + escapeHtml(m.username) + '</span>' + pos +
+                               '<span class="m-act">' +
+                               '<i class="fas fa-pen" title="수정" onclick="editStaff(' + m.staff_id + ',\'' + escAttr(m.username) + '\',\'' + escAttr(m.position || '') + '\',' + (m.active ? 'true' : 'false') + ')"></i> ' +
+                               '<i class="fas fa-trash" title="삭제" onclick="delStaff(' + m.staff_id + ')"></i></span></div>';
+                    }).join('') : '<div class="muted">소속 인원이 없습니다.</div>';
+                    box.innerHTML = head + rows +
+                        '<div class="staff-add"><input id="stName" placeholder="이름">' +
+                        '<input id="stPos" placeholder="직급" style="width:72px;">' +
+                        '<button class="btn btn-primary" onclick="addStaff()"><i class="fas fa-plus"></i> 직원</button></div>';
                 });
         }
+
+        function addStaff() {
+            if (!selectedNode) return;
+            var name = document.getElementById('stName').value.trim();
+            if (!name) { alert('이름을 입력하세요.'); return; }
+            staffReq('POST', '/admin/api/staff',
+                { name: name, position: document.getElementById('stPos').value, org_unit_id: selectedNode.unit_id, active: true });
+        }
+        function editStaff(id, name, pos, active) {
+            var nn = prompt('이름', name); if (nn === null) return;
+            var np = prompt('직급 (예: 부장)', pos); if (np === null) return;
+            var na = confirm('재직 상태입니까? (확인=재직, 취소=비활성)');
+            staffReq('PUT', '/admin/api/staff/' + id, { name: nn.trim(), position: np.trim(), active: na });
+        }
+        function delStaff(id) {
+            if (!confirm('이 직원을 삭제할까요?')) return;
+            staffReq('DELETE', '/admin/api/staff/' + id, null);
+        }
+        function staffReq(method, url, body) {
+            var opt = { method: method, credentials: 'same-origin' };
+            if (body) { opt.headers = { 'Content-Type': 'application/json' }; opt.body = JSON.stringify(body); }
+            fetch(url, opt).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.error) { alert(d.error.message || '실패'); return; }
+                if (selectedNode) loadMembers(selectedNode.unit_id);
+            }).catch(function(e) { alert('오류: ' + e); });
+        }
+        function escAttr(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
         function saveEdit() {
             if (!selectedNode) return;
