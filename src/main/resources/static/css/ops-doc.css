@@ -246,3 +246,16 @@
 .ops-inline-form.show { display: block; }
 .ops-inline-form input { width: 100%; padding: 6px; margin-bottom: 6px; border: 1px solid var(--ops-border);
     border-radius: 5px; font-size: 0.84rem; box-sizing: border-box; background: var(--ops-surface); color: var(--ops-text); }
+
+/* [ops-fault-support M3] KB 추천 카드 */
+.ops-reco-bar { margin-bottom: 8px; }
+.ops-reco-toggle { font-size: 0.84rem; color: var(--ops-primary); cursor: pointer; background: none; border: 0; padding: 0; }
+.ops-reco-box { margin-top: 6px; }
+.ops-reco-loading { color: var(--ops-text-secondary); font-size: 0.84rem; padding: 6px 0; }
+.ops-reco-card { background: var(--ops-surface-2); border: 1px solid var(--ops-border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; }
+.ops-reco-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.ops-reco-meta { color: var(--ops-text-secondary); font-size: 0.78rem; }
+.ops-reco-title { font-weight: 600; font-size: 0.88rem; color: var(--ops-text); }
+.ops-reco-sum { color: var(--ops-text-secondary); font-size: 0.82rem; margin: 4px 0 8px; line-height: 1.4; }
+.ops-reco-apply { font-size: 0.8rem; padding: 4px 12px; }

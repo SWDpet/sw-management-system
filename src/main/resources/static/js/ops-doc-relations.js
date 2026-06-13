@@ -124,6 +124,32 @@ function opsValidateRelations() {
     return true;
 }
 
+// [M3] KB 추천 — docType(FAULT/SUPPORT), query(증상텍스트), sysType, applyFn(선택 카드 적용)
+function opsKbRecommend(docType, query, sysType, applyFn) {
+    var box = document.getElementById('kbRecoBox');
+    if (!box) return;
+    box.innerHTML = '<div class="ops-reco-loading">추천 검색 중...</div>';
+    var url = '/ops-doc/api/kb/recommend?docType=' + encodeURIComponent(docType)
+        + '&sysType=' + encodeURIComponent(sysType || '')
+        + '&symptom=' + encodeURIComponent(query || '');
+    fetch(url, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (list) {
+            if (!list || !list.length) { box.innerHTML = '<div class="ops-reco-loading">추천 결과 없음</div>'; return; }
+            box.innerHTML = list.map(function (k, i) {
+                return '<div class="ops-reco-card"><div class="ops-reco-head">'
+                    + '<span class="group-chip">' + opsEscHtml(k.kb_code) + '</span>'
+                    + '<span class="ops-reco-meta">사례 ' + (k.case_count || 0) + '건</span></div>'
+                    + '<div class="ops-reco-title">' + opsEscHtml(k.symptom || '') + ' › ' + opsEscHtml(k.cause || '') + '</div>'
+                    + (k.summary ? '<div class="ops-reco-sum">' + opsEscHtml(k.summary) + '</div>' : '')
+                    + '<button type="button" class="ops-btn ops-btn-primary ops-reco-apply" data-i="' + i + '">적용</button></div>';
+            }).join('');
+            box.querySelectorAll('.ops-reco-apply').forEach(function (btn) {
+                btn.addEventListener('click', function () { applyFn(list[Number(btn.dataset.i)]); });
+            });
+        }).catch(function (e) { box.innerHTML = '<div class="ops-reco-loading">오류: ' + e + '</div>'; });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     if (!document.getElementById('engineerId')) return;
     opsLoadEngineers().then(function () {

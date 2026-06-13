@@ -732,6 +732,45 @@ CREATE TABLE IF NOT EXISTS tb_ops_doc_partner (
 );
 CREATE INDEX IF NOT EXISTS idx_ops_doc_partner_partner ON tb_ops_doc_partner(partner_id);
 
+-- ============================================================
+-- [ops-fault-support M3/Step 4] 장애/지원 지식베이스(KB) + 채택 피드백
+-- 순서: tb_ops_kb -> tb_ops_kb_feedback -> 인덱스. pg_trgm 실패 시 LIKE 폴백(매처).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_ops_kb (
+    kb_id        BIGSERIAL PRIMARY KEY,
+    kb_code      VARCHAR(20) NOT NULL UNIQUE,
+    gubun        VARCHAR(10),
+    sys_type     VARCHAR(20),
+    category     VARCHAR(30),
+    symptom      VARCHAR(200),
+    cause        VARCHAR(200),
+    summary      TEXT,
+    symptom_desc TEXT,
+    cause_desc   TEXT,
+    action       TEXT,
+    prevention   TEXT,
+    keywords     TEXT,
+    case_count   INT DEFAULT 0,
+    rewritten    BOOLEAN DEFAULT FALSE,
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS tb_ops_kb_feedback (
+    feedback_id BIGSERIAL PRIMARY KEY,
+    kb_id       BIGINT NOT NULL REFERENCES tb_ops_kb(kb_id) ON DELETE CASCADE,
+    doc_id      BIGINT REFERENCES tb_ops_doc(doc_id) ON DELETE SET NULL,
+    fb_action   VARCHAR(20),   -- APPLIED / IGNORED
+    created_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+-- pg_trgm + GIN (권한 없으면 LIKE 폴백 — 실패해도 init 계속)
+DO $$ BEGIN
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE INDEX IF NOT EXISTS idx_ops_kb_keywords ON tb_ops_kb USING gin (keywords gin_trgm_ops);
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE '[ops-kb] pg_trgm 미적용 (LIKE 폴백): %', SQLERRM;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_ops_kb_filter ON tb_ops_kb(gubun, sys_type);
+
 -- 운영문서 섹션 상세 (jsonb)
 CREATE TABLE IF NOT EXISTS tb_ops_doc_detail (
     detail_id    BIGSERIAL PRIMARY KEY,

@@ -1,0 +1,42 @@
+package com.swmanager.system.domain.ops;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * 장애/지원 지식베이스 노드 (tb_ops_kb) — ops-fault-support M3.
+ * 업무일지 백서(증상→원인→조치) 정규화 시드. 추천(KbMatcher) 소스.
+ */
+@Entity
+@Table(name = "tb_ops_kb")
+@Getter @Setter
+public class OpsKb {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "kb_id")
+    private Long kbId;
+
+    @Column(name = "kb_code", length = 20)
+    private String kbCode;
+
+    private String gubun;          // 장애 / 지원
+
+    @Column(name = "sys_type", length = 20)
+    private String sysType;
+
+    private String category;       // 분류(시스템)
+    private String symptom;        // 형태(증상 표제)
+    private String cause;          // 원인
+
+    @Column(columnDefinition = "text") private String summary;
+    @Column(name = "symptom_desc", columnDefinition = "text") private String symptomDesc;
+    @Column(name = "cause_desc",   columnDefinition = "text") private String causeDesc;
+    @Column(columnDefinition = "text") private String action;
+    @Column(columnDefinition = "text") private String prevention;
+    @Column(columnDefinition = "text") private String keywords;
+
+    @Column(name = "case_count") private Integer caseCount;
+    private Boolean rewritten;
+}

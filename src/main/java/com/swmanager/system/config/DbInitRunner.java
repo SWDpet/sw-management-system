@@ -36,12 +36,21 @@ public class DbInitRunner implements ApplicationRunner {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    /** 스키마 → 시드 순서. 시드는 스키마(CREATE) 이후 실행되어야 함. */
+    private static final String[] SQL_FILES = { "db_init_phase2.sql", "db_seed_ops_kb.sql" };
+
     @Override
     public void run(ApplicationArguments args) {
+        for (String file : SQL_FILES) {
+            runSqlFile(file);
+        }
+    }
+
+    private void runSqlFile(String fileName) {
         try {
-            ClassPathResource resource = new ClassPathResource("db_init_phase2.sql");
+            ClassPathResource resource = new ClassPathResource(fileName);
             if (!resource.exists()) {
-                log.info("db_init_phase2.sql 파일 없음 - 스킵");
+                log.info("{} 파일 없음 - 스킵", fileName);
                 return;
             }
 
@@ -62,9 +71,9 @@ public class DbInitRunner implements ApplicationRunner {
                     log.debug("SQL 실행 스킵 (이미 존재하거나 에러): {}", e.getMessage());
                 }
             }
-            log.info("DB 초기화 완료: {}개 SQL 실행", executed);
+            log.info("DB 초기화 완료 [{}]: {}개 SQL 실행", fileName, executed);
         } catch (Exception e) {
-            log.warn("DB 초기화 실패 (무시): {}", e.getMessage());
+            log.warn("DB 초기화 실패 (무시) [{}]: {}", fileName, e.getMessage());
         }
     }
 

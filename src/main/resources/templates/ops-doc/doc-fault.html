@@ -80,6 +80,12 @@
 
     <div class="ops-section">
         <h3 class="ops-section-title">증상·원인·조치</h3>
+        <div class="ops-reco-bar">
+            <button type="button" class="ops-reco-toggle"
+                onclick="opsKbRecommend('FAULT', document.getElementById('symptom').value || document.getElementById('title').value, document.getElementById('sys_type').value, applyFaultReco)">
+                <i class="fas fa-lightbulb"></i> KB 추천 보기 (증상 기반)</button>
+            <div class="ops-reco-box" id="kbRecoBox"></div>
+        </div>
         <table class="ops-form-table">
             <tr><th>증상 *</th><td><textarea id="symptom"></textarea></td></tr>
             <tr><th>원인</th><td><textarea id="cause"></textarea></td></tr>
@@ -107,6 +113,11 @@
     const docId  = /*[[${doc?.docId}]]*/ null;
     window.OPS_IS_EDIT = isEdit;
     window.OPS_DOC_ID = docId;
+    function applyFaultReco(k) {
+        if (k.cause) document.getElementById('cause').value = k.cause;
+        if (k.action) document.getElementById('action').value = k.action;
+        if (k.symptom && !document.getElementById('symptom').value) document.getElementById('symptom').value = k.symptom;
+    }
     function saveFault() {
         if (!opsValidateRelations()) return;
         const rel = opsRelationsBody();

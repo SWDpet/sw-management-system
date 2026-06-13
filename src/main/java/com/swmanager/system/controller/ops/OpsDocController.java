@@ -19,6 +19,7 @@ import com.swmanager.system.repository.ops.PartnerContactRepository;
 import org.springframework.data.domain.PageRequest;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
+import com.swmanager.system.service.ops.KbMatcher;
 import com.swmanager.system.service.ops.OpsDocService;
 import com.swmanager.system.service.ops.OpsDocSignatureService;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,7 @@ public class OpsDocController {
     private final PersonInfoRepository personInfoRepository; // [M2]
     private final OrgUnitRepository orgUnitRepository;        // [M2]
     private final PartnerContactRepository partnerContactRepository; // [M2/P3]
+    private final KbMatcher kbMatcher;                                // [M3]
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -455,6 +457,18 @@ public class OpsDocController {
             result.add(m);
         }
         return result;
+    }
+
+    /** [M3] 증상→원인→조치 KB 추천 (규칙 매처). */
+    @GetMapping("/api/kb/recommend")
+    @ResponseBody
+    public List<Map<String, Object>> kbRecommend(
+            @RequestParam("docType") String docType,
+            @RequestParam(value = "sysType", required = false) String sysType,
+            @RequestParam(value = "symptom", required = false) String symptom) {
+        String gubun = "FAULT".equalsIgnoreCase(docType) ? "장애"
+                : ("SUPPORT".equalsIgnoreCase(docType) ? "지원" : null);
+        return kbMatcher.recommend(gubun, sysType, symptom == null ? "" : symptom, 5);
     }
 
     /** [M2] 수정 폼 관계자 프리필 (engineer/requester). */
