@@ -225,3 +225,24 @@
     .ops-actions { flex-direction: column; }
     .ops-actions .ops-btn { width: 100%; }
 }
+
+/* [ops-fault-support M2] 관계자(엔지니어/요청자) 컨트롤 — --ops-* 토큰 100% */
+.ops-relctl { position: relative; }
+.ops-seg { display: inline-flex; border: 1px solid var(--ops-border); border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
+.ops-seg button { border: 0; background: var(--ops-surface); color: var(--ops-text-secondary);
+    padding: 5px 12px; font-size: 0.82rem; cursor: pointer; }
+.ops-seg button.active { background: var(--ops-primary-50); color: var(--ops-primary); font-weight: 600; }
+.ops-seg button:disabled { opacity: 0.5; cursor: not-allowed; }
+.ops-search-results { list-style: none; margin: 4px 0 0; padding: 0; border: 1px solid var(--ops-border);
+    border-radius: 6px; max-height: 180px; overflow-y: auto; background: var(--ops-surface); display: none; }
+.ops-search-results.show { display: block; }
+.ops-search-results li { padding: 7px 10px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid var(--ops-surface-2); }
+.ops-search-results li:hover { background: var(--ops-surface-2); }
+.ops-req-selected { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
+    padding: 5px 10px; background: var(--ops-primary-50); color: var(--ops-primary); border-radius: 6px; font-size: 0.85rem; }
+.ops-req-selected .x { cursor: pointer; font-weight: 700; }
+.ops-inline-add { display: inline-block; margin-top: 6px; font-size: 0.82rem; color: var(--ops-primary); cursor: pointer; }
+.ops-inline-form { margin-top: 8px; padding: 10px; border: 1px dashed var(--ops-border); border-radius: 6px; display: none; }
+.ops-inline-form.show { display: block; }
+.ops-inline-form input { width: 100%; padding: 6px; margin-bottom: 6px; border: 1px solid var(--ops-border);
+    border-radius: 5px; font-size: 0.84rem; box-sizing: border-box; background: var(--ops-surface); color: var(--ops-text); }

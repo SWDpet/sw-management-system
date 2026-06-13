@@ -2,9 +2,11 @@ package com.swmanager.system.service.ops;
 
 import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.constant.enums.OpsDocType;
+import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentDetail;
+import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.ops.OpsDocumentDetailRepository;
 import com.swmanager.system.repository.ops.OpsDocumentRepository;
@@ -37,6 +39,7 @@ public class OpsDocService {
     private final OpsDocumentRepository opsDocumentRepository;
     private final OpsDocumentDetailRepository opsDocumentDetailRepository;
     private final UserRepository userRepository;
+    private final OrgUnitRepository orgUnitRepository;
 
     /** doc_type 별 section_data 필수 키 (codex 권고 — FR-13). */
     private static final Map<OpsDocType, Set<String>> REQUIRED_SECTION_KEYS = Map.of(
@@ -64,6 +67,7 @@ public class OpsDocService {
     /** 신규 저장 — section_data 필수 필드 검증 후 row + detail 저장. */
     public OpsDocument create(OpsDocument doc, Map<String, Object> sectionData, String currentUserId) {
         validateSectionData(doc.getDocType(), sectionData);
+        validateRelations(doc);   // [M2] 엔지니어·요청자 검증
         if (doc.getDocNo() == null || doc.getDocNo().isBlank()) {
             doc.setDocNo(generateDocNo(doc.getDocType()));
         }
@@ -115,6 +119,14 @@ public class OpsDocService {
         if (changes.getSupportTargetType() != null) existing.setSupportTargetType(changes.getSupportTargetType());
         if (changes.getInfra() != null) existing.setInfra(changes.getInfra());
         if (changes.getOrgUnit() != null) existing.setOrgUnit(changes.getOrgUnit());
+        // [M2] FAULT/SUPPORT 는 엔지니어·요청자를 폼에서 항상 전송 → 직접 반영 후 검증
+        OpsDocType et = existing.getDocType();
+        if (et == OpsDocType.FAULT || et == OpsDocType.SUPPORT) {
+            existing.setEngineer(changes.getEngineer());
+            existing.setRequesterPerson(changes.getRequesterPerson());
+            existing.setRequesterContactId(changes.getRequesterContactId());
+            validateRelations(existing);
+        }
         existing.setUpdatedBy(currentUserId);
 
         opsDocumentRepository.save(existing);
@@ -141,6 +153,35 @@ public class OpsDocService {
         Integer max = opsDocumentRepository.findMaxDocNoSeq(prefix + "%");
         int next = (max != null ? max : 0) + 1;
         return prefix + next;
+    }
+
+    /**
+     * [ops-fault-support M2] 엔지니어·요청자 검증 (FAULT/SUPPORT 한정).
+     * - 요청자 필수·정확히 1명 (공무원 XOR 업체담당자)
+     * - 담당 엔지니어 필수 + 활성(재직) + SW지원팀 소속
+     */
+    private void validateRelations(OpsDocument doc) {
+        OpsDocType t = doc.getDocType();
+        if (t != OpsDocType.FAULT && t != OpsDocType.SUPPORT) return;
+
+        boolean person  = doc.getRequesterPerson() != null;
+        boolean contact = doc.getRequesterContactId() != null;
+        if (person == contact) {  // 둘 다 없거나 둘 다 있음
+            throw new IllegalArgumentException("요청자는 공무원 또는 업체담당자 중 정확히 1명이어야 합니다.");
+        }
+
+        User eng = doc.getEngineer();
+        if (eng == null) {
+            throw new IllegalArgumentException("담당 엔지니어는 필수입니다.");
+        }
+        if (!eng.isEnabled()) {
+            throw new IllegalArgumentException("담당 엔지니어가 비활성(퇴사) 상태입니다.");
+        }
+        Long swTeamId = orgUnitRepository.findFirstByNameAndUnitType("SW지원팀", "TEAM")
+                .map(OrgUnit::getUnitId).orElse(null);
+        if (swTeamId == null || !swTeamId.equals(eng.getOrgUnitId())) {
+            throw new IllegalArgumentException("담당 엔지니어는 SW지원팀 소속이어야 합니다.");
+        }
     }
 
     /** doc_type 별 필수 section_data 키 검증 (codex 권고 — FR-13).

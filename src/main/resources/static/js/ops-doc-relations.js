@@ -1,0 +1,129 @@
+// [ops-fault-support M2] 운영문서 관계자(엔지니어/요청자) 공통 스크립트.
+// doc-fault.html / doc-support.html 공용. 폼은 window.OPS_IS_EDIT / OPS_DOC_ID 를 설정.
+var opsSelectedReq = { kind: 'PERSON', id: null, label: '' };
+var opsReqTimer = null;
+
+function opsVal(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+function opsEsc(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+function opsEscHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+}
+function opsHideResults() { var ul = document.getElementById('reqResults'); if (ul) { ul.classList.remove('show'); ul.innerHTML = ''; } }
+
+// 엔지니어 드롭다운 (SW지원팀 활성). 반환: fetch promise
+function opsLoadEngineers() {
+    var sel = document.getElementById('engineerId');
+    if (!sel) return Promise.resolve();
+    return fetch('/ops-doc/api/engineers', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (list) {
+            list.forEach(function (e) {
+                var o = document.createElement('option');
+                o.value = e.id;
+                o.textContent = e.name + (e.position ? ' (' + e.position + ')' : '');
+                sel.appendChild(o);
+            });
+        });
+}
+
+function setReqKind(kind) {
+    opsSelectedReq.kind = kind;
+    var p = document.getElementById('segPerson'), c = document.getElementById('segContact');
+    if (p) p.classList.toggle('active', kind === 'PERSON');
+    if (c) c.classList.toggle('active', kind === 'CONTACT');
+    opsClearRequester();
+}
+
+function reqSearchInput() {
+    var kw = opsVal('reqSearch');
+    if (opsReqTimer) clearTimeout(opsReqTimer);
+    if (kw.length < 1) { opsHideResults(); return; }
+    opsReqTimer = setTimeout(function () {
+        fetch('/ops-doc/api/requester/search?kw=' + encodeURIComponent(kw), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(opsRenderReqResults);
+    }, 250);
+}
+
+function opsRenderReqResults(list) {
+    var ul = document.getElementById('reqResults');
+    if (!ul) return;
+    if (!list || list.length === 0) {
+        ul.innerHTML = '<li style="color:var(--ops-text-secondary)">결과 없음</li>';
+        ul.classList.add('show'); return;
+    }
+    ul.innerHTML = list.map(function (p) {
+        var label = (p.name || '') + ' / ' + (p.org || '-') + (p.dept ? ' ' + p.dept : '') + (p.pos ? ' ' + p.pos : '');
+        return '<li onclick="opsSelectRequester(' + p.id + ',\'' + opsEsc(label) + '\')">' + opsEscHtml(label) + '</li>';
+    }).join('');
+    ul.classList.add('show');
+}
+
+function opsSelectRequester(id, label) {
+    opsSelectedReq.id = id; opsSelectedReq.label = label;
+    opsHideResults();
+    var s = document.getElementById('reqSearch'); if (s) s.value = '';
+    document.getElementById('reqSelectedBox').innerHTML =
+        '<span class="ops-req-selected">' + opsEscHtml(label) + '<span class="x" onclick="opsClearRequester()">&times;</span></span>';
+}
+
+function opsClearRequester() {
+    opsSelectedReq.id = null; opsSelectedReq.label = '';
+    var box = document.getElementById('reqSelectedBox'); if (box) box.innerHTML = '';
+    opsHideResults();
+}
+
+function toggleReqForm() { document.getElementById('reqForm').classList.toggle('show'); }
+
+function saveRequester() {
+    var name = opsVal('rfName');
+    if (!name) { alert('이름은 필수입니다.'); return; }
+    var body = { name: name, org: opsVal('rfOrg'), dept: opsVal('rfDept'), pos: opsVal('rfPos'), tel: opsVal('rfTel') };
+    fetch('/ops-doc/api/requester', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); }).then(function (d) {
+        if (d.success) {
+            setReqKind('PERSON');
+            opsSelectRequester(d.id, name + ' / ' + (body.org || '-'));
+            document.getElementById('reqForm').classList.remove('show');
+            ['rfName', 'rfOrg', 'rfDept', 'rfPos', 'rfTel'].forEach(function (i) { document.getElementById(i).value = ''; });
+        } else alert((d.error && d.error.message) || '등록 실패');
+    }).catch(function (e) { alert('오류: ' + e); });
+}
+
+function opsPrefillRelations(docId) {
+    return fetch('/ops-doc/api/' + docId + '/relations', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d.engineer_id) { var sel = document.getElementById('engineerId'); if (sel) sel.value = d.engineer_id; }
+            if (d.requester_kind) {
+                setReqKind(d.requester_kind);
+                opsSelectedReq.id = d.requester_id;
+                opsSelectedReq.label = d.requester_label || '';
+                document.getElementById('reqSelectedBox').innerHTML =
+                    '<span class="ops-req-selected">' + opsEscHtml(d.requester_label || '') + '<span class="x" onclick="opsClearRequester()">&times;</span></span>';
+            }
+        });
+}
+
+// 저장 body 에 합칠 관계자 파트
+function opsRelationsBody() {
+    var ev = opsVal('engineerId');
+    return { engineer_id: ev ? Number(ev) : null, requester_kind: opsSelectedReq.kind, requester_id: opsSelectedReq.id };
+}
+
+// 저장 전 클라이언트 검증
+function opsValidateRelations() {
+    if (!opsVal('engineerId')) { alert('담당 엔지니어를 선택하세요.'); return false; }
+    if (!opsSelectedReq.id) { alert('요청자를 선택하세요.'); return false; }
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (!document.getElementById('engineerId')) return;
+    opsLoadEngineers().then(function () {
+        if (window.OPS_DOC_ID) opsPrefillRelations(window.OPS_DOC_ID);  // 편집·상세 공통 프리필
+    });
+});

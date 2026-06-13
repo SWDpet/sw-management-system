@@ -4,6 +4,7 @@ import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.OrgUnit;
+import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import jakarta.persistence.*;
@@ -77,6 +78,20 @@ public class OpsDocument {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approver_id")
     private User approver;
+
+    // [ops-fault-support M2] 담당 엔지니어(SW지원팀) — author(작성자)와 별도
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "engineer_id")
+    private User engineer;
+
+    // [ops-fault-support M2] 요청자: 공무원(ps_info). 업체담당자는 requesterContactId(P3) 와 배타(XOR)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "requester_person_id")
+    private PersonInfo requesterPerson;
+
+    // [ops-fault-support M2] 요청자: 업체담당자 FK 는 P3(tb_partner_contact). 현재는 컬럼만 보유
+    @Column(name = "requester_contact_id")
+    private Long requesterContactId;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;

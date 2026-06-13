@@ -50,6 +50,35 @@
     </div>
 
     <div class="ops-section">
+        <h3 class="ops-section-title">관계자</h3>
+        <table class="ops-form-table">
+            <tr><th>담당 엔지니어 *</th>
+                <td><select id="engineerId"><option value="">선택</option></select></td></tr>
+            <tr><th>요청자 *</th>
+                <td>
+                    <div class="ops-relctl">
+                        <div class="ops-seg">
+                            <button type="button" id="segPerson" class="active" onclick="setReqKind('PERSON')">공무원</button>
+                            <button type="button" id="segContact" onclick="setReqKind('CONTACT')" disabled title="외부업체는 P3에서 제공">업체담당자</button>
+                        </div>
+                        <input type="text" id="reqSearch" placeholder="이름/기관 검색" oninput="reqSearchInput()" autocomplete="off">
+                        <ul class="ops-search-results" id="reqResults"></ul>
+                        <div id="reqSelectedBox"></div>
+                        <span class="ops-inline-add" onclick="toggleReqForm()"><i class="fas fa-plus"></i> 신규 등록</span>
+                        <div class="ops-inline-form" id="reqForm">
+                            <input type="text" id="rfName" placeholder="이름 *">
+                            <input type="text" id="rfOrg" placeholder="기관">
+                            <input type="text" id="rfDept" placeholder="부서">
+                            <input type="text" id="rfPos" placeholder="직급">
+                            <input type="text" id="rfTel" placeholder="연락처">
+                            <button type="button" class="ops-btn ops-btn-primary" onclick="saveRequester()">등록</button>
+                        </div>
+                    </div>
+                </td></tr>
+        </table>
+    </div>
+
+    <div class="ops-section">
         <h3 class="ops-section-title">증상·원인·조치</h3>
         <table class="ops-form-table">
             <tr><th>증상 *</th><td><textarea id="symptom"></textarea></td></tr>
@@ -72,14 +101,22 @@
     </div>
 </main>
 
+<script src="/js/ops-doc-relations.js"></script>
 <script th:inline="javascript">
     const isEdit = /*[[${isEdit}]]*/ false;
     const docId  = /*[[${doc?.docId}]]*/ null;
+    window.OPS_IS_EDIT = isEdit;
+    window.OPS_DOC_ID = docId;
     function saveFault() {
+        if (!opsValidateRelations()) return;
+        const rel = opsRelationsBody();
         const body = {
             title: document.getElementById('title').value,
             sys_type: document.getElementById('sys_type').value,
             region_code: document.getElementById('region_code').value,
+            engineer_id: rel.engineer_id,
+            requester_kind: rel.requester_kind,
+            requester_id: rel.requester_id,
             section_data: {
                 fault_date: document.getElementById('fault_date').value,
                 severity: document.getElementById('severity').value,
@@ -96,7 +133,7 @@
             .then(r => r.json())
             .then(d => {
                 if (d.success) location.href = '/ops-doc/fault/' + d.docId;
-                else alert('저장 실패');
+                else alert((d.error && d.error.message) || '저장 실패');
             }).catch(e => alert('오류: ' + e));
     }
 </script>

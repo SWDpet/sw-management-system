@@ -2,12 +2,19 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
+import com.swmanager.system.domain.OrgUnit;
+import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.SigunguCode;
+import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
 import com.swmanager.system.repository.InspectReportRepository;
+import com.swmanager.system.repository.OrgUnitRepository;
+import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
+import com.swmanager.system.repository.UserRepository;
+import org.springframework.data.domain.PageRequest;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
 import com.swmanager.system.service.ops.OpsDocService;
@@ -45,6 +52,9 @@ public class OpsDocController {
     private final SigunguCodeRepository sigunguCodeRepository;
     private final InspectReportRepository inspectReportRepository;
     private final SwProjectRepository swProjectRepository;
+    private final UserRepository userRepository;             // [M2]
+    private final PersonInfoRepository personInfoRepository; // [M2]
+    private final OrgUnitRepository orgUnitRepository;        // [M2]
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -259,6 +269,9 @@ public class OpsDocController {
                     "error", Map.of("code", "INVALID_INPUT",
                             "message", "점검내역서는 점검 보고서 저장 흐름에서 자동 연계됩니다.")));
         }
+        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);  // [M2 codex#5]
+        if (denied != null) return denied;
+
         OpsDocument doc = new OpsDocument();
         doc.setDocType(docType);
         doc.setTitle((String) body.getOrDefault("title", docType.label()));
@@ -266,6 +279,7 @@ public class OpsDocController {
         doc.setRegionCode((String) body.get("region_code"));
         doc.setEnvironment((String) body.get("environment"));
         doc.setSupportTargetType((String) body.get("support_target_type"));
+        applyRelations(doc, body);   // [M2] 엔지니어·요청자
 
         @SuppressWarnings("unchecked")
         Map<String, Object> sectionData = (Map<String, Object>) body.get("section_data");
@@ -294,12 +308,17 @@ public class OpsDocController {
                     "error", Map.of("code", "INVALID_INPUT",
                             "message", "점검내역서는 점검 보고서 수정 흐름에서 자동 갱신됩니다.")));
         }
+        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);  // [M2 codex#5]
+        if (denied != null) return denied;
+
         OpsDocument changes = new OpsDocument();
+        changes.setDocType(docType);
         changes.setTitle((String) body.get("title"));
         changes.setSysType((String) body.get("sys_type"));
         changes.setRegionCode((String) body.get("region_code"));
         changes.setEnvironment((String) body.get("environment"));
         changes.setSupportTargetType((String) body.get("support_target_type"));
+        applyRelations(changes, body);   // [M2] 엔지니어·요청자
 
         @SuppressWarnings("unchecked")
         Map<String, Object> sectionData = (Map<String, Object>) body.get("section_data");
@@ -320,6 +339,122 @@ public class OpsDocController {
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         return ResponseEntity.ok(result);
+    }
+
+    // ===== [M2] 관계자 (엔지니어 / 요청자) =====
+
+    /** authDocument=EDIT 가드 (codex #5). 허용이면 null, 아니면 403. */
+    private ResponseEntity<Map<String, Object>> requireDocEdit(CustomUserDetails u) {
+        String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
+        if (!"EDIT".equals(auth)) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "success", false,
+                    "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT)이 필요합니다.")));
+        }
+        return null;
+    }
+
+    /** body 의 engineer_id / requester_kind(PERSON|CONTACT) + requester_id 를 doc 에 반영. */
+    private void applyRelations(OpsDocument doc, Map<String, Object> body) {
+        Object engId = body.get("engineer_id");
+        if (engId instanceof Number n) {
+            userRepository.findById(n.longValue()).ifPresent(doc::setEngineer);
+        }
+        String kind = (String) body.get("requester_kind");
+        Object rid = body.get("requester_id");
+        doc.setRequesterPerson(null);
+        doc.setRequesterContactId(null);
+        if (rid instanceof Number n) {
+            if ("PERSON".equals(kind)) {
+                personInfoRepository.findById(n.longValue()).ifPresent(doc::setRequesterPerson);
+            } else if ("CONTACT".equals(kind)) {
+                doc.setRequesterContactId(n.longValue());   // FK 검증은 P3(tb_partner_contact)
+            }
+        }
+    }
+
+    /** 담당 엔지니어 풀 — SW지원팀 활성 사용자 (FR-M2-1 드롭다운). */
+    @GetMapping("/api/engineers")
+    @ResponseBody
+    public List<Map<String, Object>> engineers() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        Long swTeamId = orgUnitRepository.findFirstByNameAndUnitType("SW지원팀", "TEAM")
+                .map(OrgUnit::getUnitId).orElse(null);
+        if (swTeamId == null) return result;
+        for (User u : userRepository.findByOrgUnitIdAndEnabledTrueOrderByUsernameAsc(swTeamId)) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", u.getUserSeq());
+            m.put("name", u.getUsername());
+            m.put("position", u.getPosition() != null ? u.getPosition() : u.getPositionTitle());
+            result.add(m);
+        }
+        return result;
+    }
+
+    /** 요청자(공무원) 검색 — ps_info (FR-M2-2). */
+    @GetMapping("/api/requester/search")
+    @ResponseBody
+    public List<Map<String, Object>> requesterSearch(@RequestParam("kw") String kw) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (PersonInfo p : personInfoRepository.findAllByKeyword(kw == null ? "" : kw, PageRequest.of(0, 10))) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", p.getId());
+            m.put("name", p.getUserNm());
+            m.put("org", p.getOrgNm());
+            m.put("dept", p.getDeptNm());
+            m.put("pos", p.getPos());
+            m.put("tel", p.getTel());
+            result.add(m);
+        }
+        return result;
+    }
+
+    /** 요청자(공무원) 인라인 신규 등록 — ops-doc 전용(authDocument), ps_info 최소필드 (FR-M2-5). */
+    @PostMapping("/api/requester")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> requesterCreate(
+            @RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);
+        if (denied != null) return denied;
+        String name = (String) body.get("name");
+        if (name == null || name.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false,
+                    "error", Map.of("code", "INVALID_INPUT", "message", "이름은 필수입니다.")));
+        }
+        PersonInfo p = new PersonInfo();
+        p.setUserNm(name);
+        p.setOrgNm((String) body.get("org"));
+        p.setDeptNm((String) body.get("dept"));
+        p.setPos((String) body.get("pos"));
+        p.setTel((String) body.get("tel"));
+        p.setCityNm((String) body.get("city"));
+        PersonInfo saved = personInfoRepository.save(p);
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("id", saved.getId());
+        result.put("name", saved.getUserNm());
+        return ResponseEntity.ok(result);
+    }
+
+    /** [M2] 수정 폼 관계자 프리필 (engineer/requester). */
+    @GetMapping("/api/{docId}/relations")
+    @ResponseBody
+    public Map<String, Object> relations(@PathVariable Long docId) {
+        Map<String, Object> m = new HashMap<>();
+        OpsDocument d = opsDocService.findById(docId).orElse(null);
+        if (d == null) return m;
+        if (d.getEngineer() != null) m.put("engineer_id", d.getEngineer().getUserSeq());
+        if (d.getRequesterPerson() != null) {
+            m.put("requester_kind", "PERSON");
+            m.put("requester_id", d.getRequesterPerson().getId());
+            m.put("requester_label", nz(d.getRequesterPerson().getUserNm()) + " / " + nz(d.getRequesterPerson().getOrgNm()));
+        } else if (d.getRequesterContactId() != null) {
+            m.put("requester_kind", "CONTACT");
+            m.put("requester_id", d.getRequesterContactId());
+            m.put("requester_label", "업체담당자 #" + d.getRequesterContactId());
+        }
+        return m;
     }
 
     // ===== API: 첨부 =====

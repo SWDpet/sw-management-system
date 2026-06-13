@@ -16,4 +16,7 @@ public interface OrgUnitRepository extends JpaRepository<OrgUnit, Long> {
     boolean existsByParent_UnitIdAndUseYn(Long parentId, String useYn);
 
     List<OrgUnit> findAllByUseYnOrderBySortOrderAsc(String useYn);
+
+    // [ops-fault-support M2] 엔지니어 풀(SW지원팀) 해석용
+    java.util.Optional<OrgUnit> findFirstByNameAndUnitType(String name, String unitType);
 }
