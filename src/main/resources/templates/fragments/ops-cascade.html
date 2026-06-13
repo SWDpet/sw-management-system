@@ -11,7 +11,6 @@
         <select id="casSgg" disabled><option value="">시군구</option></select>
         <select id="casSys" disabled><option value="">시스템</option></select>
     </div>
-    <input type="text" id="casSysDirect" placeholder="시스템 직접입력 (미계약·목록에 없을 때)" style="display:none;">
     <!-- 실제 제출 값(기존 저장 로직과 동일 id) -->
     <input type="hidden" id="region_code" th:value="${doc?.regionCode}">
     <input type="hidden" id="sys_type" th:value="${doc?.sysType}">

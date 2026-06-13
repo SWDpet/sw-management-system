@@ -17,6 +17,8 @@ import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
+import com.swmanager.system.repository.SysMstRepository;
+import com.swmanager.system.domain.SysMst;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.ops.OpsDocPartnerRepository;
 import com.swmanager.system.repository.ops.OpsKbFeedbackRepository;
@@ -69,6 +71,7 @@ public class OpsDocController {
     private final OpsKbFeedbackRepository opsKbFeedbackRepository;     // [M3/P5]
     private final PartnerRepository partnerRepository;                 // [M2/FR-M2-4]
     private final OpsDocPartnerRepository opsDocPartnerRepository;     // [M2/FR-M2-4]
+    private final SysMstRepository sysMstRepository;                   // [region-cascade] 시스템 마스터
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -574,23 +577,16 @@ public class OpsDocController {
         return out;
     }
 
-    /** 시군구코드 → 그 시군구의 sw_pjt 시스템 목록(distinct sysNm). 업무계획과 동일 소스. */
+    /** 시스템 마스터(sys_mst) 전체 — 계약사업(sw_pjt) 무관. 영업지원 등 미계약도 선택 가능. */
     @GetMapping("/api/systems")
     @ResponseBody
-    public List<Map<String, Object>> cascadeSystems(@RequestParam("admSectC") String admSectC) {
+    public List<Map<String, Object>> cascadeSystems() {
         List<Map<String, Object>> out = new ArrayList<>();
-        SigunguCode sgg = sigunguCodeRepository.findById(admSectC).orElse(null);
-        if (sgg == null) return out;
-        List<String> dists = java.util.Objects.equals(sgg.getSggNm(), sgg.getSidoNm())
-                ? List.of(sgg.getSggNm(), "도청", "본청") : List.of(sgg.getSggNm());
-        java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
-        for (var p : swProjectRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists)) {
-            String sys = p.getSysNm();
-            if (sys != null && !sys.isBlank() && seen.add(sys)) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("sysNm", sys);
-                out.add(m);
-            }
+        for (SysMst s : sysMstRepository.findAll(org.springframework.data.domain.Sort.by("nm"))) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("cd", s.getCd());
+            m.put("nm", s.getNm());
+            out.add(m);
         }
         return out;
     }
