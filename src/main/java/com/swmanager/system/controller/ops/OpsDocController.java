@@ -8,6 +8,7 @@ import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
+import com.swmanager.system.domain.ops.OpsKbFeedback;
 import com.swmanager.system.domain.ops.PartnerContact;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.OrgUnitRepository;
@@ -15,6 +16,7 @@ import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.repository.ops.OpsKbFeedbackRepository;
 import com.swmanager.system.repository.ops.PartnerContactRepository;
 import org.springframework.data.domain.PageRequest;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
@@ -60,6 +62,7 @@ public class OpsDocController {
     private final OrgUnitRepository orgUnitRepository;        // [M2]
     private final PartnerContactRepository partnerContactRepository; // [M2/P3]
     private final KbMatcher kbMatcher;                                // [M3]
+    private final OpsKbFeedbackRepository opsKbFeedbackRepository;     // [M3/P5]
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -469,6 +472,27 @@ public class OpsDocController {
         String gubun = "FAULT".equalsIgnoreCase(docType) ? "장애"
                 : ("SUPPORT".equalsIgnoreCase(docType) ? "지원" : null);
         return kbMatcher.recommend(gubun, sysType, symptom == null ? "" : symptom, 5);
+    }
+
+    /** [M3/P5] 추천 채택 피드백 적재 (APPLIED/IGNORED). */
+    @PostMapping("/api/kb/feedback")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> kbFeedback(
+            @RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);
+        if (denied != null) return denied;
+        Object kbId = body.get("kb_id");
+        if (!(kbId instanceof Number)) {
+            return ResponseEntity.badRequest().body(Map.of("success", false,
+                    "error", Map.of("code", "INVALID_INPUT", "message", "kb_id 가 필요합니다.")));
+        }
+        OpsKbFeedback fb = new OpsKbFeedback();
+        fb.setKbId(((Number) kbId).longValue());
+        if (body.get("doc_id") instanceof Number n) fb.setDocId(n.longValue());
+        fb.setFbAction("IGNORED".equals(body.get("fb_action")) ? "IGNORED" : "APPLIED");
+        opsKbFeedbackRepository.save(fb);
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     /** [M2] 수정 폼 관계자 프리필 (engineer/requester). */

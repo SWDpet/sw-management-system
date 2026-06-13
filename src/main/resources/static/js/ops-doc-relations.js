@@ -145,9 +145,22 @@ function opsKbRecommend(docType, query, sysType, applyFn) {
                     + '<button type="button" class="ops-btn ops-btn-primary ops-reco-apply" data-i="' + i + '">적용</button></div>';
             }).join('');
             box.querySelectorAll('.ops-reco-apply').forEach(function (btn) {
-                btn.addEventListener('click', function () { applyFn(list[Number(btn.dataset.i)]); });
+                btn.addEventListener('click', function () {
+                    var k = list[Number(btn.dataset.i)];
+                    applyFn(k);
+                    opsKbFeedback(k.kb_id, 'APPLIED');   // [P5] 채택 적재
+                });
             });
         }).catch(function (e) { box.innerHTML = '<div class="ops-reco-loading">오류: ' + e + '</div>'; });
+}
+
+// [P5] 추천 채택 피드백 (fire-and-forget)
+function opsKbFeedback(kbId, action) {
+    if (!kbId) return;
+    fetch('/ops-doc/api/kb/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ kb_id: kbId, doc_id: window.OPS_DOC_ID || null, fb_action: action })
+    }).catch(function () {});
 }
 
 document.addEventListener('DOMContentLoaded', function () {

@@ -62,6 +62,7 @@ public class RuleKbMatcher implements KbMatcher {
             String action = (k.getAction() != null && !k.getAction().isBlank())
                     ? k.getAction() : nz(k.getCauseDesc());
             Map<String, Object> m = new LinkedHashMap<>();
+            m.put("kb_id", k.getKbId());
             m.put("kb_code", k.getKbCode());
             m.put("symptom", k.getSymptom());
             m.put("cause", k.getCause());
