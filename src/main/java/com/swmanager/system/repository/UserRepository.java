@@ -28,7 +28,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUserid(String userid);
 
     Optional<User> findFirstByUsername(String username);
-    
+
+    // [ops-fault-support M1] 조직 단위 소속 사용자
+    /** 조직 단위 소속 전체(퇴사 포함) — 조직도 인원 표시(재직/퇴사 배지). */
+    List<User> findByOrgUnitIdOrderByUsernameAsc(Long orgUnitId);
+    /** 조직 단위 소속 활성(재직)만 — 엔지니어 풀(FR-M2-1: SW지원팀 드롭다운). */
+    List<User> findByOrgUnitIdAndEnabledTrueOrderByUsernameAsc(Long orgUnitId);
+
     /**
      * 승인 대기 중인 사용자 목록 (enabled = false)
      */

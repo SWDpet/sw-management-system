@@ -584,6 +584,22 @@ INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT 
 INSERT INTO tb_org_unit (parent_id, unit_type, name, sort_order) SELECT (SELECT unit_id FROM tb_org_unit WHERE name='도시계획사업부' AND unit_type='DEPARTMENT'), 'TEAM', '도시계획사업2팀', 20 WHERE NOT EXISTS (SELECT 1 FROM tb_org_unit WHERE name='도시계획사업2팀' AND unit_type='TEAM');
 
 -- ============================================================
+-- [ops-fault-support M1] users 조직 매핑 (멱등) — tb_org_unit seed 뒤(FK 참조)
+-- 기획서: docs/product-specs/ops-fault-support-improvement.md / 개발계획: docs/exec-plans/ops-fault-support-improvement.md (Step 1)
+-- ============================================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS org_unit_id BIGINT;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_users_org_unit') THEN
+        ALTER TABLE users ADD CONSTRAINT fk_users_org_unit FOREIGN KEY (org_unit_id)
+            REFERENCES tb_org_unit(unit_id) ON DELETE SET NULL;
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_users_org_unit ON users(org_unit_id);
+-- SW지원팀 엔지니어 매핑 (멱등) — 현재 3명. 그 외 인원 seed 는 후속 ops-org-seed-revise
+UPDATE users SET org_unit_id = (SELECT unit_id FROM tb_org_unit WHERE name='SW지원팀' AND unit_type='TEAM')
+ WHERE username IN ('박욱진','김한준','서현규') AND org_unit_id IS NULL;
+
+-- ============================================================
 -- doc-split-ops (2026-04-29): 운영·유지보수 문서 신규 테이블 + 레거시 제거
 -- 기획서: docs/product-specs/doc-split-ops.md (v3)
 -- 개발계획: docs/exec-plans/doc-split-ops.md (v2)

@@ -182,6 +182,7 @@ body.fullscreen .app-sidebar, body.fullscreen .mobile-bar{ display:none; }
 .ds-badge--warning{ background:#FFFBEB; color:#92400E; border-color:#FDE68A; }
 .ds-badge--danger{  background:#FEF2F2; color:#B91C1C; border-color:#FECACA; }
 .ds-badge--info{    background:#ECFEFF; color:#155E75; border-color:#A5F3FC; }
+.ds-badge--muted{   background:#F5F5F4; color:#57534E; border-color:#E7E5E4; } /* 중립(퇴사/비활성) — ops-fault-support M1 */
 
 /* 스켈레톤 로딩 */
 .ds-skeleton{ background:linear-gradient(90deg,#F5F5F4 0%,#EDEDEC 50%,#F5F5F4 100%);

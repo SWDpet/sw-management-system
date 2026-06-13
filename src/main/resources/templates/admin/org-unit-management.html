@@ -8,23 +8,41 @@
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); padding: 20px; color: var(--text); }
         .container { max-width: 1100px; margin: auto; }
-        .page-header { background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 18px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08); display:flex; justify-content:space-between; align-items:center; }
+        /* [ops-fault-support M1/B-G1] 하드코딩 제거 → 디자인 토큰(라이트) */
+        .page-header { background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding: 20px 25px; margin-bottom: 18px;
+            box-shadow: var(--shadow-card); display:flex; justify-content:space-between; align-items:center; }
         .page-header h2 { margin: 0; color: var(--primary); font-size: 1.2em; }
-        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .card { background: var(--surface); border:1px solid var(--border); border-radius: 12px; padding: 25px; box-shadow: var(--shadow-card); }
+        /* 인원 표시 */
+        .members { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+        .members h4 { margin: 0 0 10px; font-size: 0.92em; color: var(--text2); }
+        .member-row { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:0.88em; }
+        .member-row .m-name { font-weight:600; color: var(--text); }
+        .member-row .m-pos { color: var(--text2); font-size:0.9em; }
         .layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
-        ul.tree, ul.tree ul { list-style: none; margin: 0; padding: 0 0 0 16px; }
-        ul.tree { padding: 0; }
-        ul.tree li { padding: 4px 0; position: relative; }
+        /* [ops-fault-support] 접이식 조직도 트리 (폴더/펼침·접기) — 토큰만 사용 */
+        ul.tree, ul.tree ul { list-style: none; margin: 0; padding: 0; }
+        ul.tree ul.children { padding-left: 18px; margin-left: 9px; border-left: 1px dashed var(--border2); }
+        li.tree-node { padding: 1px 0; }
+        .node-row { display: flex; align-items: center; }
+        .caret { width: 16px; height: 20px; line-height: 20px; text-align: center; cursor: pointer;
+            color: var(--text2); font-size: 0.8em; flex-shrink: 0; user-select: none; }
+        .caret-empty { cursor: default; }
+        li.tree-node.collapsed > ul.children { display: none; }
+        .node-icon { color: var(--primary); margin-right: 6px; font-size: 0.9em; }
         .unit {
-            display: inline-block; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+            display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 6px; cursor: pointer;
             border: 1px solid transparent;
         }
+        .unit:hover { background: var(--surface-2); }
         .unit.sel { background: var(--primary-lt); border-color: var(--primary); font-weight: 600; }
         .unit .type-badge {
             display: inline-block; font-size: 0.72em; padding: 1px 6px; border-radius: 3px;
             color: white; margin-right: 6px; vertical-align: middle;
         }
+        .tree-toolbar { margin-bottom: 10px; }
+        .tree-toolbar a { font-size: 0.82em; color: var(--text2); cursor: pointer; margin-right: 12px; text-decoration: none; }
+        .tree-toolbar a:hover { color: var(--primary); }
         /* 조직 유형 뱃지 — 본부/부서/팀 3단계 구분 */
         .type-DIVISION { background: var(--primary); }
         .type-DEPARTMENT { background: var(--info); }
@@ -89,23 +107,61 @@
                 c.innerHTML = '<div class="empty-msg">등록된 조직이 없습니다. 최상위 본부를 추가하세요.</div>';
                 return;
             }
-            c.innerHTML = '<ul class="tree">' + treeData.map(renderNode).join('') + '</ul>';
+            var toolbar = '<div class="tree-toolbar">' +
+                '<a onclick="expandAll(true)"><i class="fas fa-plus-square"></i> 모두 펼치기</a>' +
+                '<a onclick="expandAll(false)"><i class="fas fa-minus-square"></i> 모두 접기</a></div>';
+            c.innerHTML = toolbar + '<ul class="tree">' + treeData.map(renderNode).join('') + '</ul>';
         }
 
         function renderNode(node) {
             var typeClass = 'type-' + node.unit_type;
             var typeLabel = node.unit_type === 'DIVISION' ? '본부' :
                             (node.unit_type === 'DEPARTMENT' ? '부서' : '팀');
-            var html = '<li>';
+            var hasChildren = node.children && node.children.length > 0;
+            var icon = hasChildren ? 'fa-folder-open' : 'fa-users';
+            var html = '<li class="tree-node">';
+            html += '<div class="node-row">';
+            if (hasChildren) {
+                html += '<span class="caret" onclick="toggleNode(this)"><i class="fas fa-caret-down"></i></span>';
+            } else {
+                html += '<span class="caret caret-empty"></span>';
+            }
             html += '<span class="unit" data-id="' + node.unit_id + '" onclick="selectNode(' + node.unit_id + ')">';
+            html += '<i class="fas ' + icon + ' node-icon"></i>';
             html += '<span class="type-badge ' + typeClass + '">' + typeLabel + '</span>';
             html += escapeHtml(node.name);
             html += '</span>';
-            if (node.children && node.children.length > 0) {
-                html += '<ul>' + node.children.map(renderNode).join('') + '</ul>';
+            html += '</div>';
+            if (hasChildren) {
+                html += '<ul class="children">' + node.children.map(renderNode).join('') + '</ul>';
             }
             html += '</li>';
             return html;
+        }
+
+        // 펼침/접기 토글 (▾ ↔ ▸)
+        function toggleNode(caretEl) {
+            var li = caretEl.closest('li.tree-node');
+            if (!li) return;
+            var collapsed = li.classList.toggle('collapsed');
+            var ic = caretEl.querySelector('i');
+            if (ic) ic.className = collapsed ? 'fas fa-caret-right' : 'fas fa-caret-down';
+            var folder = li.querySelector('.node-row .node-icon');
+            if (folder && (folder.classList.contains('fa-folder') || folder.classList.contains('fa-folder-open'))) {
+                folder.className = 'fas ' + (collapsed ? 'fa-folder' : 'fa-folder-open') + ' node-icon';
+            }
+        }
+
+        function expandAll(expand) {
+            document.querySelectorAll('li.tree-node').forEach(function(li) {
+                var hasChildren = li.querySelector(':scope > ul.children');
+                if (!hasChildren) return;
+                li.classList.toggle('collapsed', !expand);
+                var ic = li.querySelector(':scope > .node-row .caret i');
+                if (ic) ic.className = expand ? 'fas fa-caret-down' : 'fas fa-caret-right';
+                var folder = li.querySelector(':scope > .node-row .node-icon');
+                if (folder) folder.className = 'fas ' + (expand ? 'fa-folder-open' : 'fa-folder') + ' node-icon';
+            });
         }
 
         function findNode(list, id) {
@@ -149,7 +205,32 @@
                 '<button class="btn btn-primary" onclick="saveEdit()"><i class="fas fa-save"></i> 저장</button>' +
                 '<button class="btn btn-secondary" onclick="openCreateUnderSelected()"><i class="fas fa-plus"></i> 하위 추가</button>' +
                 '<button class="btn btn-danger" onclick="deleteSelected()" style="float:right;"><i class="fas fa-trash"></i> 삭제</button>' +
-                '</div>';
+                '</div>' +
+                '<div class="members" id="memberBox"><h4><i class="fas fa-users"></i> 소속 인원</h4><div class="muted">로딩 중...</div></div>';
+            loadMembers(n.unit_id);
+        }
+
+        // [ops-fault-support M1/FR-M1-3] 소속 인원(재직/퇴사 배지)
+        function loadMembers(unitId) {
+            fetch('/api/org-units/' + unitId + '/members', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(list) {
+                    var box = document.getElementById('memberBox');
+                    if (!box) return;
+                    var head = '<h4><i class="fas fa-users"></i> 소속 인원 (' + list.length + ')</h4>';
+                    if (!list || list.length === 0) {
+                        box.innerHTML = head + '<div class="muted">매핑된 인원이 없습니다.</div>';
+                        return;
+                    }
+                    box.innerHTML = head + list.map(function(m) {
+                        var badge = m.active
+                            ? '<span class="ds-badge ds-badge--success">재직</span>'
+                            : '<span class="ds-badge ds-badge--muted">퇴사</span>';
+                        var pos = m.position ? '<span class="m-pos">' + escapeHtml(m.position) + '</span>' : '';
+                        return '<div class="member-row">' + badge +
+                               '<span class="m-name">' + escapeHtml(m.username) + '</span>' + pos + '</div>';
+                    }).join('');
+                });
         }
 
         function saveEdit() {

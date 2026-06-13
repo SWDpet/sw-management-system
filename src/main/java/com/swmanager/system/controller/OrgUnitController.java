@@ -44,6 +44,13 @@ public class OrgUnitController {
         return orgUnitService.getChildren(parentId);
     }
 
+    /** [ops-fault-support M1/FR-M1-3] 조직 단위 소속 인원(재직/퇴사 포함). */
+    @GetMapping("/api/org-units/{unitId}/members")
+    @ResponseBody
+    public List<Map<String, Object>> getMembers(@PathVariable Long unitId) {
+        return orgUnitService.getMembers(unitId);
+    }
+
     // ======== 관리 화면 (ADMIN) ========
 
     @GetMapping("/admin/org-units")

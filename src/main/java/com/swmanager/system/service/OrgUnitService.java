@@ -1,7 +1,9 @@
 package com.swmanager.system.service;
 
 import com.swmanager.system.domain.OrgUnit;
+import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.OrgUnitRepository;
+import com.swmanager.system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +22,30 @@ public class OrgUnitService {
     @Autowired
     private OrgUnitRepository orgUnitRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     // ======== 조회 ========
+
+    /**
+     * [ops-fault-support M1/FR-M1-3] 조직 단위 소속 인원(퇴사 포함, 재직/퇴사 배지용).
+     * 노출 필드: user_id/username/position/active. (개인정보 최소)
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMembers(Long unitId) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User u : userRepository.findByOrgUnitIdOrderByUsernameAsc(unitId)) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("user_id", u.getUserSeq());
+            m.put("username", u.getUsername());
+            String pos = (u.getPosition() != null && !u.getPosition().isBlank())
+                    ? u.getPosition() : u.getPositionTitle();
+            m.put("position", pos);
+            m.put("active", u.isEnabled());   // true=재직, false=퇴사/비활성
+            result.add(m);
+        }
+        return result;
+    }
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getTree() {
