@@ -163,9 +163,65 @@ function opsKbFeedback(kbId, action) {
     }).catch(function () {});
 }
 
+// [FR-M2-4] 협력업체 다중선택
+var opsPartners = [];           // [{partner_id, name, role_label}]
+var opsPartnerTimer = null;
+
+function opsPartnerSearchInput() {
+    var kw = opsVal('partnerSearch');
+    if (opsPartnerTimer) clearTimeout(opsPartnerTimer);
+    if (kw.length < 1) { opsHidePartnerResults(); return; }
+    opsPartnerTimer = setTimeout(function () {
+        fetch('/ops-doc/api/partner/search?kw=' + encodeURIComponent(kw), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); }).then(opsRenderPartnerResults);
+    }, 250);
+}
+function opsRenderPartnerResults(list) {
+    var ul = document.getElementById('partnerResults');
+    if (!ul) return;
+    if (!list || !list.length) {
+        ul.innerHTML = '<li style="color:var(--ops-text-secondary)">결과 없음 (외부업체 관리에서 등록)</li>';
+        ul.classList.add('show'); return;
+    }
+    ul.innerHTML = list.map(function (p) {
+        return '<li onclick="opsAddPartner(' + p.id + ',\'' + opsEsc(p.name) + '\')">'
+            + opsEscHtml(p.name) + (p.type ? ' (' + opsEscHtml(p.type) + ')' : '') + '</li>';
+    }).join('');
+    ul.classList.add('show');
+}
+function opsHidePartnerResults() { var ul = document.getElementById('partnerResults'); if (ul) { ul.classList.remove('show'); ul.innerHTML = ''; } }
+function opsAddPartner(id, name, role) {
+    opsHidePartnerResults();
+    var s = document.getElementById('partnerSearch'); if (s) s.value = '';
+    opsPartners.push({ partner_id: id, name: name, role_label: role || '' });
+    opsRenderPartnerChips();
+}
+function opsRemovePartner(i) { opsPartners.splice(i, 1); opsRenderPartnerChips(); }
+function opsRenderPartnerChips() {
+    var box = document.getElementById('partnerChips');
+    if (!box) return;
+    box.innerHTML = opsPartners.map(function (p, i) {
+        return '<div class="ops-partner-chip"><span class="pc-name">' + opsEscHtml(p.name) + '</span>'
+            + '<input type="text" class="pc-role" placeholder="역할(예: 유지보수)" value="' + opsEscHtml(p.role_label || '') + '" oninput="opsPartners[' + i + '].role_label=this.value">'
+            + '<span class="x" onclick="opsRemovePartner(' + i + ')">&times;</span></div>';
+    }).join('');
+}
+function opsPartnersBody() {
+    return opsPartners.map(function (p) { return { partner_id: p.partner_id, role_label: p.role_label || '' }; });
+}
+function opsPrefillPartners(docId) {
+    fetch('/ops-doc/api/' + docId + '/partners', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (list) {
+            opsPartners = (list || []).map(function (p) { return { partner_id: p.partner_id, name: p.name, role_label: p.role_label || '' }; });
+            opsRenderPartnerChips();
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     if (!document.getElementById('engineerId')) return;
     opsLoadEngineers().then(function () {
         if (window.OPS_DOC_ID) opsPrefillRelations(window.OPS_DOC_ID);  // 편집·상세 공통 프리필
     });
+    if (window.OPS_DOC_ID && document.getElementById('partnerChips')) opsPrefillPartners(window.OPS_DOC_ID);
 });

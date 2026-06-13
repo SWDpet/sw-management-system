@@ -94,6 +94,15 @@
     </div>
 
     <div class="ops-section">
+        <h3 class="ops-section-title">협력업체</h3>
+        <div class="ops-relctl">
+            <input type="text" id="partnerSearch" placeholder="협력업체 검색 (외부업체 관리에 등록된 업체)" oninput="opsPartnerSearchInput()" autocomplete="off">
+            <ul class="ops-search-results" id="partnerResults"></ul>
+            <div id="partnerChips" class="ops-partner-chips"></div>
+        </div>
+    </div>
+
+    <div class="ops-section">
         <h3 class="ops-section-title">첨부파일</h3>
         <div class="ops-attachment-area">
             <input type="file" id="attachFile" multiple>
@@ -128,6 +137,7 @@
             engineer_id: rel.engineer_id,
             requester_kind: rel.requester_kind,
             requester_id: rel.requester_id,
+            partners: opsPartnersBody(),
             section_data: {
                 fault_date: document.getElementById('fault_date').value,
                 severity: document.getElementById('severity').value,

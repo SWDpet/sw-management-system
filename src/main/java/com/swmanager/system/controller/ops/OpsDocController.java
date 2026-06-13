@@ -6,9 +6,11 @@ import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.User;
+import com.swmanager.system.domain.ops.OpsDocPartner;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
 import com.swmanager.system.domain.ops.OpsKbFeedback;
+import com.swmanager.system.domain.ops.Partner;
 import com.swmanager.system.domain.ops.PartnerContact;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.OrgUnitRepository;
@@ -16,8 +18,10 @@ import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.repository.ops.OpsDocPartnerRepository;
 import com.swmanager.system.repository.ops.OpsKbFeedbackRepository;
 import com.swmanager.system.repository.ops.PartnerContactRepository;
+import com.swmanager.system.repository.ops.PartnerRepository;
 import org.springframework.data.domain.PageRequest;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
@@ -63,6 +67,8 @@ public class OpsDocController {
     private final PartnerContactRepository partnerContactRepository; // [M2/P3]
     private final KbMatcher kbMatcher;                                // [M3]
     private final OpsKbFeedbackRepository opsKbFeedbackRepository;     // [M3/P5]
+    private final PartnerRepository partnerRepository;                 // [M2/FR-M2-4]
+    private final OpsDocPartnerRepository opsDocPartnerRepository;     // [M2/FR-M2-4]
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -294,6 +300,7 @@ public class OpsDocController {
 
         String userId = currentUser != null ? currentUser.getUsername() : null;
         OpsDocument saved = opsDocService.create(doc, sectionData, userId);
+        savePartners(saved.getDocId(), body, false);   // [FR-M2-4] 협력업체
 
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -333,6 +340,7 @@ public class OpsDocController {
 
         String userId = currentUser != null ? currentUser.getUsername() : null;
         OpsDocument updated = opsDocService.update(docId, changes, sectionData, userId);
+        savePartners(docId, body, true);   // [FR-M2-4] 협력업체 교체
 
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -493,6 +501,57 @@ public class OpsDocController {
         fb.setFbAction("IGNORED".equals(body.get("fb_action")) ? "IGNORED" : "APPLIED");
         opsKbFeedbackRepository.save(fb);
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    /** [FR-M2-4] 협력업체(업체 단위) 검색. */
+    @GetMapping("/api/partner/search")
+    @ResponseBody
+    public List<Map<String, Object>> partnerSearch(@RequestParam("kw") String kw) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Partner p : partnerRepository.findByUseYnAndNameContainingOrderByNameAsc("Y", kw == null ? "" : kw)) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", p.getPartnerId());
+            m.put("name", p.getName());
+            m.put("type", p.getPartnerType());
+            out.add(m);
+        }
+        return out;
+    }
+
+    /** [FR-M2-4] 문서 협력업체 목록 (수정 폼 프리필). */
+    @GetMapping("/api/{docId}/partners")
+    @ResponseBody
+    public List<Map<String, Object>> docPartners(@PathVariable Long docId) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (OpsDocPartner dp : opsDocPartnerRepository.findByDocId(docId)) {
+            Partner p = partnerRepository.findById(dp.getPartnerId()).orElse(null);
+            Map<String, Object> m = new HashMap<>();
+            m.put("partner_id", dp.getPartnerId());
+            m.put("name", p != null ? p.getName() : ("#" + dp.getPartnerId()));
+            m.put("role_label", dp.getRoleLabel());
+            out.add(m);
+        }
+        return out;
+    }
+
+    /** body.partners[{partner_id, role_label}] → tb_ops_doc_partner 저장. */
+    private void savePartners(Long docId, Map<String, Object> body, boolean replace) {
+        if (replace) opsDocPartnerRepository.deleteByDocId(docId);
+        Object pj = body.get("partners");
+        if (pj instanceof List<?> list) {
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> pm && pm.get("partner_id") instanceof Number n) {
+                    String role = pm.get("role_label") != null ? pm.get("role_label").toString() : "";
+                    if (!seen.add(n.longValue() + "|" + role)) continue;  // (업체,역할) 중복 방지
+                    OpsDocPartner dp = new OpsDocPartner();
+                    dp.setDocId(docId);
+                    dp.setPartnerId(n.longValue());
+                    dp.setRoleLabel(role);
+                    opsDocPartnerRepository.save(dp);
+                }
+            }
+        }
     }
 
     /** [M2] 수정 폼 관계자 프리필 (engineer/requester). */

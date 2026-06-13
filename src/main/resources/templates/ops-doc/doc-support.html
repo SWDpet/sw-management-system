@@ -102,6 +102,15 @@
         </table>
     </div>
 
+    <div class="ops-section">
+        <h3 class="ops-section-title">협력업체</h3>
+        <div class="ops-relctl">
+            <input type="text" id="partnerSearch" placeholder="협력업체 검색 (외부업체 관리에 등록된 업체)" oninput="opsPartnerSearchInput()" autocomplete="off">
+            <ul class="ops-search-results" id="partnerResults"></ul>
+            <div id="partnerChips" class="ops-partner-chips"></div>
+        </div>
+    </div>
+
     <div class="ops-actions">
         <a class="ops-btn" th:href="@{/ops-doc/list}">목록</a>
         <button class="ops-btn ops-btn-primary" onclick="saveSupport()">저장</button>
@@ -130,6 +139,7 @@
             engineer_id: rel.engineer_id,
             requester_kind: rel.requester_kind,
             requester_id: rel.requester_id,
+            partners: opsPartnersBody(),
             section_data: {
                 request_date: document.getElementById('request_date').value,
                 request_channel: document.getElementById('request_channel').value,
