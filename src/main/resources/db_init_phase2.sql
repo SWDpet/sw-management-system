@@ -600,6 +600,24 @@ UPDATE users SET org_unit_id = (SELECT unit_id FROM tb_org_unit WHERE name='SW�
  WHERE username IN ('박욱진','김한준','서현규') AND org_unit_id IS NULL;
 
 -- ============================================================
+-- [ops-fault-support staff] 직원 디렉터리 (조직도 인원 + 직원 요청자). users(로그인 계정)와 분리.
+-- 인원 seed 는 db_seed_ops_staff.sql (조직도 41이미지 전사).
+-- ============================================================
+CREATE TABLE IF NOT EXISTS tb_staff (
+    staff_id    BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(50) NOT NULL,
+    position    VARCHAR(50),
+    org_unit_id BIGINT REFERENCES tb_org_unit(unit_id) ON DELETE SET NULL,
+    active      BOOLEAN NOT NULL DEFAULT TRUE,   -- 재직 true / 퇴사 false
+    tel         VARCHAR(40),
+    email       VARCHAR(100),
+    sort_order  INTEGER DEFAULT 0,
+    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_staff_org_unit ON tb_staff(org_unit_id);
+
+-- ============================================================
 -- doc-split-ops (2026-04-29): 운영·유지보수 문서 신규 테이블 + 레거시 제거
 -- 기획서: docs/product-specs/doc-split-ops.md (v3)
 -- 개발계획: docs/exec-plans/doc-split-ops.md (v2)
@@ -672,17 +690,26 @@ CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_org_unit     ON tb_ops_doc(org_unit_id
 ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS engineer_id          BIGINT;
 ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS requester_person_id  BIGINT;
 ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS requester_contact_id BIGINT;  -- FK 는 P3
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS requester_staff_id   BIGINT;  -- [staff] 직원 요청자
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_ops_doc_req_staff') THEN
+    ALTER TABLE tb_ops_doc ADD CONSTRAINT fk_ops_doc_req_staff FOREIGN KEY (requester_staff_id) REFERENCES tb_staff(staff_id);
+END IF; END $$;
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_ops_doc_engineer') THEN
     ALTER TABLE tb_ops_doc ADD CONSTRAINT fk_ops_doc_engineer FOREIGN KEY (engineer_id) REFERENCES users(user_id);
 END IF; END $$;
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_ops_doc_req_person') THEN
     ALTER TABLE tb_ops_doc ADD CONSTRAINT fk_ops_doc_req_person FOREIGN KEY (requester_person_id) REFERENCES ps_info(id);
 END IF; END $$;
-DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_ops_doc_req_required') THEN
+-- [staff] 요청자 3종(공무원/업체담당자/직원) 중 정확히 1 — 기존 제약 DROP 후 재생성
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_ops_doc_req_required') THEN
+        ALTER TABLE tb_ops_doc DROP CONSTRAINT ck_ops_doc_req_required;
+    END IF;
     ALTER TABLE tb_ops_doc ADD CONSTRAINT ck_ops_doc_req_required
         CHECK ( doc_type NOT IN ('FAULT','SUPPORT')          -- FAULT/SUPPORT 만 요청자 필수
-                OR (requester_person_id IS NOT NULL)::int + (requester_contact_id IS NOT NULL)::int = 1 ) NOT VALID;
-END IF; END $$;
+                OR (requester_person_id IS NOT NULL)::int + (requester_contact_id IS NOT NULL)::int
+                   + (requester_staff_id IS NOT NULL)::int = 1 ) NOT VALID;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_tb_ops_doc_engineer ON tb_ops_doc(engineer_id);
 
 -- ============================================================

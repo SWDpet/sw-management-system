@@ -12,6 +12,7 @@ import com.swmanager.system.domain.ops.OpsDocumentAttachment;
 import com.swmanager.system.domain.ops.OpsKbFeedback;
 import com.swmanager.system.domain.ops.Partner;
 import com.swmanager.system.domain.ops.PartnerContact;
+import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
@@ -24,6 +25,7 @@ import com.swmanager.system.repository.ops.OpsDocPartnerRepository;
 import com.swmanager.system.repository.ops.OpsKbFeedbackRepository;
 import com.swmanager.system.repository.ops.PartnerContactRepository;
 import com.swmanager.system.repository.ops.PartnerRepository;
+import com.swmanager.system.repository.ops.StaffRepository;
 import org.springframework.data.domain.PageRequest;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.inspection.InspectMaintProfile;
@@ -72,6 +74,7 @@ public class OpsDocController {
     private final PartnerRepository partnerRepository;                 // [M2/FR-M2-4]
     private final OpsDocPartnerRepository opsDocPartnerRepository;     // [M2/FR-M2-4]
     private final SysMstRepository sysMstRepository;                   // [region-cascade] 시스템 마스터
+    private final StaffRepository staffRepository;                     // [staff] 직원 디렉터리
 
     /** 통합 리스트 — 5 종 모두 표시 (점검내역서 row 포함). 사업문서 목록과 동일 디자인 + 필터. */
     @GetMapping("/list")
@@ -386,11 +389,14 @@ public class OpsDocController {
         Object rid = body.get("requester_id");
         doc.setRequesterPerson(null);
         doc.setRequesterContactId(null);
+        doc.setRequesterStaffId(null);
         if (rid instanceof Number n) {
             if ("PERSON".equals(kind)) {
                 personInfoRepository.findById(n.longValue()).ifPresent(doc::setRequesterPerson);
             } else if ("CONTACT".equals(kind)) {
-                doc.setRequesterContactId(n.longValue());   // FK 검증은 P3(tb_partner_contact)
+                doc.setRequesterContactId(n.longValue());   // 업체담당자(tb_partner_contact)
+            } else if ("STAFF".equals(kind)) {
+                doc.setRequesterStaffId(n.longValue());     // 직원(tb_staff)
             }
         }
     }
@@ -560,6 +566,27 @@ public class OpsDocController {
         }
     }
 
+    /** 요청자(직원) 검색 — tb_staff 재직자. */
+    @GetMapping("/api/staff/search")
+    @ResponseBody
+    public List<Map<String, Object>> staffSearch(@RequestParam("kw") String kw) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Staff s : staffRepository.searchActive(kw == null ? "" : kw)) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", s.getStaffId());
+            m.put("name", s.getName());
+            String unit = null;
+            if (s.getOrgUnitId() != null) {
+                OrgUnit ou = orgUnitRepository.findById(s.getOrgUnitId()).orElse(null);
+                if (ou != null) unit = ou.getName();
+            }
+            m.put("org", unit);
+            m.put("pos", s.getPosition());
+            out.add(m);
+        }
+        return out;
+    }
+
     // ===== [ops-doc-region-cascade] 시도→시군구→시스템 =====
 
     /** 시도 → 시군구 목록 (self-행=본청/도청 포함). */
@@ -620,7 +647,17 @@ public class OpsDocController {
         } else if (d.getRequesterContactId() != null) {
             m.put("requester_kind", "CONTACT");
             m.put("requester_id", d.getRequesterContactId());
-            m.put("requester_label", "업체담당자 #" + d.getRequesterContactId());
+            PartnerContact c = partnerContactRepository.findById(d.getRequesterContactId()).orElse(null);
+            m.put("requester_label", c != null
+                    ? (nz(c.getName()) + (c.getPartner() != null ? " / " + nz(c.getPartner().getName()) : ""))
+                    : ("업체담당자 #" + d.getRequesterContactId()));
+        } else if (d.getRequesterStaffId() != null) {
+            m.put("requester_kind", "STAFF");
+            m.put("requester_id", d.getRequesterStaffId());
+            Staff st = staffRepository.findById(d.getRequesterStaffId()).orElse(null);
+            m.put("requester_label", st != null
+                    ? (nz(st.getName()) + (st.getPosition() != null ? " " + st.getPosition() : ""))
+                    : ("직원 #" + d.getRequesterStaffId()));
         }
         return m;
     }

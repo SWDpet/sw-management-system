@@ -30,8 +30,9 @@ function opsLoadEngineers() {
 
 function setReqKind(kind) {
     opsSelectedReq.kind = kind;
-    var p = document.getElementById('segPerson'), c = document.getElementById('segContact');
+    var p = document.getElementById('segPerson'), c = document.getElementById('segContact'), st = document.getElementById('segStaff');
     if (p) p.classList.toggle('active', kind === 'PERSON');
+    if (st) st.classList.toggle('active', kind === 'STAFF');
     if (c) c.classList.toggle('active', kind === 'CONTACT');
     opsClearRequester();
 }
@@ -41,9 +42,9 @@ function reqSearchInput() {
     if (opsReqTimer) clearTimeout(opsReqTimer);
     if (kw.length < 1) { opsHideResults(); return; }
     opsReqTimer = setTimeout(function () {
-        var url = (opsSelectedReq.kind === 'CONTACT')
-            ? '/ops-doc/api/partner-contact/search?kw='   // 업체담당자
-            : '/ops-doc/api/requester/search?kw=';        // 공무원(ps_info)
+        var url = (opsSelectedReq.kind === 'CONTACT') ? '/ops-doc/api/partner-contact/search?kw='   // 업체담당자
+            : (opsSelectedReq.kind === 'STAFF') ? '/ops-doc/api/staff/search?kw='                   // 직원(tb_staff)
+            : '/ops-doc/api/requester/search?kw=';                                                   // 공무원(ps_info)
         fetch(url + encodeURIComponent(kw), { credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(opsRenderReqResults);

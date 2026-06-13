@@ -125,6 +125,7 @@ public class OpsDocService {
             existing.setEngineer(changes.getEngineer());
             existing.setRequesterPerson(changes.getRequesterPerson());
             existing.setRequesterContactId(changes.getRequesterContactId());
+            existing.setRequesterStaffId(changes.getRequesterStaffId());
             validateRelations(existing);
         }
         existing.setUpdatedBy(currentUserId);
@@ -164,10 +165,11 @@ public class OpsDocService {
         OpsDocType t = doc.getDocType();
         if (t != OpsDocType.FAULT && t != OpsDocType.SUPPORT) return;
 
-        boolean person  = doc.getRequesterPerson() != null;
-        boolean contact = doc.getRequesterContactId() != null;
-        if (person == contact) {  // 둘 다 없거나 둘 다 있음
-            throw new IllegalArgumentException("요청자는 공무원 또는 업체담당자 중 정확히 1명이어야 합니다.");
+        int reqCnt = (doc.getRequesterPerson() != null ? 1 : 0)
+                + (doc.getRequesterContactId() != null ? 1 : 0)
+                + (doc.getRequesterStaffId() != null ? 1 : 0);
+        if (reqCnt != 1) {
+            throw new IllegalArgumentException("요청자는 공무원·직원·업체담당자 중 정확히 1명이어야 합니다.");
         }
 
         User eng = doc.getEngineer();

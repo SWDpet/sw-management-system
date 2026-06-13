@@ -93,6 +93,10 @@ public class OpsDocument {
     @Column(name = "requester_contact_id")
     private Long requesterContactId;
 
+    // [ops-fault-support staff] 요청자: 직원(tb_staff). 공무원/업체담당자와 3-way 배타
+    @Column(name = "requester_staff_id")
+    private Long requesterStaffId;
+
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
