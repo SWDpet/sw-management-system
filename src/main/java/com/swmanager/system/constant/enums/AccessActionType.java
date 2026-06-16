@@ -13,7 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *  - DB 저장값은 한글 label (기존 access_logs.action_type VARCHAR 데이터 호환)
  *  - label Freeze (기획서 NFR-7): 본 상수의 한글 label 은 불변.
  *    변경 시 반드시 별도 마이그레이션 스프린트 선행.
- *  - 유효값 개수: 정확히 13 (FR-1).
+ *  - 유효값 개수: 정확히 15 (FR-1). LOGIN/LOGOUT 는 log-management-improvement
+ *    스프린트(2026-06-16)에서 추가 — 접속자 로그용.
  *
  * JSON 바인딩:
  *  - 직렬화: label 을 사용 (@JsonValue)
@@ -32,7 +33,9 @@ public enum AccessActionType {
     BATCH("일괄처리"),
     PATTERN_CRUD("패턴관리"),
     WAGE_CRUD("노임관리"),
-    SENSITIVE_VIEW("민감정보조회");
+    SENSITIVE_VIEW("민감정보조회"),
+    LOGIN("로그인"),
+    LOGOUT("로그아웃");
 
     private final String label;
 

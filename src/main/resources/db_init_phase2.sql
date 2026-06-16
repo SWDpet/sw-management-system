@@ -1024,3 +1024,11 @@ CREATE TABLE IF NOT EXISTS inspect_metric_snapshot (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uk_metric_pjt_role_host_time ON inspect_metric_snapshot (pjt_id, server_role, COALESCE(host_name, ''), collected_at);
 CREATE INDEX IF NOT EXISTS idx_metric_pjt_role_time ON inspect_metric_snapshot (pjt_id, server_role, collected_at DESC);
+
+-- ============================================================================
+-- [log-management-improvement] access_logs 통계/필터 인덱스 (2026-06-16)
+--   - 대시보드 통계(최근 30일 집계)·로그관리 탭 기간필터의 access_time 범위 조회
+--   - 메뉴별 TOP / 탭 분리(menu_nm) + 액션별 집계(action_type)
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS ix_access_logs_time ON access_logs (access_time);
+CREATE INDEX IF NOT EXISTS ix_access_logs_menu_action ON access_logs (menu_nm, action_type);

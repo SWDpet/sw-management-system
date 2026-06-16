@@ -109,3 +109,4 @@ P0 → P1 → P2 → P3 → P4.
 ## codex 검토 이력
 - R1 (2026-06-16): ⚠ — P3 기간필터 누락, 로그아웃 방식 기획 불일치, 통계 SQL 미명시, 보조 인덱스 미확정, 로그아웃 테스트 강화, Javadoc 13 갱신, 테스트 필수화 지적 → v0.2 반영.
 - R2 (2026-06-16): ⚠(잔여 문서정밀화 3건) — P3 날짜경계 LocalDateTime화, 변경이력#1 기간무관 명확화(집계만 30일), 대시보드 인증 가드 테스트 → v0.3 반영. (로그아웃 A안·보조 인덱스·Javadoc 13→15 는 ⭕ 확정.)
+- 구현검증 R (2026-06-16): ⚠ — 핵심 경로(LogService 오버로드/로그아웃 authentication/중복적재/경계) ⭕. 반영: 통계쿼리 menu_nm·action_type NULL 제외, LOGIN 성공 핸들러 테스트, SwController CRUD 5경로 로깅 테스트(총 48 단위테스트 통과). **회사 PC 통합검증 잔여**: @DataJpaTest 네이티브 통계쿼리·로그관리 ADMIN 가드 MockMvc·대시보드 렌더 smoke(실 Postgres 필요).

@@ -32,6 +32,7 @@ public class SecurityConfig {
 
     private final CustomAuthenticationFailureHandler authFailureHandler;
     private final CustomAuthenticationSuccessHandler authSuccessHandler;
+    private final AccessLogLogoutHandler accessLogLogoutHandler;
 
     /**
      * /actuator/** 전용 시큐리티 체인 (sprint team-monitor-wildcard-watcher — R-12 / N10 / N13 / SEC-01).
@@ -136,6 +137,7 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
+                .addLogoutHandler(accessLogLogoutHandler)   // 접속 로그(LOGOUT) 적재 — authentication 파라미터 사용
                 .logoutSuccessUrl("/login?logout=true")
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID", "SWMANAGER_SESSION")

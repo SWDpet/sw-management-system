@@ -2,6 +2,9 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.service.SwService;
+import com.swmanager.system.service.LogService;
+import com.swmanager.system.constants.MenuName;
+import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.repository.*;
 
@@ -44,7 +47,22 @@ import java.util.Map;
 public class SwController {
 
     @Autowired private SwService swService;
+    @Autowired private LogService logService;
     @Autowired private com.swmanager.system.repository.SwProjectRepository swProjectRepository;
+
+    /** 사업 변경이력 로그 detail 표준 포맷: [projId] 사업명 (지역 · 시스템). null 안전. */
+    private String projLogDetail(SwProject p) {
+        if (p == null) return "(사업)";
+        String region = ((p.getCityNm() != null ? p.getCityNm() : "") + " "
+                + (p.getDistNm() != null ? p.getDistNm() : "")).trim();
+        String sys = p.getSysNm() != null ? p.getSysNm() : "";
+        StringBuilder ctx = new StringBuilder();
+        if (!region.isBlank()) ctx.append(region);
+        if (!sys.isBlank()) ctx.append(ctx.length() > 0 ? " · " : "").append(sys);
+        String nm = (p.getProjNm() != null && !p.getProjNm().isBlank())
+                ? p.getProjNm() : "(사업명 없음)";
+        return "[" + p.getProjId() + "] " + nm + (ctx.length() > 0 ? " (" + ctx + ")" : "");
+    }
 
     // ★ personInfoRepository 제거 → userRepository 사용 (sw_pjt.person_id = users.user_id)
     @Autowired private UserRepository userRepository;
@@ -270,7 +288,10 @@ public class SwController {
         if (!"EDIT".equals(cu.getUser().getAuthProject()))
             throw new InsufficientPermissionException("프로젝트 등록/수정");
 
+        boolean isNew = (project.getProjId() == null);
         swService.save(project);
+        logService.log(MenuName.PROJECT,
+                isNew ? AccessActionType.CREATE : AccessActionType.UPDATE, projLogDetail(project));
         log.info("프로젝트 저장 완료 - ID: {}", project.getProjId());
         return "redirect:/projects/status";
     }
@@ -285,7 +306,10 @@ public class SwController {
         if (!"EDIT".equals(cu.getUser().getAuthProject()))
             throw new InsufficientPermissionException("프로젝트 삭제");
 
+        SwProject target = swService.getProject(id);
         swService.delete(id);
+        logService.log(MenuName.PROJECT, AccessActionType.DELETE,
+                target != null ? projLogDetail(target) : ("[" + id + "] (사업)"));
         log.warn("프로젝트 삭제 완료 - ID: {}", id);
         return "redirect:/projects/status";
     }
@@ -320,6 +344,7 @@ public class SwController {
         }
 
         SwProject saved = swService.save(project);
+        logService.log(MenuName.PROJECT, AccessActionType.CREATE, projLogDetail(saved));
         log.info("프로젝트 API 등록 완료 - ID: {}, 사용자: {}", saved.getProjId(), cu.getUsername());
         return ResponseEntity.ok(ApiResponse.success(SwProjectDTO.fromEntity(saved), "등록 성공"));
     }
@@ -338,6 +363,7 @@ public class SwController {
 
         project.setProjId(id);
         SwProject updated = swService.save(project);
+        logService.log(MenuName.PROJECT, AccessActionType.UPDATE, projLogDetail(updated));
         log.info("프로젝트 API 수정 완료 - ID: {}, 사용자: {}", id, cu.getUsername());
         return ResponseEntity.ok(ApiResponse.success(SwProjectDTO.fromEntity(updated), "수정 성공"));
     }
@@ -353,7 +379,10 @@ public class SwController {
             return ResponseEntity.status(403).body(ApiResponse.error("프로젝트 삭제 권한이 없습니다."));
         }
 
+        SwProject target = swService.getProject(id);
         swService.delete(id);
+        logService.log(MenuName.PROJECT, AccessActionType.DELETE,
+                target != null ? projLogDetail(target) : ("[" + id + "] (사업)"));
         log.warn("프로젝트 API 삭제 완료 - ID: {}, 사용자: {}", id, cu.getUsername());
         return ResponseEntity.ok(ApiResponse.success("삭제 성공"));
     }

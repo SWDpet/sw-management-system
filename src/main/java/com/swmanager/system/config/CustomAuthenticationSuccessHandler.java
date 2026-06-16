@@ -1,7 +1,10 @@
 package com.swmanager.system.config;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.service.LoginAttemptService;
+import com.swmanager.system.service.LogService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,6 +22,7 @@ import java.io.IOException;
 public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final LoginAttemptService loginAttemptService;
+    private final LogService logService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -30,6 +34,9 @@ public class CustomAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             User user = cud.getUser();
             loginAttemptService.loginSucceeded(user);
             log.info("로그인 성공 - userid: {}", user.getUserid());
+            // 접속 로그 적재 — principal 에서 직접 식별(Context 의존 X). 실패는 LogService 가 격리.
+            logService.log(MenuName.ACCESS, AccessActionType.LOGIN, "로그인",
+                    cud.getUsername(), user.getUsername());
         }
 
         setDefaultTargetUrl("/");

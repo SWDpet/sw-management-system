@@ -12,10 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AccessActionTypeTest {
 
-    // T1: 정확히 13개 상수 (FR-1 수치 게이트)
+    // T1: 정확히 15개 상수 (FR-1 수치 게이트)
+    // 2026-06-16 log-management-improvement: LOGIN/LOGOUT 추가 (13 → 15)
     @Test
-    void enum_has_exactly_13_values() {
-        assertThat(AccessActionType.values()).hasSize(13);
+    void enum_has_exactly_15_values() {
+        assertThat(AccessActionType.values()).hasSize(15);
     }
 
     // T3: fromKoLabel 정확 매칭
@@ -86,6 +87,15 @@ class AccessActionTypeTest {
         assertThat(AccessActionType.PATTERN_CRUD.getLabel()).isEqualTo("패턴관리");
         assertThat(AccessActionType.WAGE_CRUD.getLabel()).isEqualTo("노임관리");
         assertThat(AccessActionType.SENSITIVE_VIEW.getLabel()).isEqualTo("민감정보조회");
+        assertThat(AccessActionType.LOGIN.getLabel()).isEqualTo("로그인");
+        assertThat(AccessActionType.LOGOUT.getLabel()).isEqualTo("로그아웃");
+    }
+
+    // LOGIN/LOGOUT 라벨·역직렬화 (log-management-improvement)
+    @Test
+    void login_logout_label_and_fromKoLabel() {
+        assertThat(AccessActionType.fromKoLabel("로그인")).isEqualTo(AccessActionType.LOGIN);
+        assertThat(AccessActionType.fromKoLabel("로그아웃")).isEqualTo(AccessActionType.LOGOUT);
     }
 
     /**

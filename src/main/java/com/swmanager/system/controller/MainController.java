@@ -1,6 +1,8 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.repository.SwProjectRepository;
+import com.swmanager.system.repository.AccessLogRepository;
+import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
 import com.swmanager.system.geonuris.domain.GeonurisLicense;
@@ -32,6 +34,8 @@ public class MainController {
     private WorkPlanRepository workPlanRepository;
     @Autowired
     private GeonurisLicenseRepository geonurisLicenseRepository;
+    @Autowired
+    private AccessLogRepository accessLogRepository;
 
     @GetMapping("/")
     public String mainDashboard(
@@ -122,8 +126,51 @@ public class MainController {
         model.addAttribute("yearCounts", yearCounts);
         model.addAttribute("maxYearCount", maxYear);
 
-        // 최근 등록 사업
-        model.addAttribute("recentProjects", swProjectRepository.findTop6ByOrderByProjIdDesc());
+        // 최근 사업 변경이력 (등록/수정/삭제) — 기간무관 최신 6건 (access_logs 기반)
+        model.addAttribute("recentProjectLogs",
+                accessLogRepository.findTop6ByMenuNmAndActionTypeInOrderByAccessTimeDesc(
+                        MenuName.PROJECT, List.of("등록", "수정", "삭제")));
+
+        // 로그 통계 (최근 30일)
+        List<Map<String, Object>> logTrend = new ArrayList<>();
+        for (Object[] r : accessLogRepository.findDailyTrend30d()) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("date", r[0]);
+            m.put("act", ((Number) r[1]).longValue());
+            m.put("visitors", r[2] == null ? 0L : ((Number) r[2]).longValue());
+            logTrend.add(m);
+        }
+        long maxAct = logTrend.stream().mapToLong(m -> (Long) m.get("act")).max().orElse(1);
+        for (Map<String, Object> m : logTrend) {
+            m.put("h", (int) Math.round(10 + (Long) m.get("act") * 90.0 / Math.max(maxAct, 1)));
+        }
+        model.addAttribute("logTrend", logTrend);
+
+        List<Map<String, Object>> menuTop = new ArrayList<>();
+        for (Object[] r : accessLogRepository.findMenuTop30d()) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("menu", r[0]);
+            m.put("cnt", ((Number) r[1]).longValue());
+            menuTop.add(m);
+        }
+        long maxMenu = menuTop.stream().mapToLong(m -> (Long) m.get("cnt")).max().orElse(1);
+        for (Map<String, Object> m : menuTop) {
+            m.put("w", (int) Math.round((Long) m.get("cnt") * 100.0 / Math.max(maxMenu, 1)));
+        }
+        model.addAttribute("menuTop", menuTop);
+
+        List<Map<String, Object>> actionCounts = new ArrayList<>();
+        for (Object[] r : accessLogRepository.findActionCounts30d()) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("action", r[0]);
+            m.put("cnt", ((Number) r[1]).longValue());
+            actionCounts.add(m);
+        }
+        long maxAction = actionCounts.stream().mapToLong(m -> (Long) m.get("cnt")).max().orElse(1);
+        for (Map<String, Object> m : actionCounts) {
+            m.put("w", (int) Math.round((Long) m.get("cnt") * 100.0 / Math.max(maxAction, 1)));
+        }
+        model.addAttribute("actionCounts", actionCounts);
 
         // 임박 업무 일정 (오늘 이후, 완료/취소 제외)
         LocalDate today = LocalDate.now();

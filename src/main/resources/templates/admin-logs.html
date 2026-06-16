@@ -2,27 +2,35 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>시스템 접속 기록</title>
+    <title>로그관리</title>
     <link rel="stylesheet" href="/css/design-system.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; padding: 40px; background: #FAFAF9; margin: 0; }
         .container { max-width: 1400px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        
+
         .page-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #134E4A; padding-bottom: 15px; margin-bottom: 20px; }
         .page-header h2 { margin: 0; color: #134E4A; }
-        
-        .search-section { margin-bottom: 20px; background: #F5F5F4; padding: 15px; border-radius: 8px; display: flex; justify-content: flex-end; }
-        .search-section form { display: flex; gap: 10px; width: 100%; justify-content: flex-end; }
-        .search-section input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 300px; }
+
+        .tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid #e2e8f0; }
+        .tab { padding: 10px 18px; text-decoration: none; color: #64748b; font-weight: bold; border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; }
+        .tab.active { color: #134E4A; background: #fff; border-color: #e2e8f0; border-bottom: 2px solid #fff; margin-bottom: -1px; }
+
+        .search-section { margin-bottom: 20px; background: #F5F5F4; padding: 15px; border-radius: 8px; }
+        .search-section form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-section input[type=text] { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 280px; }
+        .search-section input[type=date] { padding: 9px; border: 1px solid #ddd; border-radius: 4px; }
+        .search-section label { color: #555; font-size: 0.9em; }
         .btn-search { padding: 10px 20px; background: #134E4A; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-back { background: #6c757d; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border-bottom: 1px solid #eee; padding: 12px; text-align: center; font-size: 0.9em; }
         th { background: #f1f3f9; color: #333; font-weight: bold; border-top: 1px solid #ccc; }
-        
-        .pagination { display: flex; justify-content: center; margin-top: 20px; gap: 5px; }
+        .act-login { color: #16a34a; font-weight: bold; }
+        .act-logout { color: #64748b; font-weight: bold; }
+
+        .pagination { display: flex; justify-content: center; margin-top: 20px; gap: 5px; flex-wrap: wrap; }
         .pagination a { padding: 8px 12px; border: 1px solid #ddd; color: #333; text-decoration: none; border-radius: 4px; }
         .pagination a.active { background: #134E4A; color: white; border-color: #134E4A; }
     </style>
@@ -31,27 +39,68 @@
 <div th:replace="~{fragments/top-nav :: nav}"></div>
 <div class="container">
     <div class="page-header">
-        <h2><i class="fas fa-list-alt"></i> 시스템 접속 및 행위 로그</h2>
+        <h2><i class="fas fa-list-alt"></i> 로그관리</h2>
         <div>
             <a th:href="@{/admin/users}" class="btn-back"><i class="fas fa-arrow-left"></i> 사용자 관리로 돌아가기</a>
         </div>
     </div>
 
+    <!-- 탭: 접속자 로그 / 메뉴·행위 로그 -->
+    <div class="tabs">
+        <a class="tab" th:classappend="${tab == 'menu'} ? 'active'"
+           th:href="@{/admin/logs(tab='menu')}"><i class="fas fa-bars"></i> 메뉴·행위 로그</a>
+        <a class="tab" th:classappend="${tab == 'access'} ? 'active'"
+           th:href="@{/admin/logs(tab='access')}"><i class="fas fa-right-to-bracket"></i> 접속자 로그</a>
+    </div>
+
     <div class="search-section">
         <form th:action="@{/admin/logs}" method="get">
+            <input type="hidden" name="tab" th:value="${tab}">
+            <label>기간</label>
+            <input type="date" name="from" th:value="${from}">
+            <span>~</span>
+            <input type="date" name="to" th:value="${to}">
             <input type="text" name="kw" th:value="${kw}" placeholder="검색어 (ID, 이름, 내용)">
             <button type="submit" class="btn-search">검색</button>
         </form>
     </div>
 
-    <table>
+    <!-- 접속자 로그 탭 -->
+    <table th:if="${tab == 'access'}">
+        <thead>
+            <tr>
+                <th style="width: 6%">No</th>
+                <th style="width: 18%">일시</th>
+                <th style="width: 15%">아이디</th>
+                <th style="width: 15%">이름</th>
+                <th style="width: 18%">IP</th>
+                <th>구분</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="log, stat : ${logs}">
+                <td th:text="${logs.totalElements - (logs.number * logs.size) - stat.index}"></td>
+                <td th:text="${#temporals.format(log.accessTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                <td th:text="${log.userid}"></td>
+                <td th:text="${log.username}"></td>
+                <td th:text="${log.ipAddr}"></td>
+                <td th:text="${log.actionType}"
+                    th:classappend="${log.actionType == '로그인'} ? 'act-login' : 'act-logout'"></td>
+            </tr>
+            <tr th:if="${logs.totalElements == 0}">
+                <td colspan="6" style="padding: 50px; color: #888;">접속 기록이 없습니다.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 메뉴·행위 로그 탭 -->
+    <table th:if="${tab != 'access'}">
         <thead>
             <tr>
                 <th style="width: 5%">No</th>
                 <th style="width: 15%">일시</th>
                 <th style="width: 10%">아이디</th>
                 <th style="width: 10%">이름</th>
-                <th style="width: 10%">IP</th>
                 <th style="width: 10%">메뉴</th>
                 <th style="width: 10%">행위</th>
                 <th>상세내용</th>
@@ -63,28 +112,27 @@
                 <td th:text="${#temporals.format(log.accessTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
                 <td th:text="${log.userid}"></td>
                 <td th:text="${log.username}"></td>
-                <td th:text="${log.ipAddr}"></td>
                 <td th:text="${log.menuNm}"></td>
                 <td th:text="${log.actionType}" style="font-weight: bold; color: #134E4A;"></td>
                 <td th:text="${log.actionDetail}" style="text-align: left; padding-left: 20px;"></td>
             </tr>
             <tr th:if="${logs.totalElements == 0}">
-                <td colspan="8" style="padding: 50px; color: #888;">로그 데이터가 없습니다.</td>
+                <td colspan="7" style="padding: 50px; color: #888;">로그 데이터가 없습니다.</td>
             </tr>
         </tbody>
     </table>
 
     <div class="pagination" th:if="${logs.totalPages > 0}">
-        <a th:href="@{|/admin/logs?page=${logs.number - 1}&kw=${kw}|}" th:if="${logs.hasPrevious()}">&laquo;</a>
-        
-        <th:block th:each="page : ${#numbers.sequence(0, logs.totalPages - 1)}">
-            <a th:if="${page >= logs.number - 5 and page <= logs.number + 5}"
-               th:href="@{|/admin/logs?page=${page}&kw=${kw}|}"
-               th:text="${page + 1}"
-               th:classappend="${page == logs.number} ? 'active'"></a>
+        <a th:href="@{/admin/logs(tab=${tab}, page=${logs.number - 1}, kw=${kw}, from=${from}, to=${to})}"
+           th:if="${logs.hasPrevious()}">&laquo;</a>
+        <th:block th:each="p : ${#numbers.sequence(0, logs.totalPages - 1)}">
+            <a th:if="${p >= logs.number - 5 and p <= logs.number + 5}"
+               th:href="@{/admin/logs(tab=${tab}, page=${p}, kw=${kw}, from=${from}, to=${to})}"
+               th:text="${p + 1}"
+               th:classappend="${p == logs.number} ? 'active'"></a>
         </th:block>
-
-        <a th:href="@{|/admin/logs?page=${logs.number + 1}&kw=${kw}|}" th:if="${logs.hasNext()}">&raquo;</a>
+        <a th:href="@{/admin/logs(tab=${tab}, page=${logs.number + 1}, kw=${kw}, from=${from}, to=${to})}"
+           th:if="${logs.hasNext()}">&raquo;</a>
     </div>
 </div>
 </body>

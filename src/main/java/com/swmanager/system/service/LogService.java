@@ -70,24 +70,45 @@ public class LogService {
         logInternal(menuNm, label, detail);
     }
 
+    /**
+     * 명시적 식별자 오버로드 — SecurityContext 가 비워질 수 있는 시점(로그아웃 등)에
+     * authentication 파라미터에서 추출한 userid/username 을 직접 넘긴다.
+     */
+    public void log(String menuNm, AccessActionType action, String detail,
+                    String useridOverride, String usernameOverride) {
+        String label = (action != null) ? action.getLabel() : null;
+        logInternal(menuNm, label, detail, useridOverride, usernameOverride);
+    }
+
     /** 공통 저장 — Auth/IP/Guard/AccessLog 저장 공통 경로 */
     private void logInternal(String menuNm, String actionLabel, String detail) {
+        logInternal(menuNm, actionLabel, detail, null, null);
+    }
+
+    private void logInternal(String menuNm, String actionLabel, String detail,
+                             String useridOverride, String usernameOverride) {
         try {
             HttpServletRequest request = ((ServletRequestAttributes)
                     RequestContextHolder.currentRequestAttributes()).getRequest();
             String ip = request.getRemoteAddr();
 
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userid = ANONYMOUS_USERID;
-            String username = "";
-
-            if (auth != null && auth.getPrincipal() instanceof CustomUserDetails) {
-                CustomUserDetails user = (CustomUserDetails) auth.getPrincipal();
-                userid = user.getUsername();              // CustomUserDetails.getUsername() == userid
-                username = user.getUser().getUsername();   // User.getUsername() == 실명
-            } else if (auth != null && auth.isAuthenticated()
-                    && !ANONYMOUS_USERID.equals(auth.getName())) {
-                userid = auth.getName();
+            String userid;
+            String username;
+            if (useridOverride != null && !useridOverride.isBlank()) {
+                userid = useridOverride;                    // 로그아웃 등 Context 비워진 경로
+                username = (usernameOverride != null) ? usernameOverride : "";
+            } else {
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                userid = ANONYMOUS_USERID;
+                username = "";
+                if (auth != null && auth.getPrincipal() instanceof CustomUserDetails) {
+                    CustomUserDetails user = (CustomUserDetails) auth.getPrincipal();
+                    userid = user.getUsername();              // CustomUserDetails.getUsername() == userid
+                    username = user.getUser().getUsername();   // User.getUsername() == 실명
+                } else if (auth != null && auth.isAuthenticated()
+                        && !ANONYMOUS_USERID.equals(auth.getName())) {
+                    userid = auth.getName();
+                }
             }
 
             // Orphan Guard — 화이트리스트 통과, 그 외 users 검증 후 fallback

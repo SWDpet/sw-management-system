@@ -1,8 +1,13 @@
 package com.swmanager.system.constants;
 
 /**
- * 로그 액션 타입 상수
+ * 로그 액션 타입 상수.
+ *
+ * @deprecated 단일 SSoT 인 {@link com.swmanager.system.constant.enums.AccessActionType}
+ * (한글 label 보유)로 대체. 신규 코드는 enum 을 사용할 것. 미사용 잔존 상수이며
+ * 호환을 위해 보존(2026-06-16 log-management-improvement).
  */
+@Deprecated
 public class LogAction {
     
     public static final String VIEW = "조회";

@@ -12,6 +12,7 @@ public class MenuName {
     public static final String USER = "회원관리";
     public static final String LOG = "로그관리";
     public static final String MYPAGE = "마이페이지";
+    public static final String ACCESS = "접속";   // 로그인/로그아웃(접속자 로그)용
 
     // 업무계획 및 성과 전산화 모듈
     public static final String CONTRACT = "사업현황";

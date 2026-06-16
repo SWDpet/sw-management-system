@@ -18,6 +18,22 @@
   .mtop select{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:.78rem;color:var(--text2);font-weight:600;}
   .btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.8rem;font-weight:700;}
   .mbody{padding:22px 26px;}
+  /* [log-mgmt] 변경이력 뱃지 */
+  .chg-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:20px;padding:0 7px;border-radius:999px;font-size:.68rem;font-weight:700;color:#fff;flex:none;}
+  .chg-new{background:var(--green);} .chg-upd{background:var(--blue);} .chg-del{background:var(--danger);}
+  /* [log-mgmt] 로그 통계 카드 */
+  .stat-row{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px;margin-bottom:18px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .stat-card .ph{margin-bottom:12px;}
+  .trend{display:flex;align-items:flex-end;gap:3px;height:92px;}
+  .trend .bar{flex:1;background:var(--primary);border-radius:3px 3px 0 0;min-height:3px;opacity:.85;}
+  .trend .bar:hover{opacity:1;}
+  .hbar-row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.8rem;}
+  .hbar-row .nm{width:90px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hbar-row .track{flex:1;background:var(--s2);border-radius:6px;height:14px;overflow:hidden;}
+  .hbar-row .fill{height:100%;background:var(--cat-2);border-radius:6px;}
+  .hbar-row .v{width:42px;text-align:right;color:var(--text2);font-weight:700;}
+  .stat-empty{color:var(--muted);font-size:.8rem;padding:18px 0;text-align:center;}
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;}
   @media (max-width:1280px){.kpis{grid-template-columns:repeat(3,1fr);}}
   @media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr);}}
@@ -146,13 +162,16 @@
   <!-- 활동 피드 행 -->
   <div class="feed-row">
     <div class="panel">
-      <div class="ph"><span class="t"><i class="fas fa-clock-rotate-left"></i> 최근 등록 사업</span></div>
+      <div class="ph"><span class="t"><i class="fas fa-clock-rotate-left"></i> 최근 사업 변경이력</span></div>
       <div class="body">
-        <div class="fitem" th:each="p : ${recentProjects}">
-          <span class="fic"><i class="fas fa-folder-plus"></i></span>
-          <div><div class="ft" th:text="${p.projNm}">사업명</div>
-            <div class="fm"><span th:text="${p.cityNm}">시도</span> <span th:text="${p.distNm}">시군구</span> · <span th:text="${p.year} + '년'">2026년</span></div></div>
+        <div class="fitem" th:each="lg : ${recentProjectLogs}">
+          <span class="chg-badge"
+                th:classappend="${lg.actionType == '등록'} ? 'chg-new' : (${lg.actionType == '수정'} ? 'chg-upd' : 'chg-del')"
+                th:text="${lg.actionType == '등록'} ? '신규' : ${lg.actionType}">신규</span>
+          <div><div class="ft" th:text="${lg.actionDetail}">사업명</div>
+            <div class="fm"><span th:text="${lg.username}">사용자</span> · <span th:text="${#temporals.format(lg.accessTime,'MM-dd HH:mm')}">06-16 10:00</span></div></div>
         </div>
+        <div class="empty" th:if="${#lists.isEmpty(recentProjectLogs)}"><i class="fas fa-folder-open"></i>최근 변경 내역 없음</div>
       </div>
     </div>
     <div class="panel">
@@ -178,6 +197,40 @@
         </div>
       </div>
       <div class="empty" th:if="${#lists.isEmpty(expiring)}"><i class="fas fa-circle-check"></i>임박 만료 없음</div>
+    </div>
+  </div>
+
+  <!-- [log-mgmt] 로그 통계 (최근 30일) -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="ph"><span class="t"><i class="fas fa-chart-column"></i> 일자별 접속·활동 추이 <small style="color:var(--muted);font-weight:500;">(최근 30일)</small></span></div>
+      <div class="trend" th:if="${not #lists.isEmpty(logTrend)}">
+        <div class="bar" th:each="t : ${logTrend}" th:style="'height:' + ${t.h} + '%'"
+             th:title="${t.date} + ' · 활동 ' + ${t.act} + ' · 접속자 ' + ${t.visitors}"></div>
+      </div>
+      <div class="stat-empty" th:if="${#lists.isEmpty(logTrend)}">데이터 없음</div>
+    </div>
+    <div class="stat-card">
+      <div class="ph"><span class="t"><i class="fas fa-bars-staggered"></i> 메뉴별 사용 TOP <small style="color:var(--muted);font-weight:500;">(30일)</small></span></div>
+      <div th:if="${not #lists.isEmpty(menuTop)}">
+        <div class="hbar-row" th:each="m : ${menuTop}">
+          <span class="nm" th:text="${m.menu}">메뉴</span>
+          <span class="track"><span class="fill" th:style="'width:' + ${m.w} + '%'"></span></span>
+          <span class="v" th:text="${m.cnt}">0</span>
+        </div>
+      </div>
+      <div class="stat-empty" th:if="${#lists.isEmpty(menuTop)}">데이터 없음</div>
+    </div>
+    <div class="stat-card">
+      <div class="ph"><span class="t"><i class="fas fa-list-check"></i> 액션별 건수 <small style="color:var(--muted);font-weight:500;">(30일)</small></span></div>
+      <div th:if="${not #lists.isEmpty(actionCounts)}">
+        <div class="hbar-row" th:each="a : ${actionCounts}">
+          <span class="nm" th:text="${a.action}">액션</span>
+          <span class="track"><span class="fill" th:style="'width:' + ${a.w} + '%'"></span></span>
+          <span class="v" th:text="${a.cnt}">0</span>
+        </div>
+      </div>
+      <div class="stat-empty" th:if="${#lists.isEmpty(actionCounts)}">데이터 없음</div>
     </div>
   </div>
 
