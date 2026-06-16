@@ -253,6 +253,20 @@ function opsPrefillPartners(docId) {
         });
 }
 
+// [ops-time] 시/분 입력 → 총 분(정수) 합산 + 검증. 둘 다 비면 '' (미입력),
+// 잘못된 값(음수·비정수·분>59)이면 alert 후 null 반환(저장 중단 신호).
+function opsReadTimeMinutes(hourId, minuteId) {
+    var hv = (document.getElementById(hourId).value || '').trim();
+    var mv = (document.getElementById(minuteId).value || '').trim();
+    if (hv === '' && mv === '') return '';
+    var h = Number(hv || 0), m = Number(mv || 0);
+    if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || m < 0 || m > 59) {
+        alert('시간은 0 이상, 분은 0~59 사이의 정수로 입력하세요.');
+        return null;
+    }
+    return (h > 0 || m > 0) ? (h * 60 + m) : '';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     if (!document.getElementById('engineerId')) return;
     opsLoadEngineers().then(function () {

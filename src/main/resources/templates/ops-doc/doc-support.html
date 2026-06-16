@@ -36,7 +36,13 @@
             </tr>
             <tr><th>대상(시도·시군구·시스템) *</th>
                 <td colspan="3"><div th:replace="~{fragments/ops-cascade :: cascade}"></div></td></tr>
-            <tr><th>투입 시간(h)</th><td><input type="number" id="man_hour" step="0.5" min="0"></td>
+            <tr><th>투입시간</th><td>
+                    <span class="ops-time-row">
+                        <input type="number" id="man_hours" class="ops-time-input" min="0" placeholder="0">
+                        <span class="ops-time-unit">시간</span>
+                        <input type="number" id="man_mins" class="ops-time-input" min="0" max="59" placeholder="0">
+                        <span class="ops-time-unit">분</span>
+                    </span></td>
                 <th></th><td></td>
             </tr>
             <tr><th>지원 구분</th>
@@ -164,6 +170,8 @@
     function saveSupport() {
         if (!opsValidateRelations()) return;
         const rel = opsRelationsBody();
+        const manMinutes = opsReadTimeMinutes('man_hours', 'man_mins');
+        if (manMinutes === null) return;  // 입력값 검증 실패 → 저장 중단
         const body = {
             title: document.getElementById('title').value,
             sys_type: document.getElementById('sys_type').value,
@@ -177,7 +185,7 @@
                 request_date: document.getElementById('request_date').value,
                 request_channel: document.getElementById('request_channel').value,
                 requester: opsSelectedReq.label,
-                man_hour: document.getElementById('man_hour').value,
+                man_minutes: manMinutes,
                 satisfaction_score: document.getElementById('satisfaction_score').value,
                 support_target: document.getElementById('support_target').value,
                 support_content: document.getElementById('support_content').value,

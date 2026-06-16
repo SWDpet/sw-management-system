@@ -36,7 +36,13 @@
             </tr>
             <tr><th>대상(시도·시군구·시스템) *</th>
                 <td colspan="3"><div th:replace="~{fragments/ops-cascade :: cascade}"></div></td></tr>
-            <tr><th>장애시간(분)</th><td><input type="number" id="downtime_minutes" min="0"></td>
+            <tr><th>장애처리시간</th><td>
+                    <span class="ops-time-row">
+                        <input type="number" id="downtime_hours" class="ops-time-input" min="0" placeholder="0">
+                        <span class="ops-time-unit">시간</span>
+                        <input type="number" id="downtime_mins" class="ops-time-input" min="0" max="59" placeholder="0">
+                        <span class="ops-time-unit">분</span>
+                    </span></td>
                 <th>고객영향도</th>
                 <td>
                     <select id="customer_impact_level">
@@ -133,6 +139,8 @@
     function saveFault() {
         if (!opsValidateRelations()) return;
         const rel = opsRelationsBody();
+        const downtimeMinutes = opsReadTimeMinutes('downtime_hours', 'downtime_mins');
+        if (downtimeMinutes === null) return;  // 입력값 검증 실패 → 저장 중단
         const body = {
             title: document.getElementById('title').value,
             sys_type: document.getElementById('sys_type').value,
@@ -144,7 +152,7 @@
             section_data: {
                 fault_date: document.getElementById('fault_date').value,
                 severity: document.getElementById('severity').value,
-                downtime_minutes: document.getElementById('downtime_minutes').value,
+                downtime_minutes: downtimeMinutes,
                 customer_impact_level: document.getElementById('customer_impact_level').value,
                 symptom: document.getElementById('symptom').value,
                 cause: document.getElementById('cause').value,

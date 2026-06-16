@@ -140,6 +140,11 @@
 
 .ops-form-table textarea { min-height: 80px; resize: vertical; }
 
+/* [ops-time] 시/분 분리 입력 — 장애처리시간·투입시간 (총 분으로 저장) */
+.ops-time-row { display: inline-flex; align-items: center; gap: 6px; }
+.ops-form-table input.ops-time-input { width: 72px; text-align: right; }
+.ops-time-row .ops-time-unit { color: var(--ops-text-secondary); font-size: 0.85rem; }
+
 .ops-actions {
     display: flex;
     gap: 8px;
