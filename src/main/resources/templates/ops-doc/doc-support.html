@@ -39,7 +39,7 @@
             <tr><th>투입 시간(h)</th><td><input type="number" id="man_hour" step="0.5" min="0"></td>
                 <th></th><td></td>
             </tr>
-            <tr><th>지원 대상</th>
+            <tr><th>지원 구분</th>
                 <td>
                     <select id="support_target_type">
                         <option value="">선택</option>
@@ -96,9 +96,39 @@
             <div class="ops-reco-box" id="kbRecoBox"></div>
         </div>
         <table class="ops-form-table">
+            <tr><th>지원 대상(문서명) *</th>
+                <td><input type="text" id="support_target" placeholder="예: ○○시 사업수행계획서 (지원 문서 파일명에 사용)"></td></tr>
             <tr><th>지원 내용 *</th><td><textarea id="support_content"></textarea></td></tr>
             <tr><th>비고</th><td><textarea id="notes"></textarea></td></tr>
         </table>
+    </div>
+
+    <!-- [ops-support-doc-upload] 지원 문서 (한글/엑셀/워드/PDF) — 저장 후(isEdit) 활성 -->
+    <div class="ops-section">
+        <h3 class="ops-section-title">지원 문서</h3>
+        <div th:if="${!isEdit}" class="ops-attachment-area">
+            문서를 먼저 저장한 뒤 지원 문서(한글·엑셀·워드·PDF)를 첨부할 수 있습니다.
+        </div>
+        <div th:if="${isEdit}">
+            <div th:if="${doc != null and doc.supportFilePath != null}" class="ops-file-chip" id="sfChip">
+                <i class="fas fa-file"></i>
+                <span class="sf-name" th:text="${doc.supportFileOrigName}">파일명</span>
+                <span class="sf-size" th:if="${doc.supportFileSize != null}"
+                      th:text="${#numbers.formatInteger(doc.supportFileSize / 1024, 0, 'COMMA') + ' KB'}">0 KB</span>
+                <a class="sf-act sf-dn" th:href="@{'/ops-doc/api/support-file/' + ${doc.docId}}"
+                   aria-label="지원 문서 다운로드" title="다운로드"><i class="fas fa-download"></i></a>
+                <button type="button" class="sf-act sf-del" onclick="deleteSupportFile()"
+                        aria-label="지원 문서 삭제" title="삭제"><i class="fas fa-trash"></i></button>
+            </div>
+            <div th:if="${doc == null or doc.supportFilePath == null}" class="ops-attachment-area" id="sfEmpty">
+                첨부된 지원 문서가 없습니다.
+            </div>
+            <div class="ops-file-upload">
+                <input type="file" id="sfInput" accept=".hwp,.hwpx,.xls,.xlsx,.doc,.docx,.pdf">
+                <button type="button" class="ops-btn ops-btn-primary" id="sfUpBtn" onclick="uploadSupportFile()">업로드</button>
+                <span class="sf-msg" id="sfMsg"></span>
+            </div>
+        </div>
     </div>
 
     <div class="ops-section">
@@ -149,6 +179,7 @@
                 requester: opsSelectedReq.label,
                 man_hour: document.getElementById('man_hour').value,
                 satisfaction_score: document.getElementById('satisfaction_score').value,
+                support_target: document.getElementById('support_target').value,
                 support_content: document.getElementById('support_content').value,
                 notes: document.getElementById('notes').value
             }
@@ -159,6 +190,31 @@
                 if (d.success) location.href = '/ops-doc/support/' + d.docId;
                 else alert((d.error && d.error.message) || '저장 실패');
             });
+    }
+
+    // [ops-support-doc-upload] 지원 문서 업로드/삭제
+    function uploadSupportFile() {
+        const input = document.getElementById('sfInput');
+        const msg = document.getElementById('sfMsg');
+        const btn = document.getElementById('sfUpBtn');
+        if (!input.files || !input.files.length) { msg.textContent = '파일을 선택하세요.'; return; }
+        const fd = new FormData();
+        fd.append('file', input.files[0]);
+        btn.disabled = true; const prev = btn.textContent; btn.textContent = '업로드 중…'; msg.textContent = '';
+        fetch('/ops-doc/api/support-file/upload/' + docId, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) location.reload();
+                else { msg.textContent = (d.error && d.error.message) || '업로드 실패'; btn.disabled = false; btn.textContent = prev; }
+            })
+            .catch(() => { msg.textContent = '업로드 중 오류가 발생했습니다.'; btn.disabled = false; btn.textContent = prev; });
+    }
+    function deleteSupportFile() {
+        if (!confirm('지원 문서를 삭제하시겠습니까?')) return;
+        fetch('/ops-doc/api/support-file/delete/' + docId, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => { if (d.success) location.reload(); else alert((d.error && d.error.message) || '삭제 실패'); })
+            .catch(() => alert('삭제 중 오류가 발생했습니다.'));
     }
 </script>
 </body>

@@ -44,7 +44,7 @@ public class OpsDocService {
     /** doc_type 별 section_data 필수 키 (codex 권고 — FR-13). */
     private static final Map<OpsDocType, Set<String>> REQUIRED_SECTION_KEYS = Map.of(
             OpsDocType.FAULT,   Set.of("fault_date", "severity", "symptom", "action"),
-            OpsDocType.SUPPORT, Set.of("request_date", "request_channel", "requester", "support_content"),
+            OpsDocType.SUPPORT, Set.of("request_date", "request_channel", "requester", "support_target", "support_content"),
             OpsDocType.INSTALL, Set.of("install_date", "pre_check_completed", "version", "verification"),
             OpsDocType.PATCH,   Set.of("patch_date", "patch_kind", "target", "version", "rollback_plan")
     );

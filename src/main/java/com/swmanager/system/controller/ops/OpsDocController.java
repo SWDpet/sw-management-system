@@ -32,6 +32,7 @@ import com.swmanager.system.service.inspection.InspectMaintProfile;
 import com.swmanager.system.service.ops.KbMatcher;
 import com.swmanager.system.service.ops.OpsDocService;
 import com.swmanager.system.service.ops.OpsDocSignatureService;
+import com.swmanager.system.service.ops.OpsSupportFileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,7 @@ import java.util.Map;
 public class OpsDocController {
 
     private final OpsDocService opsDocService;
+    private final OpsSupportFileService supportFileService;   // [ops-support-doc-upload]
     private final OpsDocAttachmentService attachmentService;
     private final OpsDocSignatureService signatureService;
     private final SigunguCodeRepository sigunguCodeRepository;
@@ -377,6 +379,95 @@ public class OpsDocController {
                     "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT)이 필요합니다.")));
         }
         return null;
+    }
+
+    /** authDocument!=NONE(또는 ADMIN) 조회 가드. 허용이면 null, 아니면 403. (ops-support-doc-upload FR-8) */
+    private ResponseEntity<Map<String, Object>> requireDocView(CustomUserDetails u) {
+        String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
+        boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
+        if (!admin && (auth == null || "NONE".equals(auth))) {
+            return ResponseEntity.status(403).body(Map.of("success", false,
+                    "error", Map.of("code", "FORBIDDEN", "message", "문서 조회 권한이 필요합니다.")));
+        }
+        return null;
+    }
+
+    /** 업로드/삭제 가드 — authDocument=EDIT 또는 ROLE_ADMIN (FR-8). requireDocEdit(EDIT-only)와 분리. */
+    private ResponseEntity<Map<String, Object>> requireDocEditOrAdmin(CustomUserDetails u) {
+        String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
+        boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
+        if (admin || "EDIT".equals(auth)) return null;
+        return ResponseEntity.status(403).body(Map.of("success", false,
+                "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT)이 필요합니다.")));
+    }
+
+    // ===== [ops-support-doc-upload] 업무지원 지원문서 업로드/다운로드/삭제 =====
+
+    @ResponseBody
+    @PostMapping("/api/support-file/upload/{docId}")
+    public ResponseEntity<Map<String, Object>> uploadSupportFile(
+            @PathVariable Long docId,
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);
+        if (denied != null) return denied;
+        try {
+            Long uploaderSeq = (currentUser != null && currentUser.getUser() != null)
+                    ? currentUser.getUser().getUserSeq() : null;
+            OpsDocument doc = supportFileService.uploadOrReplace(docId, file, uploaderSeq);
+            log.info("[ops-support-file] 업로드 docId={} name={}", docId, doc.getSupportFileOrigName());
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "fileName", doc.getSupportFileOrigName(),
+                    "fileSize", doc.getSupportFileSize() != null ? doc.getSupportFileSize() : 0
+            ));
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("success", false,
+                    "error", Map.of("code", "INVALID_INPUT", "message", e.getMessage())));
+        } catch (Exception e) {
+            log.warn("[ops-support-file] 업로드 실패 docId={}", docId, e);
+            return ResponseEntity.status(500).body(Map.of("success", false,
+                    "error", Map.of("code", "SERVER_ERROR", "message", "업로드 중 오류가 발생했습니다.")));
+        }
+    }
+
+    @GetMapping("/api/support-file/{docId}")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadSupportFile(
+            @PathVariable Long docId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+        if (requireDocView(currentUser) != null) return ResponseEntity.status(403).build();
+        try {
+            org.springframework.core.io.Resource resource = supportFileService.loadForDownload(docId);
+            String origName = supportFileService.originalName(docId);
+            String encoded = java.net.URLEncoder.encode(origName, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+            log.info("[ops-support-file] 다운로드 docId={}", docId);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename*=UTF-8''" + encoded)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(404).build();
+        }
+    }
+
+    @ResponseBody
+    @PostMapping("/api/support-file/delete/{docId}")
+    public ResponseEntity<Map<String, Object>> deleteSupportFile(
+            @PathVariable Long docId, @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);
+        if (denied != null) return denied;
+        try {
+            supportFileService.delete(docId);
+            log.info("[ops-support-file] 삭제 docId={}", docId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
+            return ResponseEntity.status(400).body(Map.of("success", false,
+                    "error", Map.of("code", "INVALID_INPUT", "message", e.getMessage())));
+        } catch (Exception e) {
+            log.warn("[ops-support-file] 삭제 실패 docId={}", docId, e);
+            return ResponseEntity.status(500).body(Map.of("success", false,
+                    "error", Map.of("code", "SERVER_ERROR", "message", "삭제 중 오류가 발생했습니다.")));
+        }
     }
 
     /** body 의 engineer_id / requester_kind(PERSON|CONTACT) + requester_id 를 doc 에 반영. */

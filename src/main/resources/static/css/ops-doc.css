@@ -270,6 +270,20 @@
     border-radius: 5px; font-size: 0.82rem; background: var(--ops-surface); color: var(--ops-text); }
 .ops-partner-chip .x { cursor: pointer; color: var(--ops-text-secondary); font-weight: 700; }
 
+/* [ops-support-doc-upload] 지원 문서 단일파일 칩 + 업로드 */
+.ops-file-chip { display: flex; align-items: center; gap: 10px; background: var(--ops-surface-2);
+    border: 1px solid var(--ops-border); border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; min-width: 0; }
+.ops-file-chip .sf-name { font-weight: 600; font-size: 0.88rem; color: var(--ops-text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ops-file-chip .sf-size { font-size: 0.78rem; color: var(--ops-text-secondary); white-space: nowrap; }
+.ops-file-chip .sf-act { margin-left: auto; cursor: pointer; border: 0; background: none; font-size: 0.95rem;
+    padding: 2px 6px; text-decoration: none; }
+.ops-file-chip .sf-act + .sf-act { margin-left: 0; }
+.ops-file-chip .sf-dn { color: var(--success, #22c55e); }
+.ops-file-chip .sf-del { color: var(--danger, #ef4444); }
+.ops-file-upload { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.ops-file-upload .sf-msg { font-size: 0.82rem; color: var(--danger, #ef4444); }
+
 /* [ops-doc-region-cascade] 시도→시군구→시스템 */
 .ops-cascade { display: flex; gap: 6px; flex-wrap: wrap; }
 .ops-cascade select { flex: 1; min-width: 110px; padding: 6px 8px; border: 1px solid var(--ops-border);

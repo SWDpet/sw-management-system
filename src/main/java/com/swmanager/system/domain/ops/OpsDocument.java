@@ -97,6 +97,26 @@ public class OpsDocument {
     @Column(name = "requester_staff_id")
     private Long requesterStaffId;
 
+    // [ops-support-doc-upload] 업무지원 지원문서 단일파일 메타 (착수계 signed_scan_* 미러, nullable)
+    @Column(name = "support_file_path", length = 500)
+    private String supportFilePath;
+
+    @Column(name = "support_file_orig_name", length = 255)
+    private String supportFileOrigName;
+
+    @Column(name = "support_file_ext", length = 10)
+    private String supportFileExt;
+
+    @Column(name = "support_file_size")
+    private Long supportFileSize;
+
+    @Column(name = "support_file_uploaded_at")
+    private LocalDateTime supportFileUploadedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "support_file_uploaded_by")
+    private User supportFileUploadedBy;
+
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 

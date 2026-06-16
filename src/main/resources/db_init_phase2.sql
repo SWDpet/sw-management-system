@@ -700,6 +700,23 @@ END IF; END $$;
 DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_ops_doc_req_person') THEN
     ALTER TABLE tb_ops_doc ADD CONSTRAINT fk_ops_doc_req_person FOREIGN KEY (requester_person_id) REFERENCES ps_info(id);
 END IF; END $$;
+
+-- ============================================================
+-- [ops-support-doc-upload] 업무지원(SUPPORT) 지원문서 단일파일 메타 (additive, nullable) — 2026-06-16
+-- 착수계 날인본(tb_document.signed_scan_*) 패턴 미러. 파일 실저장은 D:\swmanager-scan.
+-- ============================================================
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS support_file_path        VARCHAR(500);
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS support_file_orig_name   VARCHAR(255);
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS support_file_ext         VARCHAR(10);
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS support_file_size        BIGINT;
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS support_file_uploaded_at TIMESTAMP;
+ALTER TABLE tb_ops_doc ADD COLUMN IF NOT EXISTS support_file_uploaded_by BIGINT;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='fk_ops_doc_support_uploader') THEN
+    ALTER TABLE tb_ops_doc ADD CONSTRAINT fk_ops_doc_support_uploader FOREIGN KEY (support_file_uploaded_by) REFERENCES users(user_id);
+END IF; END $$;
+COMMENT ON COLUMN tb_ops_doc.support_file_path      IS '업무지원 지원문서 절대경로(파일시스템) — ops-support-doc-upload (2026-06-16)';
+COMMENT ON COLUMN tb_ops_doc.support_file_orig_name IS '업로드 원본 파일명';
+COMMENT ON COLUMN tb_ops_doc.support_file_ext       IS '확장자(hwp/hwpx/xls/xlsx/doc/docx/pdf, 소문자)';
 -- [staff] 요청자 3종(공무원/업체담당자/직원) 중 정확히 1 — 기존 제약 DROP 후 재생성
 DO $$ BEGIN
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ck_ops_doc_req_required') THEN
