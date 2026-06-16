@@ -33,15 +33,15 @@
                 <td>
                     <span class="ops-seg">
                         <button type="button" id="gbFault" class="active" onclick="setGubun('장애')">장애</button>
-                        <button type="button" id="gbSupport" onclick="setGubun('지원')">지원</button>
+                        <button type="button" id="gbSupport" onclick="setGubun('지원')">업무</button>
                     </span>
                     <input type="hidden" id="gubun" th:value="${kb != null ? kb.gubun : '장애'}">
                 </td>
             </tr>
-            <tr><th>증상 *</th><td colspan="3"><textarea id="symptom" th:text="${kb?.symptom}"></textarea></td></tr>
-            <tr><th>원인 *</th><td colspan="3"><textarea id="cause" th:text="${kb?.cause}"></textarea></td></tr>
-            <tr><th>조치 *</th><td colspan="3"><textarea id="action" th:text="${kb?.action}"></textarea></td></tr>
-            <tr><th>예방</th><td colspan="3"><textarea id="prevention" th:text="${kb?.prevention}"></textarea></td></tr>
+            <tr><th id="lblSymptom">증상 *</th><td colspan="3"><textarea id="symptom" th:text="${kb?.symptom}"></textarea></td></tr>
+            <tr id="rowCause"><th>원인 *</th><td colspan="3"><textarea id="cause" th:text="${kb?.cause}"></textarea></td></tr>
+            <tr><th id="lblAction">조치 *</th><td colspan="3"><textarea id="action" th:text="${kb?.action}"></textarea></td></tr>
+            <tr><th id="lblPrevention">예방</th><td colspan="3"><textarea id="prevention" th:text="${kb?.prevention}"></textarea></td></tr>
             <tr><th>키워드</th><td colspan="3"><input type="text" id="keywords" th:value="${kb?.keywords}" placeholder="쉼표 구분(선택)"></td></tr>
         </table>
     </div>
@@ -58,8 +58,14 @@
 
     function setGubun(g) {
         document.getElementById('gubun').value = g;
-        document.getElementById('gbFault').classList.toggle('active', g === '장애');
-        document.getElementById('gbSupport').classList.toggle('active', g === '지원');
+        var isFault = (g === '장애');
+        document.getElementById('gbFault').classList.toggle('active', isFault);
+        document.getElementById('gbSupport').classList.toggle('active', !isFault);
+        // 업무(지원)는 업무지원에 맞는 항목으로 — 라벨 전환 + 원인 숨김
+        document.getElementById('lblSymptom').textContent = isFault ? '증상 *' : '요청내용 *';
+        document.getElementById('lblAction').textContent = isFault ? '조치 *' : '처리내용 *';
+        document.getElementById('lblPrevention').textContent = isFault ? '예방' : '참고사항';
+        document.getElementById('rowCause').style.display = isFault ? '' : 'none';
     }
     // 수정 시 구분 복원
     document.addEventListener('DOMContentLoaded', function () {

@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>장애·지원 지식베이스</title>
+    <title>장애·업무 지식베이스</title>
     <link rel="stylesheet" href="/css/design-system.css">
     <link rel="stylesheet" th:href="@{/css/ops-doc.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -14,7 +14,7 @@
     <div class="ops-breadcrumb"><a th:href="@{/}">홈</a> &rsaquo; 지식베이스</div>
     <div class="ops-page-header">
         <span class="group-chip">지식베이스</span>
-        <h1><i class="fas fa-book-medical"></i> 장애·지원 지식베이스</h1>
+        <h1><i class="fas fa-book-medical"></i> 장애·업무 지식베이스</h1>
         <span th:if="${canEdit and pendingCount > 0}" class="ds-badge ds-badge--warning" style="margin-left:.5rem;"
               th:text="${(isAdmin ? '승인 대기 ' : '내 승인대기 ') + pendingCount + '건'}">승인 대기</span>
         <a th:if="${canEdit}" class="ops-btn ops-btn-primary" th:href="@{/ops-kb/new}" style="margin-left:auto;">
@@ -31,7 +31,7 @@
                 </select></td>
                 <th>구분</th>
                 <td><select id="kbGubun" onchange="kbRefresh()">
-                    <option value="">전체</option><option value="장애">장애</option><option value="지원">지원</option>
+                    <option value="">전체</option><option value="장애">장애</option><option value="지원">업무</option>
                 </select></td>
             </tr>
             <tr><th>증상</th>
@@ -105,8 +105,8 @@
                 ? '<div class="ops-reco-sum" style="color:var(--ds-danger,#c0392b);"><i class="fas fa-circle-exclamation"></i> 반려 사유: ' + esc(k.reject_reason) + '</div>' : '';
             return '<div class="ops-reco-card"><div class="ops-reco-head">'
                 + '<span class="group-chip">' + esc(k.kb_code) + '</span> ' + src + ' ' + statusBadge(k.status)
-                + '<span class="ops-reco-meta">' + esc(k.sys_type || '') + ' · ' + esc(k.gubun || '') + ' · 사례 ' + (k.case_count || 0) + '</span></div>'
-                + '<div class="ops-reco-title">' + esc(k.symptom || '') + ' › ' + esc(k.cause || '') + '</div>'
+                + '<span class="ops-reco-meta">' + esc(k.sys_type || '') + ' · ' + esc(k.gubun === '지원' ? '업무' : (k.gubun || '')) + ' · 사례 ' + (k.case_count || 0) + '</span></div>'
+                + '<div class="ops-reco-title">' + esc(k.symptom || '') + (k.cause ? ' › ' + esc(k.cause) : '') + '</div>'
                 + (k.action ? '<div class="ops-reco-sum">' + esc((k.action || '').substring(0, 200)) + '</div>' : '')
                 + reason
                 + '<div>' + btns + '</div></div>';
