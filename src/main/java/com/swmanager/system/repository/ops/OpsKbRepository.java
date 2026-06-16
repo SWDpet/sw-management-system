@@ -29,9 +29,11 @@ public interface OpsKbRepository extends JpaRepository<OpsKb, Long> {
            "AND (:sysType IS NULL OR k.sysType = :sysType) " +
            "AND (:gubun IS NULL OR k.gubun = :gubun) " +
            "AND (:createdBy IS NULL OR k.createdBy = :createdBy) " +
-           "AND (:kw IS NULL OR LOWER(k.symptom) LIKE LOWER(CONCAT('%', :kw, '%')) " +
-           "     OR LOWER(k.keywords) LIKE LOWER(CONCAT('%', :kw, '%')) " +
-           "     OR LOWER(k.cause) LIKE LOWER(CONCAT('%', :kw, '%'))) " +
+           // [fix] :kw 가 null 일 때 PostgreSQL 이 함수 인자 바인드를 bytea 로 추론해
+           //       lower(bytea) 미존재 오류 → 명시적 CAST(:kw AS string) 로 타입 고정.
+           "AND (:kw IS NULL OR LOWER(k.symptom) LIKE LOWER(CONCAT('%', CAST(:kw AS string), '%')) " +
+           "     OR LOWER(k.keywords) LIKE LOWER(CONCAT('%', CAST(:kw AS string), '%')) " +
+           "     OR LOWER(k.cause) LIKE LOWER(CONCAT('%', CAST(:kw AS string), '%'))) " +
            "ORDER BY k.caseCount DESC, k.kbId DESC")
     List<OpsKb> search(@Param("status") String status, @Param("sysType") String sysType,
                        @Param("gubun") String gubun, @Param("kw") String kw,
