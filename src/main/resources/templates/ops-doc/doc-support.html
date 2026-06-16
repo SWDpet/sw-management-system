@@ -53,13 +53,7 @@
                         <option value="INTERNAL">자사 조직</option>
                     </select>
                 </td>
-                <th>만족도</th>
-                <td>
-                    <select id="satisfaction_score">
-                        <option value="">선택</option>
-                        <option>5 매우만족</option><option>4 만족</option><option>3 보통</option><option>2 불만</option><option>1 매우불만</option>
-                    </select>
-                </td>
+                <th></th><td></td>
             </tr>
         </table>
     </div>
@@ -186,7 +180,6 @@
                 request_channel: document.getElementById('request_channel').value,
                 requester: opsSelectedReq.label,
                 man_minutes: manMinutes,
-                satisfaction_score: document.getElementById('satisfaction_score').value,
                 support_target: document.getElementById('support_target').value,
                 support_content: document.getElementById('support_content').value,
                 notes: document.getElementById('notes').value
