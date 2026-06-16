@@ -24,11 +24,13 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long> {
     // ===== [log-mgmt P3] 로그관리 탭 분리: 접속자 로그 / 메뉴·행위 로그 =====
     // 날짜 경계는 컨트롤러에서 LocalDateTime(fromStart=시작일 00:00, toExclusive=종료일+1 00:00)으로 전달.
 
+    // fromStart/toExclusive 는 항상 바인딩(컨트롤러가 미지정 시 넓은 경계 주입).
+    // JPQL `:param IS NULL` + null 날짜 바인딩은 PostgreSQL 타입추론 실패(42P18) → 회피.
+
     /** 접속자 로그 탭: menu_nm = '접속'(로그인/로그아웃). */
     @Query("SELECT l FROM AccessLog l WHERE l.menuNm = '접속' " +
            "AND (:kw IS NULL OR l.userid LIKE %:kw% OR l.username LIKE %:kw% OR l.actionDetail LIKE %:kw%) " +
-           "AND (:fromStart IS NULL OR l.accessTime >= :fromStart) " +
-           "AND (:toExclusive IS NULL OR l.accessTime < :toExclusive) " +
+           "AND l.accessTime >= :fromStart AND l.accessTime < :toExclusive " +
            "ORDER BY l.accessTime DESC")
     Page<AccessLog> findAccessTab(Pageable pageable, @Param("kw") String kw,
                                   @Param("fromStart") LocalDateTime fromStart,
@@ -37,8 +39,7 @@ public interface AccessLogRepository extends JpaRepository<AccessLog, Long> {
     /** 메뉴·행위 로그 탭: menu_nm <> '접속'(NULL 포함). */
     @Query("SELECT l FROM AccessLog l WHERE (l.menuNm IS NULL OR l.menuNm <> '접속') " +
            "AND (:kw IS NULL OR l.userid LIKE %:kw% OR l.username LIKE %:kw% OR l.actionDetail LIKE %:kw%) " +
-           "AND (:fromStart IS NULL OR l.accessTime >= :fromStart) " +
-           "AND (:toExclusive IS NULL OR l.accessTime < :toExclusive) " +
+           "AND l.accessTime >= :fromStart AND l.accessTime < :toExclusive " +
            "ORDER BY l.accessTime DESC")
     Page<AccessLog> findMenuTab(Pageable pageable, @Param("kw") String kw,
                                 @Param("fromStart") LocalDateTime fromStart,

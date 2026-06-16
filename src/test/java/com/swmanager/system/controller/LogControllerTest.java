@@ -49,7 +49,10 @@ class LogControllerTest {
 
         controller(repo).viewLogs(model, "menu", 0, "   ", null, null);
 
-        verify(repo).findMenuTab(any(Pageable.class), isNull(), isNull(), isNull());
+        // kw 빈값 → null, 날짜 미지정 → 넓은 경계(항상 바인딩) 주입
+        verify(repo).findMenuTab(any(Pageable.class), isNull(),
+                eq(java.time.LocalDateTime.of(1970, 1, 1, 0, 0)),
+                eq(java.time.LocalDateTime.of(9999, 1, 1, 0, 0)));
         verify(repo, never()).findAccessTab(any(), any(), any(), any());
     }
 }

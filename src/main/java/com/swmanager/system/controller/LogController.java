@@ -40,8 +40,9 @@ public class LogController {
                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
         String kwNorm = (kw == null || kw.isBlank()) ? null : kw.trim();
-        LocalDateTime fromStart = (from != null) ? from.atStartOfDay() : null;
-        LocalDateTime toExclusive = (to != null) ? to.plusDays(1).atStartOfDay() : null;
+        // 미지정 시 넓은 경계 주입(항상 바인딩 — null 날짜 타입추론 오류 회피)
+        LocalDateTime fromStart = (from != null) ? from.atStartOfDay() : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime toExclusive = (to != null) ? to.plusDays(1).atStartOfDay() : LocalDateTime.of(9999, 1, 1, 0, 0);
         Pageable pageable = PageRequest.of(page, 20);  // 정렬은 쿼리 ORDER BY 담당
 
         Page<AccessLog> logs;

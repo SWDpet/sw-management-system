@@ -25,13 +25,15 @@
   .stat-row{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px;margin-bottom:18px;}
   .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
   .stat-card .ph{margin-bottom:12px;}
-  .trend{display:flex;align-items:flex-end;gap:3px;height:92px;}
-  .trend .bar{flex:1;background:var(--primary);border-radius:3px 3px 0 0;min-height:3px;opacity:.85;}
-  .trend .bar:hover{opacity:1;}
+  .trend{display:flex;align-items:flex-end;gap:3px;height:110px;}
+  .trend .tcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%;}
+  .trend .tval{font-size:.58rem;font-weight:600;color:var(--text2);line-height:1;}
+  .trend .bar{width:100%;background:var(--primary);border-radius:3px 3px 0 0;min-height:3px;opacity:.85;}
+  .trend .tcol:hover .bar{opacity:1;}
   .hbar-row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:.8rem;}
   .hbar-row .nm{width:90px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .hbar-row .track{flex:1;background:var(--s2);border-radius:6px;height:14px;overflow:hidden;}
-  .hbar-row .fill{height:100%;background:var(--cat-2);border-radius:6px;}
+  .hbar-row .fill{display:block;height:100%;min-width:3px;background:var(--cat-2);border-radius:6px;}
   .hbar-row .v{width:42px;text-align:right;color:var(--text2);font-weight:700;}
   .stat-empty{color:var(--muted);font-size:.8rem;padding:18px 0;text-align:center;}
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;}
@@ -205,8 +207,11 @@
     <div class="stat-card">
       <div class="ph"><span class="t"><i class="fas fa-chart-column"></i> 일자별 접속·활동 추이 <small style="color:var(--muted);font-weight:500;">(최근 30일)</small></span></div>
       <div class="trend" th:if="${not #lists.isEmpty(logTrend)}">
-        <div class="bar" th:each="t : ${logTrend}" th:style="'height:' + ${t.h} + '%'"
-             th:title="${t.date} + ' · 활동 ' + ${t.act} + ' · 접속자 ' + ${t.visitors}"></div>
+        <div class="tcol" th:each="t : ${logTrend}"
+             th:title="${t.date} + ' · 활동 ' + ${t.act} + ' · 접속자 ' + ${t.visitors}">
+          <span class="tval" th:text="${t.act}">0</span>
+          <div class="bar" th:style="'height:' + ${t.h} + '%'"></div>
+        </div>
       </div>
       <div class="stat-empty" th:if="${#lists.isEmpty(logTrend)}">데이터 없음</div>
     </div>

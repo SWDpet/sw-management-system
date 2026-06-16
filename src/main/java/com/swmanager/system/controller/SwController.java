@@ -50,7 +50,7 @@ public class SwController {
     @Autowired private LogService logService;
     @Autowired private com.swmanager.system.repository.SwProjectRepository swProjectRepository;
 
-    /** 사업 변경이력 로그 detail 표준 포맷: [projId] 사업명 (지역 · 시스템). null 안전. */
+    /** 사업 변경이력 로그 detail 표준 포맷: 사업명 (지역 · 시스템). 사업명 우선. null 안전. */
     private String projLogDetail(SwProject p) {
         if (p == null) return "(사업)";
         String region = ((p.getCityNm() != null ? p.getCityNm() : "") + " "
@@ -60,8 +60,8 @@ public class SwController {
         if (!region.isBlank()) ctx.append(region);
         if (!sys.isBlank()) ctx.append(ctx.length() > 0 ? " · " : "").append(sys);
         String nm = (p.getProjNm() != null && !p.getProjNm().isBlank())
-                ? p.getProjNm() : "(사업명 없음)";
-        return "[" + p.getProjId() + "] " + nm + (ctx.length() > 0 ? " (" + ctx + ")" : "");
+                ? p.getProjNm() : ("사업 #" + p.getProjId());
+        return nm + (ctx.length() > 0 ? " (" + ctx + ")" : "");
     }
 
     // ★ personInfoRepository 제거 → userRepository 사용 (sw_pjt.person_id = users.user_id)
