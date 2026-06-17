@@ -373,10 +373,12 @@ public class OpsDocController {
     /** authDocument=EDIT 가드 (codex #5). 허용이면 null, 아니면 403. */
     private ResponseEntity<Map<String, Object>> requireDocEdit(CustomUserDetails u) {
         String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
-        if (!"EDIT".equals(auth)) {
+        // ROLE_ADMIN 우회 — 다른 모든 편집 가드(KB/사업 canEdit, requireDocEditOrAdmin)와 일관.
+        boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
+        if (!admin && !"EDIT".equals(auth)) {
             return ResponseEntity.status(403).body(Map.of(
                     "success", false,
-                    "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT)이 필요합니다.")));
+                    "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT 또는 관리자)이 필요합니다.")));
         }
         return null;
     }

@@ -84,13 +84,24 @@
         };
         var url = isEdit ? ('/ops-kb/api/' + kbId) : '/ops-kb/api';
         fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin', body: JSON.stringify(body) })
-            .then(r => r.json()).then(function (d) {
-                if (d.success) {
+            credentials: 'same-origin', redirect: 'manual', body: JSON.stringify(body) })
+            .then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (d) { return { r: r, d: d }; });
+            })
+            .then(function (x) {
+                var r = x.r, d = x.d;
+                if (r.ok && d.success) {
                     if (d.status === 'PENDING') alert('등록되었습니다. 관리자 승인 후 게시됩니다.');
                     location.href = '/ops-kb';
-                } else alert((d.error && d.error.message) || '저장 실패');
-            }).catch(e => alert('오류: ' + e));
+                    return;
+                }
+                // 에러 메시지: 중첩(d.error.message) / 평면(d.message) / HTTP 상태 모두 대응
+                var msg = (d.error && d.error.message) || d.message;
+                if (r.status === 401 || r.status === 0 || r.type === 'opaqueredirect') {
+                    msg = '세션이 만료되었습니다(다른 탭에서 재로그인 시 이전 탭 세션이 끊깁니다). 새로고침 후 다시 로그인하세요.';
+                }
+                alert(msg || ('저장 실패 (HTTP ' + r.status + ')'));
+            }).catch(function (e) { alert('오류: ' + e); });
     }
 </script>
 </body>

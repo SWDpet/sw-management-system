@@ -161,12 +161,14 @@
         };
         const url = isEdit ? ('/ops-doc/api/fault/' + docId) : '/ops-doc/api/fault';
         const method = isEdit ? 'PUT' : 'POST';
-        fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
-            .then(r => r.json())
-            .then(d => {
-                if (d.success) location.href = '/ops-doc/fault/' + d.docId;
-                else alert((d.error && d.error.message) || '저장 실패');
-            }).catch(e => alert('오류: ' + e));
+        fetch(url, { method, headers: {'Content-Type':'application/json'},
+            credentials: 'same-origin', body: JSON.stringify(body) })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { r: r, d: d }; }); })
+            .then(function (x) {
+                var r = x.r, d = x.d;
+                if (r.ok && d.success) { location.href = '/ops-doc/fault/' + d.docId; return; }
+                alert((d.error && d.error.message) || d.message || ('저장 실패 (HTTP ' + r.status + ')'));
+            }).catch(function (e) { alert('오류: ' + e); });
     }
 </script>
 </body>

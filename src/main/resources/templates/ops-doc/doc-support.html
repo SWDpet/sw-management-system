@@ -186,11 +186,14 @@
             }
         };
         const url = isEdit ? ('/ops-doc/api/support/' + docId) : '/ops-doc/api/support';
-        fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
-            .then(r => r.json()).then(d => {
-                if (d.success) location.href = '/ops-doc/support/' + d.docId;
-                else alert((d.error && d.error.message) || '저장 실패');
-            });
+        fetch(url, { method: isEdit ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'},
+            credentials: 'same-origin', body: JSON.stringify(body) })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { r: r, d: d }; }); })
+            .then(function (x) {
+                var r = x.r, d = x.d;
+                if (r.ok && d.success) { location.href = '/ops-doc/support/' + d.docId; return; }
+                alert((d.error && d.error.message) || d.message || ('저장 실패 (HTTP ' + r.status + ')'));
+            }).catch(function (e) { alert('오류: ' + e); });
     }
 
     // [ops-support-doc-upload] 지원 문서 업로드/삭제
