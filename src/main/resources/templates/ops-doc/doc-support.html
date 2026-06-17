@@ -92,7 +92,7 @@
         <h3 class="ops-section-title">지원 내용</h3>
         <div class="ops-reco-bar">
             <button type="button" class="ops-reco-toggle" onclick="opsKbToggle()">
-                <i class="fas fa-lightbulb"></i> KB 추천 보기/접기 (지원내용 입력 시 자동 갱신)</button>
+                <i class="fas fa-lightbulb"></i> KB 추천 보기/접기 (지원대상 입력 시 자동 갱신)</button>
             <div class="ops-reco-box" id="kbRecoBox"></div>
         </div>
         <table class="ops-form-table">
@@ -159,7 +159,7 @@
         if (add) el.value = el.value ? (el.value + '\n' + add) : add;
     }
     document.addEventListener('DOMContentLoaded', function () {
-        opsKbSetup('SUPPORT', 'support_content', 'sys_type', applySupportReco);  // 지원내용 입력 시 실시간 추천
+        opsKbSetup('SUPPORT', 'support_target', 'sys_type', applySupportReco);  // 지원대상 입력 시 실시간 추천(자동 펼침)
     });
     function saveSupport() {
         if (!opsValidateRelations()) return;
