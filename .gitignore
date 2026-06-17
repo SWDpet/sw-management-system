@@ -141,3 +141,6 @@ docs/design-docs/*.png
 
 # 운영데이터 일괄작업 백업 CSV (로컬 보관, 저장소 미포함 — 기관 매핑 등 데이터)
 docs/exec-plans/*_backup_*.csv
+
+# 업로드 산출물(지원문서 스캔 등) — repo 미포함
+uploads/
