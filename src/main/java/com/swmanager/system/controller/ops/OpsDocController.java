@@ -2,6 +2,8 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
+import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.domain.ops.OpsDocumentDetail;
 import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.SigunguCode;
@@ -219,9 +221,20 @@ public class OpsDocController {
         if (docType == null || docType == OpsDocType.INSPECT) return "redirect:/ops-doc/list";
         model.addAttribute("docType", docType);
         model.addAttribute("isEdit", false);
+        model.addAttribute("mode", "new");
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
+    }
+
+    /** doc 의 main 섹션 section_data(jsonb 맵) 추출 — 상세/수정 프리필용. */
+    private Map<String, Object> mainSectionData(OpsDocument doc) {
+        if (doc == null || doc.getDetails() == null) return java.util.Map.of();
+        return doc.getDetails().stream()
+                .filter(d -> "main".equals(d.getSectionKey()))
+                .findFirst()
+                .map(OpsDocumentDetail::getSectionData)
+                .orElse(java.util.Map.of());
     }
 
     /** 수정 폼 (4 종). INSPECT 는 InspectReport 흐름으로 redirect. */
@@ -239,6 +252,8 @@ public class OpsDocController {
         model.addAttribute("docType", docType);
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);
+        model.addAttribute("mode", "edit");
+        model.addAttribute("sectionData", mainSectionData(doc));
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
@@ -259,6 +274,8 @@ public class OpsDocController {
         model.addAttribute("docType", docType);
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);   // 상세=기존 문서 → 템플릿 ${!isEdit}/${isEdit} 분기 null 방지(백지 해소)
+        model.addAttribute("mode", "view");    // 읽기전용 상세 + 수정/삭제 버튼
+        model.addAttribute("sectionData", mainSectionData(doc));
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
@@ -305,6 +322,7 @@ public class OpsDocController {
         doc.setRegionCode((String) body.get("region_code"));
         doc.setEnvironment((String) body.get("environment"));
         doc.setSupportTargetType((String) body.get("support_target_type"));
+        doc.setStatus(DocumentStatus.COMPLETED);   // 저장=작성완료 (사용자 결정 2026-06-17)
         applyRelations(doc, body);   // [M2] 엔지니어·요청자
 
         @SuppressWarnings("unchecked")
@@ -345,6 +363,7 @@ public class OpsDocController {
         changes.setRegionCode((String) body.get("region_code"));
         changes.setEnvironment((String) body.get("environment"));
         changes.setSupportTargetType((String) body.get("support_target_type"));
+        changes.setStatus(DocumentStatus.COMPLETED);   // 수정 저장도 작성완료 유지(null→DRAFT 복귀 방지)
         applyRelations(changes, body);   // [M2] 엔지니어·요청자
 
         @SuppressWarnings("unchecked")

@@ -22,7 +22,7 @@
     <div class="ops-section">
         <h3 class="ops-section-title">지원 정보</h3>
         <table class="ops-form-table">
-            <tr><th>제목</th><td><input type="text" id="title"></td></tr>
+            <tr><th>제목</th><td><input type="text" id="title" th:value="${doc?.title}"></td></tr>
             <tr><th>요청일</th><td><input type="date" id="request_date"></td>
                 <th>요청채널</th>
                 <td>
@@ -142,7 +142,11 @@
 
     <div class="ops-actions">
         <a class="ops-btn" th:href="@{/ops-doc/list}">목록</a>
-        <button class="ops-btn ops-btn-primary" onclick="saveSupport()">저장</button>
+        <button th:if="${mode != 'view'}" class="ops-btn ops-btn-primary" onclick="saveSupport()">저장</button>
+        <a th:if="${mode == 'view'}" class="ops-btn ops-btn-primary"
+           th:href="@{'/ops-doc/support/' + ${doc.docId} + '/edit'}"><i class="fas fa-pen"></i> 수정</a>
+        <button th:if="${mode == 'view'}" class="ops-btn ops-btn-danger" onclick="deleteDoc()">
+            <i class="fas fa-trash"></i> 삭제</button>
     </div>
 </main>
 
@@ -151,6 +155,9 @@
 <script th:inline="javascript">
     const isEdit = /*[[${isEdit}]]*/ false;
     const docId  = /*[[${doc?.docId}]]*/ null;
+    const OPS_MODE = /*[[${mode}]]*/ 'new';            // new | edit | view
+    const OPS_SECTION = /*[[${sectionData}]]*/ {};     // 저장된 section_data
+    const OPS_STT = /*[[${doc?.supportTargetType}]]*/ '';
     window.OPS_IS_EDIT = isEdit;
     window.OPS_DOC_ID = docId;
     function applySupportReco(k) {
@@ -158,8 +165,48 @@
         var add = k.action || k.summary || '';
         if (add) el.value = el.value ? (el.value + '\n' + add) : add;
     }
+    function opsSetVal(id, v) { var el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; }
+    function prefillSupport() {
+        var s = OPS_SECTION || {};
+        opsSetVal('request_date', s.request_date);
+        opsSetVal('request_channel', s.request_channel);
+        opsSetVal('support_target', s.support_target);
+        opsSetVal('support_content', s.support_content);
+        opsSetVal('notes', s.notes);
+        opsSetVal('support_target_type', OPS_STT);
+        if (s.man_minutes != null && s.man_minutes !== '') {
+            var mm = parseInt(s.man_minutes, 10) || 0;
+            opsSetVal('man_hours', Math.floor(mm / 60));
+            opsSetVal('man_mins', mm % 60);
+        }
+    }
+    function opsApplyViewMode() {
+        if (OPS_MODE !== 'view') return;
+        // 본문 입력 비활성화(지원 문서 업로드는 유지)
+        document.querySelectorAll('.ops-form-table input, .ops-form-table select, .ops-form-table textarea')
+            .forEach(function (el) { el.disabled = true; });
+        // 편집 전용 UI 숨김
+        ['reqSearch', 'reqResults', 'partnerSearch', 'partnerResults', 'reqForm'].forEach(function (id) {
+            var el = document.getElementById(id); if (el) el.style.display = 'none';
+        });
+        document.querySelectorAll('.ops-inline-add, .ops-reco-bar, .ops-seg')
+            .forEach(function (el) { el.style.display = 'none'; });
+    }
+    function deleteDoc() {
+        if (!confirm('이 문서를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+        fetch('/ops-doc/api/' + docId, { method: 'DELETE', credentials: 'same-origin' })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { r: r, d: d }; }); })
+            .then(function (x) {
+                if (x.r.ok && x.d.success) { location.href = '/ops-doc/list'; return; }
+                alert((x.d.error && x.d.error.message) || x.d.message || ('삭제 실패 (HTTP ' + x.r.status + ')'));
+            }).catch(function (e) { alert('오류: ' + e); });
+    }
     document.addEventListener('DOMContentLoaded', function () {
-        opsKbSetup('SUPPORT', 'support_target', 'sys_type', applySupportReco);  // 지원대상 입력 시 실시간 추천(자동 펼침)
+        prefillSupport();
+        if (OPS_MODE !== 'view') {
+            opsKbSetup('SUPPORT', 'support_target', 'sys_type', applySupportReco);  // 지원대상 입력 시 실시간 추천(자동 펼침)
+        }
+        opsApplyViewMode();
     });
     function saveSupport() {
         if (!opsValidateRelations()) return;

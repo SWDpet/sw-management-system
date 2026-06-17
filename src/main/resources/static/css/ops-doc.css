@@ -168,6 +168,13 @@
     border-color: var(--ops-primary);
 }
 
+.ops-btn-danger {
+    background: #fff;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+.ops-btn-danger:hover { background: #dc2626; color: #fff; }
+
 .ops-list-table {
     width: 100%;
     border-collapse: collapse;
