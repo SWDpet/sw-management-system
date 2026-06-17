@@ -166,10 +166,20 @@
                         </td>
                         <td th:text="${d.author?.username ?: '-'}">-</td>
                         <td th:text="${d.createdAt != null ? #temporals.format(d.createdAt, 'yyyy-MM-dd') : '-'}">-</td>
-                        <td th:if="${isAdmin}" style="text-align:center;" onclick="event.stopPropagation();">
+                        <td th:if="${isAdmin}" style="text-align:center;white-space:nowrap;" onclick="event.stopPropagation();">
                             <button th:if="${d.docType?.name() == 'INSPECT'}"
                                     th:data-docno="${d.docNo}" th:data-docid="${d.docId}"
                                     onclick="deleteInspectDoc(this.dataset.docno, this.dataset.docid); event.stopPropagation();"
+                                    style="padding:4px 10px;background:var(--danger);color:white;border:none;border-radius:4px;font-size:0.78em;cursor:pointer;"
+                                    title="삭제"><i class="fas fa-trash-alt"></i></button>
+                            <a th:if="${d.docType?.name() != 'INSPECT'}"
+                               th:href="@{'/ops-doc/' + ${d.docType.name().toLowerCase()} + '/' + ${d.docId} + '/edit'}"
+                               onclick="event.stopPropagation();"
+                               style="padding:4px 9px;background:var(--primary);color:#fff;border-radius:4px;font-size:0.78em;text-decoration:none;margin-right:4px;"
+                               title="수정"><i class="fas fa-pen"></i></a>
+                            <button th:if="${d.docType?.name() != 'INSPECT'}"
+                                    th:data-docid="${d.docId}"
+                                    onclick="deleteOpsDoc(this.dataset.docid); event.stopPropagation();"
                                     style="padding:4px 10px;background:var(--danger);color:white;border:none;border-radius:4px;font-size:0.78em;cursor:pointer;"
                                     title="삭제"><i class="fas fa-trash-alt"></i></button>
                         </td>
@@ -231,6 +241,16 @@
 </script>
 
 <script th:if="${isAdmin}">
+// 운영문서(점검내역서 외) 삭제 — /ops-doc/api/{docId}
+function deleteOpsDoc(docId) {
+    if (!confirm('이 문서를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+    fetch('/ops-doc/api/' + docId, { method: 'DELETE', credentials: 'same-origin' })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { r: r, d: d }; }); })
+        .then(function (x) {
+            if (x.r.ok && x.d.success) { location.reload(); return; }
+            alert((x.d.error && x.d.error.message) || x.d.message || ('삭제 실패 (HTTP ' + x.r.status + ')'));
+        }).catch(function (e) { alert('오류: ' + e); });
+}
 function deleteInspectDoc(docNo, opsDocId) {
     if (!confirm('이 점검내역서를 삭제하시겠습니까?')) return;
     var reportId = null;
