@@ -258,6 +258,7 @@ public class OpsDocController {
         }
         model.addAttribute("docType", docType);
         model.addAttribute("doc", doc);
+        model.addAttribute("isEdit", true);   // 상세=기존 문서 → 템플릿 ${!isEdit}/${isEdit} 분기 null 방지(백지 해소)
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
