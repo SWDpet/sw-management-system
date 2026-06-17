@@ -97,7 +97,7 @@ public class SecurityConfig {
                     "/document/api/**",
                     "/admin/api/org-units/**",
                     "/ops-kb/api/**",
-                    "/ops-doc/api/support-file/**"
+                    "/ops-doc/api/**"
                 )
             )
             .authorizeHttpRequests(auth -> auth
