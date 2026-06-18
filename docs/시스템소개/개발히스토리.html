@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SW 사업관리 시스템 — 개발 히스토리</title>
+<style>
+  :root{
+    --navy:#2e3192;       /* 정도UIT CI 네이비 */
+    --teal:#0f7c8a;       /* 앱 디자인 시스템 Deep Teal */
+    --teal-d:#0a5b66;
+    --teal-l:#e3f2f4;
+    --green:#58aa47;       /* 정도UIT CI 그린 */
+    --ink:#1f2933;
+    --muted:#6b7682;
+    --line:#dde3e8;
+    --bg:#f6f8f9;
+    --warn:#c0532b;
+    --gold:#b8860b;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,sans-serif;
+    color:var(--ink); margin:0; background:var(--bg);
+    line-height:1.7; font-size:14px;
+  }
+  .page{
+    width:210mm; min-height:296mm; margin:0 auto; background:#fff;
+    padding:24mm 20mm; position:relative;
+    box-shadow:0 2px 14px rgba(0,0,0,.08);
+  }
+  .page + .page{margin-top:14px;}
+
+  /* 표지 */
+  .cover{
+    background:linear-gradient(150deg,var(--navy) 0%, var(--teal-d) 60%, var(--teal) 100%);
+    color:#fff; display:flex; flex-direction:column; justify-content:center;
+  }
+  .cover .kicker{letter-spacing:.4em; font-size:13px; opacity:.85; margin-bottom:18px;}
+  .cover h1{font-size:46px; line-height:1.25; margin:0 0 8px; font-weight:800;}
+  .cover h2{font-size:20px; font-weight:400; opacity:.92; margin:0 0 40px;}
+  .cover .meta{border-top:1px solid rgba(255,255,255,.35); padding-top:20px; font-size:14px; opacity:.95;}
+  .cover .meta b{display:inline-block; min-width:120px; opacity:.7; font-weight:500;}
+  .cover .stamp{
+    margin-top:48px; display:flex; gap:14px; flex-wrap:wrap;
+  }
+  .cover .stamp div{
+    background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.25);
+    border-radius:12px; padding:14px 20px; min-width:120px;
+  }
+  .cover .stamp .n{font-size:30px; font-weight:800; line-height:1;}
+  .cover .stamp .l{font-size:12px; opacity:.8; margin-top:6px;}
+
+  h2.sec{
+    font-size:26px; color:var(--navy); margin:0 0 4px; font-weight:800;
+    border-bottom:3px solid var(--teal); padding-bottom:10px;
+  }
+  .sec-no{color:var(--teal); font-weight:800;}
+  .lead{color:var(--muted); font-size:14px; margin:6px 0 22px;}
+  h3{font-size:18px; color:var(--teal-d); margin:26px 0 8px; font-weight:700;}
+  h4{font-size:15px; color:var(--ink); margin:18px 0 6px;}
+  p{margin:8px 0;}
+
+  .analogy{
+    background:var(--teal-l); border-left:5px solid var(--teal);
+    border-radius:0 10px 10px 0; padding:14px 18px; margin:16px 0;
+  }
+  .analogy b{color:var(--teal-d);}
+  .note{
+    background:#fff8ec; border:1px solid #f0dcae; border-radius:10px;
+    padding:12px 16px; margin:16px 0; font-size:13px; color:#6b5a2e;
+  }
+
+  table{border-collapse:collapse; width:100%; font-size:13px; margin:14px 0;}
+  th,td{border:1px solid var(--line); padding:8px 10px; text-align:left;}
+  th{background:var(--navy); color:#fff; font-weight:600;}
+  tr:nth-child(even) td{background:#f8fafb;}
+  td.num,th.num{text-align:right;}
+  td.c,th.c{text-align:center;}
+
+  .cards{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:18px 0;}
+  .card{border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:#fff;}
+  .card .t{font-weight:700; color:var(--teal-d); font-size:15px;}
+  .card .d{font-size:13px; color:var(--muted); margin-top:6px;}
+
+  /* 타임라인 */
+  .tl{position:relative; margin:20px 0 10px; padding-left:26px;}
+  .tl::before{content:""; position:absolute; left:7px; top:6px; bottom:6px; width:3px; background:var(--teal-l);}
+  .ev{position:relative; margin-bottom:22px;}
+  .ev::before{content:""; position:absolute; left:-23px; top:5px; width:14px; height:14px; border-radius:50%; background:var(--teal); border:3px solid #fff; box-shadow:0 0 0 2px var(--teal);}
+  .ev .date{font-size:12px; color:var(--teal-d); font-weight:700; letter-spacing:.03em;}
+  .ev .h{font-size:16px; font-weight:700; margin:2px 0 4px;}
+  .ev .body{font-size:13.5px; color:#42505c;}
+  .ev .tags{margin-top:6px;}
+  .tag{display:inline-block; font-size:11px; background:#eef3f4; color:var(--teal-d); border:1px solid #d4e3e5; border-radius:20px; padding:2px 10px; margin:2px 4px 0 0;}
+
+  /* 막대그래프 */
+  .bar-row{display:flex; align-items:center; gap:10px; margin:7px 0; font-size:13px;}
+  .bar-row .lbl{width:74px; flex:none; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums;}
+  .bar-track{flex:1; background:#eef2f4; border-radius:6px; overflow:hidden; height:22px;}
+  .bar-fill{height:100%; background:linear-gradient(90deg,var(--teal),var(--navy)); border-radius:6px; display:flex; align-items:center; justify-content:flex-end; color:#fff; font-size:11px; padding-right:8px; font-weight:600;}
+  .bar-fill.g{background:linear-gradient(90deg,var(--green),var(--teal));}
+
+  .daychart{display:flex; align-items:flex-end; gap:3px; height:170px; border-bottom:2px solid var(--line); margin:18px 0 4px; padding-top:6px;}
+  .daychart .col{flex:1; background:linear-gradient(180deg,var(--teal),var(--navy)); border-radius:3px 3px 0 0; min-width:4px; position:relative;}
+  .daychart .col:hover{opacity:.8;}
+  .axis{display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:14px;}
+
+  .glossary dt{font-weight:700; color:var(--teal-d); margin-top:10px;}
+  .glossary dd{margin:2px 0 0 0; color:#42505c; font-size:13px;}
+
+  .foot{position:absolute; bottom:12mm; left:20mm; right:20mm; font-size:11px; color:var(--muted); display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:6px;}
+
+  ul.clean{margin:8px 0; padding-left:20px;}
+  ul.clean li{margin:5px 0;}
+
+  @media print{
+    body{background:#fff;}
+    .page{box-shadow:none; margin:0; width:auto; min-height:auto; page-break-after:always;}
+    .page:last-child{page-break-after:auto;}
+  }
+  @page{size:A4; margin:0;}
+</style>
+</head>
+<body>
+
+<!-- ============ 표지 ============ -->
+<section class="page cover">
+  <div class="kicker">SOFTWARE PROJECT MANAGEMENT SYSTEM</div>
+  <h1>SW 사업관리 시스템<br>개발 히스토리</h1>
+  <h2>처음 한 줄부터 지금까지 — 누구나 이해하는 개발 이야기</h2>
+
+  <div class="stamp">
+    <div><div class="n">335</div><div class="l">작업 기록(커밋)</div></div>
+    <div><div class="n">76일</div><div class="l">전체 기간</div></div>
+    <div><div class="n">41일</div><div class="l">실제 작업한 날</div></div>
+    <div><div class="n">≈181h</div><div class="l">추정 작업시간</div></div>
+  </div>
+
+  <div class="meta">
+    <div><b>대상 시스템</b> SW 관리 시스템 (Spring Boot 기반 SW 사업 통합 관리)</div>
+    <div><b>개발 기간</b> 2026-04-03 ~ 2026-06-17</div>
+    <div><b>개발/작성</b> 박욱진 (SW지원부)</div>
+    <div><b>문서 생성일</b> 2026-06-19</div>
+  </div>
+</section>
+
+<!-- ============ 1. 이 시스템이 뭔가요 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">01.</span> 이 시스템이 무엇인가요?</h2>
+  <p class="lead">개발을 전혀 모르셔도 괜찮습니다. 먼저 "무엇을 만들었는지"부터 일상 언어로 설명합니다.</p>
+
+  <p><b>SW 사업관리 시스템</b>은 우리 부서가 진행하는 여러 <b>소프트웨어(SW) 사업</b>을 한곳에서 관리하는 사내 웹사이트입니다.
+  지금까지 엑셀과 한글 문서, 폴더 여기저기에 흩어져 있던 일들을 — 사업 정보, 담당자, 서버 장비, 계약·준공 서류, 점검 결과까지 — <b>하나의 화면에서 보고 관리</b>할 수 있게 모은 것입니다.</p>
+
+  <div class="analogy">
+    <b>비유하자면 —</b> 회사의 모든 사업을 한눈에 보는 <b>"관제탑"</b>입니다.
+    어떤 지자체의 어떤 시스템을, 누가, 언제까지, 얼마에 진행 중인지, 서류는 어디까지 됐는지를
+    관제탑 화면 하나로 내려다보는 셈이죠.
+  </div>
+
+  <h3>주로 이런 일을 합니다</h3>
+  <div class="cards">
+    <div class="card"><div class="t">📊 대시보드</div><div class="d">진행 중인 SW 사업의 현황·금액·단계를 한 화면에 요약해 보여줍니다.</div></div>
+    <div class="card"><div class="t">📁 사업 관리</div><div class="d">사업을 등록·수정하고 지역·시스템·연도로 검색합니다.</div></div>
+    <div class="card"><div class="t">📄 문서 자동 작성</div><div class="d">착수계·기성계·준공계 같은 공식 한글(HWP) 서류를 버튼 한 번으로 만들어 줍니다.</div></div>
+    <div class="card"><div class="t">🔍 점검내역서</div><div class="d">현장 서버를 점검하고 그 결과를 표준 양식의 PDF 점검표로 만들어 줍니다.</div></div>
+    <div class="card"><div class="t">💰 견적서</div><div class="d">인건비·요율을 자동 계산해 견적서를 작성하고 대장으로 관리합니다.</div></div>
+    <div class="card"><div class="t">🛠 장애처리·업무지원</div><div class="d">고객 요청과 장애 대응 내역을 기록하고, 비슷한 사례의 해결책을 추천합니다.</div></div>
+    <div class="card"><div class="t">🖥 인프라(서버) 관리</div><div class="d">각 사업의 서버·장비 정보를 자산처럼 관리합니다.</div></div>
+    <div class="card"><div class="t">👤 사용자·권한·로그</div><div class="d">직원 계정 승인, 메뉴별 권한, 모든 작업 기록(로그)을 관리합니다.</div></div>
+  </div>
+
+  <div class="note">
+    💡 <b>"커밋(commit)"이라는 말이 자주 나옵니다.</b> 커밋은 작업을 한 번 저장하면서 "무엇을 바꿨는지" 한 줄로 적어 두는,
+    일종의 <b>작업 일지 한 칸</b>입니다. 이 문서의 숫자(335건)는 그렇게 쌓인 작업 일지의 칸 수입니다.
+    이 기록을 따라가면 시스템이 어떻게 자라났는지 그대로 보입니다.
+  </div>
+</section>
+
+<!-- ============ 2. 한눈에 보는 흐름 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">02.</span> 한눈에 보는 전체 흐름</h2>
+  <p class="lead">2026년 4월부터 6월까지, 3개월 동안 시스템은 다음 네 단계를 거쳐 자랐습니다.</p>
+
+  <div class="tl">
+    <div class="ev">
+      <div class="date">1단계 · 2026년 4월 초·중순</div>
+      <div class="h">🏗 기능을 빠르게 채우다</div>
+      <div class="body">문서관리·견적서·점검내역서 같은 핵심 기능을 대대적으로 키웠습니다. 태블릿(갤럭시탭)에서도 잘 보이게 만들고, 팀 진행상황을 보는 대시보드를 더했습니다.</div>
+      <div class="tags"><span class="tag">문서/견적/점검</span><span class="tag">반응형 화면</span></div>
+    </div>
+    <div class="ev">
+      <div class="date">2단계 · 2026년 4월 중·하순</div>
+      <div class="h">🧹 점검하고 튼튼하게 정리하다</div>
+      <div class="body">외부 점검 도구(codex)로 시스템을 감사해 보안 문제를 고치고, 데이터 구조를 깔끔하게 재정리했습니다. 흩어진 개발 문서도 전면 재편했습니다.</div>
+      <div class="tags"><span class="tag">보안 감사</span><span class="tag">데이터 정규화</span><span class="tag">문서 체계화</span></div>
+    </div>
+    <div class="ev">
+      <div class="date">3단계 · 2026년 5월</div>
+      <div class="h">🤖 현장 점검을 자동화하다 + 디자인 통일</div>
+      <div class="body">현장 서버에 설치하는 <b>자동 점검 프로그램</b>을 만드는 대장정이 이어졌습니다(QR 반출, 원격 점검, 점검표 자동 생성). 동시에 40개가 넘는 모든 화면의 색을 하나의 기준으로 통일했습니다.</div>
+      <div class="tags"><span class="tag">점검 자동화</span><span class="tag">디자인 시스템</span></div>
+    </div>
+    <div class="ev">
+      <div class="date">4단계 · 2026년 6월</div>
+      <div class="h">🚀 실무에 맞춰 다듬고 넓히다</div>
+      <div class="body">서류 일괄 다운로드, 날인본 스캔 보관, 전사 사이드바·반응형 개편, 그리고 <b>장애처리·업무지원</b>과 <b>지식베이스(해결책 추천)</b>까지 — 실제 업무 흐름에 맞춰 확장했습니다.</div>
+      <div class="tags"><span class="tag">업무지원/장애</span><span class="tag">지식베이스</span><span class="tag">HTTPS 보안</span></div>
+    </div>
+  </div>
+
+  <h3>월별 작업량 요약</h3>
+  <table>
+    <thead><tr><th>기간</th><th class="num">작업 기록(커밋)</th><th class="num">작업한 날</th><th class="num">추정 작업시간</th><th>한 줄 요약</th></tr></thead>
+    <tbody>
+      <tr><td>2026년 4월</td><td class="num">104</td><td class="num">13일</td><td class="num">65.5h</td><td>기능 확장 + 보안 감사 + 구조 정리</td></tr>
+      <tr><td>2026년 5월</td><td class="num">138</td><td class="num">18일</td><td class="num">60.7h</td><td>점검 자동화 대장정 + 디자인 통일</td></tr>
+      <tr><td>2026년 6월</td><td class="num">93</td><td class="num">10일</td><td class="num">54.6h</td><td>실무 확장 + 업무지원/지식베이스</td></tr>
+      <tr style="font-weight:700;background:var(--teal-l);"><td>합계</td><td class="num">335</td><td class="num">41일</td><td class="num">≈180.8h</td><td>약 3개월</td></tr>
+    </tbody>
+  </table>
+  <div class="note">※ '작업시간'은 작업 일지(커밋)의 저장 시각으로부터 추정한 값입니다. 계산 방법은 5장에서 설명합니다.</div>
+</section>
+
+<!-- ============ 3. 시기별 상세 스토리 (1) ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">03.</span> 시기별 상세 이야기 — ①·②단계</h2>
+  <p class="lead">이제 각 단계에서 실제로 무슨 일이 있었는지, 조금 더 들어가 봅니다.</p>
+
+  <h3>① 4월 초·중순 — "쓸 수 있는 기능을 빠르게"</h3>
+  <p>이 저장소의 첫 기록은 <b>2026-04-03</b>입니다("이전 작업을 옮겨오기 전 첫 저장"). 즉, 시스템 자체는 그 전부터 있었고, 이 시점에 본격적인 기록 관리가 시작된 셈입니다.</p>
+  <ul class="clean">
+    <li><b>문서·견적·점검 대규모 개선(4/13):</b> 공식 서류(한글 HWPX) 자동 생성, 점검내역서의 상세 화면·미리보기·PDF 출력을 한꺼번에 키웠습니다.</li>
+    <li><b>태블릿 대응(4/13):</b> 현장에서 쓰는 갤럭시탭 세로 화면에서도 7개 점검 화면이 잘 보이도록 맞췄습니다(이른바 '반응형').</li>
+    <li><b>팀 진행율 모니터링(4/14):</b> 팀원들의 진행 상황을 한 화면에서 보는 대시보드를 추가했습니다.</li>
+    <li><b>협업 방식 문서화(4/14):</b> 'codex'라는 외부 점검 도구로 코드를 한 번 더 검증하는 작업 흐름을 정해 글로 남겼습니다.</li>
+  </ul>
+
+  <div class="analogy">
+    <b>비유 —</b> 집을 짓는다면 이 시기는 <b>방을 빠르게 늘리는 단계</b>입니다. 일단 살 수 있게 공간을 만든 거죠.
+  </div>
+
+  <h3>② 4월 중·하순 — "점검하고 기초를 다지다"</h3>
+  <ul class="clean">
+    <li><b>보안 감사(4/19):</b> 외부 도구로 시스템을 훑어 문제점을 1~3순위로 분류하고, 비밀번호 노출·권한 검사 누락·민감정보 같은 보안 위험을 차례로 고쳤습니다.</li>
+    <li><b>데이터 구조 재정리(4/20~4/22):</b> 오래되어 안 쓰는 데이터 표를 정리하고, 중복을 없애고, 항목들을 표준화했습니다(개발 용어로 '정규화'·'리팩토링'). 화면은 그대로지만 속이 깔끔해진 작업입니다.</li>
+    <li><b>로그 데이터 정제(4/20):</b> 잘못 기록된 작업 로그 27건을 바로잡고, 앞으로 오염되지 않도록 안전장치를 넣었습니다.</li>
+    <li><b>개발 문서 전면 재편(4/24):</b> 흩어진 설명 문서들을 진입점 하나로 모으고 폴더를 재배치했습니다(P0~P7 단계).</li>
+  </ul>
+
+  <div class="analogy">
+    <b>비유 —</b> 늘린 방들을 두고 <b>배관·전기·단열을 점검하고 정비</b>하는 단계입니다. 겉보기엔 비슷해도 안전하고 오래 쓸 수 있게 됩니다.
+  </div>
+
+  <div class="note">
+    💡 <b>'codex'란?</b> 사람이 짠 코드를 한 번 더 들여다보는 <b>인공지능 검토 도우미</b>입니다.
+    이 프로젝트는 "사람이 만들고 → AI가 검토하고 → 사람이 최종 승인"하는 방식을 거의 모든 작업에 적용했습니다(8장 참고).
+  </div>
+</section>
+
+<!-- ============ 4. 시기별 상세 스토리 (2) ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">04.</span> 시기별 상세 이야기 — ③·④단계</h2>
+
+  <h3>③ 5월 — "현장 점검 자동화" 대장정 + "디자인 통일"</h3>
+  <p>5월은 가장 길고 치열했던 달입니다(작업 기록 138건). 두 갈래의 큰 작업이 동시에 진행됐습니다.</p>
+
+  <h4>가. 현장 점검 자동화 프로그램</h4>
+  <p>지자체 현장 서버를 직접 점검하던 일을, 현장에 설치하는 <b>작은 자동 점검 프로그램</b>이 대신하도록 만들었습니다.</p>
+  <ul class="clean">
+    <li><b>QR 반출(5/11~):</b> 인터넷이 안 되는 폐쇄망 현장에서도, 점검 결과를 QR코드로 찍어 안전하게 가지고 나오는 방식.</li>
+    <li><b>원격 점검(5/16~5/17):</b> 비밀번호를 안전하게 보관(DPAPI)하고, 원격 접속(Telnet·SSH)으로 서버 상태를 수집. 오래된 윈도우 서버(2012)에서도 한글이 안 깨지도록 세심하게 맞췄습니다.</li>
+    <li><b>점검표 자동 생성(5/13~5/27):</b> 수집한 값으로 표준 점검내역서를 자동으로 채우고(시안 D v5·v6), 그래프까지 그려 넣었습니다.</li>
+    <li><b>점검 범위 분기(5/30~5/31):</b> 유지보수 유형에 따라 점검 항목을 자동으로 달리 보여주도록 했습니다.</li>
+  </ul>
+
+  <h4>나. 디자인 전면 통일 (5/31, 하루 52건!)</h4>
+  <p>그동안 화면마다 조금씩 달랐던 색·버튼·표 모양을, <b>하나의 색 기준표(디자인 토큰)</b>로 통일했습니다.
+  견적서 작성 화면(3,209줄), 착수계, 점검내역서 작성 등 <b>40개가 넘는 화면</b>을 하루 만에 일괄 정비한 기록이 남아 있습니다.</p>
+
+  <div class="analogy">
+    <b>비유 —</b> 가게 인테리어를 <b>브랜드 색으로 통일</b>한 것입니다. 어느 화면에 가도 같은 회사가 만든 느낌이 들도록.
+  </div>
+
+  <h3>④ 6월 — "실무에 맞춰 다듬고 넓히다"</h3>
+  <ul class="clean">
+    <li><b>서류 편의 기능(6/9~6/10):</b> 최종 날인(도장)본 스캔 PDF 보관, 공문 서식 보정, 검색 결과 서류 <b>일괄 ZIP 다운로드</b>.</li>
+    <li><b>화면 구조 개편(6/11):</b> 상단 메뉴를 <b>왼쪽 사이드바</b>로 바꾸고 모바일까지 대응, 대시보드를 메인으로 승격했습니다.</li>
+    <li><b>업무계획 연결(6/11):</b> 시·도 → 시·군·구 → 시스템으로 이어 선택하는(캐스케이드) 방식 도입.</li>
+    <li><b>장애처리·업무지원 개편(6/13~6/17):</b> 조직·인원(직원 85명 등록), 담당 엔지니어와 요청자(공무원/업체), 그리고 <b>지식베이스</b> — 증상을 넣으면 비슷한 사례의 원인·조치를 추천하는 기능을 더했습니다.</li>
+    <li><b>로그·운영문서 정리(6/16~6/17):</b> 로그 관리 화면을 개선하고 통계를 넣었으며, 운영문서의 상세·수정·삭제 흐름을 정돈했습니다.</li>
+  </ul>
+
+  <div class="analogy">
+    <b>비유 —</b> 집들이 전에 <b>가구 배치를 바꾸고 살림 도구를 채워 넣는</b> 단계입니다. 실제로 살아보며 불편을 없앤 거죠.
+  </div>
+</section>
+
+<!-- ============ 5. 작업시간 분석 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">05.</span> 작업시간 분석 (월별 · 일별)</h2>
+  <p class="lead">"얼마나 일했나"를 작업 일지(커밋) 시각으로부터 추정했습니다.</p>
+
+  <div class="note">
+    <b>측정 방법 (정직하게 밝힙니다):</b> 작업할 때마다 남긴 저장 기록의 <b>시각</b>을 이어 붙여 계산했습니다.
+    이어진 저장 사이 간격이 <b>2시간 미만</b>이면 그동안 계속 일한 것으로 보고, 2시간 이상 벌어지면 그날의 새로운 작업 묶음으로 끊었습니다.
+    각 작업 묶음의 맨 처음에는 "저장 전에 들인 시간"으로 <b>약 1시간</b>을 더했습니다.
+    실제 근무시간과는 다를 수 있는 <b>추정치</b>이며, 회의·문서 검토처럼 저장으로 안 남는 시간은 빠져 있습니다.
+  </div>
+
+  <h3>월별 추정 작업시간</h3>
+  <div class="bar-row"><div class="lbl">4월</div><div class="bar-track"><div class="bar-fill" style="width:100%">65.5시간</div></div></div>
+  <div class="bar-row"><div class="lbl">5월</div><div class="bar-track"><div class="bar-fill" style="width:92.7%">60.7시간</div></div></div>
+  <div class="bar-row"><div class="lbl">6월</div><div class="bar-track"><div class="bar-fill" style="width:83.4%">54.6시간</div></div></div>
+
+  <table>
+    <thead><tr><th>기간</th><th class="num">작업한 날</th><th class="num">추정 작업시간</th><th class="num">하루 평균</th><th class="num">작업 기록</th><th class="num">하루 평균 기록</th></tr></thead>
+    <tbody>
+      <tr><td>2026년 4월</td><td class="num">13일</td><td class="num">65.5h</td><td class="num">5.0h</td><td class="num">104</td><td class="num">8.0건</td></tr>
+      <tr><td>2026년 5월</td><td class="num">18일</td><td class="num">60.7h</td><td class="num">3.4h</td><td class="num">138</td><td class="num">7.7건</td></tr>
+      <tr><td>2026년 6월</td><td class="num">10일</td><td class="num">54.6h</td><td class="num">5.5h</td><td class="num">93</td><td class="num">9.3건</td></tr>
+      <tr style="font-weight:700;background:var(--teal-l);"><td>합계 / 평균</td><td class="num">41일</td><td class="num">180.8h</td><td class="num">4.4h</td><td class="num">335</td><td class="num">8.2건</td></tr>
+    </tbody>
+  </table>
+
+  <h3>일별 추정 작업시간 (막대 = 그날 일한 시간)</h3>
+  <div class="daychart">
+    <!-- 41일, 최대 14.5h 기준 높이 -->
+    <div class="col" style="height:7%"  title="04-03 · 1.0h"></div>
+    <div class="col" style="height:7%"  title="04-12 · 1.0h"></div>
+    <div class="col" style="height:30%" title="04-13 · 4.3h"></div>
+    <div class="col" style="height:44%" title="04-14 · 6.4h"></div>
+    <div class="col" style="height:31%" title="04-18 · 4.5h"></div>
+    <div class="col" style="height:69%" title="04-19 · 10.0h"></div>
+    <div class="col" style="height:38%" title="04-20 · 5.5h"></div>
+    <div class="col" style="height:7%"  title="04-21 · 1.0h"></div>
+    <div class="col" style="height:43%" title="04-22 · 6.2h"></div>
+    <div class="col" style="height:41%" title="04-24 · 5.9h"></div>
+    <div class="col" style="height:57%" title="04-26 · 8.2h"></div>
+    <div class="col" style="height:46%" title="04-27 · 6.7h"></div>
+    <div class="col" style="height:32%" title="04-29 · 4.6h"></div>
+    <div class="col" style="height:14%" title="05-04 · 2.1h"></div>
+    <div class="col" style="height:15%" title="05-06 · 2.2h"></div>
+    <div class="col" style="height:7%"  title="05-09 · 1.0h"></div>
+    <div class="col" style="height:7%"  title="05-10 · 1.0h"></div>
+    <div class="col" style="height:28%" title="05-11 · 4.1h"></div>
+    <div class="col" style="height:14%" title="05-13 · 2.0h"></div>
+    <div class="col" style="height:7%"  title="05-14 · 1.0h"></div>
+    <div class="col" style="height:17%" title="05-15 · 2.5h"></div>
+    <div class="col" style="height:35%" title="05-16 · 5.1h"></div>
+    <div class="col" style="height:69%" title="05-17 · 10.0h"></div>
+    <div class="col" style="height:7%"  title="05-18 · 1.0h"></div>
+    <div class="col" style="height:7%"  title="05-21 · 1.0h"></div>
+    <div class="col" style="height:32%" title="05-25 · 4.6h"></div>
+    <div class="col" style="height:7%"  title="05-26 · 1.0h"></div>
+    <div class="col" style="height:7%"  title="05-27 · 1.0h"></div>
+    <div class="col" style="height:19%" title="05-29 · 2.7h"></div>
+    <div class="col" style="height:28%" title="05-30 · 4.0h"></div>
+    <div class="col" style="height:100%" title="05-31 · 14.5h"></div>
+    <div class="col" style="height:34%" title="06-01 · 4.9h"></div>
+    <div class="col" style="height:63%" title="06-02 · 9.1h"></div>
+    <div class="col" style="height:7%"  title="06-08 · 1.0h"></div>
+    <div class="col" style="height:52%" title="06-09 · 7.5h"></div>
+    <div class="col" style="height:33%" title="06-10 · 4.8h"></div>
+    <div class="col" style="height:63%" title="06-11 · 9.1h"></div>
+    <div class="col" style="height:43%" title="06-13 · 6.2h"></div>
+    <div class="col" style="height:11%" title="06-14 · 1.6h"></div>
+    <div class="col" style="height:44%" title="06-16 · 6.4h"></div>
+    <div class="col" style="height:28%" title="06-17 · 4.1h"></div>
+  </div>
+  <div class="axis"><span>4/3</span><span>4/26</span><span>5/16</span><span>5/31</span><span>6/11</span><span>6/17</span></div>
+
+  <p style="font-size:13px;color:var(--muted);">가장 길게 일한 날은 <b>5월 31일(약 14.5시간, 52건)</b>으로, 40여 개 화면의 디자인을 통째로 통일한 날입니다.
+  그다음은 <b>4월 19일</b>과 <b>5월 17일</b>(각 약 10시간)이었습니다. 주말·심야 작업이 많았던 점도 기록에 그대로 남아 있습니다.</p>
+</section>
+
+<!-- ============ 6. 일별 상세 표 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">06.</span> 일별 작업 상세표</h2>
+  <p class="lead">실제로 작업한 41일의 전체 기록입니다. (요일·시작/종료 시각 포함)</p>
+  <table>
+    <thead><tr><th>날짜</th><th class="c">요일</th><th class="num">기록 수</th><th class="num">추정 시간</th><th class="c">시작</th><th class="c">종료</th></tr></thead>
+    <tbody>
+      <tr><td>2026-04-03</td><td class="c">금</td><td class="num">1</td><td class="num">1.0h</td><td class="c">07:59</td><td class="c">07:59</td></tr>
+      <tr><td>2026-04-12</td><td class="c">일</td><td class="num">1</td><td class="num">1.0h</td><td class="c">10:37</td><td class="c">10:37</td></tr>
+      <tr><td>2026-04-13</td><td class="c">월</td><td class="num">4</td><td class="num">4.3h</td><td class="c">07:31</td><td class="c">21:42</td></tr>
+      <tr><td>2026-04-14</td><td class="c">화</td><td class="num">7</td><td class="num">6.4h</td><td class="c">12:48</td><td class="c">23:25</td></tr>
+      <tr><td>2026-04-18</td><td class="c">토</td><td class="num">4</td><td class="num">4.5h</td><td class="c">18:09</td><td class="c">23:10</td></tr>
+      <tr><td>2026-04-19</td><td class="c">일</td><td class="num">12</td><td class="num">10.0h</td><td class="c">08:09</td><td class="c">23:13</td></tr>
+      <tr><td>2026-04-20</td><td class="c">월</td><td class="num">8</td><td class="num">5.5h</td><td class="c">15:13</td><td class="c">22:19</td></tr>
+      <tr><td>2026-04-21</td><td class="c">화</td><td class="num">1</td><td class="num">1.0h</td><td class="c">22:21</td><td class="c">22:21</td></tr>
+      <tr><td>2026-04-22</td><td class="c">수</td><td class="num">8</td><td class="num">6.2h</td><td class="c">00:01</td><td class="c">22:41</td></tr>
+      <tr><td>2026-04-24</td><td class="c">금</td><td class="num">10</td><td class="num">5.9h</td><td class="c">08:43</td><td class="c">17:33</td></tr>
+      <tr><td>2026-04-26</td><td class="c">일</td><td class="num">30</td><td class="num">8.2h</td><td class="c">12:32</td><td class="c">22:46</td></tr>
+      <tr><td>2026-04-27</td><td class="c">월</td><td class="num">8</td><td class="num">6.7h</td><td class="c">08:18</td><td class="c">21:51</td></tr>
+      <tr><td>2026-04-29</td><td class="c">수</td><td class="num">10</td><td class="num">4.6h</td><td class="c">00:06</td><td class="c">22:39</td></tr>
+      <tr><td>2026-05-04</td><td class="c">월</td><td class="num">5</td><td class="num">2.1h</td><td class="c">19:51</td><td class="c">20:56</td></tr>
+      <tr><td>2026-05-06</td><td class="c">수</td><td class="num">2</td><td class="num">2.2h</td><td class="c">21:22</td><td class="c">22:35</td></tr>
+      <tr><td>2026-05-09</td><td class="c">토</td><td class="num">1</td><td class="num">1.0h</td><td class="c">04:49</td><td class="c">04:49</td></tr>
+      <tr><td>2026-05-10</td><td class="c">일</td><td class="num">1</td><td class="num">1.0h</td><td class="c">13:24</td><td class="c">13:24</td></tr>
+      <tr><td>2026-05-11</td><td class="c">월</td><td class="num">4</td><td class="num">4.1h</td><td class="c">11:01</td><td class="c">22:34</td></tr>
+      <tr><td>2026-05-13</td><td class="c">수</td><td class="num">2</td><td class="num">2.0h</td><td class="c">15:29</td><td class="c">23:43</td></tr>
+      <tr><td>2026-05-14</td><td class="c">목</td><td class="num">1</td><td class="num">1.0h</td><td class="c">22:30</td><td class="c">22:30</td></tr>
+      <tr><td>2026-05-15</td><td class="c">금</td><td class="num">2</td><td class="num">2.5h</td><td class="c">20:43</td><td class="c">22:10</td></tr>
+      <tr><td>2026-05-16</td><td class="c">토</td><td class="num">16</td><td class="num">5.1h</td><td class="c">17:56</td><td class="c">22:01</td></tr>
+      <tr><td>2026-05-17</td><td class="c">일</td><td class="num">27</td><td class="num">10.0h</td><td class="c">07:45</td><td class="c">22:32</td></tr>
+      <tr><td>2026-05-18</td><td class="c">월</td><td class="num">1</td><td class="num">1.0h</td><td class="c">00:45</td><td class="c">00:45</td></tr>
+      <tr><td>2026-05-21</td><td class="c">목</td><td class="num">1</td><td class="num">1.0h</td><td class="c">18:26</td><td class="c">18:26</td></tr>
+      <tr><td>2026-05-25</td><td class="c">월</td><td class="num">11</td><td class="num">4.6h</td><td class="c">13:22</td><td class="c">21:34</td></tr>
+      <tr><td>2026-05-26</td><td class="c">화</td><td class="num">1</td><td class="num">1.0h</td><td class="c">08:07</td><td class="c">08:07</td></tr>
+      <tr><td>2026-05-27</td><td class="c">수</td><td class="num">1</td><td class="num">1.0h</td><td class="c">21:33</td><td class="c">21:33</td></tr>
+      <tr><td>2026-05-29</td><td class="c">금</td><td class="num">4</td><td class="num">2.7h</td><td class="c">17:05</td><td class="c">18:44</td></tr>
+      <tr><td>2026-05-30</td><td class="c">토</td><td class="num">6</td><td class="num">4.0h</td><td class="c">00:12</td><td class="c">22:11</td></tr>
+      <tr><td>2026-05-31</td><td class="c">일</td><td class="num">52</td><td class="num">14.5h</td><td class="c">10:24</td><td class="c">23:52</td></tr>
+      <tr><td>2026-06-01</td><td class="c">월</td><td class="num">10</td><td class="num">4.9h</td><td class="c">09:33</td><td class="c">21:46</td></tr>
+      <tr><td>2026-06-02</td><td class="c">화</td><td class="num">18</td><td class="num">9.1h</td><td class="c">01:01</td><td class="c">16:20</td></tr>
+      <tr><td>2026-06-08</td><td class="c">월</td><td class="num">1</td><td class="num">1.0h</td><td class="c">16:05</td><td class="c">16:05</td></tr>
+      <tr><td>2026-06-09</td><td class="c">화</td><td class="num">11</td><td class="num">7.5h</td><td class="c">10:37</td><td class="c">20:10</td></tr>
+      <tr><td>2026-06-10</td><td class="c">수</td><td class="num">9</td><td class="num">4.8h</td><td class="c">08:47</td><td class="c">12:36</td></tr>
+      <tr><td>2026-06-11</td><td class="c">목</td><td class="num">16</td><td class="num">9.1h</td><td class="c">07:53</td><td class="c">21:48</td></tr>
+      <tr><td>2026-06-13</td><td class="c">토</td><td class="num">11</td><td class="num">6.2h</td><td class="c">10:18</td><td class="c">19:51</td></tr>
+      <tr><td>2026-06-14</td><td class="c">일</td><td class="num">2</td><td class="num">1.6h</td><td class="c">06:41</td><td class="c">07:16</td></tr>
+      <tr><td>2026-06-16</td><td class="c">화</td><td class="num">8</td><td class="num">6.4h</td><td class="c">09:50</td><td class="c">22:33</td></tr>
+      <tr><td>2026-06-17</td><td class="c">수</td><td class="num">7</td><td class="num">4.1h</td><td class="c">17:46</td><td class="c">20:50</td></tr>
+      <tr style="font-weight:700;background:var(--teal-l);"><td>합계</td><td class="c">41일</td><td class="num">335</td><td class="num">180.8h</td><td class="c">—</td><td class="c">—</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ 7. 지금까지 만든 것 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">07.</span> 지금까지 완성된 것</h2>
+  <p class="lead">3개월의 작업으로 현재 시스템에는 다음과 같은 기능들이 들어 있습니다.</p>
+
+  <div class="cards">
+    <div class="card"><div class="t">통합 대시보드</div><div class="d">시스템별 사업 현황·금액·완료/진행 증감을 메인 화면에서 한눈에.</div></div>
+    <div class="card"><div class="t">사업 관리</div><div class="d">탭으로 나뉜 등록/수정 폼, 지역·시스템·연도 검색, 칸반식 단계 표시.</div></div>
+    <div class="card"><div class="t">공식 문서 자동 생성</div><div class="d">착수계·기성계·준공계 한글 공문/본문 자동 작성, 날인본 스캔 보관, 일괄 ZIP 다운로드.</div></div>
+    <div class="card"><div class="t">점검내역서 + 자동 점검</div><div class="d">현장 자동 점검 프로그램(QR·원격), 수집값 자동 채움, HTML→PDF 표준 점검표.</div></div>
+    <div class="card"><div class="t">견적서·견적 대장</div><div class="d">인건비·요율·낙찰율 자동 계산, 절사 단위 적용, 미리보기·대장 관리.</div></div>
+    <div class="card"><div class="t">장애처리·업무지원</div><div class="d">담당 엔지니어·요청자(공무원/업체) 관리, 시간 기록, 운영문서 상세·수정·삭제.</div></div>
+    <div class="card"><div class="t">지식베이스(KB) 추천</div><div class="d">증상→원인→조치 사례를 등록·승인·축적하고, 비슷한 사례를 자동 추천.</div></div>
+    <div class="card"><div class="t">인프라(서버) 자산</div><div class="d">서버·장비 정보 등록/상세, 점검 시 현장값과 차이 알림.</div></div>
+    <div class="card"><div class="t">사용자·권한·로그</div><div class="d">회원가입 승인, 메뉴별 권한(없음/조회/편집), 모든 작업 로그 기록·통계.</div></div>
+    <div class="card"><div class="t">디자인 시스템</div><div class="d">중앙 색 기준표(토큰)로 40여 화면 통일, 전사 사이드바 + 모바일 반응형.</div></div>
+    <div class="card"><div class="t">조직·인원 관리</div><div class="d">전 직원 조직도(85명) 시드, 본부-팀-인원 연결.</div></div>
+    <div class="card"><div class="t">운영 보안(HTTPS)</div><div class="d">리버스 프록시 기반 HTTPS 전환 런북, 외부 노출 차단 방화벽 형상관리.</div></div>
+  </div>
+
+  <p style="font-size:13px;color:var(--muted);margin-top:18px;">
+  내부적으로는 화면 70여 개, 백엔드 처리 모듈(컨트롤러) 20여 개 규모로 구성되어 있습니다.
+  </p>
+</section>
+
+<!-- ============ 8. 개발 방식 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">08.</span> 어떻게 개발했나 — 일하는 방식</h2>
+  <p class="lead">이 프로젝트의 특별한 점은 '혼자 빨리'가 아니라 '검토를 거쳐 안전하게'였다는 것입니다.</p>
+
+  <h3>① 사람 + AI 이중 검토 방식</h3>
+  <p>거의 모든 작업은 다음 흐름을 거쳤습니다. 새 기능을 바로 만들지 않고, <b>먼저 계획서를 쓰고 → AI(codex)가 검토하고 → 사람이 최종 승인한 뒤 → 만들고 → 다시 검증</b>했습니다.</p>
+  <div class="analogy" style="background:#eef7ee;border-color:var(--green);">
+    <b>요청</b> → 기획서 작성 → (화면 바뀌면) 디자인·데이터 검토 → AI 검토 → <b>사람 승인</b> → 개발계획 → AI 검토 → 사람 승인 → <b>구현</b> → AI 검증 → "작업 완료" 저장
+  </div>
+  <p>기록에 'codex 검토 반영', 'v0.2 → v3 (codex 2차 반영)' 같은 표현이 자주 보이는 이유입니다. 한 기능을 위해 계획서를 여러 번 고쳐 쓴 흔적이죠.</p>
+
+  <h3>② '가상 팀' 체계</h3>
+  <p>실제로는 한 사람이 진행했지만, <b>기획·DB·디자인·개발·테스트</b> 다섯 역할을 나눠 스스로 점검하는 체계를 갖췄습니다. 화면이 바뀌는 작업에는 '디자인팀 자문'을 반드시 거치도록 규칙을 정했습니다.</p>
+
+  <h3>③ 신중하게 멈춘 결정들도 기록</h3>
+  <p>모든 시도가 성공한 것은 아닙니다. 계약서 PDF 자동 파싱 기능(5/4)은 만들었다가 <b>사용자 판단으로 취소</b>했고, 일부 보안 작업은 <b>의도적으로 보류</b>했습니다. 이런 "안 하기로 한 결정"까지 남긴 점이 이 프로젝트 기록의 강점입니다.</p>
+
+  <div class="note">
+    💡 한마디로, <b>"빠르게 만들기"보다 "틀리지 않게 만들기"</b>에 무게를 둔 개발이었습니다.
+    그래서 화면 수에 비해 보안 감사·데이터 정리·문서화에 들인 시간이 큽니다.
+  </div>
+</section>
+
+<!-- ============ 9. 용어 사전 + 맺음말 ============ -->
+<section class="page">
+  <h2 class="sec"><span class="sec-no">09.</span> 용어 사전 & 맺음말</h2>
+  <p class="lead">이 문서에 나온 개발 용어를 한 줄씩 풀었습니다.</p>
+
+  <dl class="glossary">
+    <dt>커밋(commit)</dt><dd>작업을 한 번 저장하며 "무엇을 바꿨는지" 한 줄로 적어 두는 작업 일지 한 칸.</dd>
+    <dt>저장소(repository)</dt><dd>그 작업 일지와 모든 코드가 쌓이는 보관함. 이 시스템의 보관함에는 335칸이 쌓였습니다.</dd>
+    <dt>codex</dt><dd>사람이 짠 코드를 한 번 더 검토하는 AI 검토 도우미.</dd>
+    <dt>리팩토링(refactoring)</dt><dd>겉보기 기능은 그대로 두고 속 구조만 깔끔하게 정리하는 일. '대청소'에 가깝습니다.</dd>
+    <dt>정규화(normalization)</dt><dd>데이터를 중복 없이 표준 형태로 정리하는 것. 같은 정보가 여기저기 흩어지지 않게.</dd>
+    <dt>반응형(responsive)</dt><dd>PC·태블릿·휴대폰 등 화면 크기에 맞춰 레이아웃이 자동으로 바뀌는 것.</dd>
+    <dt>디자인 토큰</dt><dd>색·간격·글꼴 같은 디자인 값을 한 곳에 정해 둔 '기준표'. 모든 화면이 같은 기준을 씁니다.</dd>
+    <dt>대시보드(dashboard)</dt><dd>여러 정보를 한 화면에 요약해 보여주는 종합 상황판.</dd>
+    <dt>캐스케이드(cascade)</dt><dd>앞 선택에 따라 다음 선택지가 좁혀지는 방식. 예: 시·도를 고르면 그 안의 시·군·구만 보임.</dd>
+    <dt>지식베이스(KB)</dt><dd>'증상→원인→조치' 사례를 쌓아 두고, 비슷한 일이 생기면 꺼내 보는 해결책 모음.</dd>
+    <dt>HTTPS / 리버스 프록시</dt><dd>웹 접속을 암호화해 안전하게 만드는 방식과, 그 앞단에서 교통정리를 하는 장치.</dd>
+    <dt>핫리로드(hot reload)</dt><dd>프로그램을 껐다 켜지 않아도 바뀐 코드가 바로 반영되는 기능.</dd>
+  </dl>
+
+  <h3 style="margin-top:30px;">맺음말</h3>
+  <p>2026년 4월 3일의 첫 저장 한 줄에서 시작해, 6월 17일까지 <b>41일 동안 약 181시간</b>에 걸쳐 <b>335번의 저장</b>이 쌓였습니다.
+  그 사이 시스템은 단순한 사업 목록 관리에서 — 문서 자동화, 현장 점검 자동화, 견적, 장애·업무지원, 지식베이스, 그리고 통일된 디자인을 갖춘 — <b>부서의 통합 업무 플랫폼</b>으로 자랐습니다.</p>
+  <p>무엇보다 이 모든 과정이 "계획 → 검토 → 승인 → 구현 → 검증"이라는 신중한 절차를 따라 기록으로 남았다는 점이, 이 시스템이 앞으로도 안전하게 이어질 수 있는 가장 큰 자산입니다.</p>
+
+  <div class="note" style="margin-top:24px;">
+    본 문서는 저장소의 실제 작업 기록(335건, 2026-04-03 ~ 2026-06-17)을 근거로 자동 정리되었습니다.
+    작업시간은 저장 시각 기반 추정치입니다. · 생성일 2026-06-19
+  </div>
+</section>
+
+</body>
+</html>

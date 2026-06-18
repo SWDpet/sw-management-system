@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SW 사업관리 시스템 — 개발 히스토리 (슬라이드)</title>
+<style>
+  :root{
+    --navy:#2e3192; --teal:#0f7c8a; --teal-d:#0a5b66; --teal-l:#e3f2f4;
+    --green:#58aa47; --ink:#1f2933; --muted:#7b8794; --line:#d8e0e5;
+    --gold:#d9a441;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{font-family:"Malgun Gothic","맑은 고딕",-apple-system,sans-serif; color:var(--ink); background:#3a4150;}
+
+  .slide{
+    width:297mm; height:209mm;          /* A4 가로 1장 = 슬라이드 1장 */
+    margin:10px auto; background:#fff; position:relative; overflow:hidden;
+    padding:20mm 22mm; display:flex; flex-direction:column;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
+  }
+  /* 좌측 악센트 바 */
+  .slide::before{content:""; position:absolute; left:0; top:0; bottom:0; width:10mm; background:linear-gradient(180deg,var(--navy),var(--teal));}
+  .pg{position:absolute; right:14mm; bottom:10mm; font-size:12px; color:var(--muted); letter-spacing:.05em;}
+  .kick{position:absolute; left:22mm; bottom:10mm; font-size:11px; color:var(--muted); letter-spacing:.25em;}
+
+  .eyebrow{color:var(--teal); font-weight:800; letter-spacing:.18em; font-size:14px; margin-bottom:10px;}
+  h1{font-size:40px; line-height:1.2; color:var(--navy); font-weight:800;}
+  .stitle{font-size:30px; line-height:1.2; color:var(--navy); font-weight:800; margin-bottom:6px;}
+  .sub{font-size:16px; color:var(--muted); margin-bottom:22px;}
+
+  /* 표지 */
+  .cover{background:linear-gradient(135deg,var(--navy) 0%, var(--teal-d) 65%, var(--teal) 100%); justify-content:center;}
+  .cover::before{display:none;}
+  .cover *{color:#fff;}
+  .cover .eyebrow{color:rgba(255,255,255,.85);}
+  .cover h1{color:#fff; font-size:56px;}
+  .cover .csub{font-size:20px; opacity:.92; margin-top:14px;}
+  .cover .crow{margin-top:46px; display:flex; gap:46px;}
+  .cover .crow .n{font-size:44px; font-weight:800; line-height:1;}
+  .cover .crow .l{font-size:13px; opacity:.8; margin-top:6px;}
+  .cover .cmeta{position:absolute; left:22mm; bottom:16mm; font-size:13px; opacity:.85;}
+
+  ul{list-style:none;}
+  ul li{font-size:19px; line-height:1.55; margin:13px 0; padding-left:30px; position:relative; color:#33424e;}
+  ul li::before{content:""; position:absolute; left:4px; top:11px; width:11px; height:11px; border-radius:3px; background:var(--teal);}
+  ul li b{color:var(--teal-d);}
+  ul li .s{display:block; font-size:14px; color:var(--muted); padding-left:0; margin-top:1px;}
+
+  .grid8{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:8px;}
+  .tile{border:1px solid var(--line); border-radius:14px; padding:18px; background:#fafcfc;}
+  .tile .ic{font-size:26px;}
+  .tile .tt{font-weight:800; color:var(--teal-d); margin-top:8px; font-size:16px;}
+  .tile .td{font-size:13px; color:var(--muted); margin-top:4px; line-height:1.45;}
+
+  .bignums{display:flex; gap:26px; margin-top:10px;}
+  .bn{flex:1; border-radius:16px; padding:26px 22px; color:#fff; background:linear-gradient(145deg,var(--navy),var(--teal-d));}
+  .bn:nth-child(2){background:linear-gradient(145deg,var(--teal-d),var(--teal));}
+  .bn:nth-child(3){background:linear-gradient(145deg,var(--teal),#1a9aaa);}
+  .bn:nth-child(4){background:linear-gradient(145deg,var(--green),var(--teal));}
+  .bn .n{font-size:50px; font-weight:800; line-height:1;}
+  .bn .l{font-size:15px; opacity:.9; margin-top:10px;}
+
+  /* 타임라인 슬라이드 */
+  .steps{display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:18px;}
+  .step{position:relative; padding:0 16px;}
+  .step:not(:last-child)::after{content:"→"; position:absolute; right:-10px; top:34px; color:var(--teal); font-size:24px; font-weight:800;}
+  .step .ph{display:inline-block; background:var(--teal-l); color:var(--teal-d); font-weight:800; font-size:13px; border-radius:20px; padding:4px 12px;}
+  .step .when{font-size:13px; color:var(--muted); margin:10px 0 4px;}
+  .step .st{font-size:18px; font-weight:800; color:var(--navy); line-height:1.3; min-height:48px;}
+  .step .sd{font-size:13.5px; color:#55636e; margin-top:8px; line-height:1.5;}
+
+  table{border-collapse:collapse; width:100%; font-size:16px; margin-top:14px;}
+  th,td{border-bottom:1px solid var(--line); padding:12px 14px; text-align:left;}
+  th{color:var(--navy); border-bottom:2px solid var(--teal);}
+  td.num,th.num{text-align:right; font-variant-numeric:tabular-nums;}
+  tr.tot td{font-weight:800; background:var(--teal-l); border-bottom:none;}
+
+  .bars{margin-top:18px;}
+  .brow{display:flex; align-items:center; gap:14px; margin:14px 0; font-size:17px;}
+  .brow .bl{width:60px; color:var(--muted); text-align:right;}
+  .btrack{flex:1; background:#eef2f4; border-radius:8px; height:34px; overflow:hidden;}
+  .bfill{height:100%; background:linear-gradient(90deg,var(--teal),var(--navy)); border-radius:8px; color:#fff; font-weight:700; display:flex; align-items:center; justify-content:flex-end; padding-right:14px;}
+
+  .daychart{display:flex; align-items:flex-end; gap:4px; height:230px; border-bottom:2px solid var(--line); margin-top:24px;}
+  .daychart .col{flex:1; background:linear-gradient(180deg,var(--teal),var(--navy)); border-radius:4px 4px 0 0;}
+  .daychart .col.hot{background:linear-gradient(180deg,var(--gold),#c0532b);}
+  .axis{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:8px;}
+  .callout{margin-top:18px; font-size:15px; color:#55636e;}
+  .callout b{color:var(--teal-d);}
+
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-top:10px;}
+  .panel{border:1px solid var(--line); border-radius:14px; padding:22px 24px; background:#fafcfc;}
+  .panel h3{font-size:19px; color:var(--teal-d); margin-bottom:6px;}
+  .panel ul li{font-size:16px; margin:9px 0;}
+  .panel ul li::before{top:9px; width:9px; height:9px;}
+
+  .flow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px;}
+  .flow .node{background:var(--teal-l); border:1px solid #c5dde0; color:var(--teal-d); font-weight:700; border-radius:10px; padding:12px 16px; font-size:15px;}
+  .flow .node.k{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .flow .arr{color:var(--teal); font-weight:800; font-size:20px;}
+
+  .quote{margin-top:auto; font-size:20px; color:var(--navy); font-weight:700; line-height:1.5; border-left:5px solid var(--teal); padding-left:18px;}
+
+  @media print{
+    body{background:#fff;}
+    .slide{margin:0; box-shadow:none; page-break-after:always; width:auto; height:auto;}
+    .slide:last-child{page-break-after:auto;}
+  }
+  @page{size:A4 landscape; margin:0;}
+</style>
+</head>
+<body>
+
+<!-- 1 표지 -->
+<section class="slide cover">
+  <div class="eyebrow">SW PROJECT MANAGEMENT SYSTEM</div>
+  <h1>SW 사업관리 시스템<br>개발 히스토리</h1>
+  <div class="csub">처음 한 줄부터 지금까지 — 3개월의 기록</div>
+  <div class="crow">
+    <div><div class="n">335</div><div class="l">작업 기록</div></div>
+    <div><div class="n">41일</div><div class="l">작업한 날</div></div>
+    <div><div class="n">≈181h</div><div class="l">추정 작업시간</div></div>
+    <div><div class="n">4단계</div><div class="l">성장 과정</div></div>
+  </div>
+  <div class="cmeta">2026-04-03 ~ 2026-06-17 · 박욱진(SW지원부) · 2026-06-19</div>
+</section>
+
+<!-- 2 시스템이 무엇인가 -->
+<section class="slide">
+  <div class="eyebrow">WHAT</div>
+  <div class="stitle">한 화면에서 보는 우리 부서의 "관제탑"</div>
+  <div class="sub">흩어져 있던 사업·서류·점검·장애 대응을 하나의 웹 시스템으로</div>
+  <div class="grid8">
+    <div class="tile"><div class="ic">📊</div><div class="tt">대시보드</div><div class="td">사업 현황·금액 요약</div></div>
+    <div class="tile"><div class="ic">📁</div><div class="tt">사업 관리</div><div class="td">등록·검색·단계 관리</div></div>
+    <div class="tile"><div class="ic">📄</div><div class="tt">문서 자동화</div><div class="td">착수·기성·준공계</div></div>
+    <div class="tile"><div class="ic">🔍</div><div class="tt">점검내역서</div><div class="td">현장 점검→PDF</div></div>
+    <div class="tile"><div class="ic">💰</div><div class="tt">견적서</div><div class="td">인건비 자동 계산</div></div>
+    <div class="tile"><div class="ic">🛠</div><div class="tt">장애·업무지원</div><div class="td">대응 내역 기록</div></div>
+    <div class="tile"><div class="ic">🖥</div><div class="tt">인프라 자산</div><div class="td">서버·장비 관리</div></div>
+    <div class="tile"><div class="ic">👤</div><div class="tt">권한·로그</div><div class="td">승인·기록·통계</div></div>
+  </div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">02</div>
+</section>
+
+<!-- 3 숫자 -->
+<section class="slide">
+  <div class="eyebrow">BY THE NUMBERS</div>
+  <div class="stitle">숫자로 보는 3개월</div>
+  <div class="sub">2026년 4월 3일 첫 저장 → 6월 17일까지</div>
+  <div class="bignums">
+    <div class="bn"><div class="n">335</div><div class="l">작업 기록(커밋)<br><span style="font-size:13px;opacity:.8">= 작업 일지 한 칸씩</span></div></div>
+    <div class="bn"><div class="n">41<span style="font-size:26px">일</span></div><div class="l">실제 작업한 날<br><span style="font-size:13px;opacity:.8">전체 76일 중</span></div></div>
+    <div class="bn"><div class="n">181<span style="font-size:26px">h</span></div><div class="l">추정 작업시간<br><span style="font-size:13px;opacity:.8">하루 평균 4.4h</span></div></div>
+    <div class="bn"><div class="n">70<span style="font-size:26px">+</span></div><div class="l">화면(페이지)<br><span style="font-size:13px;opacity:.8">처리 모듈 20+</span></div></div>
+  </div>
+  <div class="callout" style="margin-top:30px;">💡 화면 수에 비해 <b>보안 점검·데이터 정리·문서화</b>에 들인 비중이 큽니다 — "빠르게"보다 "틀리지 않게"에 무게.</div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">03</div>
+</section>
+
+<!-- 4 4단계 타임라인 -->
+<section class="slide">
+  <div class="eyebrow">JOURNEY</div>
+  <div class="stitle">시스템이 자라온 4단계</div>
+  <div class="steps">
+    <div class="step"><span class="ph">1단계</span><div class="when">4월 초·중순</div><div class="st">기능을 빠르게 채우다</div><div class="sd">문서·견적·점검내역서 확장, 태블릿 대응, 팀 모니터링</div></div>
+    <div class="step"><span class="ph">2단계</span><div class="when">4월 중·하순</div><div class="st">점검하고 튼튼하게 정리</div><div class="sd">보안 감사, 데이터 정규화, 개발 문서 전면 재편</div></div>
+    <div class="step"><span class="ph">3단계</span><div class="when">5월</div><div class="st">현장 점검 자동화 + 디자인 통일</div><div class="sd">QR·원격 점검 프로그램, 40여 화면 색 통일</div></div>
+    <div class="step"><span class="ph">4단계</span><div class="when">6월</div><div class="st">실무에 맞춰 넓히다</div><div class="sd">업무지원·장애처리, 지식베이스, 사이드바·HTTPS</div></div>
+  </div>
+  <div class="callout" style="margin-top:36px;">집을 짓듯 — <b>① 방 늘리기 → ② 배관·전기 정비 → ③ 인테리어 통일 → ④ 가구 채우기</b></div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">04</div>
+</section>
+
+<!-- 5 월별 작업량 -->
+<section class="slide">
+  <div class="eyebrow">WORKLOAD · MONTHLY</div>
+  <div class="stitle">월별 작업량 & 작업시간</div>
+  <div class="two" style="margin-top:18px;">
+    <div>
+      <div class="bars">
+        <div class="brow"><div class="bl">4월</div><div class="btrack"><div class="bfill" style="width:100%">65.5h</div></div></div>
+        <div class="brow"><div class="bl">5월</div><div class="btrack"><div class="bfill" style="width:92.7%">60.7h</div></div></div>
+        <div class="brow"><div class="bl">6월</div><div class="btrack"><div class="bfill" style="width:83.4%">54.6h</div></div></div>
+      </div>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th>월</th><th class="num">기록</th><th class="num">일수</th><th class="num">시간</th><th class="num">하루평균</th></tr></thead>
+        <tbody>
+          <tr><td>4월</td><td class="num">104</td><td class="num">13</td><td class="num">65.5h</td><td class="num">5.0h</td></tr>
+          <tr><td>5월</td><td class="num">138</td><td class="num">18</td><td class="num">60.7h</td><td class="num">3.4h</td></tr>
+          <tr><td>6월</td><td class="num">93</td><td class="num">10</td><td class="num">54.6h</td><td class="num">5.5h</td></tr>
+          <tr class="tot"><td>합계</td><td class="num">335</td><td class="num">41</td><td class="num">180.8h</td><td class="num">4.4h</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:24px;">작업시간은 저장 기록(커밋) 시각 기반 <b>추정치</b> — 간격 2시간 미만=연속작업, 묶음마다 +1h.</div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">05</div>
+</section>
+
+<!-- 6 일별 작업시간 -->
+<section class="slide">
+  <div class="eyebrow">WORKLOAD · DAILY</div>
+  <div class="stitle">일별 작업시간 (41일)</div>
+  <div class="daychart">
+    <div class="col" style="height:7%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:30%"></div><div class="col" style="height:44%"></div>
+    <div class="col" style="height:31%"></div><div class="col" style="height:69%"></div>
+    <div class="col" style="height:38%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:43%"></div><div class="col" style="height:41%"></div>
+    <div class="col" style="height:57%"></div><div class="col" style="height:46%"></div>
+    <div class="col" style="height:32%"></div><div class="col" style="height:14%"></div>
+    <div class="col" style="height:15%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:7%"></div><div class="col" style="height:28%"></div>
+    <div class="col" style="height:14%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:17%"></div><div class="col" style="height:35%"></div>
+    <div class="col" style="height:69%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:7%"></div><div class="col" style="height:32%"></div>
+    <div class="col" style="height:7%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:19%"></div><div class="col" style="height:28%"></div>
+    <div class="col hot" style="height:100%"></div><div class="col" style="height:34%"></div>
+    <div class="col" style="height:63%"></div><div class="col" style="height:7%"></div>
+    <div class="col" style="height:52%"></div><div class="col" style="height:33%"></div>
+    <div class="col" style="height:63%"></div><div class="col" style="height:43%"></div>
+    <div class="col" style="height:11%"></div><div class="col" style="height:44%"></div>
+    <div class="col" style="height:28%"></div>
+  </div>
+  <div class="axis"><span>4/3</span><span>4/26</span><span>5/17</span><span>5/31</span><span>6/11</span><span>6/17</span></div>
+  <div class="callout">최장일 <b>5/31 ≈14.5h(52건)</b> — 화면 40여 개 디자인 일괄 통일. 다음 <b>4/19·5/17 ≈10h</b>. 주말·심야 작업이 많았습니다.</div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">06</div>
+</section>
+
+<!-- 7 단계 1·2 핵심 -->
+<section class="slide">
+  <div class="eyebrow">DEEP DIVE · APR</div>
+  <div class="stitle">4월 — 채우고, 다지다</div>
+  <div class="two">
+    <div class="panel">
+      <h3>① 기능을 빠르게</h3>
+      <ul>
+        <li><b>문서·견적·점검</b> 대규모 확장<span class="s">한글 공문 자동화, PDF 출력</span></li>
+        <li><b>태블릿 대응</b><span class="s">현장 갤럭시탭 세로 화면</span></li>
+        <li><b>팀 진행율 대시보드</b></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>② 점검하고 정리</h3>
+      <ul>
+        <li><b>보안 감사</b> (codex)<span class="s">비밀번호·권한·민감정보 조치</span></li>
+        <li><b>데이터 정규화</b><span class="s">중복 제거, 표준화 (대청소)</span></li>
+        <li><b>개발 문서 전면 재편</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote">"기능을 늘린 뒤, 바로 안전성과 구조를 점검했다."</div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">07</div>
+</section>
+
+<!-- 8 단계 3 핵심 -->
+<section class="slide">
+  <div class="eyebrow">DEEP DIVE · MAY</div>
+  <div class="stitle">5월 — 자동화와 통일</div>
+  <div class="two">
+    <div class="panel">
+      <h3>🤖 현장 점검 자동화</h3>
+      <ul>
+        <li><b>QR 반출</b><span class="s">폐쇄망에서도 결과 반출</span></li>
+        <li><b>원격 점검</b> (Telnet·SSH)<span class="s">비밀번호 안전 보관, 구형 서버 호환</span></li>
+        <li><b>점검표 자동 생성</b><span class="s">수집값→표준 양식+그래프</span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>🎨 디자인 전면 통일</h3>
+      <ul>
+        <li><b>색 기준표(토큰)</b> 도입</li>
+        <li><b>40여 화면 일괄 정비</b><span class="s">견적서 3,209줄 등 — 5/31 하루 52건</span></li>
+        <li>브랜드 색으로 인테리어 통일</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote">"손이 많이 가던 현장 점검을, 현장에 두는 작은 프로그램이 대신하게."</div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">08</div>
+</section>
+
+<!-- 9 단계 4 핵심 -->
+<section class="slide">
+  <div class="eyebrow">DEEP DIVE · JUN</div>
+  <div class="stitle">6월 — 실무에 맞춰 넓히다</div>
+  <ul style="margin-top:6px;">
+    <li><b>서류 편의</b> — 날인본 스캔 보관 · 공문 서식 보정 · 검색결과 <b>일괄 ZIP 다운로드</b></li>
+    <li><b>화면 구조 개편</b> — 상단 메뉴를 <b>왼쪽 사이드바</b>로 + 모바일 반응형, 대시보드를 메인으로</li>
+    <li><b>업무계획 캐스케이드</b> — 시·도 → 시·군·구 → 시스템으로 이어 선택</li>
+    <li><b>장애처리·업무지원 개편</b> — 직원 85명 조직도 · 엔지니어/요청자 · <b>지식베이스 추천</b>(증상→원인→조치)</li>
+    <li><b>로그·운영문서 정리</b> — 통계 추가, 상세·수정·삭제 흐름 정돈</li>
+  </ul>
+  <div class="quote">"실제로 살아보며 불편을 없애는 단계 — 가구를 채워 넣다."</div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">09</div>
+</section>
+
+<!-- 10 일하는 방식 -->
+<section class="slide">
+  <div class="eyebrow">HOW WE WORK</div>
+  <div class="stitle">일하는 방식 — 검토를 거쳐 안전하게</div>
+  <div class="sub">바로 만들지 않고, 계획→검토→승인→구현→검증을 거쳤습니다</div>
+  <div class="flow">
+    <div class="node">요청</div><div class="arr">→</div>
+    <div class="node">기획서</div><div class="arr">→</div>
+    <div class="node">AI(codex) 검토</div><div class="arr">→</div>
+    <div class="node k">사람 승인</div><div class="arr">→</div>
+    <div class="node">구현</div><div class="arr">→</div>
+    <div class="node">AI 검증</div><div class="arr">→</div>
+    <div class="node k">완료</div>
+  </div>
+  <div class="two" style="margin-top:30px;">
+    <div class="panel"><h3>가상 팀 체계</h3><ul><li>기획·DB·디자인·개발·테스트 <b>5역할</b> 분담 점검</li><li>화면 변경 시 <b>디자인 자문 필수</b></li></ul></div>
+    <div class="panel"><h3>"안 하기로 한 결정"도 기록</h3><ul><li>계약서 PDF 파싱 — 만들었다가 <b>취소</b></li><li>일부 보안 작업 — <b>의도적 보류</b></li></ul></div>
+  </div>
+  <div class="kick">SYSTEM INTRO</div><div class="pg">10</div>
+</section>
+
+<!-- 11 맺음말 -->
+<section class="slide cover" style="background:linear-gradient(135deg,var(--teal-d),var(--navy));">
+  <div class="eyebrow">SUMMARY</div>
+  <h1 style="font-size:40px;">단순 사업 목록에서<br>부서의 통합 업무 플랫폼으로</h1>
+  <div class="csub" style="margin-top:20px; max-width:620px; line-height:1.6;">
+    41일 · 약 181시간 · 335번의 저장이 쌓여 —<br>
+    문서 자동화 · 점검 자동화 · 견적 · 장애/업무지원 · 지식베이스 · 통일된 디자인을 갖췄습니다.
+  </div>
+  <div class="csub" style="margin-top:28px; font-size:16px; opacity:.85;">
+    무엇보다, 모든 과정이 <b>계획→검토→승인→구현→검증</b>으로 기록되어<br>앞으로도 안전하게 이어갈 수 있습니다.
+  </div>
+  <div class="cmeta">SW 사업관리 시스템 · 개발 히스토리 · 2026-06-19</div>
+</section>
+
+</body>
+</html>
