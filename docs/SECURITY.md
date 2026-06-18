@@ -1,6 +1,6 @@
 # SECURITY.md — 보안 정책·구성
 
-> ⚠ **자동 생성 초안 — 검증 필요**
+> ✅ **2026-06-19 코드 대조 검증 (S2 문서 drift 정정)** — §3 CSRF를 실제 `SecurityConfig` 설정(JSON API 면제 + SameSite=lax)과 일치하도록 갱신.
 > 근거: `SecurityConfig.java` + `application.properties` + 감사 P1-1 조치 (2026-04-03)
 
 ---
@@ -35,9 +35,13 @@
 
 ## 3. CSRF
 
-- Spring Security 기본 CSRF 토큰 활성
-- Thymeleaf: `<meta name="_csrf" content="...">` + `<meta name="_csrf_header" content="...">`
-- fetch 요청 시 헤더 수동 부착 패턴 (`admin-user.js`, `project-form.html` 등)
+- **폼 요청(로그인·로그아웃 등)**: Spring Security 기본 CSRF 토큰 보호 활성
+  - Thymeleaf: `<meta name="_csrf" content="...">` + `<meta name="_csrf_header" content="...">`
+  - fetch 요청 시 헤더 수동 부착 패턴 (`admin-user.js`, `project-form.html` 등)
+- **JSON API 경로는 CSRF 면제** (`SecurityConfig.java` `ignoringRequestMatchers`): `/api/**`, `/admin/api/**`, `/document/api/**`, `/admin/api/org-units/**`, `/ops-kb/api/**`, `/ops-doc/api/**` — 세션 쿠키 기반 인증이라 토큰 미부착 호출을 허용하기 위함(스프린트 5 v2, 이후 ops-doc 403 해소).
+  - **완화책**: 세션 쿠키 `SameSite=lax` (`application.properties`) — 교차 사이트 POST/DELETE 시 쿠키 미전송으로 CSRF 위험 제한.
+  - **보완**: CSRF 면제 경로는 보호를 **서버측 권한 가드**에 의존한다. 따라서 변이 JSON API는 컨트롤러에서 `requireDocEdit`/`requireDocEditOrAdmin` 등으로 명시 가드해야 한다(예: `OpsDocController` 첨부/삭제 API — S1, 2026-06-19).
+  - **후속(미완)**: 면제 폭 축소는 프론트 fetch 전반에 CSRF 토큰 부착이 선행돼야 안전(미적용 시 403 회귀). 별도 스프린트로 분리.
 
 ---
 

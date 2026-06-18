@@ -1,7 +1,7 @@
 # RELIABILITY.md — 안정성·세션·복구 정책
 
-> ⚠ **자동 생성 초안 — 검증 필요**
-> 근거: `server-restart.sh` + `application.properties` + `SecurityLoginProperties` + JPA 설정
+> ✅ **2026-06-19 코드 대조 검증 (S2 문서 drift 정정)** — §3 DB 좌표를 현행 내부망 정책으로 갱신.
+> 근거: `server-restart.sh` + `application.properties` + `SecurityLoginProperties` + JPA 설정 + `docs/DB_CONNECTION.md`
 
 ---
 
@@ -31,7 +31,8 @@ bash server-restart.sh
 
 ## 3. DB 연결
 
-- 프로덕션: `postgresql://211.104.137.55:5881/SW_Dept`
+- 프로덕션: `SW_Dept` — **사무실 내부망에서만** 접속 (`${DB_HOST}:${DB_PORT}/${DB_NAME}`, 실제 좌표는 1Password/운영팀)
+  - ⚠ **2026-06-09 정책 변경**: 기존 외부 공인 IP(`211.104.137.55:5881`) 경로는 보안 취약으로 **차단·폐지**. 집/출장지는 DB 직접 접속 불가 → 코드 작업 + GitHub pull 만. 상세: [`docs/DB_CONNECTION.md`](DB_CONNECTION.md)
 - 비밀번호: `DB_PASSWORD` 환경변수 (credential 비커밋 원칙, `AGENTS.md §5`)
 - 연결 풀: Spring Boot 기본 (HikariCP)
 
