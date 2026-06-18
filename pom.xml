@@ -163,6 +163,23 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <!-- [S3] JaCoCo 테스트 커버리지 측정 — target/site/jacoco/index.html 생성.
+                 측정 기반 도입 단계: 보고서 생성만(빌드 실패 게이트는 후속에서 임계치 상향). -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare</id>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>test</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- ✅ 빌드 전 GeoNURIS_License.jar 파일 존재 체크 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

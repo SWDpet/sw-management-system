@@ -35,7 +35,7 @@ public class ExcelExportService {
     /** sectionData 등에서 가져온 raw 값 → 정규화.
      *  null 또는 빈 값 → 0 (절사 안 함). 허용외 값 → 1000(백단위) fallback + WARN.
      *  허용 값: 1000(백)/10000(천)/100000(만)/1000000(십만) */
-    private static int normalizeRounddownUnit(Object raw) {
+    static int normalizeRounddownUnit(Object raw) {  // [S3] package-private: 단위 테스트 대상
         if (raw == null || raw.toString().trim().isEmpty()) return 0;
         try {
             int v = (raw instanceof Number) ? ((Number) raw).intValue()
@@ -50,7 +50,7 @@ public class ExcelExportService {
     }
 
     /** 절사 단위 → ROUNDDOWN 두번째 인자(digits). 1000→-3, 10000→-4, 100000→-5, 1000000→-6 */
-    private static int toRoundDigits(int unit) {
+    static int toRoundDigits(int unit) {  // [S3] package-private: 단위 테스트 대상
         return switch (unit) {
             case 10000 -> -4;
             case 100000 -> -5;
@@ -60,7 +60,7 @@ public class ExcelExportService {
     }
 
     /** 절사 단위 → 비고 셀 라벨. */
-    private static String roundLabel(int unit) {
+    static String roundLabel(int unit) {  // [S3] package-private: 단위 테스트 대상
         return switch (unit) {
             case 10000 -> "천단위 절사";
             case 100000 -> "만단위 절사";
