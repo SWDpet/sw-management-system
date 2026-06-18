@@ -381,7 +381,10 @@ public class OpsDocController {
 
     @DeleteMapping("/api/{docId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long docId) {
+    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long docId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        if (denied != null) return denied;
         opsDocService.delete(docId);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -779,15 +782,21 @@ public class OpsDocController {
 
     @GetMapping("/api/attachments/{docId}")
     @ResponseBody
-    public List<OpsDocumentAttachment> getAttachments(@PathVariable Long docId) {
-        return attachmentService.getAttachments(docId);
+    public ResponseEntity<?> getAttachments(@PathVariable Long docId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocView(currentUser);  // [S1 보안가드]
+        if (denied != null) return denied;
+        return ResponseEntity.ok(attachmentService.getAttachments(docId));
     }
 
     @PostMapping("/api/attachment/upload/{docId}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> uploadAttachment(
             @PathVariable Long docId,
-            @RequestParam("file") MultipartFile file) throws java.io.IOException {
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal CustomUserDetails currentUser) throws java.io.IOException {
+        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        if (denied != null) return denied;
         OpsDocumentAttachment att = attachmentService.saveAttachment(docId, file);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -798,7 +807,10 @@ public class OpsDocController {
 
     @DeleteMapping("/api/attachment/{attachId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deleteAttachment(@PathVariable Long attachId) {
+    public ResponseEntity<Map<String, Object>> deleteAttachment(@PathVariable Long attachId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        if (denied != null) return denied;
         attachmentService.deleteAttachment(attachId);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
