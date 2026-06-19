@@ -163,8 +163,11 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <!-- [S3] JaCoCo 테스트 커버리지 측정 — target/site/jacoco/index.html 생성.
-                 측정 기반 도입 단계: 보고서 생성만(빌드 실패 게이트는 후속에서 임계치 상향). -->
+            <!-- [S3] JaCoCo 테스트 커버리지 측정 + 회귀 방지 게이트.
+                 report: target/site/jacoco/index.html 생성 (test phase).
+                 check : com/swmanager/** 한정, 기본 mvn test 실측(LINE 21.9%/INSTRUCTION 16.9%)
+                         아래의 ratchet floor. mvn verify 시 미달이면 빌드 실패.
+                         ※ com/swmanager 로 스코프 — assembly 가 target/classes 에 푼 의존성 제외. -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -177,6 +180,33 @@
                         <id>jacoco-report</id>
                         <phase>test</phase>
                         <goals><goal>report</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <includes>
+                                        <include>com/swmanager/**</include>
+                                    </includes>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.18</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.14</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
