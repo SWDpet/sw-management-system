@@ -82,9 +82,10 @@ class EnumErrorResponseFactoryTest {
 
         @SuppressWarnings("unchecked")
         List<String> allowed = (List<String>) body.get("allowed");
+        // doc-split-ops(01c033f) 이후 DocumentType 은 사업문서 3종만 보유
+        // (INSPECT·FAULT·SUPPORT·INSTALL·PATCH 는 OpsDocType 으로 분리). — S3 drift 정정
         assertThat(allowed).containsExactlyInAnyOrder(
-                "COMMENCE", "INTERIM", "COMPLETION", "INSPECT",
-                "FAULT", "SUPPORT", "INSTALL", "PATCH");
+                "COMMENCE", "INTERIM", "COMPLETION");
     }
 
     @Test

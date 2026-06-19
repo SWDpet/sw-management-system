@@ -14,9 +14,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MenuNameTest {
 
-    // T2: MenuName 정확히 16개 (기존 11 + 신규 5)
+    // T2: MenuName 정확히 17개 (기존 11 + S9 신규 5 + log-mgmt ACCESS 1)
+    //  ※ ACCESS 는 log-mgmt 스프린트(3c1862f, LOGIN/LOGOUT 접속자 로그)에서 추가됨 — S3 drift 정정
     @Test
-    void menu_name_has_exactly_16_public_string_constants() {
+    void menu_name_has_exactly_17_public_string_constants() {
         List<Field> stringConstants = Arrays.stream(MenuName.class.getDeclaredFields())
                 .filter(f -> Modifier.isPublic(f.getModifiers()))
                 .filter(f -> Modifier.isStatic(f.getModifiers()))
@@ -24,7 +25,7 @@ class MenuNameTest {
                 .filter(f -> f.getType() == String.class)
                 .toList();
 
-        assertThat(stringConstants).hasSize(16);
+        assertThat(stringConstants).hasSize(17);
     }
 
     // S9 신규 5종 존재 확인
