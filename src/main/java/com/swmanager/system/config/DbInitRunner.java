@@ -41,8 +41,27 @@ public class DbInitRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        // [perf/operability fix] DB 연결을 1회 선확인. 미연결 시 즉시 스킵.
+        //  이전: 연결 불가 상태에서도 3개 파일 431개 문장을 statement 단위로 jdbcTemplate.execute() 시도 →
+        //  매 문장마다 HikariPool 재초기화(~1s)+풀스택 ERROR 로그 → 기동 ~451s + 로그 ~160MB.
+        //  운영에서도 기동 시 DB 가 잠깐 끊기면 동일 폭주 → 연결 선확인으로 차단.
+        if (!isDbReachable()) {
+            log.warn("DB 연결 불가 — db_init/seed 전체 스킵 (statement 단위 재시도 폭주 방지).");
+            return;
+        }
         for (String file : SQL_FILES) {
             runSqlFile(file);
+        }
+    }
+
+    /** 시작 전 DB 연결 1회 확인. 실패해도 예외를 던지지 않고 false (기동 차단 안 함). */
+    private boolean isDbReachable() {
+        try {
+            return Boolean.TRUE.equals(
+                    jdbcTemplate.execute((java.sql.Connection c) -> c.isValid(2)));
+        } catch (Exception e) {
+            log.warn("DB 연결 확인 실패: {}", e.getMessage());
+            return false;
         }
     }
 
