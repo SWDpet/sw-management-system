@@ -2,6 +2,7 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.repository.ops.StaffRepository;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.service.OrgUnitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -96,9 +97,7 @@ public class OrgUnitController {
     public ResponseEntity<?> delete(@PathVariable Long unitId) {
         try {
             orgUnitService.delete(unitId);
-            Map<String, Object> ok = new LinkedHashMap<>();
-            ok.put("success", true);
-            return ResponseEntity.ok(ok);
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (IllegalArgumentException e) {
             return error(400, "NOT_FOUND", e.getMessage());
         } catch (IllegalStateException e) {
@@ -128,7 +127,7 @@ public class OrgUnitController {
         if (s == null) return error(404, "NOT_FOUND", "직원 없음: " + id);
         applyStaff(s, body);
         staffRepository.save(s);
-        return ResponseEntity.ok(Map.of("success", true));
+        return ResponseEntity.ok(ApiResult.ok());
     }
 
     @DeleteMapping("/admin/api/staff/{id}")
@@ -136,7 +135,7 @@ public class OrgUnitController {
     public ResponseEntity<?> deleteStaff(@PathVariable Long id) {
         try {
             staffRepository.deleteById(id);
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
             return error(400, "IN_USE", "문서 요청자로 사용 중인 직원은 삭제할 수 없습니다.");
         }
@@ -154,9 +153,7 @@ public class OrgUnitController {
     }
 
     private ResponseEntity<?> error(int status, String code, String message) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("success", false);
-        body.put("error", Map.of("code", code, "message", message));
-        return ResponseEntity.status(status).body(body);
+        // [dto-migration] {success:false, error:{code,message}} — ApiResult.fail 과 동일 형태.
+        return ResponseEntity.status(status).body(ApiResult.fail(code, message));
     }
 }
