@@ -8,6 +8,7 @@ import com.swmanager.system.dto.InspectReportDTO;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.InspectMetricSnapshotRepository;
 import com.swmanager.system.repository.SwProjectRepository;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.service.InspectMetricChartService;
 import com.swmanager.system.service.InspectPdfService;
 import com.swmanager.system.service.InspectReportService;
@@ -83,55 +84,38 @@ public class InspectReportController {
     @ResponseBody
     public ResponseEntity<?> saveInspectReport(@RequestBody InspectReportDTO dto) {
         if (!"EDIT".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "수정 권한이 없습니다"));
         }
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
-            InspectReportDTO saved = inspectReportService.save(dto);
-            result.put("success", true);
-            result.put("data", saved);
+            return ResponseEntity.ok(ApiResult.ok(inspectReportService.save(dto)));
         } catch (Exception e) {
             log.error("점검내역서 저장 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** GET /document/api/inspect-report/{id} - 단건 조회 */
     @GetMapping("/api/inspect-report/{id}")
     @ResponseBody
     public ResponseEntity<?> getInspectReport(@PathVariable Long id) {
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
-            InspectReportDTO dto = inspectReportService.findById(id);
-            result.put("success", true);
-            result.put("data", dto);
+            return ResponseEntity.ok(ApiResult.ok(inspectReportService.findById(id)));
         } catch (Exception e) {
             log.error("점검내역서 조회 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** GET /document/api/inspect-reports?pjtId={pjtId} - 프로젝트별 목록 */
     @GetMapping("/api/inspect-reports")
     @ResponseBody
     public ResponseEntity<?> listInspectReports(@RequestParam Long pjtId) {
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
-            result.put("success", true);
-            result.put("data", inspectReportService.findByProject(pjtId));
+            return ResponseEntity.ok(ApiResult.ok(inspectReportService.findByProject(pjtId)));
         } catch (Exception e) {
             log.error("점검내역서 목록 조회 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** GET /document/api/inspect-report/find?pjtId={pjtId}&inspectMonth={YYYY-MM}
@@ -140,32 +124,26 @@ public class InspectReportController {
     @GetMapping("/api/inspect-report/find")
     @ResponseBody
     public ResponseEntity<?> findInspectReport(@RequestParam Long pjtId, @RequestParam String inspectMonth) {
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
-            result.put("success", true);
-            result.put("data", inspectReportService.findByProjectAndMonth(pjtId, inspectMonth));
+            // 미존재 시 data=null → ok(null) 직렬화는 {success:true}(data 키 생략).
+            // 프론트(doc-inspect.html:830/1821) resp.data truthy 검사라 null/undefined 동일 분기. (dto-migration)
+            return ResponseEntity.ok(ApiResult.ok(inspectReportService.findByProjectAndMonth(pjtId, inspectMonth)));
         } catch (Exception e) {
             log.error("점검내역서 prefill 조회 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** GET /document/api/inspect-report/previous-visits?pjtId={pjtId}&inspectMonth={YYYY-MM} - 이전 월 이력 조회 (신규 작성용) */
     @GetMapping("/api/inspect-report/previous-visits")
     @ResponseBody
     public ResponseEntity<?> getPreviousVisits(@RequestParam Long pjtId, @RequestParam String inspectMonth) {
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
-            result.put("success", true);
-            result.put("data", inspectReportService.getPreviousVisits(pjtId, inspectMonth));
+            return ResponseEntity.ok(ApiResult.ok(inspectReportService.getPreviousVisits(pjtId, inspectMonth)));
         } catch (Exception e) {
             log.error("이전 월 이력 조회 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** DELETE /document/api/inspect-report/{id} - soft delete — Phase J: 관리자(ADMIN) 전용 */
@@ -173,21 +151,15 @@ public class InspectReportController {
     @ResponseBody
     public ResponseEntity<?> deleteInspectReport(@PathVariable Long id) {
         if (!isAdmin()) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "관리자만 삭제할 수 있습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "관리자만 삭제할 수 있습니다"));
         }
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
             inspectReportService.delete(id);
-            result.put("success", true);
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
             log.error("점검내역서 삭제 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** POST /document/api/inspect/reset-all - 점검 테스트 데이터 일괄 초기화 (관리자 전용 hard delete) */
@@ -217,17 +189,13 @@ public class InspectReportController {
     @GetMapping("/api/inspect-template")
     @ResponseBody
     public ResponseEntity<?> getInspectTemplate(@RequestParam String type) {
-        Map<String, Object> result = new LinkedHashMap<>();
         try {
             List<InspectCheckResultDTO> items = inspectReportService.getTemplateItems(type);
-            result.put("success", true);
-            result.put("data", items);
+            return ResponseEntity.ok(ApiResult.ok(items));
         } catch (Exception e) {
             log.error("점검 템플릿 조회 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     /** GET /document/api/infra-servers?distNm=양양군&sysNmEn=UPIS - 인프라 서버정보 조회
