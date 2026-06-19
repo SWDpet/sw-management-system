@@ -153,12 +153,20 @@ class DbInitRunnerTest {
         String phase2 = loadPhase2();
         List<String> stmts = DbInitRunner.splitSqlStatements(phase2);
 
-        long doStmts = stmts.stream()
+        // [S3 재베이스라인] ops-kb/ops-staff/log-mgmt seed 추가로 DO 블록 2→13.
+        // 13건 중 11건은 'END $$', 2건은 유효 PG 구문 'END $$ LANGUAGE plpgsql' 로 종료.
+        // splitter 가 모든 DO 블록을 단일 statement 로 보존하는지(누설/분할 없음) 검증.
+        long doStart = stmts.stream()
             .filter(s -> s.startsWith("DO $$"))
-            .filter(s -> s.endsWith("END $$"))
             .count();
-        assertEquals(2, doStmts,
-            "phase2.sql 의 DO 블록 2건 모두 'DO $$' 시작 + 'END $$' 종료");
+        long wellFormed = stmts.stream()
+            .filter(s -> s.startsWith("DO $$"))
+            .filter(s -> s.endsWith("END $$") || s.endsWith("END $$ LANGUAGE plpgsql"))
+            .count();
+        assertEquals(13, doStart,
+            "phase2.sql 의 DO 블록은 13건 ('DO $$' 시작)");
+        assertEquals(doStart, wellFormed,
+            "모든 DO 블록이 'END $$' [+ LANGUAGE plpgsql] 로 정상 종료 — 단일 statement 보존");
     }
 
     @Test void ut12_b3_noLeakageOfDoBodyToOtherStatements() throws Exception {

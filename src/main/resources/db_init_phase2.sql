@@ -286,7 +286,7 @@ ON CONFLICT DO NOTHING;
 -- ============================================================
 -- UPIS DBMS (Oracle) 점검결과 — v6 modern (inspect-report-d-v6 Phase 0, 2026-05-17)
 -- 기존 OS 수준 17 항목(호스트네임/oslevel/SID/Archive Mode 등)에서 운영 깊이로 교체.
--- 매핑: inspection-poc/agent-windows/checks/db-oracle.ps1 + sql/oracle/*.sql (17 SQL)
+-- 매핑: inspection-poc/agent-windows/checks/db-oracle.ps1 + sql/oracle 폴더 SQL (17 SQL)
 -- 근거: docs/product-specs/inspection-report-d-v6.md §6-3 (DBMS), V030 마이그레이션과 동기화.
 -- ============================================================
 INSERT INTO inspect_template (template_type, section, category, item_name, item_method, sort_order) VALUES
