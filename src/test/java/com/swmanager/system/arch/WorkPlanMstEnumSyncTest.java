@@ -5,6 +5,7 @@ import com.swmanager.system.constant.enums.WorkPlanType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Arrays;
@@ -20,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * drift 발생 시 본 테스트 실패로 빌드 중단.
  */
 @SpringBootTest
+@EnabledIfEnvironmentVariable(named = "RUN_DB_TESTS", matches = "true",
+        disabledReason = "Live DB required; set RUN_DB_TESTS=true to run. 기본 CI에서는 스킵. (S3)")
 class WorkPlanMstEnumSyncTest {
 
     @Autowired JdbcTemplate jdbc;

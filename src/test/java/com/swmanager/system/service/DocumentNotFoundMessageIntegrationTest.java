@@ -4,6 +4,7 @@ import com.swmanager.system.i18n.MessageResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,6 +18,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * messages.properties 로부터 조립된 한글 + ID 치환본이어야 함을 검증.
  */
 @SpringBootTest
+@EnabledIfEnvironmentVariable(named = "RUN_DB_TESTS", matches = "true",
+        disabledReason = "Live DB required; set RUN_DB_TESTS=true to run. 기본 CI에서는 스킵. (S3)")
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=none",
         "logging.level.org.hibernate.SQL=OFF"

@@ -3,6 +3,7 @@ package com.swmanager.system.sql;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -19,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *  (4) inspect_check_result 에 마스터 외 category insert → 실패 (FK)
  */
 @SpringBootTest
+@EnabledIfEnvironmentVariable(named = "RUN_DB_TESTS", matches = "true",
+        disabledReason = "Live DB required; set RUN_DB_TESTS=true to run. 기본 CI에서는 스킵. (S3)")
 class InspectCategoryConstraintTest {
 
     @Autowired JdbcTemplate jdbc;
