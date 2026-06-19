@@ -26,6 +26,9 @@ public class ExcelExportService {
 
     private static final Logger log = LoggerFactory.getLogger(ExcelExportService.class);
 
+    /** [S4-b] 엑셀 기본 글꼴 — 기존 산재한 "맑은 고딕" 리터럴 통일. */
+    private static final String FONT = "맑은 고딕";
+
     @Autowired private DocumentService documentService;
     @Autowired private com.swmanager.system.i18n.MessageResolver messages;
 
@@ -84,7 +87,7 @@ public class ExcelExportService {
             // 스타일 정의
             CellStyle titleStyle = workbook.createCellStyle();
             Font titleFont = workbook.createFont();
-            titleFont.setFontName("맑은 고딕");
+            titleFont.setFontName(FONT);
             titleFont.setBold(true);
             titleFont.setFontHeightInPoints((short) 16);
             titleStyle.setFont(titleFont);
@@ -92,7 +95,7 @@ public class ExcelExportService {
 
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
-            headerFont.setFontName("맑은 고딕");
+            headerFont.setFontName(FONT);
             headerFont.setBold(true);
             headerFont.setFontHeightInPoints((short) 10);
             headerFont.setColor(IndexedColors.WHITE.getIndex());
@@ -100,35 +103,26 @@ public class ExcelExportService {
             headerStyle.setFillForegroundColor(IndexedColors.DARK_BLUE.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
-            headerStyle.setBorderBottom(BorderStyle.THIN);
-            headerStyle.setBorderTop(BorderStyle.THIN);
-            headerStyle.setBorderLeft(BorderStyle.THIN);
-            headerStyle.setBorderRight(BorderStyle.THIN);
+            setBorders(headerStyle);  // [S4-b] THIN 4면 — setBorders 헬퍼 재사용
 
             CellStyle dataStyle = workbook.createCellStyle();
             Font dataFont = workbook.createFont();
-            dataFont.setFontName("맑은 고딕");
+            dataFont.setFontName(FONT);
             dataFont.setFontHeightInPoints((short) 10);
             dataStyle.setFont(dataFont);
             dataStyle.setAlignment(HorizontalAlignment.CENTER);
-            dataStyle.setBorderBottom(BorderStyle.THIN);
-            dataStyle.setBorderTop(BorderStyle.THIN);
-            dataStyle.setBorderLeft(BorderStyle.THIN);
-            dataStyle.setBorderRight(BorderStyle.THIN);
+            setBorders(dataStyle);  // [S4-b]
 
             CellStyle totalStyle = workbook.createCellStyle();
             Font totalFont = workbook.createFont();
-            totalFont.setFontName("맑은 고딕");
+            totalFont.setFontName(FONT);
             totalFont.setBold(true);
             totalFont.setFontHeightInPoints((short) 10);
             totalStyle.setFont(totalFont);
             totalStyle.setAlignment(HorizontalAlignment.CENTER);
             totalStyle.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
             totalStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            totalStyle.setBorderBottom(BorderStyle.THIN);
-            totalStyle.setBorderTop(BorderStyle.THIN);
-            totalStyle.setBorderLeft(BorderStyle.THIN);
-            totalStyle.setBorderRight(BorderStyle.THIN);
+            setBorders(totalStyle);  // [S4-b]
 
             int rowIdx = 0;
 
@@ -1829,7 +1823,7 @@ public class ExcelExportService {
         Cell cell = row.getCell(colIdx);
         if (cell == null) return;
         org.apache.poi.ss.usermodel.Font f = wb.createFont();
-        f.setFontName("맑은 고딕");
+        f.setFontName(FONT);
         f.setFontHeightInPoints(pts);
         CellStyle cs = wb.createCellStyle();
         CellStyle existing = cell.getCellStyle();
@@ -2286,7 +2280,7 @@ public class ExcelExportService {
     private CellStyle createTitleStyle(XSSFWorkbook wb, int fontSize) {
         CellStyle style = wb.createCellStyle();
         Font font = wb.createFont();
-        font.setFontName("맑은 고딕");
+        font.setFontName(FONT);
         font.setBold(true);
         font.setFontHeightInPoints((short) fontSize);
         style.setFont(font);
@@ -2298,7 +2292,7 @@ public class ExcelExportService {
     private CellStyle createHeaderStyle(XSSFWorkbook wb) {
         CellStyle style = wb.createCellStyle();
         Font font = wb.createFont();
-        font.setFontName("맑은 고딕");
+        font.setFontName(FONT);
         font.setBold(true);
         font.setFontHeightInPoints((short) 10);
         style.setFont(font);
@@ -2313,7 +2307,7 @@ public class ExcelExportService {
     private CellStyle createBodyStyle(XSSFWorkbook wb) {
         CellStyle style = wb.createCellStyle();
         Font font = wb.createFont();
-        font.setFontName("맑은 고딕");
+        font.setFontName(FONT);
         font.setFontHeightInPoints((short) 10);
         style.setFont(font);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -2324,7 +2318,7 @@ public class ExcelExportService {
     private CellStyle createTotalStyle(XSSFWorkbook wb) {
         CellStyle style = wb.createCellStyle();
         Font font = wb.createFont();
-        font.setFontName("맑은 고딕");
+        font.setFontName(FONT);
         font.setBold(true);
         font.setFontHeightInPoints((short) 10);
         style.setFont(font);
@@ -2403,7 +2397,7 @@ public class ExcelExportService {
 
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
-            headerFont.setFontName("맑은 고딕");
+            headerFont.setFontName(FONT);
             headerFont.setBold(true);
             headerFont.setColor(IndexedColors.WHITE.getIndex());
             headerStyle.setFont(headerFont);
@@ -2418,7 +2412,7 @@ public class ExcelExportService {
 
             CellStyle bodyStyle = workbook.createCellStyle();
             Font bodyFont = workbook.createFont();
-            bodyFont.setFontName("맑은 고딕");
+            bodyFont.setFontName(FONT);
             bodyStyle.setFont(bodyFont);
             bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             bodyStyle.setBorderBottom(BorderStyle.THIN);
