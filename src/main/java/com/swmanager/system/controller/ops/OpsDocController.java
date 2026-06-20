@@ -308,10 +308,8 @@ public class OpsDocController {
         OpsDocType docType = OpsDocType.fromString(type);
         if (docType == OpsDocType.INSPECT) {
             // INSPECT 는 InspectReportService.save() → OpsDocLinkService 경로로만 생성.
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "error", Map.of("code", "INVALID_INPUT",
-                            "message", "점검내역서는 점검 보고서 저장 흐름에서 자동 연계됩니다.")));
+            return ResponseEntity.badRequest().body(
+                    ApiResult.fail("INVALID_INPUT", "점검내역서는 점검 보고서 저장 흐름에서 자동 연계됩니다."));
         }
         ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);  // [M2 codex#5]
         if (denied != null) return denied;
@@ -349,10 +347,8 @@ public class OpsDocController {
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         OpsDocType docType = OpsDocType.fromString(type);
         if (docType == OpsDocType.INSPECT) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "error", Map.of("code", "INVALID_INPUT",
-                            "message", "점검내역서는 점검 보고서 수정 흐름에서 자동 갱신됩니다.")));
+            return ResponseEntity.badRequest().body(
+                    ApiResult.fail("INVALID_INPUT", "점검내역서는 점검 보고서 수정 흐름에서 자동 갱신됩니다."));
         }
         ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);  // [M2 codex#5]
         if (denied != null) return denied;
@@ -387,9 +383,7 @@ public class OpsDocController {
         ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
         if (denied != null) return denied;
         opsDocService.delete(docId);
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResult.ok());
     }
 
     // ===== [M2] 관계자 (엔지니어 / 요청자) =====
@@ -444,12 +438,10 @@ public class OpsDocController {
                     "fileSize", doc.getSupportFileSize() != null ? doc.getSupportFileSize() : 0
             ));
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
-            return ResponseEntity.status(400).body(Map.of("success", false,
-                    "error", Map.of("code", "INVALID_INPUT", "message", e.getMessage())));
+            return ResponseEntity.status(400).body(ApiResult.fail("INVALID_INPUT", e.getMessage()));
         } catch (Exception e) {
             log.warn("[ops-support-file] 업로드 실패 docId={}", docId, e);
-            return ResponseEntity.status(500).body(Map.of("success", false,
-                    "error", Map.of("code", "SERVER_ERROR", "message", "업로드 중 오류가 발생했습니다.")));
+            return ResponseEntity.status(500).body(ApiResult.fail("SERVER_ERROR", "업로드 중 오류가 발생했습니다."));
         }
     }
 
@@ -481,14 +473,12 @@ public class OpsDocController {
         try {
             supportFileService.delete(docId);
             log.info("[ops-support-file] 삭제 docId={}", docId);
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
-            return ResponseEntity.status(400).body(Map.of("success", false,
-                    "error", Map.of("code", "INVALID_INPUT", "message", e.getMessage())));
+            return ResponseEntity.status(400).body(ApiResult.fail("INVALID_INPUT", e.getMessage()));
         } catch (Exception e) {
             log.warn("[ops-support-file] 삭제 실패 docId={}", docId, e);
-            return ResponseEntity.status(500).body(Map.of("success", false,
-                    "error", Map.of("code", "SERVER_ERROR", "message", "삭제 중 오류가 발생했습니다.")));
+            return ResponseEntity.status(500).body(ApiResult.fail("SERVER_ERROR", "삭제 중 오류가 발생했습니다."));
         }
     }
 
