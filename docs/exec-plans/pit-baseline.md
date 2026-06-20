@@ -6,7 +6,14 @@
 - **리포트**: `target/pit-reports/index.html` (HTML) / `mutations.xml`
 - **스코프**: 순수-단위 테스트가 대응하는 고신호 클래스 **12종**(클래스단위 화이트리스트). @SpringBootTest/DB 테스트는 targetTests 화이트리스트로 자동 배제.
 
-> **mutation score = KILLED / (KILLED + SURVIVED)**. NO_COVERAGE 는 *해당 클래스에서 1차 targetTests 가 안 닿는 메서드*의 변이 → **스코프 밖**으로 분리(점수 분모 제외). 부분커버 클래스(ExcelExportService/SwService/LogService)는 NO_COVERAGE 가 크다(정상 — 1차는 특정 유틸 메서드만 타깃).
+> **두 가지 점수 구분(중요)**:
+> - **분석용 score = KILLED/(KILLED+SURVIVED)** — 테스트가 *닿은* 변이의 kill 비율(이 문서 표 기준). NO_COVERAGE(미커버 메서드)는 분모 제외.
+> - **PIT 게이트 score = KILLED/TOTAL**(NO_COVERAGE 포함) — `mutationThreshold` 가 쓰는 공식. 부분커버 클래스는 미커버 메서드 변이가 NO_COVERAGE 로 분모에 들어가 점수가 낮아짐.
+> → **게이트는 클래스 전체가 거의 완전커버되는 7종에만 적용**(아래 §게이트). 부분커버 진단 클래스(ExcelExportService rounddown·SwService·LogService·LoginAttemptService)는 KILLED/TOTAL 이 왜곡되어 게이트 부적합 → 정규 테스트로만 보호.
+
+## 게이트 (ratchet floor) — `mutationThreshold` 90
+
+`pit` profile 에 `<mutationThreshold>90</mutationThreshold>` + `<failWhenNoMutations>true</failWhenNoMutations>` 적용. **게이트 스코프 = 완전커버 7종**(ApiResult·MaskingDetector·SensitiveMask·MessageResolver·EnumErrorResponseFactory·RemarksRenderer·InspectMaintProfile). 현재 **KILLED/TOTAL = 105/110 = 95%** ≥ 90 → 통과. 회귀로 점수가 90 미만이면 `./mvnw -Ppit ...mutationCoverage` **BUILD FAILURE**(검증: broad 스코프 43%<90 에서 실패 확인). QUALITY_CHARTER S2 목표(PIT 최소점수 게이트) 충족. floor 는 부분커버 클래스 보강·편입 시 상향.
 
 ## 클래스별 베이스라인 (Step 3 보강 후, 12클래스)
 
@@ -62,4 +69,4 @@
 
 - PIT 는 `pit` profile 안에만 있고 기본 lifecycle 미바인딩 → `./mvnw test`/`verify` 불변(검증: 434 green, PIT 미실행).
 - 스코프 확장: pom `pit` profile 의 `targetClasses`/`targetTests` 에 *순수-단위 테스트가 있는* 클래스만 추가. 컨트롤러/@SpringBootTest 영역은 후속(느림·DB).
-- 게이트(mutationThreshold)는 미설정(측정만). 베이스라인 안정 후 ratchet 도입은 별도 스프린트.
+- 게이트(mutationThreshold=90) **도입 완료**(완전커버 7종, 위 §게이트). 측정용 broad 스코프(부분커버 포함)는 진단 시 pom 에 임시 추가해 실행.

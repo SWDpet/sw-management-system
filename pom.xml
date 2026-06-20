@@ -416,7 +416,12 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                             </dependency>
                         </dependencies>
                         <configuration>
-                            <!-- 1차 스코프: 순수-단위 테스트가 대응하는 고신호 클래스(클래스단위 화이트리스트) -->
+                            <!-- 게이트 스코프 = 클래스 전체가 순수-단위로 거의 완전커버되는 고신호 클래스만(NO_COVERAGE≤2).
+                                 PIT mutationThreshold 는 KILLED/TOTAL(NO_COVERAGE 포함) 이라, 부분커버 클래스(특정
+                                 메서드만 타깃)는 NO_COVERAGE 가 커서 점수를 왜곡 → 게이트 부적합.
+                                 부분커버 진단 대상(ExcelExportService rounddown·SwService normalize·LogService·
+                                 LoginAttemptService)은 정규 테스트로 보호하며 게이트 제외. 측정 이력=docs/exec-plans/pit-baseline.md.
+                                 백로그=InspectionQrBatchService(44%, 89생존) — 보강 후 편입. -->
                             <targetClasses>
                                 <param>com.swmanager.system.response.ApiResult</param>
                                 <param>com.swmanager.system.util.MaskingDetector</param>
@@ -424,12 +429,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.i18n.MessageResolver</param>
                                 <param>com.swmanager.system.exception.EnumErrorResponseFactory</param>
                                 <param>com.swmanager.system.quotation.service.RemarksRenderer</param>
-                                <param>com.swmanager.system.service.ExcelExportService</param>
-                                <param>com.swmanager.system.service.SwService</param>
-                                <param>com.swmanager.system.service.LogService</param>
-                                <param>com.swmanager.system.service.LoginAttemptService</param>
                                 <param>com.swmanager.system.service.inspection.InspectMaintProfile</param>
-                                <param>com.swmanager.system.service.inspection.InspectionQrBatchService</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.swmanager.system.response.ApiResultTest</param>
@@ -437,15 +437,9 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.util.SensitiveMaskTest</param>
                                 <param>com.swmanager.system.i18n.MessageResolverTest</param>
                                 <param>com.swmanager.system.i18n.MessageResolverFallbackTest</param>
-                                <param>com.swmanager.system.service.ExcelExportServiceRounddownTest</param>
-                                <param>com.swmanager.system.service.SwServiceNormalizeTest</param>
-                                <param>com.swmanager.system.service.LogServiceActionNormalizeTest</param>
-                                <param>com.swmanager.system.service.LogServiceOrphanGuardTest</param>
                                 <param>com.swmanager.system.exception.EnumErrorResponseFactoryTest</param>
                                 <param>com.swmanager.system.quotation.service.RemarksRendererTest</param>
-                                <param>com.swmanager.system.service.LoginAttemptServiceWithPropertiesTest</param>
                                 <param>com.swmanager.system.service.inspection.InspectMaintProfileTest</param>
-                                <param>com.swmanager.system.service.inspection.InspectionQrBatchServiceTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>
@@ -457,6 +451,12 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>HTML</param>
                                 <param>XML</param>
                             </outputFormats>
+                            <!-- 게이트(ratchet floor): 완전커버 7종 KILLED/TOTAL 현재 95.5%(105/110).
+                                 floor=90 으로 회귀 방지(QUALITY_CHARTER S2 목표 충족). 잔존 noise=NO_COV 3
+                                 (MaskingDetector 1·InspectMaintProfile 2)+equivalent → 95.5% 고정, 5.5pt 헤드룸.
+                                 부분커버 클래스 보강·편입 시 floor 상향 가능. -->
+                            <mutationThreshold>90</mutationThreshold>
+                            <failWhenNoMutations>true</failWhenNoMutations>
                         </configuration>
                     </plugin>
                 </plugins>
