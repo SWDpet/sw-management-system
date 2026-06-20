@@ -433,6 +433,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.service.ExcelExportServiceRounddownTest</param>
                                 <param>com.swmanager.system.service.SwServiceNormalizeTest</param>
                                 <param>com.swmanager.system.service.LogServiceActionNormalizeTest</param>
+                                <param>com.swmanager.system.service.LogServiceOrphanGuardTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>

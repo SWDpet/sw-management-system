@@ -15,11 +15,11 @@
 | `response.ApiResult` | ApiResultTest | 5 | 0 | 0 | **100%** |
 | `i18n.MessageResolver` | MessageResolver(Fallback)Test | 2 | 0 | 0 | **100%** |
 | `util.MaskingDetector` | MaskingDetectorTest | 27 | 0 | 1 | **100%** ⬆(82%→100%) |
-| `service.SwService` | SwServiceNormalizeTest | 16 | 1 | 24 | **94%** |
+| `service.SwService` | SwServiceNormalizeTest | 16 | 1 | 24 | **94%** (1=equivalent) |
 | `service.ExcelExportService` | ExcelExportServiceRounddownTest | 12 | 0 | 177 | **100%** (rounddown만; 177=스코프밖) |
-| `service.LogService` | LogServiceActionNormalizeTest | 12 | 8 | 11 | **60%** |
+| `service.LogService` | LogServiceActionNormalize+OrphanGuardTest | 24 | 0 | 7 | **100%** ⬆(60%→100%) |
 
-**전체(스코프 내) 집계**: KILLED=74, SURVIVED=9, NO_COVERAGE=213. mutation score = 74/(74+9) = **89.2%**. (NO_COVERAGE 213 은 스코프밖이라 분모 제외 — 대부분 ExcelExportService 177·SwService 24.) 잔존 생존 9 = LogService 8 + SwService 1(아래 백로그). 완전커버 4종(ApiResult/MessageResolver/MaskingDetector/ExcelExportService-rounddown) = 0 생존.
+**전체(스코프 내) 집계**: KILLED=86, SURVIVED=1, NO_COVERAGE=209. mutation score = 86/(86+1) = **98.9%**. (NO_COVERAGE 209 는 스코프밖이라 분모 제외 — 대부분 ExcelExportService 177·SwService 24.) 잔존 생존 1 = SwService(equivalent, 아래). 완전커버 5종 = 0 생존.
 
 ## Step 3 보강 사례 (뮤테이션 테스트 효용 입증) — `MaskingDetector` 82% → **100%**
 
@@ -29,10 +29,15 @@
 - **T9b 확장 (`!= null` 분기)**: `isMaskedAddress("", null)` → address(null)="" 와 동등이 되어선 안 됨 → L59 의 `currentDbValue != null` negation kill.
 - 결과: MaskingDetector **생존 0 (100%)**. 보안민감(PII 마스킹 회귀방지) 로직의 분기를 전수 검증하게 됨.
 
-## 약점 백로그 (후속 보강 후보)
+## Step 3-b 보강 — `LogService` 60% → **100%**
 
-- **LogService 60%(8 생존)**: `applyOrphanGuard` negated conditional 3 + `logInternal` 의 `AccessLog.setUserid/Username/IpAddr/ActionDetail` removed-call 4. → action normalize 테스트가 *AccessLog 필드 세팅을 검증 안 함*. logInternal 결과 객체 필드 assert 추가로 kill 가능.
-- **SwService 94%(1 생존)**, **MaskingDetector 1 생존(equivalent)**.
+생존 8건 = `applyOrphanGuard` 분기(null/blank·SYSTEM_USERIDS contains·return value·existsByUserid) negated/boundary 4 + `logInternal` 의 `AccessLog.setUserid/Username/IpAddr/ActionDetail` removed-call 4. 원인 = 기존 action-normalize 테스트가 *actionType/menuNm 만 검증*하고 나머지 필드·가드 분기를 안 봄.
+- `LogServiceActionNormalizeTest.logInternal_populates_all_accesslog_fields`: ArgumentCaptor 로 userid(anonymousUser)/username("")/ipAddr(127.0.0.1)/actionDetail 검증 → 세터 4건 kill.
+- 신규 `LogServiceOrphanGuardTest`(pom targetTests 등록): applyOrphanGuard 4규칙(null/blank→anon, 화이트리스트→원본·DB생략, 존재→원본, orphan→anon) 직접 검증 → 가드 분기 4건 kill.
+
+## 잔존 생존 = equivalent mutant (정상)
+
+- **SwService.normalize L146** `t.length() > KW_MAX_LEN ? t.substring(0,KW_MAX_LEN) : t` 의 경계 변이(`>`→`>=`): length==100 일 때 `substring(0,100)` 은 100자 문자열 자신과 동일 → 두 분기 출력 같음 → **코드변경 없이 kill 불가(equivalent)**. 정당한 잔존.
 
 ## 운영 메모
 

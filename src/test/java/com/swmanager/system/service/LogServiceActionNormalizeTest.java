@@ -94,4 +94,22 @@ class LogServiceActionNormalizeTest {
         assertThat(cap.getValue().getActionType()).isEqualTo("서명");
         assertThat(cap.getValue().getMenuNm()).isEqualTo("문서관리");
     }
+
+    /**
+     * logInternal 이 AccessLog 의 모든 필드(userid/username/ipAddr/actionDetail)를 채우는지 검증.
+     * 미인증 컨텍스트 → userid=anonymousUser(Orphan Guard 화이트리스트 통과), username="",
+     * ip=MockHttpServletRequest 기본("127.0.0.1"). (setter 제거 뮤테이션 kill)
+     */
+    @Test
+    void logInternal_populates_all_accesslog_fields() {
+        logService.log(MenuName.DOCUMENT, AccessActionType.SIGN, "서명 저장");
+
+        ArgumentCaptor<AccessLog> cap = ArgumentCaptor.forClass(AccessLog.class);
+        verify(accessLogRepository).save(cap.capture());
+        AccessLog e = cap.getValue();
+        assertThat(e.getUserid()).isEqualTo(LogService.ANONYMOUS_USERID);
+        assertThat(e.getUsername()).isEqualTo("");
+        assertThat(e.getIpAddr()).isEqualTo("127.0.0.1");
+        assertThat(e.getActionDetail()).isEqualTo("서명 저장");
+    }
 }
