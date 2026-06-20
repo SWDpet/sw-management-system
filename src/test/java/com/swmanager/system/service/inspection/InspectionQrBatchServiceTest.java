@@ -8,6 +8,7 @@ import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.dto.inspection.InspectionQrBatchRequest;
 import com.swmanager.system.dto.inspection.InspectionQrBatchResponse;
 import com.swmanager.system.repository.InspectCheckResultRepository;
+import com.swmanager.system.repository.InspectMetricSnapshotRepository;
 import com.swmanager.system.repository.InspectQrBatchRepository;
 import com.swmanager.system.repository.InspectReportRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -20,6 +21,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +34,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,6 +53,7 @@ class InspectionQrBatchServiceTest {
     @Mock InspectReportRepository reportRepository;
     @Mock InspectCheckResultRepository checkResultRepository;
     @Mock SwProjectRepository swProjectRepository;
+    @Mock InspectMetricSnapshotRepository metricSnapshotRepository;
 
     @InjectMocks InspectionQrBatchService service;
 
@@ -416,5 +425,152 @@ class InspectionQrBatchServiceTest {
         Map<String, Object> json = captor.getValue().getPayloadJson();
         assertThat(json).containsEntry("site", "dyg").containsEntry("round", "2026-05");
         assertThat(json.get("tiers")).isInstanceOf(Map.class);
+    }
+
+    // ── 13. metric snapshot — AP perf cpu/mem upsert ──────────────────────────
+
+    @Test
+    @DisplayName("13. AP tier perf cpu/mem → upsertIgnore(AP, host, cpu, mem, collectedAt=ts)")
+    void metricSnapshot_apPerfMetrics_upserted() {
+        InspectionQrBatchRequest req = sampleRequest("metric-2026-05");  // ap.perf.cpu_pct=23.4, mem_pct=81.2
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        ArgumentCaptor<OffsetDateTime> tsCap = ArgumentCaptor.forClass(OffsetDateTime.class);
+        service.upload(req, 1L);
+
+        // AP 만 perf 보유(DB tier 는 perf 없음) → 정확히 1회, AP 값으로 upsert
+        verify(metricSnapshotRepository, times(1)).upsertIgnore(
+                eq(17L), eq("AP"), eq("UPIS-AP"), isNull(),
+                tsCap.capture(),
+                eq(BigDecimal.valueOf(23.4)),   // cpu_pct
+                eq(BigDecimal.valueOf(81.2)),   // mem_pct
+                isNull(),                       // disk 없음
+                anyString());                   // rawJson
+        // collectedAt = payload.ts(unix seconds) 기준
+        assertThat(tsCap.getValue())
+                .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochSecond(1778461321L), ZoneOffset.UTC));
+    }
+
+    @Test
+    @DisplayName("14. perf 데이터 없으면 metric upsert 미발생")
+    void metricSnapshot_noPerfData_skipped() {
+        // tier 항목이 perf 키가 아님 → cpu/mem/disk 전부 null → role skip
+        InspectionQrBatchRequest req = new InspectionQrBatchRequest();
+        InspectionQrBatchRequest.Payload p = new InspectionQrBatchRequest.Payload();
+        p.setId("noperf-2026-05");
+        p.setSite("dyg");
+        p.setRound("2026-05");
+        InspectionQrBatchRequest.Tier ap = new InspectionQrBatchRequest.Tier();
+        ap.setH("H1");
+        ap.setItems(List.of(List.of("ap.cable", "ok", 5)));   // perf 키 아님
+        p.setTiers(Map.of("ap", ap));
+        req.setPayload(p);
+        InspectionQrBatchRequest.Header h = new InspectionQrBatchRequest.Header();
+        h.setHash("z");
+        req.setHeader(h);
+
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        service.upload(req, 1L);
+
+        verify(metricSnapshotRepository, never()).upsertIgnore(
+                any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    // ── 15. buildBatch 전 필드 매핑 ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("15. inspect_qr_batch 전 필드(payloadId/site/round/ts/inspector/hash/bytes/uploadedBy)")
+    void batch_allFields_mappedFromPayloadHeaderUser() {
+        InspectionQrBatchRequest req = sampleRequest("dyg-2026-05");
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(55L);
+
+        ArgumentCaptor<InspectQrBatch> cap = ArgumentCaptor.forClass(InspectQrBatch.class);
+        service.upload(req, 42L);
+        verify(batchRepository).save(cap.capture());
+        InspectQrBatch b = cap.getValue();
+
+        assertThat(b.getPayloadId()).isEqualTo("dyg-2026-05");
+        assertThat(b.getReportId()).isEqualTo(55L);
+        assertThat(b.getSiteCode()).isEqualTo("dyg");
+        assertThat(b.getInspectRound()).isEqualTo("2026-05");
+        assertThat(b.getPayloadTs()).isEqualTo(1778461321L);
+        assertThat(b.getSourceInspector()).isEqualTo("박욱진");
+        assertThat(b.getHeaderHash()).isEqualTo("abc123");
+        assertThat(b.getRawBytes()).isEqualTo(1597);
+        assertThat(b.getGzBytes()).isEqualTo(681);
+        assertThat(b.getUploadedBy()).isEqualTo(42L);
+    }
+
+    // ── 16. saveCheckResults 행 필드(reportId/section/itemName/sortOrder) ──────
+
+    @Test
+    @DisplayName("16. inspect_check_result — reportId/section/itemName/sortOrder 채움")
+    void checkResult_fieldsPopulated() {
+        InspectionQrBatchRequest req = sampleRequest("dyg-2026-05");
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(101L);
+
+        ArgumentCaptor<InspectCheckResult> cap = ArgumentCaptor.forClass(InspectCheckResult.class);
+        service.upload(req, 1L);
+        verify(checkResultRepository, times(5)).save(cap.capture());
+
+        InspectCheckResult cpu = cap.getAllValues().stream()
+                .filter(r -> "ap.perf.cpu_pct".equals(r.getItemName())).findFirst().orElseThrow();
+        assertThat(cpu.getReportId()).isEqualTo(101L);
+        assertThat(cpu.getSection()).isEqualTo("AP");        // resolveSection 기본
+        assertThat(cpu.getSortOrder()).isPositive();          // setSortOrder 호출 검증(제거 시 0)
+
+        InspectCheckResult dbCable = cap.getAllValues().stream()
+                .filter(r -> "db.cable".equals(r.getItemName())).findFirst().orElseThrow();
+        assertThat(dbCable.getSection()).isEqualTo("DB");     // db. prefix → DB
+    }
+
+    // ── 17. 멱등 응답 카운트(toIdempotentResponse) ────────────────────────────
+
+    @Test
+    @DisplayName("17. 멱등 응답 — payloadJson 에서 tier/item/manual/warn 카운트")
+    void idempotentResponse_countsFromPayloadJson() {
+        InspectQrBatch existing = new InspectQrBatch();
+        existing.setId(7L);
+        existing.setPayloadId("dyg-2026-05");
+        existing.setReportId(101L);
+        existing.setSiteCode("dyg");
+        existing.setHashCheck("ok");
+
+        Map<String, Object> apItems = new LinkedHashMap<>();
+        apItems.put("i", List.of(
+                List.of("a", "ok", 1),
+                List.of("b", "M"),       // size 2 → 카운트 + manual
+                List.of("c", "warn", 3),
+                List.of("x")));          // size 1 → 미카운트
+        Map<String, Object> dbItems = new LinkedHashMap<>();
+        dbItems.put("i", List.of(List.of("d", "ok", 1)));
+        Map<String, Object> tiers = new LinkedHashMap<>();
+        tiers.put("ap", apItems);
+        tiers.put("db", dbItems);
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("tiers", tiers);
+        existing.setPayloadJson(json);
+
+        when(batchRepository.findByPayloadId("dyg-2026-05")).thenReturn(Optional.of(existing));
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+
+        InspectionQrBatchResponse res = service.upload(sampleRequest("dyg-2026-05"), 1L);
+
+        assertThat(res.isIdempotent()).isTrue();
+        assertThat(res.getPjtId()).isEqualTo(17L);
+        assertThat(res.getTierCount()).isEqualTo(2);
+        assertThat(res.getItemCount()).isEqualTo(4);   // a,b,c,d (x 제외)
+        assertThat(res.getManualItems()).isEqualTo(1); // b
+        assertThat(res.getWarnItems()).isEqualTo(1);   // c
+        assertThat(res.getReportUrl()).isEqualTo("/document/inspect/101");
     }
 }

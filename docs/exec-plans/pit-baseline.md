@@ -61,13 +61,14 @@
 - **SwService.normalize L146** `t.length() > KW_MAX_LEN ? t.substring(0,KW_MAX_LEN) : t` 경계(`>`→`>=`): length==100 일 때 `substring(0,100)`==100자자신 → 출력 동일 → kill 불가.
 - **SensitiveMask.tel L59** `if (first > 0 && last > first)` 경계 2건: 정규식 매치 입력은 `first`(첫 '-' 위치)가 항상 ≥2, `last>first`(하이픈 2개)도 항상 참 → `>`↔`>=` 출력 무차이 → kill 불가.
 
-## InspectionQrBatchService — 순수 헬퍼 보강 44% → 66% (KILLED/TOTAL 26%→51%)
+## InspectionQrBatchService — 44% → **91%** (KILLED/TOTAL 26%→71%)
 
-대형 서비스(QR 배치 생성, 763줄). 기존 InspectionQrBatchServiceTest(12개)는 흐름만 돌려 *결과 포맷팅·파싱 로직이 대부분 NO_COVERAGE/SURVIVED*(89생존+105 NO_COV).
-- **신규 InspectionQrBatchFormatTest(19개)**: 순수 static 헬퍼(`resolveSection`·`extractPercent`·`parseNumeric`·`formatValue`·`formatValueWithContext`·`buildRemarks`)를 package-private 노출 후 직접 검증. 점검 결과값→사용자 화면 문자열 변환 로직(특히 formatValueWithContext 122줄)의 분기 전수.
-- 결과: KILLED 69→**134**, SURVIVED 89→69, NO_COVERAGE 105→60. 분석score(K/(K+S)) **44%→66%**.
-- **잔여 69 생존 = DB/빌더 메서드**(saveMetricSnapshot 23·toIdempotentResponse 12·buildBatch 10·saveCheckResults 10·buildReport 5 등): **후속 백로그**(글루코드, 이번 증분 밖). codex 권고 = private 노출 대신 *public flow + Mockito `ArgumentCaptor`* 로 저장 엔티티/upsert 인자 필드 검증. (장기: 순수 포맷터를 `InspectionQrBatchFormatter` package-private 클래스로 분리 검토.)
-- 게이트 미편입: NO_COVERAGE 60 남아 KILLED/TOTAL=51% < 90. 전체 메서드 커버(DB/빌더 포함) 후 편입 검토.
+대형 서비스(QR 배치 생성, 763줄). 기존 InspectionQrBatchServiceTest(12개)는 흐름만 돌려 *포맷팅·DB저장·빌더 로직이 대부분 NO_COVERAGE/SURVIVED*(89생존+105 NO_COV).
+- **(1) 순수 헬퍼**(신규 InspectionQrBatchFormatTest 19개): `resolveSection`·`extractPercent`·`parseNumeric`·`formatValue`·`formatValueWithContext`(122줄)·`buildRemarks` package-private 노출 후 직접 검증 → 분석score 44→66%.
+- **(2) DB/빌더**(InspectionQrBatchServiceTest +5, codex 권고 public flow + ArgumentCaptor): `metricSnapshotRepository` mock 추가(누락이라 saveMetricSnapshot 이 NPE→warn삼킴→23 전건 생존이었음)+upsertIgnore 인자 검증, buildBatch 전 필드, saveCheckResults reportId/section/itemName/sortOrder, toIdempotentResponse 카운트 → **66→91%**.
+- 누적: KILLED 69→**186**, SURVIVED 89→19, NO_COVERAGE 105→58. 분석score(K/(K+S)) **44%→91%**.
+- **잔여 19 생존**(저가치): saveCheckResults 6(db.os.disk 서브분기 등)·buildReport 5·gzip/verifyHash/sha1Hex 5(hash 내부)·lambda/formatValueWithContext 3. hash 계산·deep 분기라 후순위.
+- 게이트 미편입: NO_COVERAGE 58 남아 KILLED/TOTAL=71% < 90(미커버 메서드 존재). 잔여 메서드 커버 후 편입 검토.
 
 ## 운영 메모
 
