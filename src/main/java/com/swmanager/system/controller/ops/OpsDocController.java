@@ -4,6 +4,7 @@ import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.dto.ops.FeedbackForm;
+import com.swmanager.system.dto.ops.OpsDocForm;
 import com.swmanager.system.dto.ops.RequesterForm;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsDocumentDetail;
@@ -305,7 +306,7 @@ public class OpsDocController {
     @ResponseBody
     public ResponseEntity<?> create(
             @PathVariable("type") String type,
-            @RequestBody Map<String, Object> body,
+            @RequestBody OpsDocForm form,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         OpsDocType docType = OpsDocType.fromString(type);
         if (docType == OpsDocType.INSPECT) {
@@ -318,20 +319,18 @@ public class OpsDocController {
 
         OpsDocument doc = new OpsDocument();
         doc.setDocType(docType);
-        doc.setTitle((String) body.getOrDefault("title", docType.label()));
-        doc.setSysType((String) body.get("sys_type"));
-        doc.setRegionCode((String) body.get("region_code"));
-        doc.setEnvironment((String) body.get("environment"));
-        doc.setSupportTargetType((String) body.get("support_target_type"));
+        // title 미전송 시에만 라벨 기본값 (현행 getOrDefault 등가 — 프론트는 title 항상 전송).
+        doc.setTitle(form.title() != null ? form.title() : docType.label());
+        doc.setSysType(form.sysType());
+        doc.setRegionCode(form.regionCode());
+        doc.setEnvironment(form.environment());
+        doc.setSupportTargetType(form.supportTargetType());
         doc.setStatus(DocumentStatus.COMPLETED);   // 저장=작성완료 (사용자 결정 2026-06-17)
-        applyRelations(doc, body);   // [M2] 엔지니어·요청자
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> sectionData = (Map<String, Object>) body.get("section_data");
+        applyRelations(doc, form);   // [M2] 엔지니어·요청자
 
         String userId = currentUser != null ? currentUser.getUsername() : null;
-        OpsDocument saved = opsDocService.create(doc, sectionData, userId);
-        savePartners(saved.getDocId(), body, false);   // [FR-M2-4] 협력업체
+        OpsDocument saved = opsDocService.create(doc, form.sectionData(), userId);
+        savePartners(saved.getDocId(), form, false);   // [FR-M2-4] 협력업체
 
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -345,7 +344,7 @@ public class OpsDocController {
     public ResponseEntity<?> update(
             @PathVariable("type") String type,
             @PathVariable Long docId,
-            @RequestBody Map<String, Object> body,
+            @RequestBody OpsDocForm form,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         OpsDocType docType = OpsDocType.fromString(type);
         if (docType == OpsDocType.INSPECT) {
@@ -357,20 +356,17 @@ public class OpsDocController {
 
         OpsDocument changes = new OpsDocument();
         changes.setDocType(docType);
-        changes.setTitle((String) body.get("title"));
-        changes.setSysType((String) body.get("sys_type"));
-        changes.setRegionCode((String) body.get("region_code"));
-        changes.setEnvironment((String) body.get("environment"));
-        changes.setSupportTargetType((String) body.get("support_target_type"));
+        changes.setTitle(form.title());
+        changes.setSysType(form.sysType());
+        changes.setRegionCode(form.regionCode());
+        changes.setEnvironment(form.environment());
+        changes.setSupportTargetType(form.supportTargetType());
         changes.setStatus(DocumentStatus.COMPLETED);   // 수정 저장도 작성완료 유지(null→DRAFT 복귀 방지)
-        applyRelations(changes, body);   // [M2] 엔지니어·요청자
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> sectionData = (Map<String, Object>) body.get("section_data");
+        applyRelations(changes, form);   // [M2] 엔지니어·요청자
 
         String userId = currentUser != null ? currentUser.getUsername() : null;
-        OpsDocument updated = opsDocService.update(docId, changes, sectionData, userId);
-        savePartners(docId, body, true);   // [FR-M2-4] 협력업체 교체
+        OpsDocument updated = opsDocService.update(docId, changes, form.sectionData(), userId);
+        savePartners(docId, form, true);   // [FR-M2-4] 협력업체 교체
 
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -484,24 +480,23 @@ public class OpsDocController {
         }
     }
 
-    /** body 의 engineer_id / requester_kind(PERSON|CONTACT) + requester_id 를 doc 에 반영. */
-    private void applyRelations(OpsDocument doc, Map<String, Object> body) {
-        Object engId = body.get("engineer_id");
-        if (engId instanceof Number n) {
-            userRepository.findById(n.longValue()).ifPresent(doc::setEngineer);
+    /** form 의 engineer_id / requester_kind(PERSON|CONTACT|STAFF) + requester_id 를 doc 에 반영. */
+    private void applyRelations(OpsDocument doc, OpsDocForm form) {
+        if (form.engineerId() != null) {
+            userRepository.findById(form.engineerId()).ifPresent(doc::setEngineer);
         }
-        String kind = (String) body.get("requester_kind");
-        Object rid = body.get("requester_id");
+        String kind = form.requesterKind();
+        Long rid = form.requesterId();
         doc.setRequesterPerson(null);
         doc.setRequesterContactId(null);
         doc.setRequesterStaffId(null);
-        if (rid instanceof Number n) {
+        if (rid != null) {
             if ("PERSON".equals(kind)) {
-                personInfoRepository.findById(n.longValue()).ifPresent(doc::setRequesterPerson);
+                personInfoRepository.findById(rid).ifPresent(doc::setRequesterPerson);
             } else if ("CONTACT".equals(kind)) {
-                doc.setRequesterContactId(n.longValue());   // 업체담당자(tb_partner_contact)
+                doc.setRequesterContactId(rid);   // 업체담당자(tb_partner_contact)
             } else if ("STAFF".equals(kind)) {
-                doc.setRequesterStaffId(n.longValue());     // 직원(tb_staff)
+                doc.setRequesterStaffId(rid);     // 직원(tb_staff)
             }
         }
     }
@@ -650,22 +645,21 @@ public class OpsDocController {
         return out;
     }
 
-    /** body.partners[{partner_id, role_label}] → tb_ops_doc_partner 저장. */
-    private void savePartners(Long docId, Map<String, Object> body, boolean replace) {
+    /** form.partners[{partner_id, role_label}] → tb_ops_doc_partner 저장. */
+    private void savePartners(Long docId, OpsDocForm form, boolean replace) {
         if (replace) opsDocPartnerRepository.deleteByDocId(docId);
-        Object pj = body.get("partners");
-        if (pj instanceof List<?> list) {
+        List<OpsDocForm.PartnerRef> list = form.partners();
+        if (list != null) {
             java.util.Set<String> seen = new java.util.HashSet<>();
-            for (Object o : list) {
-                if (o instanceof Map<?, ?> pm && pm.get("partner_id") instanceof Number n) {
-                    String role = pm.get("role_label") != null ? pm.get("role_label").toString() : "";
-                    if (!seen.add(n.longValue() + "|" + role)) continue;  // (업체,역할) 중복 방지
-                    OpsDocPartner dp = new OpsDocPartner();
-                    dp.setDocId(docId);
-                    dp.setPartnerId(n.longValue());
-                    dp.setRoleLabel(role);
-                    opsDocPartnerRepository.save(dp);
-                }
+            for (OpsDocForm.PartnerRef pr : list) {
+                if (pr == null || pr.partnerId() == null) continue;
+                String role = pr.roleLabel() != null ? pr.roleLabel() : "";
+                if (!seen.add(pr.partnerId() + "|" + role)) continue;  // (업체,역할) 중복 방지
+                OpsDocPartner dp = new OpsDocPartner();
+                dp.setDocId(docId);
+                dp.setPartnerId(pr.partnerId());
+                dp.setRoleLabel(role);
+                opsDocPartnerRepository.save(dp);
             }
         }
     }
