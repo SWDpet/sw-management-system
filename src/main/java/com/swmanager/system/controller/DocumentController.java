@@ -58,8 +58,7 @@ public class DocumentController {
     @Autowired private SwProjectRepository swProjectRepository;
     @Autowired private com.swmanager.system.repository.OrgUnitRepository orgUnitRepository;
     @Autowired private com.swmanager.system.service.OrgUnitService orgUnitService;
-    @Autowired private com.swmanager.system.repository.SigunguCodeRepository sigunguCodeRepository;
-    @Autowired private com.swmanager.system.repository.SysMstRepository sysMstRepository;
+    // [S4 §6-5] sigunguCodeRepository/sysMstRepository → DocumentLookupController 로 이동(미사용 제거).
     @Autowired private UserRepository userRepository;
     @Autowired private LogService logService;
     @Autowired private ProcessMasterRepository processMasterRepository;
@@ -1025,144 +1024,7 @@ public class DocumentController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    // === 사업 검색 3단계 필터 API ===
-
-    /** 1단계: 연도 목록 */
-    @ResponseBody
-    @GetMapping("/api/project-years")
-    public ResponseEntity<List<Integer>> getProjectYears() {
-        return ResponseEntity.ok(swProjectRepository.findDistinctYears());
-    }
-
-    /** 2단계: 연도 선택 → 시도(cityNm) 목록 */
-    @ResponseBody
-    @GetMapping("/api/project-cities")
-    public ResponseEntity<List<String>> getProjectCities(@RequestParam Integer year) {
-        return ResponseEntity.ok(swProjectRepository.findDistinctCityNmByYear(year));
-    }
-
-    /** 2-1단계: 연도+시도 선택 → 시군구(distNm) 목록 */
-    @ResponseBody
-    @GetMapping("/api/project-districts")
-    public ResponseEntity<List<String>> getProjectDistricts(
-            @RequestParam Integer year, @RequestParam String cityNm) {
-        return ResponseEntity.ok(swProjectRepository.findDistinctDistNmByYearAndCityNm(year, cityNm));
-    }
-
-    /** 3단계: 연도+지자체 → 시스템영문명 목록 */
-    @ResponseBody
-    @GetMapping("/api/project-systems")
-    public ResponseEntity<List<String>> getProjectSystems(
-            @RequestParam Integer year, @RequestParam String cityNm, @RequestParam String distNm) {
-        return ResponseEntity.ok(swProjectRepository.findDistinctSysNmEnByYearAndCity(year, cityNm, distNm));
-    }
-
-    // ========== 스프린트 5 v2 (2026-04-19): 4개 문서용 지역+시스템 드롭다운 ==========
-    // 4개 문서(장애/업무지원/설치/패치) 는 사업·인프라와 독립된 성과·히스토리 관리용.
-    // 시도·시군구는 sigungu_code 마스터, 시스템은 sys_mst 마스터 기반.
-
-    /** 시도 목록 (sigungu_code distinct) */
-    @ResponseBody
-    @GetMapping("/api/region-sidos")
-    public ResponseEntity<List<String>> getRegionSidos() {
-        return ResponseEntity.ok(sigunguCodeRepository.findDistinctSidoNm());
-    }
-
-    /** 시도 → 시군구 목록 (행정구역코드 + 시군구명) */
-    @ResponseBody
-    @GetMapping("/api/region-sigungus")
-    public ResponseEntity<List<Map<String, Object>>> getRegionSigungus(@RequestParam String sidoNm) {
-        var list = sigunguCodeRepository.findBySidoNmOrderBySggNm(sidoNm);
-        List<Map<String, Object>> result = list.stream().map(s -> {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("admSectC", s.getAdmSectC());
-            m.put("sggNm", s.getSggNm());
-            m.put("sidoNm", s.getSidoNm());
-            return m;
-        }).toList();
-        return ResponseEntity.ok(result);
-    }
-
-    /** 전체 시스템 목록 (sys_mst) */
-    @ResponseBody
-    @GetMapping("/api/systems-all")
-    public ResponseEntity<List<Map<String, Object>>> getSystemsAll() {
-        var list = sysMstRepository.findAll();
-        List<Map<String, Object>> result = list.stream().map(s -> {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("cd", s.getCd());
-            m.put("nm", s.getNm());
-            return m;
-        }).toList();
-        return ResponseEntity.ok(result);
-    }
-
-    // ========== 스프린트 5 v1 (2026-04-19, 사용자 피드백 v2 로 사용 중단):
-    // tb_infra_master 기반 3단 API. 현재는 사용처 없음. 추후 정리 대상.
-    // 유지 이유: commence/inspect 의 점검내역서 infra 조회 경로(getInfraServers)가 있어
-    // 단순 삭제 보류. ==========
-
-    @ResponseBody
-    @GetMapping("/api/infra-cities")
-    public ResponseEntity<List<String>> getInfraCities() {
-        return ResponseEntity.ok(infraRepository.findDistinctCities());
-    }
-
-    @ResponseBody
-    @GetMapping("/api/infra-districts")
-    public ResponseEntity<List<String>> getInfraDistricts(@RequestParam String cityNm) {
-        return ResponseEntity.ok(infraRepository.findDistinctDistrictsByCity(cityNm));
-    }
-
-    @ResponseBody
-    @GetMapping("/api/infra-systems")
-    public ResponseEntity<List<String>> getInfraSystems(
-            @RequestParam String cityNm, @RequestParam String distNm) {
-        return ResponseEntity.ok(infraRepository.findDistinctSystemsByRegion(cityNm, distNm));
-    }
-
-    @ResponseBody
-    @GetMapping("/api/infra-find")
-    public ResponseEntity<Map<String, Object>> findInfraByRegion(
-            @RequestParam String cityNm, @RequestParam String distNm, @RequestParam String sysNmEn) {
-        var list = infraRepository.findByCityDistSystem(cityNm, distNm, sysNmEn);
-        Map<String, Object> body = new HashMap<>();
-        if (list.isEmpty()) {
-            body.put("found", false);
-            return ResponseEntity.ok(body);
-        }
-        var infra = list.get(0);
-        body.put("found", true);
-        body.put("infraId", infra.getInfraId());
-        body.put("cityNm", infra.getCityNm());
-        body.put("distNm", infra.getDistNm());
-        body.put("sysNm", infra.getSysNm());
-        body.put("sysNmEn", infra.getSysNmEn());
-        return ResponseEntity.ok(body);
-    }
-
-    /** 최종: 연도+지자체+시스템 → 사업 목록 */
-    @ResponseBody
-    @GetMapping("/api/projects")
-    public ResponseEntity<List<Map<String, Object>>> getProjectsFiltered(
-            @RequestParam Integer year, @RequestParam String cityNm,
-            @RequestParam String distNm, @RequestParam String sysNmEn) {
-        var projects = swProjectRepository.findByYearAndCityNmAndDistNmAndSysNmEnOrderByProjIdDesc(
-                year, cityNm, distNm, sysNmEn);
-        List<Map<String, Object>> result = projects.stream().map(p -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("projId", p.getProjId());
-            m.put("year", p.getYear());
-            m.put("projNm", p.getProjNm());
-            m.put("sysNm", p.getSysNm());
-            m.put("sysNmEn", p.getSysNmEn());
-            m.put("contAmt", p.getContAmt());
-            m.put("cityNm", p.getCityNm());
-            m.put("distNm", p.getDistNm());
-            return m;
-        }).toList();
-        return ResponseEntity.ok(result);
-    }
+    // [S4 §6-5] 사업 검색 cascade 조회 12종(project/region/infra/projects) → DocumentLookupController 분리.
 
     // ========== 일괄 작성 기능 ==========
 
