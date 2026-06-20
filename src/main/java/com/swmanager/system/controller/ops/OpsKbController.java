@@ -2,6 +2,8 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.SysMst;
+import com.swmanager.system.dto.ops.OpsKbForm;
+import com.swmanager.system.dto.ops.RejectForm;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsKb;
 import com.swmanager.system.repository.SysMstRepository;
@@ -157,20 +159,20 @@ public class OpsKbController {
     // ===== CRUD (EDIT) =====
     @PostMapping("/api")
     @ResponseBody
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> body,
+    public ResponseEntity<?> create(@RequestBody OpsKbForm form,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         log.info("[KB-CREATE] user={}, canEdit={}, gubun={}, sysType={}, symptomLen={}, actionLen={}, causeLen={}",
-                (u != null ? u.getUsername() : null), canEdit(u), body.get("gubun"), body.get("sys_type"),
-                (body.get("symptom") + "").trim().length(), (body.get("action") + "").trim().length(),
-                (body.get("cause") + "").trim().length());
+                (u != null ? u.getUsername() : null), canEdit(u), form.gubun(), form.sysType(),
+                (form.symptom() + "").trim().length(), (form.action() + "").trim().length(),
+                (form.cause() + "").trim().length());
         if (!canEdit(u)) return forbidden();
-        String err = validate(body);
+        String err = validate(form);
         if (err != null) {
             log.warn("[KB-CREATE] 검증 실패: {}", err);
             return ResponseEntity.badRequest().body(ApiResult.fail("INVALID_INPUT", err));
         }
         OpsKb kb = new OpsKb();
-        apply(kb, body);
+        apply(kb, form);
         kb.setSource("MANUAL");
         // [ops-kb-approval] 관리자 등록=즉시 게시(ACTIVE), 편집권한자 등록=승인 대기(PENDING)
         boolean admin = isAdmin();
@@ -193,16 +195,16 @@ public class OpsKbController {
 
     @PutMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body,
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody OpsKbForm form,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
         if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(ApiResult.fail());
         // 비ACTIVE(대기/반려)는 작성자 본인 또는 관리자만 수정. ACTIVE 는 협업 편집 허용(→재승인).
         if (!"ACTIVE".equals(kb.getStatus()) && !ownsOrAdmin(kb, u)) return forbidden();
-        String err = validate(body);
+        String err = validate(form);
         if (err != null) return ResponseEntity.badRequest().body(ApiResult.fail("INVALID_INPUT", err));
-        apply(kb, body);
+        apply(kb, form);
         // [ops-kb-approval] 관리자 수정=ACTIVE 유지, 편집권한자 수정=PENDING 재승인(이전 반려/승인 흔적 초기화)
         if (isAdmin()) {
             if (!"DELETED".equals(kb.getStatus())) kb.setStatus("ACTIVE");
@@ -237,12 +239,12 @@ public class OpsKbController {
 
     @PostMapping("/api/{id}/reject")
     @ResponseBody
-    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, Object> body,
+    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody RejectForm form,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         if (!isAdmin()) return forbiddenAdmin();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
         if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(ApiResult.fail());
-        String reason = (body != null) ? blank((String) body.get("reason")) : null;
+        String reason = (form != null) ? blank(form.reason()) : null;
         if (reason == null) return ResponseEntity.badRequest().body(ApiResult.fail("INVALID_INPUT", "반려 사유는 필수입니다."));
         kb.setStatus("REJECTED");
         kb.setReviewedBy(u != null ? u.getUsername() : null);
@@ -267,28 +269,28 @@ public class OpsKbController {
     }
 
     // ===== 헬퍼 =====
-    private String validate(Map<String, Object> b) {
-        String gubun = blank((String) b.get("gubun"));
-        if (blank((String) b.get("sys_type")) == null) return "시스템은 필수입니다.";
+    private String validate(OpsKbForm f) {
+        String gubun = blank(f.gubun());
+        if (blank(f.sysType()) == null) return "시스템은 필수입니다.";
         if (gubun == null) return "구분(장애/업무)은 필수입니다.";
         // 업무(지원)는 요청내용/처리내용 중심 — 라벨 기준 안내
         boolean isFault = "장애".equals(gubun);
-        if (blank((String) b.get("symptom")) == null) return isFault ? "증상은 필수입니다." : "요청내용은 필수입니다.";
+        if (blank(f.symptom()) == null) return isFault ? "증상은 필수입니다." : "요청내용은 필수입니다.";
         // 원인은 장애에만 필수(업무지원엔 해당 없음)
-        if (isFault && blank((String) b.get("cause")) == null) return "원인은 필수입니다.";
-        if (blank((String) b.get("action")) == null) return isFault ? "조치는 필수입니다." : "처리내용은 필수입니다.";
+        if (isFault && blank(f.cause()) == null) return "원인은 필수입니다.";
+        if (blank(f.action()) == null) return isFault ? "조치는 필수입니다." : "처리내용은 필수입니다.";
         return null;
     }
-    private void apply(OpsKb kb, Map<String, Object> b) {
-        kb.setSysType((String) b.get("sys_type"));
-        kb.setGubun((String) b.get("gubun"));
-        kb.setSymptom((String) b.get("symptom"));
-        kb.setCause((String) b.get("cause"));
-        kb.setAction((String) b.get("action"));
-        kb.setKeywords((String) b.get("keywords"));
-        kb.setPrevention((String) b.get("prevention"));
+    private void apply(OpsKb kb, OpsKbForm f) {
+        kb.setSysType(f.sysType());
+        kb.setGubun(f.gubun());
+        kb.setSymptom(f.symptom());
+        kb.setCause(f.cause());
+        kb.setAction(f.action());
+        kb.setKeywords(f.keywords());
+        kb.setPrevention(f.prevention());
         // category 는 폼에서 전송하지 않음 — 값이 있을 때만 설정(수정 시 기존 분류 보존)
-        String cat = blank((String) b.get("category"));
+        String cat = blank(f.category());
         if (cat != null) kb.setCategory(cat);
     }
     private String genKbCode() {
