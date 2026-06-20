@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -54,13 +56,27 @@ class LoginAttemptServiceWithPropertiesTest {
     }
 
     @Test
-    void loginSucceeded_resetsFailCount() {
+    void loginSucceeded_resetsFailCountAndClearsLock() {
         User user = new User();
         user.setUserid("bob");
         user.setFailedAttempts(2);
+        user.setLockTime(java.time.LocalDateTime.now());  // 잠김 상태 가정
 
         svc.loginSucceeded(user);
 
         assertThat(user.getFailedAttempts()).isEqualTo(0);
+        assertThat(user.getLockTime()).isNull();   // 잠금 해제(setLockTime(null) 호출 검증)
+    }
+
+    /** 실패 이력 없음(0) → no-op(저장 안 함). loginSucceeded 의 >0 경계 검증. */
+    @Test
+    void loginSucceeded_noPriorFailures_doesNotSave() {
+        User user = new User();
+        user.setUserid("carol");
+        user.setFailedAttempts(0);
+
+        svc.loginSucceeded(user);
+
+        verify(userRepository, never()).save(any(User.class));
     }
 }

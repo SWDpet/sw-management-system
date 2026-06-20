@@ -50,7 +50,7 @@
 | 코드 | S 기준 | 현재 |
 |---|---|---|
 | S1 | **부채 무증가 게이트**: 신규 무타입 Map(F1)·거대클래스(F2) 0, 기존은 baseline+**감소만 허용** | ⏳ 미도입 |
-| S2 | **테스트 신뢰** (codex 판정식 고정): ① **기준 대비 커버리지 하락 금지**(JaCoCo, com.swmanager) ② 핵심 순수로직 패키지(예: `service`·`response`)에 **PIT 뮤테이션 최소 점수**(잠정 60%) | 하락금지 ✅(ratchet) / PIT 🟡 도입·베이스라인(`pit` profile, `docs/exec-plans/pit-baseline.md`. 완전커버 5종 100%, 스코프내 98.9%, 잔존 1=equivalent). 게이트(threshold) 미설정 |
+| S2 | **테스트 신뢰** (codex 판정식 고정): ① **기준 대비 커버리지 하락 금지**(JaCoCo, com.swmanager) ② 핵심 순수로직 패키지(예: `service`·`response`)에 **PIT 뮤테이션 최소 점수**(잠정 60%) | 하락금지 ✅(ratchet) / PIT 🟡 도입·베이스라인(`pit` profile, `docs/exec-plans/pit-baseline.md`. 12클래스, 완전커버 9종 100%, 고신호 11종 98.3%(잔존 3=equivalent), InspectionQrBatch 44% 백로그). 게이트(threshold) 미설정 |
 | S3 | **격리 테스트**: 운영DB 비의존 (Testcontainers 등). ⚠ 현재 Docker 미설치 제약 → *조건부*(Docker 도입 시) | ⏳ (Docker 필요) |
 | S4 | **운영성**: 기동 fail-fast + **구조적 로깅 정의** = 에러는 코드/컨텍스트 키 포함 구조화 로그, 민감값 미포함 | 기동 fail-fast ✅ (DbInitRunner) |
 | S5 | **문서-코드 정합 0 drift**: **living 문서 목록 고정** = `QUALITY_*`·`SECURITY.md`·`RELIABILITY.md`·`DB_CONNECTION.md`·`ARCHITECTURE.md`. 이들만 상시 0 drift | ✅ (S2 스프린트) |

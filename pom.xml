@@ -420,20 +420,32 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                             <targetClasses>
                                 <param>com.swmanager.system.response.ApiResult</param>
                                 <param>com.swmanager.system.util.MaskingDetector</param>
+                                <param>com.swmanager.system.util.SensitiveMask</param>
                                 <param>com.swmanager.system.i18n.MessageResolver</param>
+                                <param>com.swmanager.system.exception.EnumErrorResponseFactory</param>
+                                <param>com.swmanager.system.quotation.service.RemarksRenderer</param>
                                 <param>com.swmanager.system.service.ExcelExportService</param>
                                 <param>com.swmanager.system.service.SwService</param>
                                 <param>com.swmanager.system.service.LogService</param>
+                                <param>com.swmanager.system.service.LoginAttemptService</param>
+                                <param>com.swmanager.system.service.inspection.InspectMaintProfile</param>
+                                <param>com.swmanager.system.service.inspection.InspectionQrBatchService</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.swmanager.system.response.ApiResultTest</param>
                                 <param>com.swmanager.system.util.MaskingDetectorTest</param>
+                                <param>com.swmanager.system.util.SensitiveMaskTest</param>
                                 <param>com.swmanager.system.i18n.MessageResolverTest</param>
                                 <param>com.swmanager.system.i18n.MessageResolverFallbackTest</param>
                                 <param>com.swmanager.system.service.ExcelExportServiceRounddownTest</param>
                                 <param>com.swmanager.system.service.SwServiceNormalizeTest</param>
                                 <param>com.swmanager.system.service.LogServiceActionNormalizeTest</param>
                                 <param>com.swmanager.system.service.LogServiceOrphanGuardTest</param>
+                                <param>com.swmanager.system.exception.EnumErrorResponseFactoryTest</param>
+                                <param>com.swmanager.system.quotation.service.RemarksRendererTest</param>
+                                <param>com.swmanager.system.service.LoginAttemptServiceWithPropertiesTest</param>
+                                <param>com.swmanager.system.service.inspection.InspectMaintProfileTest</param>
+                                <param>com.swmanager.system.service.inspection.InspectionQrBatchServiceTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>
