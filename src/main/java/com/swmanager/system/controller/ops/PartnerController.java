@@ -3,6 +3,8 @@ package com.swmanager.system.controller.ops;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.ops.Partner;
 import com.swmanager.system.domain.ops.PartnerContact;
+import com.swmanager.system.dto.ops.ContactForm;
+import com.swmanager.system.dto.ops.PartnerForm;
 import com.swmanager.system.repository.ops.PartnerContactRepository;
 import com.swmanager.system.repository.ops.PartnerRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +39,7 @@ public class PartnerController {
     private boolean canView(CustomUserDetails u) { return !"NONE".equals(auth(u)); }
     private boolean canEdit(CustomUserDetails u) { return "EDIT".equals(auth(u)); }
 
-    private ResponseEntity<Map<String, Object>> forbidden() {
+    private ResponseEntity<?> forbidden() {
         return ResponseEntity.status(403).body(Map.of("success", false,
                 "error", Map.of("code", "FORBIDDEN", "message", "담당자 편집 권한(authPerson=EDIT)이 필요합니다.")));
     }
@@ -83,60 +85,60 @@ public class PartnerController {
     // ===== 업체 CRUD =====
     @PostMapping("/api")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> create(@RequestBody Map<String, Object> body,
-                                                       @AuthenticationPrincipal CustomUserDetails u) {
+    public ResponseEntity<?> create(@RequestBody PartnerForm form,
+                                    @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
-        String name = (String) body.get("name");
+        String name = form.name();
         if (name == null || name.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("success", false,
                     "error", Map.of("code", "INVALID_INPUT", "message", "업체명은 필수입니다.")));
         }
         Partner p = new Partner();
-        applyPartner(p, body);
+        applyPartner(p, form);
         Partner saved = partnerRepository.save(p);
         return ResponseEntity.ok(Map.of("success", true, "partner_id", saved.getPartnerId()));
     }
 
     @PutMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody Map<String, Object> body,
-                                                      @AuthenticationPrincipal CustomUserDetails u) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody PartnerForm form,
+                                    @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         Partner p = partnerRepository.findById(id).orElse(null);
         if (p == null) return ResponseEntity.status(404).body(Map.of("success", false));
-        applyPartner(p, body);
+        applyPartner(p, form);
         partnerRepository.save(p);
         return ResponseEntity.ok(Map.of("success", true));
     }
 
     @DeleteMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id,
-                                                      @AuthenticationPrincipal CustomUserDetails u) {
+    public ResponseEntity<?> delete(@PathVariable Long id,
+                                    @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         Partner p = partnerRepository.findById(id).orElse(null);
         if (p != null) { p.setUseYn("N"); partnerRepository.save(p); }  // 소프트 삭제
         return ResponseEntity.ok(Map.of("success", true));
     }
 
-    private void applyPartner(Partner p, Map<String, Object> body) {
-        p.setName((String) body.get("name"));
-        p.setPartnerType((String) body.get("partner_type"));
-        p.setBizNo((String) body.get("biz_no"));
-        p.setMainTel((String) body.get("main_tel"));
-        p.setNote((String) body.get("note"));
+    private void applyPartner(Partner p, PartnerForm form) {
+        p.setName(form.name());
+        p.setPartnerType(form.partnerType());
+        p.setBizNo(form.bizNo());
+        p.setMainTel(form.mainTel());
+        p.setNote(form.note());
     }
 
     // ===== 담당자 CRUD =====
     @PostMapping("/api/{partnerId}/contact")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> addContact(@PathVariable Long partnerId,
-                                                          @RequestBody Map<String, Object> body,
-                                                          @AuthenticationPrincipal CustomUserDetails u) {
+    public ResponseEntity<?> addContact(@PathVariable Long partnerId,
+                                        @RequestBody ContactForm form,
+                                        @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         Partner p = partnerRepository.findById(partnerId).orElse(null);
         if (p == null) return ResponseEntity.status(404).body(Map.of("success", false));
-        String name = (String) body.get("name");
+        String name = form.name();
         if (name == null || name.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("success", false,
                     "error", Map.of("code", "INVALID_INPUT", "message", "담당자명은 필수입니다.")));
@@ -144,17 +146,17 @@ public class PartnerController {
         PartnerContact c = new PartnerContact();
         c.setPartner(p);
         c.setName(name);
-        c.setPosition((String) body.get("position"));
-        c.setTel((String) body.get("tel"));
-        c.setEmail((String) body.get("email"));
+        c.setPosition(form.position());
+        c.setTel(form.tel());
+        c.setEmail(form.email());
         PartnerContact saved = partnerContactRepository.save(c);
         return ResponseEntity.ok(Map.of("success", true, "contact_id", saved.getContactId()));
     }
 
     @DeleteMapping("/api/contact/{contactId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deleteContact(@PathVariable Long contactId,
-                                                             @AuthenticationPrincipal CustomUserDetails u) {
+    public ResponseEntity<?> deleteContact(@PathVariable Long contactId,
+                                           @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         PartnerContact c = partnerContactRepository.findById(contactId).orElse(null);
         if (c != null) { c.setUseYn("N"); partnerContactRepository.save(c); }
