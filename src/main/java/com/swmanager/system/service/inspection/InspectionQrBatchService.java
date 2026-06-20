@@ -368,7 +368,7 @@ public class InspectionQrBatchService {
         return stats;
     }
 
-    private static String resolveSection(String itemId) {
+    static String resolveSection(String itemId) {  // package-private: 단위 테스트(순수 함수)
         if (itemId == null) return "AP";
         if (itemId.startsWith("db.oracle.")) return "DBMS";
         if (itemId.startsWith("db."))        return "DB";
@@ -447,7 +447,7 @@ public class InspectionQrBatchService {
     }
 
     /** value (Number | Map | String) 에서 % 숫자 추출. 못 찾으면 null. */
-    private static Double extractPercent(Object value) {
+    static Double extractPercent(Object value) {  // package-private: 단위 테스트
         if (value == null) return null;
         if (value instanceof Number) return ((Number) value).doubleValue();
         if (value instanceof Map<?, ?> map) {
@@ -464,7 +464,7 @@ public class InspectionQrBatchService {
         return parseNumeric(value.toString());
     }
 
-    private static Double parseNumeric(String s) {
+    static Double parseNumeric(String s) {  // package-private: 단위 테스트
         if (s == null) return null;
         String cleaned = s.replaceAll("[^\\d.\\-]", "");
         if (cleaned.isEmpty()) return null;
@@ -536,7 +536,7 @@ public class InspectionQrBatchService {
         return HexFormat.of().formatHex(digest);
     }
 
-    private static ResultText formatValue(Object value) {
+    static ResultText formatValue(Object value) {  // package-private: 단위 테스트
         if (value == null) return new ResultText("", false);
         String raw = String.valueOf(value);
         if (raw.length() <= RESULT_TEXT_MAX) return new ResultText(raw, false);
@@ -565,7 +565,7 @@ public class InspectionQrBatchService {
     );
 
     @SuppressWarnings("unchecked")
-    private static ResultText formatValueWithContext(String key, Object value) {
+    static ResultText formatValueWithContext(String key, Object value) {  // package-private: 단위 테스트
         if (value == null) return new ResultText("", false);
 
         // 객체(Map) 형태의 value 처리
@@ -687,7 +687,7 @@ public class InspectionQrBatchService {
         return formatValue(value);
     }
 
-    private static String buildRemarks(String status, InspectResultCode code, boolean truncated) {
+    static String buildRemarks(String status, InspectResultCode code, boolean truncated) {  // package-private: 단위 테스트
         StringBuilder sb = new StringBuilder();
         if ("M".equalsIgnoreCase(status)) {
             sb.append("육안 점검 필요 (자동수집 불가)");
@@ -759,5 +759,5 @@ public class InspectionQrBatchService {
         int warn;
     }
 
-    private record ResultText(String text, boolean truncated) {}
+    record ResultText(String text, boolean truncated) {}  // package-private: 단위 테스트 검증
 }

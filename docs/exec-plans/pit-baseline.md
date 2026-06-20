@@ -61,9 +61,13 @@
 - **SwService.normalize L146** `t.length() > KW_MAX_LEN ? t.substring(0,KW_MAX_LEN) : t` 경계(`>`→`>=`): length==100 일 때 `substring(0,100)`==100자자신 → 출력 동일 → kill 불가.
 - **SensitiveMask.tel L59** `if (first > 0 && last > first)` 경계 2건: 정규식 매치 입력은 `first`(첫 '-' 위치)가 항상 ≥2, `last>first`(하이픈 2개)도 항상 참 → `>`↔`>=` 출력 무차이 → kill 불가.
 
-## 백로그 — InspectionQrBatchService 44% (89 생존)
+## InspectionQrBatchService — 순수 헬퍼 보강 44% → 66% (KILLED/TOTAL 26%→51%)
 
-대형 서비스(QR 배치 생성). 기존 InspectionQrBatchServiceTest(12개)가 흐름은 돌리나 결과 객체 필드·분기 다수 미검증 → 89 생존. **별도 보강 스프린트 필요**(이번 증분 범위 밖). 현재 스코프엔 *가시화 목적*으로 포함(headline 72.2% 저하 단독 원인). 보강 시 score 대폭 상승 예상.
+대형 서비스(QR 배치 생성, 763줄). 기존 InspectionQrBatchServiceTest(12개)는 흐름만 돌려 *결과 포맷팅·파싱 로직이 대부분 NO_COVERAGE/SURVIVED*(89생존+105 NO_COV).
+- **신규 InspectionQrBatchFormatTest(19개)**: 순수 static 헬퍼(`resolveSection`·`extractPercent`·`parseNumeric`·`formatValue`·`formatValueWithContext`·`buildRemarks`)를 package-private 노출 후 직접 검증. 점검 결과값→사용자 화면 문자열 변환 로직(특히 formatValueWithContext 122줄)의 분기 전수.
+- 결과: KILLED 69→**134**, SURVIVED 89→69, NO_COVERAGE 105→60. 분석score(K/(K+S)) **44%→66%**.
+- **잔여 69 생존 = DB/빌더 메서드**(saveMetricSnapshot 23·toIdempotentResponse 12·buildBatch 10·saveCheckResults 10·buildReport 5 등): **후속 백로그**(글루코드, 이번 증분 밖). codex 권고 = private 노출 대신 *public flow + Mockito `ArgumentCaptor`* 로 저장 엔티티/upsert 인자 필드 검증. (장기: 순수 포맷터를 `InspectionQrBatchFormatter` package-private 클래스로 분리 검토.)
+- 게이트 미편입: NO_COVERAGE 60 남아 KILLED/TOTAL=51% < 90. 전체 메서드 커버(DB/빌더 포함) 후 편입 검토.
 
 ## 운영 메모
 
