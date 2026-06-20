@@ -1,0 +1,23 @@
+# excel-service-split (§6-5) 골든 기준값 — Step 0 (분리 前, 현 HEAD c3e5661 기준)
+# 회사 PC 운영DB(192.168.10.194:5880/SW_Dept), ExcelSplitGoldenIT, 2026-06-20 캡처.
+# 각 Step(A/B/C) 후 RUN_DB_TESTS=true 로 재실행해 아래와 동일한지 사람이 대조.
+# 실행: RUN_DB_TESTS=true DB_URL=jdbc:postgresql://192.168.10.194:5880/SW_Dept DB_USERNAME=SW_Dept ./mvnw -Dtest=ExcelSplitGoldenIT test
+
+# ⚠ 결정성 판정 결과(codex 순서 2): raw SHA256 은 **실행 간 비결정**(POI XSSF zip 메타데이터로
+#   같은 입력·같은 코드라도 mvn 재실행마다 바이트 달라짐. 단일 실행 내 2회 생성은 bytesEqual=true).
+#   → **안정 앵커 = 구조 digest 의 cellsHash**(시트별 셀값/수식/스타일 해시). 아래 4개 해시가 골든.
+#   Step A 검증: cellsHash 4개 전부 동일(내용 보존 OK), raw sha 만 278cb510→97188b99 변동(무시).
+
+INTERIM (docId=47, generateInterimReport)
+  bytesEqual(단일실행) = true
+  len        = 520151
+  sha256     = (실행마다 변동 — 골든 아님)
+  structure  = (cellsHash = 안정 골든)
+    [표지        rows=25 maxCol=15 merged=4  cellsHash=cead664f56f722e4494837eb89c4d6c2e4e5ffa6689af459d0de8cf667fcf8f6]
+    [기성내역     rows=32 maxCol=13 merged=14 cellsHash=bb01f86f1cd70fb7c1bbd65a1b58f11e941439970869a990cbb6914ffd1d7f94]
+    [집계서       rows=13 maxCol=18 merged=11 cellsHash=ef7c03169ba4b527eb86633311b45800201bbeb9d82e4349f92687997ae8b4ac]
+    [(빈시트)     rows=1  maxCol=0  merged=0  cellsHash=977c0be9afba2727ccbcdfac12fddc1c9a797160fada5f09ff83378ea86ddd84]
+
+DESIGN (generateDesignEstimate)
+  골든 없음 — 운영DB에 design_estimate 섹션 보유 문서 0건(COMMENCE 없음).
+  설계 경로 보증 = 바이트 동일 코드 이동(git diff) + 컴파일 + 전체 테스트.
