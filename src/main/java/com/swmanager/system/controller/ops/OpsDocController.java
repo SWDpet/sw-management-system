@@ -3,6 +3,7 @@ package com.swmanager.system.controller.ops;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsDocumentDetail;
 import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.PersonInfo;
@@ -300,7 +301,7 @@ public class OpsDocController {
 
     @PostMapping("/api/{type}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> create(
+    public ResponseEntity<?> create(
             @PathVariable("type") String type,
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
@@ -312,7 +313,7 @@ public class OpsDocController {
                     "error", Map.of("code", "INVALID_INPUT",
                             "message", "점검내역서는 점검 보고서 저장 흐름에서 자동 연계됩니다.")));
         }
-        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);  // [M2 codex#5]
+        ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);  // [M2 codex#5]
         if (denied != null) return denied;
 
         OpsDocument doc = new OpsDocument();
@@ -341,7 +342,7 @@ public class OpsDocController {
 
     @PutMapping("/api/{type}/{docId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> update(
+    public ResponseEntity<?> update(
             @PathVariable("type") String type,
             @PathVariable Long docId,
             @RequestBody Map<String, Object> body,
@@ -353,7 +354,7 @@ public class OpsDocController {
                     "error", Map.of("code", "INVALID_INPUT",
                             "message", "점검내역서는 점검 보고서 수정 흐름에서 자동 갱신됩니다.")));
         }
-        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);  // [M2 codex#5]
+        ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);  // [M2 codex#5]
         if (denied != null) return denied;
 
         OpsDocument changes = new OpsDocument();
@@ -381,9 +382,9 @@ public class OpsDocController {
 
     @DeleteMapping("/api/{docId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long docId,
+    public ResponseEntity<?> delete(@PathVariable Long docId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
         if (denied != null) return denied;
         opsDocService.delete(docId);
         Map<String, Object> result = new HashMap<>();
@@ -394,47 +395,43 @@ public class OpsDocController {
     // ===== [M2] 관계자 (엔지니어 / 요청자) =====
 
     /** authDocument=EDIT 가드 (codex #5). 허용이면 null, 아니면 403. */
-    private ResponseEntity<Map<String, Object>> requireDocEdit(CustomUserDetails u) {
+    private ResponseEntity<ApiResult> requireDocEdit(CustomUserDetails u) {
         String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
         // ROLE_ADMIN 우회 — 다른 모든 편집 가드(KB/사업 canEdit, requireDocEditOrAdmin)와 일관.
         boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
         if (!admin && !"EDIT".equals(auth)) {
-            return ResponseEntity.status(403).body(Map.of(
-                    "success", false,
-                    "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT 또는 관리자)이 필요합니다.")));
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "문서 편집 권한(authDocument=EDIT 또는 관리자)이 필요합니다."));
         }
         return null;
     }
 
     /** authDocument!=NONE(또는 ADMIN) 조회 가드. 허용이면 null, 아니면 403. (ops-support-doc-upload FR-8) */
-    private ResponseEntity<Map<String, Object>> requireDocView(CustomUserDetails u) {
+    private ResponseEntity<ApiResult> requireDocView(CustomUserDetails u) {
         String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
         boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
         if (!admin && (auth == null || "NONE".equals(auth))) {
-            return ResponseEntity.status(403).body(Map.of("success", false,
-                    "error", Map.of("code", "FORBIDDEN", "message", "문서 조회 권한이 필요합니다.")));
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "문서 조회 권한이 필요합니다."));
         }
         return null;
     }
 
     /** 업로드/삭제 가드 — authDocument=EDIT 또는 ROLE_ADMIN (FR-8). requireDocEdit(EDIT-only)와 분리. */
-    private ResponseEntity<Map<String, Object>> requireDocEditOrAdmin(CustomUserDetails u) {
+    private ResponseEntity<ApiResult> requireDocEditOrAdmin(CustomUserDetails u) {
         String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
         boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
         if (admin || "EDIT".equals(auth)) return null;
-        return ResponseEntity.status(403).body(Map.of("success", false,
-                "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT)이 필요합니다.")));
+        return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "문서 편집 권한(authDocument=EDIT)이 필요합니다."));
     }
 
     // ===== [ops-support-doc-upload] 업무지원 지원문서 업로드/다운로드/삭제 =====
 
     @ResponseBody
     @PostMapping("/api/support-file/upload/{docId}")
-    public ResponseEntity<Map<String, Object>> uploadSupportFile(
+    public ResponseEntity<?> uploadSupportFile(
             @PathVariable Long docId,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);
+        ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);
         if (denied != null) return denied;
         try {
             Long uploaderSeq = (currentUser != null && currentUser.getUser() != null)
@@ -477,9 +474,9 @@ public class OpsDocController {
 
     @ResponseBody
     @PostMapping("/api/support-file/delete/{docId}")
-    public ResponseEntity<Map<String, Object>> deleteSupportFile(
+    public ResponseEntity<?> deleteSupportFile(
             @PathVariable Long docId, @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);
+        ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);
         if (denied != null) return denied;
         try {
             supportFileService.delete(docId);
@@ -556,10 +553,10 @@ public class OpsDocController {
     /** 요청자(공무원) 인라인 신규 등록 — ops-doc 전용(authDocument), ps_info 최소필드 (FR-M2-5). */
     @PostMapping("/api/requester")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> requesterCreate(
+    public ResponseEntity<?> requesterCreate(
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);
+        ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);
         if (denied != null) return denied;
         String name = (String) body.get("name");
         if (name == null || name.isBlank()) {
@@ -613,10 +610,10 @@ public class OpsDocController {
     /** [M3/P5] 추천 채택 피드백 적재 (APPLIED/IGNORED). */
     @PostMapping("/api/kb/feedback")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> kbFeedback(
+    public ResponseEntity<?> kbFeedback(
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocEdit(currentUser);
+        ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);
         if (denied != null) return denied;
         Object kbId = body.get("kb_id");
         if (!(kbId instanceof Number)) {
@@ -784,18 +781,18 @@ public class OpsDocController {
     @ResponseBody
     public ResponseEntity<?> getAttachments(@PathVariable Long docId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocView(currentUser);  // [S1 보안가드]
+        ResponseEntity<ApiResult> denied = requireDocView(currentUser);  // [S1 보안가드]
         if (denied != null) return denied;
         return ResponseEntity.ok(attachmentService.getAttachments(docId));
     }
 
     @PostMapping("/api/attachment/upload/{docId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> uploadAttachment(
+    public ResponseEntity<?> uploadAttachment(
             @PathVariable Long docId,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails currentUser) throws java.io.IOException {
-        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
         if (denied != null) return denied;
         OpsDocumentAttachment att = attachmentService.saveAttachment(docId, file);
         Map<String, Object> result = new HashMap<>();
@@ -807,9 +804,9 @@ public class OpsDocController {
 
     @DeleteMapping("/api/attachment/{attachId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deleteAttachment(@PathVariable Long attachId,
+    public ResponseEntity<?> deleteAttachment(@PathVariable Long attachId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ResponseEntity<Map<String, Object>> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
         if (denied != null) return denied;
         attachmentService.deleteAttachment(attachId);
         Map<String, Object> result = new HashMap<>();

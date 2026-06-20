@@ -5,6 +5,7 @@ import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.ops.OpsDocService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -75,20 +76,31 @@ class OpsDocControllerAttachmentGuardTest {
         return new MockMultipartFile("file", "a.pdf", "application/pdf", new byte[]{1, 2, 3});
     }
 
+    /** 응답 본문을 JSON 으로 직렬화 — Map/ApiResult 무관하게 형태 단언(net, dto-migration 안전). */
+    private static String bodyJson(ResponseEntity<?> res) {
+        try {
+            return new ObjectMapper().writeValueAsString(res.getBody());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     // ───────────────────────── upload ─────────────────────────
 
     @Test
     void upload_viewOnlyUser_forbidden_serviceNotCalled() throws Exception {
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.uploadAttachment(10L, pdf(), userWith("VIEW", "ROLE_USER"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(bodyJson(res)).contains("\"success\":false").contains("\"code\":\"FORBIDDEN\"");
         verifyNoInteractions(attachmentService);
     }
 
     @Test
     void upload_nullUser_forbidden() throws Exception {
-        ResponseEntity<Map<String, Object>> res = controller.uploadAttachment(10L, pdf(), null);
+        ResponseEntity<?> res = controller.uploadAttachment(10L, pdf(), null);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(bodyJson(res)).contains("\"success\":false").contains("\"code\":\"FORBIDDEN\"");
         verifyNoInteractions(attachmentService);
     }
 
@@ -99,11 +111,11 @@ class OpsDocControllerAttachmentGuardTest {
         att.setFileName("a.pdf");
         when(attachmentService.saveAttachment(eq(10L), any())).thenReturn(att);
 
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.uploadAttachment(10L, pdf(), userWith("EDIT", "ROLE_USER"));
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(res.getBody()).containsEntry("success", true).containsEntry("attachId", 99L);
+        assertThat(bodyJson(res)).contains("\"success\":true").contains("\"attachId\":99");
         verify(attachmentService).saveAttachment(eq(10L), any());
     }
 
@@ -114,7 +126,7 @@ class OpsDocControllerAttachmentGuardTest {
         att.setFileName("a.pdf");
         when(attachmentService.saveAttachment(anyLong(), any())).thenReturn(att);
 
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.uploadAttachment(10L, pdf(), userWith("NONE", "ROLE_ADMIN"));
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -125,15 +137,16 @@ class OpsDocControllerAttachmentGuardTest {
 
     @Test
     void delete_viewOnlyUser_forbidden_serviceNotCalled() {
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.deleteAttachment(5L, userWith("VIEW", "ROLE_USER"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(bodyJson(res)).contains("\"success\":false").contains("\"code\":\"FORBIDDEN\"");
         verifyNoInteractions(attachmentService);
     }
 
     @Test
     void delete_editUser_ok_serviceCalledOnce() {
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.deleteAttachment(5L, userWith("EDIT", "ROLE_USER"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(attachmentService).deleteAttachment(5L);
@@ -145,6 +158,7 @@ class OpsDocControllerAttachmentGuardTest {
     void attachments_noneUser_forbidden_serviceNotCalled() {
         ResponseEntity<?> res = controller.getAttachments(7L, userWith("NONE", "ROLE_USER"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(bodyJson(res)).contains("\"success\":false").contains("\"code\":\"FORBIDDEN\"");
         verifyNoInteractions(attachmentService);
     }
 
@@ -160,7 +174,7 @@ class OpsDocControllerAttachmentGuardTest {
 
     @Test
     void deleteDoc_viewOnlyUser_forbidden_serviceNotCalled() {
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.delete(3L, userWith("VIEW", "ROLE_USER"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         verifyNoInteractions(opsDocService);
@@ -168,14 +182,14 @@ class OpsDocControllerAttachmentGuardTest {
 
     @Test
     void deleteDoc_nullUser_forbidden() {
-        ResponseEntity<Map<String, Object>> res = controller.delete(3L, null);
+        ResponseEntity<?> res = controller.delete(3L, null);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         verifyNoInteractions(opsDocService);
     }
 
     @Test
     void deleteDoc_editUser_ok_serviceCalledOnce() {
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.delete(3L, userWith("EDIT", "ROLE_USER"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(opsDocService).delete(3L);
@@ -183,7 +197,7 @@ class OpsDocControllerAttachmentGuardTest {
 
     @Test
     void deleteDoc_admin_ok() {
-        ResponseEntity<Map<String, Object>> res =
+        ResponseEntity<?> res =
                 controller.delete(3L, userWith("NONE", "ROLE_ADMIN"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(opsDocService).delete(3L);
