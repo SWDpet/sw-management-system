@@ -22,11 +22,7 @@ import com.swmanager.system.service.PdfExportService;
 import com.swmanager.system.service.HwpxExportService;
 import com.swmanager.system.service.ExcelExportService;
 import com.swmanager.system.service.LogService;
-import com.swmanager.system.domain.workplan.ProcessMaster;
-import com.swmanager.system.domain.workplan.ServicePurpose;
 import com.swmanager.system.domain.workplan.ContractParticipant;
-import com.swmanager.system.repository.workplan.ProcessMasterRepository;
-import com.swmanager.system.repository.workplan.ServicePurposeRepository;
 import com.swmanager.system.repository.workplan.ContractParticipantRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -61,8 +57,7 @@ public class DocumentController {
     // [S4 §6-5] sigunguCodeRepository/sysMstRepository → DocumentLookupController 로 이동(미사용 제거).
     @Autowired private UserRepository userRepository;
     @Autowired private LogService logService;
-    @Autowired private ProcessMasterRepository processMasterRepository;
-    @Autowired private ServicePurposeRepository servicePurposeRepository;
+    // [S4 §6-5] processMasterRepository/servicePurposeRepository → DocumentLookupController 로 이동.
     @Autowired private ContractParticipantRepository contractParticipantRepository;
     @Autowired private com.swmanager.system.repository.PjtTargetRepository pjtTargetRepository;
     @Autowired private com.swmanager.system.repository.PjtManpowerPlanRepository pjtManpowerPlanRepository;
@@ -1280,43 +1275,7 @@ public class DocumentController {
 
     // ── Phase 2: 공정명 마스터 / 용역목적 / 사업별 참여자 API ──
 
-    /** 시스템별 공정명 목록 조회 */
-    @GetMapping("/api/process-master")
-    @ResponseBody
-    public List<Map<String, Object>> getProcessMasterList(@RequestParam String sysNmEn) {
-        List<ProcessMaster> list = processMasterRepository.findBySysNmEnAndUseYnOrderBySortOrder(sysNmEn, "Y");
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (ProcessMaster pm : list) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("processId", pm.getProcessId());
-            m.put("processName", pm.getProcessName());
-            result.add(m);
-        }
-        return result;
-    }
-
-    /** 시스템별 용역목적/과업내용 조회 */
-    @GetMapping("/api/service-purpose")
-    @ResponseBody
-    public List<Map<String, Object>> getServicePurposeList(
-            @RequestParam String sysNmEn,
-            @RequestParam(required = false) String purposeType) {
-        List<ServicePurpose> list;
-        if (purposeType != null && !purposeType.isEmpty()) {
-            list = servicePurposeRepository.findBySysNmEnAndPurposeTypeAndUseYnOrderBySortOrder(sysNmEn, purposeType, "Y");
-        } else {
-            list = servicePurposeRepository.findBySysNmEnAndUseYnOrderBySortOrder(sysNmEn, "Y");
-        }
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (ServicePurpose sp : list) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("purposeId", sp.getPurposeId());
-            m.put("purposeType", sp.getPurposeType());
-            m.put("purposeText", sp.getPurposeText());
-            result.add(m);
-        }
-        return result;
-    }
+    // [S4 §6-5] process-master/service-purpose 조회 → DocumentLookupController 로 이동.
 
     /**
      * 사업별 과업참여자 조회 (비민감) — 감사 P1-3 조치 (2026-04-18):

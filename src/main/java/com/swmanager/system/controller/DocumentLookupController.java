@@ -1,9 +1,13 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.domain.workplan.ProcessMaster;
+import com.swmanager.system.domain.workplan.ServicePurpose;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.SysMstRepository;
+import com.swmanager.system.repository.workplan.ProcessMasterRepository;
+import com.swmanager.system.repository.workplan.ServicePurposeRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +38,8 @@ public class DocumentLookupController {
     private final SigunguCodeRepository sigunguCodeRepository;
     private final SysMstRepository sysMstRepository;
     private final InfraRepository infraRepository;
+    private final ProcessMasterRepository processMasterRepository;
+    private final ServicePurposeRepository servicePurposeRepository;
 
     // === 사업 검색 3단계 필터 API ===
 
@@ -172,5 +178,43 @@ public class DocumentLookupController {
             return m;
         }).toList();
         return ResponseEntity.ok(result);
+    }
+
+    /** 시스템별 공정명 목록 조회 */
+    @GetMapping("/api/process-master")
+    @ResponseBody
+    public List<Map<String, Object>> getProcessMasterList(@RequestParam String sysNmEn) {
+        List<ProcessMaster> list = processMasterRepository.findBySysNmEnAndUseYnOrderBySortOrder(sysNmEn, "Y");
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (ProcessMaster pm : list) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("processId", pm.getProcessId());
+            m.put("processName", pm.getProcessName());
+            result.add(m);
+        }
+        return result;
+    }
+
+    /** 시스템별 용역목적/과업내용 조회 */
+    @GetMapping("/api/service-purpose")
+    @ResponseBody
+    public List<Map<String, Object>> getServicePurposeList(
+            @RequestParam String sysNmEn,
+            @RequestParam(required = false) String purposeType) {
+        List<ServicePurpose> list;
+        if (purposeType != null && !purposeType.isEmpty()) {
+            list = servicePurposeRepository.findBySysNmEnAndPurposeTypeAndUseYnOrderBySortOrder(sysNmEn, purposeType, "Y");
+        } else {
+            list = servicePurposeRepository.findBySysNmEnAndUseYnOrderBySortOrder(sysNmEn, "Y");
+        }
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (ServicePurpose sp : list) {
+            Map<String, Object> m = new HashMap<>();
+            m.put("purposeId", sp.getPurposeId());
+            m.put("purposeType", sp.getPurposeType());
+            m.put("purposeText", sp.getPurposeText());
+            result.add(m);
+        }
+        return result;
     }
 }
