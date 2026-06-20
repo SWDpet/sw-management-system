@@ -3,6 +3,8 @@ package com.swmanager.system.controller.ops;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.dto.ops.FeedbackForm;
+import com.swmanager.system.dto.ops.RequesterForm;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsDocumentDetail;
 import com.swmanager.system.domain.OrgUnit;
@@ -544,22 +546,22 @@ public class OpsDocController {
     @PostMapping("/api/requester")
     @ResponseBody
     public ResponseEntity<?> requesterCreate(
-            @RequestBody Map<String, Object> body,
+            @RequestBody RequesterForm form,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);
         if (denied != null) return denied;
-        String name = (String) body.get("name");
+        String name = form.name();
         if (name == null || name.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("success", false,
                     "error", Map.of("code", "INVALID_INPUT", "message", "이름은 필수입니다.")));
         }
         PersonInfo p = new PersonInfo();
         p.setUserNm(name);
-        p.setOrgNm((String) body.get("org"));
-        p.setDeptNm((String) body.get("dept"));
-        p.setPos((String) body.get("pos"));
-        p.setTel((String) body.get("tel"));
-        p.setCityNm((String) body.get("city"));
+        p.setOrgNm(form.org());
+        p.setDeptNm(form.dept());
+        p.setPos(form.pos());
+        p.setTel(form.tel());
+        p.setCityNm(form.city());
         PersonInfo saved = personInfoRepository.save(p);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -601,19 +603,18 @@ public class OpsDocController {
     @PostMapping("/api/kb/feedback")
     @ResponseBody
     public ResponseEntity<?> kbFeedback(
-            @RequestBody Map<String, Object> body,
+            @RequestBody FeedbackForm form,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);
         if (denied != null) return denied;
-        Object kbId = body.get("kb_id");
-        if (!(kbId instanceof Number)) {
+        if (form.kbId() == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false,
                     "error", Map.of("code", "INVALID_INPUT", "message", "kb_id 가 필요합니다.")));
         }
         OpsKbFeedback fb = new OpsKbFeedback();
-        fb.setKbId(((Number) kbId).longValue());
-        if (body.get("doc_id") instanceof Number n) fb.setDocId(n.longValue());
-        fb.setFbAction("IGNORED".equals(body.get("fb_action")) ? "IGNORED" : "APPLIED");
+        fb.setKbId(form.kbId());
+        if (form.docId() != null) fb.setDocId(form.docId());
+        fb.setFbAction("IGNORED".equals(form.fbAction()) ? "IGNORED" : "APPLIED");
         opsKbFeedbackRepository.save(fb);
         return ResponseEntity.ok(Map.of("success", true));
     }

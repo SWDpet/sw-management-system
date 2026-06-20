@@ -47,7 +47,7 @@ record ApiResult(Boolean success, Object data, Object error)  // @JsonInclude(NO
 
 | 컨트롤러 | Map | 응답 특징 | 차기 작업 |
 |---|---|---|---|
-| OpsDocController | ~68 | 가드헬퍼 `requireDocEdit/View/EditOrAdmin` 가 `ResponseEntity<Map>` 반환(P4 맵), 변이 다수 | **(c)** 가드헬퍼 → `ResponseEntity<ApiResult>` 재설계(파급 큼, 인벤토리 net 필수) |
+| OpsDocController | ~41 | ~~가드헬퍼 `requireDocEdit/View/EditOrAdmin` 가 `ResponseEntity<Map>` 반환~~ → **(c) 완료**(commit 82a6954, 2026-06-20: 가드헬퍼 3종 `ResponseEntity<ApiResult>` 재설계). requester/feedback 평면 요청본문도 DTO화(opsdoc-request-dto, 373→371). 잔여 ~41=create/update 요청본문(nested section_data jsonb·partners list, 타입화 난도 높음)·응답조립 Map(P6 보존)·search `List<Map>`(P8/P9 보존)·list() 내부 lookup Map(보존) | 잔여는 요청DTO화 가성비·리스크 재평가 필요 |
 | DocumentController | ~100 | 거대클래스(1752, ratchet baseline). 점검 분리 후 잔여. envelope+변형 혼재 | 분리(§6-5)와 묶어 |
 | OpsKbController | ~18 | P7(bare false) 다수 + P6(status) + P8(dto). `forbidden()/forbiddenAdmin()` 헬퍼 | `fail()` 확장 후 P1/P3/P4/P7 치환, P6/P8 보존 |
 | Quotation 잔여 | — | P5/P6 변형(message/count/patternId 등) | 보존 (또는 §2 설계 결정 후) |
