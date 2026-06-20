@@ -4,6 +4,7 @@ import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constant.enums.QuoteTemplateType;
 import com.swmanager.system.constants.MenuName;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -453,29 +454,29 @@ public class QuotationController {
     /** 패턴 수정 */
     @PutMapping("/api/quotation/pattern/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> updatePattern(@PathVariable Long id, @RequestBody ProductPattern pattern) {
+    public ResponseEntity<?> updatePattern(@PathVariable Long id, @RequestBody ProductPattern pattern) {
         checkEditAuth();
         try {
             pattern.setPatternId(id);
             quotationService.savePattern(pattern);
             logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "품명 패턴 수정: " + pattern.getProductName());
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResult.failMessage(e.getMessage()));
         }
     }
 
     /** 패턴 삭제 */
     @DeleteMapping("/api/quotation/pattern/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deletePattern(@PathVariable Long id) {
+    public ResponseEntity<?> deletePattern(@PathVariable Long id) {
         checkEditAuth();
         try {
             quotationService.deletePattern(id);
             logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "품명 패턴 삭제: ID " + id);
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResult.failMessage(e.getMessage()));
         }
     }
 
@@ -579,7 +580,7 @@ public class QuotationController {
     /** 비고 패턴 수정 */
     @PutMapping("/api/quotation/remarks-pattern/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> updateRemarksPattern(
+    public ResponseEntity<?> updateRemarksPattern(
             @PathVariable Long id,
             @RequestBody com.swmanager.system.quotation.domain.RemarksPattern pattern) {
         checkEditAuth();
@@ -587,23 +588,23 @@ public class QuotationController {
             pattern.setPatternId(id);
             quotationService.saveRemarksPattern(pattern);
             logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "비고 패턴 수정: " + pattern.getPatternName());
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResult.failMessage(e.getMessage()));
         }
     }
 
     /** 비고 패턴 삭제 */
     @DeleteMapping("/api/quotation/remarks-pattern/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deleteRemarksPattern(@PathVariable Long id) {
+    public ResponseEntity<?> deleteRemarksPattern(@PathVariable Long id) {
         checkEditAuth();
         try {
             quotationService.deleteRemarksPattern(id);
             logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "비고 패턴 삭제: ID " + id);
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResult.failMessage(e.getMessage()));
         }
     }
 
