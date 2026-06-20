@@ -396,4 +396,59 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
         </plugins>
     </build>
 
+    <profiles>
+        <!-- beyond-A: PIT 뮤테이션 테스트 (pit-mutation-testing). 기본 lifecycle 미바인딩 — 명시 goal 로만 실행.
+             실행: ./mvnw -Ppit test-compile org.pitest:pitest-maven:mutationCoverage
+             리포트: target/pit-reports/index.html -->
+        <profile>
+            <id>pit</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>1.15.0</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>1.2.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <!-- 1차 스코프: 순수-단위 테스트가 대응하는 고신호 클래스(클래스단위 화이트리스트) -->
+                            <targetClasses>
+                                <param>com.swmanager.system.response.ApiResult</param>
+                                <param>com.swmanager.system.util.MaskingDetector</param>
+                                <param>com.swmanager.system.i18n.MessageResolver</param>
+                                <param>com.swmanager.system.service.ExcelExportService</param>
+                                <param>com.swmanager.system.service.SwService</param>
+                                <param>com.swmanager.system.service.LogService</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>com.swmanager.system.response.ApiResultTest</param>
+                                <param>com.swmanager.system.util.MaskingDetectorTest</param>
+                                <param>com.swmanager.system.i18n.MessageResolverTest</param>
+                                <param>com.swmanager.system.i18n.MessageResolverFallbackTest</param>
+                                <param>com.swmanager.system.service.ExcelExportServiceRounddownTest</param>
+                                <param>com.swmanager.system.service.SwServiceNormalizeTest</param>
+                                <param>com.swmanager.system.service.LogServiceActionNormalizeTest</param>
+                            </targetTests>
+                            <excludedTestClasses>
+                                <param>*IT</param>
+                                <param>*IntegrationTest</param>
+                                <param>com.swmanager.system.SwManagerApplicationTests</param>
+                            </excludedTestClasses>
+                            <timestampedReports>false</timestampedReports>
+                            <outputFormats>
+                                <param>HTML</param>
+                                <param>XML</param>
+                            </outputFormats>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

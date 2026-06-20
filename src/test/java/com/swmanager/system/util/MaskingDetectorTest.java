@@ -55,6 +55,15 @@ class MaskingDetectorTest {
         assertThat(detector.isMaskedTel(maskedDb, dbValue)).isTrue();
     }
 
+    /** 동등분기 단독 검증(뮤테이션): 포맷불일치 마스크 "***-****-****" 는 TEL_MASK 정규식 불일치 →
+     *  1차 동등비교 분기만이 true 를 만든다(L39 negated conditional kill). */
+    @Test void T3b_telEqualsMaskedDbValue_nonRegexMask_returnsTrue() {
+        String dbValue = "비전화포맷";                 // tel() 포맷 불일치 → "***-****-****"
+        String maskedDb = sensitiveMask.tel(dbValue);   // "***-****-****"
+        assertThat(detector.isMaskedTel(maskedDb, null)).isFalse();  // 정규식만으론 false 확인
+        assertThat(detector.isMaskedTel(maskedDb, dbValue)).isTrue();  // 동등분기로만 true
+    }
+
     // ─── email ──────────────────────────────────────
     @Test void T4_emailNormal_returnsFalse() {
         assertThat(detector.isMaskedEmail("ukjin914@uitgis.com", "old@x.com")).isFalse();
@@ -63,6 +72,15 @@ class MaskingDetectorTest {
     @Test void T5_emailMaskedPattern_returnsTrue() {
         assertThat(detector.isMaskedEmail("u***@uitgis.com", null)).isTrue();
         assertThat(detector.isMaskedEmail("h***@domain.com", null)).isTrue();
+    }
+
+    /** 동등분기 단독 검증(뮤테이션): @ 없는 입력의 마스크 "***@***" 는 EMAIL_MASK 불일치 →
+     *  1차 동등비교 분기만이 true(L46 negated conditional kill). */
+    @Test void T5b_emailEqualsMaskedDbValue_nonRegexMask_returnsTrue() {
+        String dbValue = "골뱅이없음";                  // email() @ 없음 → "***@***"
+        String maskedDb = sensitiveMask.email(dbValue); // "***@***"
+        assertThat(detector.isMaskedEmail(maskedDb, null)).isFalse();   // 정규식만으론 false
+        assertThat(detector.isMaskedEmail(maskedDb, dbValue)).isTrue(); // 동등분기로만 true
     }
 
     // ─── ssn ──────────────────────────────────────
@@ -74,6 +92,15 @@ class MaskingDetectorTest {
         assertThat(detector.isMaskedSsn("901201-1234567", null)).isFalse();
     }
 
+    /** 동등분기 단독 검증(뮤테이션): 포맷불일치 마스크 "******" 는 SSN_MASK 불일치 →
+     *  1차 동등비교 분기만이 true(L52 negated conditional kill). */
+    @Test void T6c_ssnEqualsMaskedDbValue_nonRegexMask_returnsTrue() {
+        String dbValue = "주민번호아님";                // ssn() 포맷 불일치 → "******"
+        String maskedDb = sensitiveMask.ssn(dbValue);   // "******"
+        assertThat(detector.isMaskedSsn(maskedDb, null)).isFalse();   // 정규식만으론 false
+        assertThat(detector.isMaskedSsn(maskedDb, dbValue)).isTrue(); // 동등분기로만 true
+    }
+
     // ─── address ──────────────────────────────────────
     @Test void T7_addressNormal_returnsFalse() {
         assertThat(detector.isMaskedAddress("서울 강남구 테헤란로 123", null)).isFalse();
@@ -81,6 +108,13 @@ class MaskingDetectorTest {
 
     @Test void T8_addressMaskedTokens_returnsTrue() {
         assertThat(detector.isMaskedAddress("서울 *** 테헤란로 ***", null)).isTrue();
+    }
+
+    /** 동등분기 음성 검증(뮤테이션): 평문 입력 ≠ 마스킹된 DB값, 별표 없음 →
+     *  동등분기·정규식 모두 false 여야 한다(L59 equals-negation kill 시도). */
+    @Test void T8b_addressUnmaskedNotEqualMaskedDb_returnsFalse() {
+        // address("서울 강남구 테헤란로 999") = "서울 강남구 ****" ≠ input("...123")
+        assertThat(detector.isMaskedAddress("서울 강남구 테헤란로 123", "서울 강남구 테헤란로 999")).isFalse();
     }
 
     // ─── null/empty ──────────────────────────────────────
@@ -94,5 +128,8 @@ class MaskingDetectorTest {
     @Test void T9b_emptyInput_returnsFalse() {
         assertThat(detector.isMaskedTel("", "010-1234-5678")).isFalse();
         assertThat(detector.isMaskedEmail("", "x@y.com")).isFalse();
+        // address 빈 입력 + null db: address(null)="" 와 동등이 되어선 안 됨(L59 !=null 분기 kill)
+        assertThat(detector.isMaskedAddress("", null)).isFalse();
+        assertThat(detector.isMaskedSsn("", null)).isFalse();
     }
 }
