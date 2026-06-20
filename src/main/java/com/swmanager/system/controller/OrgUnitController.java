@@ -1,6 +1,8 @@
 package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.ops.Staff;
+import com.swmanager.system.dto.orgunit.OrgUnitForm;
+import com.swmanager.system.dto.orgunit.StaffForm;
 import com.swmanager.system.repository.ops.StaffRepository;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.service.OrgUnitService;
@@ -66,13 +68,10 @@ public class OrgUnitController {
 
     @PostMapping("/admin/api/org-units")
     @ResponseBody
-    public ResponseEntity<?> create(@RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> create(@RequestBody OrgUnitForm form) {
         try {
-            Long parentId = body.get("parent_id") != null ? ((Number) body.get("parent_id")).longValue() : null;
-            String unitType = (String) body.get("unit_type");
-            String name = (String) body.get("name");
-            Integer sortOrder = body.get("sort_order") != null ? ((Number) body.get("sort_order")).intValue() : 0;
-            Map<String, Object> created = orgUnitService.create(parentId, unitType, name, sortOrder);
+            Integer sortOrder = form.sortOrder() != null ? form.sortOrder() : 0;
+            Map<String, Object> created = orgUnitService.create(form.parentId(), form.unitType(), form.name(), sortOrder);
             return ResponseEntity.ok(created);
         } catch (IllegalArgumentException e) {
             return error(400, "INVALID_INPUT", e.getMessage());
@@ -81,12 +80,9 @@ public class OrgUnitController {
 
     @PutMapping("/admin/api/org-units/{unitId}")
     @ResponseBody
-    public ResponseEntity<?> update(@PathVariable Long unitId, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> update(@PathVariable Long unitId, @RequestBody OrgUnitForm form) {
         try {
-            String name = (String) body.get("name");
-            Integer sortOrder = body.get("sort_order") != null ? ((Number) body.get("sort_order")).intValue() : null;
-            String useYn = (String) body.get("use_yn");
-            return ResponseEntity.ok(orgUnitService.update(unitId, name, sortOrder, useYn));
+            return ResponseEntity.ok(orgUnitService.update(unitId, form.name(), form.sortOrder(), form.useYn()));
         } catch (IllegalArgumentException e) {
             return error(400, "INVALID_INPUT", e.getMessage());
         }
@@ -109,11 +105,11 @@ public class OrgUnitController {
 
     @PostMapping("/admin/api/staff")
     @ResponseBody
-    public ResponseEntity<?> createStaff(@RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
+    public ResponseEntity<?> createStaff(@RequestBody StaffForm form) {
+        String name = form.name();
         if (name == null || name.isBlank()) return error(400, "INVALID_INPUT", "이름은 필수입니다.");
         Staff s = new Staff();
-        applyStaff(s, body);
+        applyStaff(s, form);
         Map<String, Object> ok = new LinkedHashMap<>();
         ok.put("success", true);
         ok.put("staff_id", staffRepository.save(s).getStaffId());
@@ -122,10 +118,10 @@ public class OrgUnitController {
 
     @PutMapping("/admin/api/staff/{id}")
     @ResponseBody
-    public ResponseEntity<?> updateStaff(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<?> updateStaff(@PathVariable Long id, @RequestBody StaffForm form) {
         Staff s = staffRepository.findById(id).orElse(null);
         if (s == null) return error(404, "NOT_FOUND", "직원 없음: " + id);
-        applyStaff(s, body);
+        applyStaff(s, form);
         staffRepository.save(s);
         return ResponseEntity.ok(ApiResult.ok());
     }
@@ -141,15 +137,13 @@ public class OrgUnitController {
         }
     }
 
-    private void applyStaff(Staff s, Map<String, Object> body) {
-        if (body.get("name") != null) s.setName((String) body.get("name"));
-        s.setPosition((String) body.get("position"));
-        if (body.containsKey("org_unit_id")) {
-            Object v = body.get("org_unit_id");
-            s.setOrgUnitId(v instanceof Number ? ((Number) v).longValue() : null);
-        }
-        if (body.get("active") != null) s.setActive(Boolean.TRUE.equals(body.get("active")));
-        s.setTel((String) body.get("tel"));
+    private void applyStaff(Staff s, StaffForm form) {
+        if (form.name() != null) s.setName(form.name());
+        s.setPosition(form.position());
+        // 수정 시 프론트가 org_unit_id 를 생략(명시 null 미전송) → null → skip → 기존 유닛 보존(현행 containsKey 등가).
+        if (form.orgUnitId() != null) s.setOrgUnitId(form.orgUnitId());
+        if (form.active() != null) s.setActive(form.active());
+        s.setTel(form.tel());
     }
 
     private ResponseEntity<?> error(int status, String code, String message) {
