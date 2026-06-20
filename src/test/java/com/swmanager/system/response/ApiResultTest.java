@@ -40,6 +40,13 @@ class ApiResultTest {
     }
 
     @Test
+    void fail_noArg_onlySuccessFalse() throws Exception {
+        // P7: error 없이 {success:false} (예: 404 미존재)
+        assertThat(om.writeValueAsString(ApiResult.fail()))
+                .isEqualTo("{\"success\":false}");
+    }
+
+    @Test
     void failMessage_errorIsString() throws Exception {
         String json = om.writeValueAsString(ApiResult.failMessage("문제가 발생했습니다"));
         assertThat(json).isEqualTo("{\"success\":false,\"error\":\"문제가 발생했습니다\"}");

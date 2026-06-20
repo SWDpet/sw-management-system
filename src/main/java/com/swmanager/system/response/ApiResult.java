@@ -33,6 +33,11 @@ public record ApiResult(Boolean success, Object data, Object error) {
         return new ApiResult(true, data, null);
     }
 
+    /** {@code {"success":false}} — error 없이 실패 (예: 404 미존재. P7). */
+    public static ApiResult fail() {
+        return new ApiResult(false, null, null);
+    }
+
     /** {@code {"success":false,"error":{"code":...,"message":...}}} — 권한거부 등 코드형. */
     public static ApiResult fail(String code, String message) {
         return new ApiResult(false, null, Map.of("code", code, "message", message));

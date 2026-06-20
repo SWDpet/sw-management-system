@@ -2,6 +2,7 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.SysMst;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsKb;
 import com.swmanager.system.repository.SysMstRepository;
 import com.swmanager.system.repository.ops.OpsKbRepository;
@@ -58,13 +59,11 @@ public class OpsKbController {
         if ("DELETED".equals(kb.getStatus())) return isAdmin();   // 삭제본은 관리자만
         return canEdit(u) && ownsOrAdmin(kb, u);
     }
-    private ResponseEntity<Map<String, Object>> forbidden() {
-        return ResponseEntity.status(403).body(Map.of("success", false,
-                "error", Map.of("code", "FORBIDDEN", "message", "문서 편집 권한(authDocument=EDIT)이 필요합니다.")));
+    private ResponseEntity<?> forbidden() {
+        return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "문서 편집 권한(authDocument=EDIT)이 필요합니다."));
     }
-    private ResponseEntity<Map<String, Object>> forbiddenAdmin() {
-        return ResponseEntity.status(403).body(Map.of("success", false,
-                "error", Map.of("code", "FORBIDDEN", "message", "승인/반려는 관리자만 가능합니다.")));
+    private ResponseEntity<?> forbiddenAdmin() {
+        return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "승인/반려는 관리자만 가능합니다."));
     }
     private List<String> sysList() {
         List<String> l = new ArrayList<>();
@@ -145,11 +144,11 @@ public class OpsKbController {
 
     @GetMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> detail(@PathVariable Long id,
+    public ResponseEntity<?> detail(@PathVariable Long id,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         if (!canView(u)) return forbidden();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
-        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(Map.of("success", false));
+        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(ApiResult.fail());
         // 비ACTIVE(대기/반려)는 작성자 본인 또는 관리자만 단건 조회
         if (!"ACTIVE".equals(kb.getStatus()) && !canAccessNonActive(kb, u)) return forbidden();
         return ResponseEntity.ok(toDto(kb));
@@ -158,7 +157,7 @@ public class OpsKbController {
     // ===== CRUD (EDIT) =====
     @PostMapping("/api")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> create(@RequestBody Map<String, Object> body,
+    public ResponseEntity<?> create(@RequestBody Map<String, Object> body,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         log.info("[KB-CREATE] user={}, canEdit={}, gubun={}, sysType={}, symptomLen={}, actionLen={}, causeLen={}",
                 (u != null ? u.getUsername() : null), canEdit(u), body.get("gubun"), body.get("sys_type"),
@@ -168,8 +167,7 @@ public class OpsKbController {
         String err = validate(body);
         if (err != null) {
             log.warn("[KB-CREATE] 검증 실패: {}", err);
-            return ResponseEntity.badRequest().body(Map.of("success", false,
-                "error", Map.of("code", "INVALID_INPUT", "message", err)));
+            return ResponseEntity.badRequest().body(ApiResult.fail("INVALID_INPUT", err));
         }
         OpsKb kb = new OpsKb();
         apply(kb, body);
@@ -195,16 +193,15 @@ public class OpsKbController {
 
     @PutMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @RequestBody Map<String, Object> body,
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, Object> body,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
-        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(Map.of("success", false));
+        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(ApiResult.fail());
         // 비ACTIVE(대기/반려)는 작성자 본인 또는 관리자만 수정. ACTIVE 는 협업 편집 허용(→재승인).
         if (!"ACTIVE".equals(kb.getStatus()) && !ownsOrAdmin(kb, u)) return forbidden();
         String err = validate(body);
-        if (err != null) return ResponseEntity.badRequest().body(Map.of("success", false,
-                "error", Map.of("code", "INVALID_INPUT", "message", err)));
+        if (err != null) return ResponseEntity.badRequest().body(ApiResult.fail("INVALID_INPUT", err));
         apply(kb, body);
         // [ops-kb-approval] 관리자 수정=ACTIVE 유지, 편집권한자 수정=PENDING 재승인(이전 반려/승인 흔적 초기화)
         if (isAdmin()) {
@@ -225,49 +222,48 @@ public class OpsKbController {
     // ===== 승인/반려 (ADMIN 전용) =====
     @PostMapping("/api/{id}/approve")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> approve(@PathVariable Long id,
+    public ResponseEntity<?> approve(@PathVariable Long id,
                                                        @AuthenticationPrincipal CustomUserDetails u) {
         if (!isAdmin()) return forbiddenAdmin();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
-        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(Map.of("success", false));
+        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(ApiResult.fail());
         kb.setStatus("ACTIVE");
         kb.setReviewedBy(u != null ? u.getUsername() : null);
         kb.setReviewedAt(java.time.LocalDateTime.now());
         kb.setRejectReason(null);
         opsKbRepository.save(kb);
-        return ResponseEntity.ok(Map.of("success", true));
+        return ResponseEntity.ok(ApiResult.ok());
     }
 
     @PostMapping("/api/{id}/reject")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> reject(@PathVariable Long id, @RequestBody Map<String, Object> body,
+    public ResponseEntity<?> reject(@PathVariable Long id, @RequestBody Map<String, Object> body,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         if (!isAdmin()) return forbiddenAdmin();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
-        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(Map.of("success", false));
+        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.status(404).body(ApiResult.fail());
         String reason = (body != null) ? blank((String) body.get("reason")) : null;
-        if (reason == null) return ResponseEntity.badRequest().body(Map.of("success", false,
-                "error", Map.of("code", "INVALID_INPUT", "message", "반려 사유는 필수입니다.")));
+        if (reason == null) return ResponseEntity.badRequest().body(ApiResult.fail("INVALID_INPUT", "반려 사유는 필수입니다."));
         kb.setStatus("REJECTED");
         kb.setReviewedBy(u != null ? u.getUsername() : null);
         kb.setReviewedAt(java.time.LocalDateTime.now());
         kb.setRejectReason(reason);
         opsKbRepository.save(kb);
-        return ResponseEntity.ok(Map.of("success", true));
+        return ResponseEntity.ok(ApiResult.ok());
     }
 
     @DeleteMapping("/api/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> delete(@PathVariable Long id,
+    public ResponseEntity<?> delete(@PathVariable Long id,
                                                       @AuthenticationPrincipal CustomUserDetails u) {
         if (!canEdit(u)) return forbidden();
         OpsKb kb = opsKbRepository.findById(id).orElse(null);
-        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.ok(Map.of("success", true));  // 멱등
+        if (kb == null || "DELETED".equals(kb.getStatus())) return ResponseEntity.ok(ApiResult.ok());  // 멱등
         // 비관리자는 본인 등록분만 삭제(시드·타인 콘텐츠 보호)
         if (!ownsOrAdmin(kb, u)) return forbidden();
         kb.setStatus("DELETED");  // 소프트삭제
         opsKbRepository.save(kb);
-        return ResponseEntity.ok(Map.of("success", true));
+        return ResponseEntity.ok(ApiResult.ok());
     }
 
     // ===== 헬퍼 =====
