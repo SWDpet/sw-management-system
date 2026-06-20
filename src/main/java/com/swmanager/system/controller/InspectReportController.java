@@ -211,10 +211,7 @@ public class InspectReportController {
     public ResponseEntity<?> getInfraServers(@RequestParam String distNm, @RequestParam String sysNmEn) {
         // [감사 P2 1-4] 문서 VIEW 이상 권한 필요 (NONE 차단)
         if ("NONE".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "조회 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "조회 권한이 없습니다"));
         }
         var infraList = infraRepository.findByDistNmAndSysNmEn(distNm, sysNmEn);
         if (infraList.isEmpty()) {
@@ -265,10 +262,7 @@ public class InspectReportController {
     public ResponseEntity<?> getInspectSnapshots(@RequestParam Long pjtId) {
         // VIEW 이상 권한 필요 (NONE 차단) — getInfraServers 와 동일 정책 (NFR-8)
         if ("NONE".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "조회 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "조회 권한이 없습니다"));
         }
         List<Map<String, Object>> result = new ArrayList<>();
         for (var s : metricSnapshotRepository.findLatestPerRoleHost(pjtId)) {

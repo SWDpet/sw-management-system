@@ -16,6 +16,7 @@ import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.service.DocumentService;
 import com.swmanager.system.service.DocumentAttachmentService;
 import com.swmanager.system.service.PdfExportService;
@@ -1347,16 +1348,12 @@ public class DocumentController {
     @ResponseBody
     @PostMapping("/api/plan/{projId}")
     @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<Map<String, Object>> savePlanData(
+    public ResponseEntity<ApiResult> savePlanData(
             @PathVariable Long projId,
             @RequestBody Map<String, Object> body) {
         if (!"EDIT".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "수정 권한이 없습니다"));
         }
-        Map<String, Object> result = new HashMap<>();
         try {
             var pOpt = swProjectRepository.findById(projId);
             if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
@@ -1435,13 +1432,16 @@ public class DocumentController {
                 }
             }
 
-            result.put("success", true);
+            return ResponseEntity.ok(ApiResult.ok());
         } catch (Exception e) {
             log.error("사업수행계획서 저장 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            // [codex] @Transactional 내 catch+정상 return 은 롤백을 막아 부분 저장/삭제(targets 삭제 후
+            //         manpowerPlans/schedules 중 예외)가 commit 됨 → 명시적 rollback-only 로 정합성 보장.
+            org.springframework.transaction.interceptor.TransactionAspectSupport
+                    .currentTransactionStatus().setRollbackOnly();
+            // 응답 형태는 현행 보존: HTTP 200 + {success:false,error:<msg>}
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 
     private Integer asInt(Object o) {
