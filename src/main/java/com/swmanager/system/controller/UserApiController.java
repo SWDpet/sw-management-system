@@ -1,6 +1,6 @@
 package com.swmanager.system.controller;
 
-import com.swmanager.system.domain.User;
+import com.swmanager.system.dto.UserLightDto;
 import com.swmanager.system.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -30,9 +29,9 @@ public class UserApiController {
      *  - 비활성은 라벨에 (비활성) 표기를 위해 enabled 필드 동봉.
      */
     @GetMapping("/all-with-disabled")
-    public List<Map<String, Object>> getAllWithDisabled() {
+    public List<UserLightDto> getAllWithDisabled() {
         return userRepository.findAll().stream()
-                .map(UserApiController::toLightDto)
+                .map(UserLightDto::from)
                 .collect(Collectors.toList());
     }
 
@@ -40,20 +39,9 @@ public class UserApiController {
      * 활성 사용자만 (선택 사항).
      */
     @GetMapping("/active")
-    public List<Map<String, Object>> getActive() {
+    public List<UserLightDto> getActive() {
         return userRepository.findByEnabledTrue().stream()
-                .map(UserApiController::toLightDto)
+                .map(UserLightDto::from)
                 .collect(Collectors.toList());
-    }
-
-    private static Map<String, Object> toLightDto(User u) {
-        Map<String, Object> m = new java.util.LinkedHashMap<>();
-        m.put("userId", u.getUserSeq());        // FK 컬럼명 user_id 와 매핑
-        m.put("userid", u.getUserid());
-        m.put("username", u.getUsername());
-        m.put("deptNm", u.getDeptNm());
-        m.put("positionTitle", u.getPositionTitle());
-        m.put("enabled", u.isEnabled());
-        return m;
     }
 }
