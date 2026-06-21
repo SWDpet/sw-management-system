@@ -9,6 +9,9 @@ import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.dto.WorkPlanDTO;
+import com.swmanager.system.dto.workplan.PjtOptionRow;
+import com.swmanager.system.dto.workplan.SggOptionRow;
+import com.swmanager.system.dto.workplan.WorkPlanStatusResult;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -292,7 +295,7 @@ public class WorkPlanController {
 
     @ResponseBody
     @PostMapping("/api/status/{id}")
-    public ResponseEntity<Map<String, Object>> updateStatus(
+    public ResponseEntity<?> updateStatus(
             @PathVariable Integer id,
             @RequestParam("status") String status,
             @RequestParam(name = "reason", required = false) String reason) {
@@ -304,12 +307,9 @@ public class WorkPlanController {
         WorkPlan updated = workPlanService.updateStatus(id, status, reason);
         logService.log(MenuName.WORK_PLAN, AccessActionType.UPDATE, "업무계획 상태변경 (ID: " + id + ", " + status + ")");
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("success", true);
-        result.put("planId", updated.getPlanId());
-        result.put("status", updated.getStatus());
-        result.put("statusLabel", WorkPlanDTO.getStatusLabel(updated.getStatus()));
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(new WorkPlanStatusResult(
+                true, updated.getPlanId(), updated.getStatus(),
+                WorkPlanDTO.getStatusLabel(updated.getStatus())));
     }
 
     // === 공통 ===
@@ -328,23 +328,17 @@ public class WorkPlanController {
     /** 시도 → 시군구 목록. self-행(sgg=sido)은 본청/도청으로 함께 노출(FR-12, 라벨은 화면 처리). */
     @ResponseBody
     @GetMapping("/api/sgg")
-    public ResponseEntity<List<Map<String, Object>>> getSggBySido(@RequestParam("sido") String sido) {
+    public ResponseEntity<List<SggOptionRow>> getSggBySido(@RequestParam("sido") String sido) {
         if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
-        List<Map<String, Object>> list = sigunguCodeRepository.findBySidoNmOrderBySggNm(sido).stream()
-                .map(s -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("admSectC", s.getAdmSectC());
-                    m.put("sggNm", s.getSggNm());
-                    m.put("isUnit", s.getSggNm() != null && s.getSggNm().equals(s.getSidoNm())); // 본청/도청 여부
-                    return m;
-                }).toList();
+        List<SggOptionRow> list = sigunguCodeRepository.findBySidoNmOrderBySggNm(sido).stream()
+                .map(SggOptionRow::from).toList();
         return ResponseEntity.ok(list);
     }
 
     /** 시군구코드 → 그 시군구의 사업(sw_pjt) 목록(value=proj_id, label=연도+사업명). 미계약이면 빈 목록. */
     @ResponseBody
     @GetMapping("/api/pjt-by-region")
-    public ResponseEntity<List<Map<String, Object>>> getPjtByRegion(@RequestParam("admSectC") String admSectC) {
+    public ResponseEntity<List<PjtOptionRow>> getPjtByRegion(@RequestParam("admSectC") String admSectC) {
         if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
         SigunguCode sgg = sigunguCodeRepository.findById(admSectC).orElse(null);
         if (sgg == null) return ResponseEntity.ok(List.of());
@@ -352,13 +346,11 @@ public class WorkPlanController {
         List<String> dists = java.util.Objects.equals(sgg.getSggNm(), sgg.getSidoNm())
                 ? List.of(sgg.getSggNm(), "도청", "본청")
                 : List.of(sgg.getSggNm());
-        List<Map<String, Object>> list = swProjectRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists).stream()
+        List<PjtOptionRow> list = swProjectRepository.findByCityNmAndDistNmIn(sgg.getSidoNm(), dists).stream()
                 .map(p -> {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("projId", p.getProjId());
                     String nm = (p.getProjNm() != null && !p.getProjNm().isBlank()) ? p.getProjNm() : p.getSysNm();
-                    m.put("label", (p.getYear() != null ? p.getYear() + " " : "") + (nm != null ? nm : ""));
-                    return m;
+                    String label = (p.getYear() != null ? p.getYear() + " " : "") + (nm != null ? nm : "");
+                    return new PjtOptionRow(p.getProjId(), label);
                 }).toList();
         return ResponseEntity.ok(list);
     }
