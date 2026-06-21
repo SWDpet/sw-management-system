@@ -2,6 +2,8 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.workplan.ProcessMaster;
 import com.swmanager.system.domain.workplan.ServicePurpose;
+import com.swmanager.system.dto.workplan.ProcessMasterRow;
+import com.swmanager.system.dto.workplan.ServicePurposeRow;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -183,14 +185,11 @@ public class DocumentLookupController {
     /** 시스템별 공정명 목록 조회 */
     @GetMapping("/api/process-master")
     @ResponseBody
-    public List<Map<String, Object>> getProcessMasterList(@RequestParam String sysNmEn) {
+    public List<ProcessMasterRow> getProcessMasterList(@RequestParam String sysNmEn) {
         List<ProcessMaster> list = processMasterRepository.findBySysNmEnAndUseYnOrderBySortOrder(sysNmEn, "Y");
-        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        List<ProcessMasterRow> result = new java.util.ArrayList<>();
         for (ProcessMaster pm : list) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("processId", pm.getProcessId());
-            m.put("processName", pm.getProcessName());
-            result.add(m);
+            result.add(ProcessMasterRow.from(pm));
         }
         return result;
     }
@@ -198,7 +197,7 @@ public class DocumentLookupController {
     /** 시스템별 용역목적/과업내용 조회 */
     @GetMapping("/api/service-purpose")
     @ResponseBody
-    public List<Map<String, Object>> getServicePurposeList(
+    public List<ServicePurposeRow> getServicePurposeList(
             @RequestParam String sysNmEn,
             @RequestParam(required = false) String purposeType) {
         List<ServicePurpose> list;
@@ -207,13 +206,9 @@ public class DocumentLookupController {
         } else {
             list = servicePurposeRepository.findBySysNmEnAndUseYnOrderBySortOrder(sysNmEn, "Y");
         }
-        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        List<ServicePurposeRow> result = new java.util.ArrayList<>();
         for (ServicePurpose sp : list) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("purposeId", sp.getPurposeId());
-            m.put("purposeType", sp.getPurposeType());
-            m.put("purposeText", sp.getPurposeText());
-            result.add(m);
+            result.add(ServicePurposeRow.from(sp));
         }
         return result;
     }
