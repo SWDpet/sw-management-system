@@ -9,6 +9,7 @@ import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.dto.WorkPlanDTO;
+import com.swmanager.system.dto.workplan.CalendarEvent;
 import com.swmanager.system.dto.workplan.PjtOptionRow;
 import com.swmanager.system.dto.workplan.SggOptionRow;
 import com.swmanager.system.dto.workplan.WorkPlanStatusResult;
@@ -154,7 +155,7 @@ public class WorkPlanController {
 
     @ResponseBody
     @GetMapping("/api/events")
-    public ResponseEntity<List<Map<String, Object>>> getCalendarEvents(
+    public ResponseEntity<List<CalendarEvent>> getCalendarEvents(
             @RequestParam("start") String start,
             @RequestParam("end") String end,
             @RequestParam(name = "assigneeId", required = false) Long assigneeId) {
@@ -170,25 +171,7 @@ public class WorkPlanController {
         }
 
         // FullCalendar 이벤트 형식으로 변환
-        List<Map<String, Object>> events = plans.stream().map(p -> {
-            Map<String, Object> event = new HashMap<>();
-            event.put("id", p.getPlanId());
-            event.put("title", p.getTitle());
-            event.put("start", p.getStartDate());
-            event.put("end", p.getEndDate());
-            event.put("color", p.getColor());
-            event.put("extendedProps", Map.of(
-                "planType", p.getPlanType() != null ? p.getPlanType() : "",
-                "planTypeLabel", WorkPlanDTO.getTypeLabel(p.getPlanType()),
-                "status", p.getStatus() != null ? p.getStatus() : "",
-                "statusLabel", WorkPlanDTO.getStatusLabel(p.getStatus()),
-                "assigneeName", p.getAssigneeName() != null ? p.getAssigneeName() : "",
-                "infraName", p.getTargetLabel(),
-                "processStep", p.getProcessStep() != null ? p.getProcessStep() : 0,
-                "stepLabel", WorkPlanDTO.getStepLabel(p.getProcessStep())
-            ));
-            return event;
-        }).toList();
+        List<CalendarEvent> events = plans.stream().map(CalendarEvent::from).toList();
 
         return ResponseEntity.ok(events);
     }
