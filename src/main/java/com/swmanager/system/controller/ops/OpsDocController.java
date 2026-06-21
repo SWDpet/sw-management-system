@@ -3,9 +3,15 @@ package com.swmanager.system.controller.ops;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.dto.ops.DocPartnerRow;
+import com.swmanager.system.dto.ops.EngineerRow;
 import com.swmanager.system.dto.ops.FeedbackForm;
 import com.swmanager.system.dto.ops.OpsDocForm;
+import com.swmanager.system.dto.ops.PartnerContactRow;
+import com.swmanager.system.dto.ops.PartnerRow;
 import com.swmanager.system.dto.ops.RequesterForm;
+import com.swmanager.system.dto.ops.RequesterRow;
+import com.swmanager.system.dto.ops.StaffRow;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsDocumentDetail;
 import com.swmanager.system.domain.OrgUnit;
@@ -504,17 +510,13 @@ public class OpsDocController {
     /** 담당 엔지니어 풀 — SW지원팀 활성 사용자 (FR-M2-1 드롭다운). */
     @GetMapping("/api/engineers")
     @ResponseBody
-    public List<Map<String, Object>> engineers() {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<EngineerRow> engineers() {
+        List<EngineerRow> result = new ArrayList<>();
         Long swTeamId = orgUnitRepository.findFirstByNameAndUnitType("SW지원팀", "TEAM")
                 .map(OrgUnit::getUnitId).orElse(null);
         if (swTeamId == null) return result;
         for (User u : userRepository.findByOrgUnitIdAndEnabledTrueOrderByUsernameAsc(swTeamId)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", u.getUserSeq());
-            m.put("name", u.getUsername());
-            m.put("position", u.getPosition() != null ? u.getPosition() : u.getPositionTitle());
-            result.add(m);
+            result.add(EngineerRow.from(u));
         }
         return result;
     }
@@ -522,17 +524,10 @@ public class OpsDocController {
     /** 요청자(공무원) 검색 — ps_info (FR-M2-2). */
     @GetMapping("/api/requester/search")
     @ResponseBody
-    public List<Map<String, Object>> requesterSearch(@RequestParam("kw") String kw) {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<RequesterRow> requesterSearch(@RequestParam("kw") String kw) {
+        List<RequesterRow> result = new ArrayList<>();
         for (PersonInfo p : personInfoRepository.findAllByKeyword(kw == null ? "" : kw, PageRequest.of(0, 10))) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", p.getId());
-            m.put("name", p.getUserNm());
-            m.put("org", p.getOrgNm());
-            m.put("dept", p.getDeptNm());
-            m.put("pos", p.getPos());
-            m.put("tel", p.getTel());
-            result.add(m);
+            result.add(RequesterRow.from(p));
         }
         return result;
     }
@@ -568,16 +563,10 @@ public class OpsDocController {
     /** 요청자(업체담당자) 검색 — tb_partner_contact (FR-M2-4, P3). */
     @GetMapping("/api/partner-contact/search")
     @ResponseBody
-    public List<Map<String, Object>> partnerContactSearch(@RequestParam("kw") String kw) {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<PartnerContactRow> partnerContactSearch(@RequestParam("kw") String kw) {
+        List<PartnerContactRow> result = new ArrayList<>();
         for (PartnerContact c : partnerContactRepository.searchActive(kw == null ? "" : kw)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", c.getContactId());
-            m.put("name", c.getName());
-            m.put("org", c.getPartner() != null ? c.getPartner().getName() : null);
-            m.put("pos", c.getPosition());
-            m.put("tel", c.getTel());
-            result.add(m);
+            result.add(PartnerContactRow.from(c));
         }
         return result;
     }
@@ -617,14 +606,10 @@ public class OpsDocController {
     /** [FR-M2-4] 협력업체(업체 단위) 검색. */
     @GetMapping("/api/partner/search")
     @ResponseBody
-    public List<Map<String, Object>> partnerSearch(@RequestParam("kw") String kw) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<PartnerRow> partnerSearch(@RequestParam("kw") String kw) {
+        List<PartnerRow> out = new ArrayList<>();
         for (Partner p : partnerRepository.findByUseYnAndNameContainingOrderByNameAsc("Y", kw == null ? "" : kw)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", p.getPartnerId());
-            m.put("name", p.getName());
-            m.put("type", p.getPartnerType());
-            out.add(m);
+            out.add(PartnerRow.from(p));
         }
         return out;
     }
@@ -632,15 +617,11 @@ public class OpsDocController {
     /** [FR-M2-4] 문서 협력업체 목록 (수정 폼 프리필). */
     @GetMapping("/api/{docId}/partners")
     @ResponseBody
-    public List<Map<String, Object>> docPartners(@PathVariable Long docId) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<DocPartnerRow> docPartners(@PathVariable Long docId) {
+        List<DocPartnerRow> out = new ArrayList<>();
         for (OpsDocPartner dp : opsDocPartnerRepository.findByDocId(docId)) {
             Partner p = partnerRepository.findById(dp.getPartnerId()).orElse(null);
-            Map<String, Object> m = new HashMap<>();
-            m.put("partner_id", dp.getPartnerId());
-            m.put("name", p != null ? p.getName() : ("#" + dp.getPartnerId()));
-            m.put("role_label", dp.getRoleLabel());
-            out.add(m);
+            out.add(DocPartnerRow.from(dp, p));
         }
         return out;
     }
@@ -667,20 +648,15 @@ public class OpsDocController {
     /** 요청자(직원) 검색 — tb_staff 재직자. */
     @GetMapping("/api/staff/search")
     @ResponseBody
-    public List<Map<String, Object>> staffSearch(@RequestParam("kw") String kw) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<StaffRow> staffSearch(@RequestParam("kw") String kw) {
+        List<StaffRow> out = new ArrayList<>();
         for (Staff s : staffRepository.searchActive(kw == null ? "" : kw)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", s.getStaffId());
-            m.put("name", s.getName());
             String unit = null;
             if (s.getOrgUnitId() != null) {
                 OrgUnit ou = orgUnitRepository.findById(s.getOrgUnitId()).orElse(null);
                 if (ou != null) unit = ou.getName();
             }
-            m.put("org", unit);
-            m.put("pos", s.getPosition());
-            out.add(m);
+            out.add(StaffRow.of(s, unit));
         }
         return out;
     }
