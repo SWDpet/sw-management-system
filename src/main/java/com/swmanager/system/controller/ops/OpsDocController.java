@@ -3,6 +3,8 @@ package com.swmanager.system.controller.ops;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.dto.ops.CascadeSggRow;
+import com.swmanager.system.dto.ops.CascadeSystemRow;
 import com.swmanager.system.dto.ops.DocPartnerRow;
 import com.swmanager.system.dto.ops.EngineerRow;
 import com.swmanager.system.dto.ops.FeedbackForm;
@@ -666,14 +668,10 @@ public class OpsDocController {
     /** 시도 → 시군구 목록 (self-행=본청/도청 포함). */
     @GetMapping("/api/sgg")
     @ResponseBody
-    public List<Map<String, Object>> cascadeSgg(@RequestParam("sido") String sido) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<CascadeSggRow> cascadeSgg(@RequestParam("sido") String sido) {
+        List<CascadeSggRow> out = new ArrayList<>();
         for (SigunguCode s : sigunguCodeRepository.findBySidoNmOrderBySggNm(sido)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("admSectC", s.getAdmSectC());
-            m.put("sggNm", s.getSggNm());
-            m.put("isUnit", s.getSggNm() != null && s.getSggNm().equals(s.getSidoNm()));
-            out.add(m);
+            out.add(CascadeSggRow.from(s));
         }
         return out;
     }
@@ -681,13 +679,10 @@ public class OpsDocController {
     /** 시스템 마스터(sys_mst) 전체 — 계약사업(sw_pjt) 무관. 영업지원 등 미계약도 선택 가능. */
     @GetMapping("/api/systems")
     @ResponseBody
-    public List<Map<String, Object>> cascadeSystems() {
-        List<Map<String, Object>> out = new ArrayList<>();
+    public List<CascadeSystemRow> cascadeSystems() {
+        List<CascadeSystemRow> out = new ArrayList<>();
         for (SysMst s : sysMstRepository.findAll(org.springframework.data.domain.Sort.by("nm"))) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("cd", s.getCd());
-            m.put("nm", s.getNm());
-            out.add(m);
+            out.add(CascadeSystemRow.from(s));
         }
         return out;
     }
