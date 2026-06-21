@@ -2,6 +2,7 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.SysMst;
+import com.swmanager.system.dto.ops.OpsKbDto;
 import com.swmanager.system.dto.ops.OpsKbForm;
 import com.swmanager.system.dto.ops.RejectForm;
 import com.swmanager.system.response.ApiResult;
@@ -123,12 +124,12 @@ public class OpsKbController {
     // ===== 조회 API =====
     @GetMapping("/api/list")
     @ResponseBody
-    public List<Map<String, Object>> search(@RequestParam(required = false) String sysType,
+    public List<OpsKbDto> search(@RequestParam(required = false) String sysType,
                                             @RequestParam(required = false) String gubun,
                                             @RequestParam(required = false) String kw,
                                             @RequestParam(required = false) String status,
                                             @AuthenticationPrincipal CustomUserDetails u) {
-        List<Map<String, Object>> out = new ArrayList<>();
+        List<OpsKbDto> out = new ArrayList<>();
         if (!canView(u)) return out;
         String st = blank(status);
         if (st == null) st = "ACTIVE";
@@ -298,26 +299,8 @@ public class OpsKbController {
         Long seq = opsKbRepository.nextManualSeq();
         return String.format("KB-%d-%05d", year, seq);
     }
-    private Map<String, Object> toDto(OpsKb k) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("kb_id", k.getKbId());
-        m.put("kb_code", k.getKbCode());
-        m.put("gubun", k.getGubun());
-        m.put("sys_type", k.getSysType());
-        m.put("category", k.getCategory());
-        m.put("symptom", k.getSymptom());
-        m.put("cause", k.getCause());
-        m.put("summary", k.getSummary());
-        m.put("action", (k.getAction() != null && !k.getAction().isBlank()) ? k.getAction() : k.getCauseDesc());
-        m.put("prevention", k.getPrevention());
-        m.put("keywords", k.getKeywords());
-        m.put("case_count", k.getCaseCount());
-        m.put("source", k.getSource());
-        m.put("status", k.getStatus());
-        m.put("reject_reason", k.getRejectReason());
-        m.put("reviewed_by", k.getReviewedBy());
-        m.put("created_by", k.getCreatedBy());
-        return m;
+    private OpsKbDto toDto(OpsKb k) {
+        return OpsKbDto.from(k);
     }
     private static String blank(String s) { return (s == null || s.isBlank()) ? null : s.trim(); }
 }
