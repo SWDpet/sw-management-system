@@ -2,6 +2,7 @@ package com.swmanager.system.service;
 
 import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.ops.Staff;
+import com.swmanager.system.dto.orgunit.OrgMemberRow;
 import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.ops.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,15 +33,10 @@ public class OrgUnitService {
      * 소스 = tb_staff(직원 디렉터리). 노출: staff_id/username(이름)/position/active.
      */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getMembers(Long unitId) {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<OrgMemberRow> getMembers(Long unitId) {
+        List<OrgMemberRow> result = new ArrayList<>();
         for (Staff s : staffRepository.findByOrgUnitIdOrderBySortOrderAscNameAsc(unitId)) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("staff_id", s.getStaffId());
-            m.put("username", s.getName());
-            m.put("position", s.getPosition());
-            m.put("active", Boolean.TRUE.equals(s.getActive()));
-            result.add(m);
+            result.add(OrgMemberRow.from(s));
         }
         return result;
     }
