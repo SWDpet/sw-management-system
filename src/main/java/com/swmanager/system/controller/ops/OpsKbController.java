@@ -2,9 +2,11 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.SysMst;
+import com.swmanager.system.dto.ops.KbCreateResult;
 import com.swmanager.system.dto.ops.OpsKbDto;
 import com.swmanager.system.dto.ops.OpsKbForm;
 import com.swmanager.system.dto.ops.RejectForm;
+import com.swmanager.system.dto.ops.SysMstOption;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.domain.ops.OpsKb;
 import com.swmanager.system.repository.SysMstRepository;
@@ -20,7 +22,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -73,11 +74,9 @@ public class OpsKbController {
         for (SysMst s : sysMstRepository.findAll(Sort.by("nm"))) l.add(s.getCd());
         return l;
     }
-    private List<Map<String, Object>> sysOptions() {
-        List<Map<String, Object>> l = new ArrayList<>();
-        for (SysMst s : sysMstRepository.findAll(Sort.by("nm"))) {
-            Map<String, Object> m = new LinkedHashMap<>(); m.put("cd", s.getCd()); m.put("nm", s.getNm()); l.add(m);
-        }
+    private List<SysMstOption> sysOptions() {
+        List<SysMstOption> l = new ArrayList<>();
+        for (SysMst s : sysMstRepository.findAll(Sort.by("nm"))) l.add(SysMstOption.from(s));
         return l;
     }
 
@@ -186,12 +185,7 @@ public class OpsKbController {
         OpsKb saved = opsKbRepository.save(kb);
         log.info("[KB-CREATE] 저장 성공 kb_id={}, code={}, status={}",
                 saved.getKbId(), saved.getKbCode(), saved.getStatus());
-        Map<String, Object> ok = new java.util.HashMap<>();   // Map.of 는 null 값 시 NPE → HashMap
-        ok.put("success", true);
-        ok.put("kb_id", saved.getKbId());
-        ok.put("kb_code", saved.getKbCode());
-        ok.put("status", saved.getStatus());
-        return ResponseEntity.ok(ok);
+        return ResponseEntity.ok(KbCreateResult.of(saved));
     }
 
     @PutMapping("/api/{id}")
