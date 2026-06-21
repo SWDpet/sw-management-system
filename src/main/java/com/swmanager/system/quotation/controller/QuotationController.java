@@ -10,6 +10,8 @@ import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.quotation.domain.*;
 import com.swmanager.system.quotation.dto.QuotationDTO;
+import com.swmanager.system.quotation.dto.QuotationSearchRow;
+import com.swmanager.system.quotation.dto.SwClientRow;
 import com.swmanager.system.quotation.service.QuotationService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.exception.InsufficientPermissionException;
@@ -316,7 +318,7 @@ public class QuotationController {
     /** 견적서 목록 검색 (불러오기용) */
     @GetMapping("/api/quotation/search")
     @ResponseBody
-    public List<Map<String, Object>> searchQuotations(
+    public List<QuotationSearchRow> searchQuotations(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Integer year) {
@@ -328,18 +330,7 @@ public class QuotationController {
                         || (q.getProjectName() != null && q.getProjectName().contains(keyword))
                         || (q.getQuoteNumber() != null && q.getQuoteNumber().contains(keyword))
                         || (q.getRecipient() != null && q.getRecipient().contains(keyword)))
-                .map(q -> {
-                    Map<String, Object> m = new java.util.LinkedHashMap<>();
-                    m.put("quoteId", q.getQuoteId());
-                    m.put("quoteNumber", q.getQuoteNumber());
-                    m.put("quoteDate", q.getQuoteDate() != null ? q.getQuoteDate().toString() : "");
-                    m.put("category", q.getCategory());
-                    m.put("projectName", q.getProjectName());
-                    m.put("recipient", q.getRecipient());
-                    m.put("grandTotal", q.getGrandTotal());
-                    m.put("createdBy", q.getCreatedBy());
-                    return m;
-                })
+                .map(QuotationSearchRow::from)
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -535,20 +526,11 @@ public class QuotationController {
     /** 특정 시스템의 클라이언트 목록 */
     @GetMapping("/api/quotation/sw-projects/clients")
     @ResponseBody
-    public List<Map<String, Object>> getSwClients(@RequestParam String sysNm) {
+    public List<SwClientRow> getSwClients(@RequestParam String sysNm) {
         checkViewAuth();
         return swProjectRepository.findAll().stream()
                 .filter(p -> sysNm.equals(p.getSysNm()) && p.getClient() != null && !p.getClient().isBlank())
-                .map(p -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("projId", p.getProjId());
-                    m.put("client", p.getClient());
-                    m.put("swAmt", p.getSwAmt());
-                    m.put("projNm", p.getProjNm());
-                    m.put("year", p.getYear());
-                    m.put("distNm", p.getDistNm());
-                    return m;
-                })
+                .map(SwClientRow::from)
                 .collect(Collectors.toList());
     }
 
