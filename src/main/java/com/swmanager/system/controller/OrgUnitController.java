@@ -3,6 +3,7 @@ package com.swmanager.system.controller;
 import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.dto.orgunit.OrgMemberRow;
 import com.swmanager.system.dto.orgunit.OrgUnitForm;
+import com.swmanager.system.dto.orgunit.OrgUnitNode;
 import com.swmanager.system.dto.orgunit.StaffForm;
 import com.swmanager.system.repository.ops.StaffRepository;
 import com.swmanager.system.response.ApiResult;
@@ -43,13 +44,13 @@ public class OrgUnitController {
 
     @GetMapping("/api/org-units/roots")
     @ResponseBody
-    public List<Map<String, Object>> getRoots() {
+    public List<OrgUnitNode> getRoots() {
         return orgUnitService.getRoots();
     }
 
     @GetMapping("/api/org-units/children/{parentId}")
     @ResponseBody
-    public List<Map<String, Object>> getChildren(@PathVariable Long parentId) {
+    public List<OrgUnitNode> getChildren(@PathVariable Long parentId) {
         return orgUnitService.getChildren(parentId);
     }
 
@@ -72,7 +73,7 @@ public class OrgUnitController {
     public ResponseEntity<?> create(@RequestBody OrgUnitForm form) {
         try {
             Integer sortOrder = form.sortOrder() != null ? form.sortOrder() : 0;
-            Map<String, Object> created = orgUnitService.create(form.parentId(), form.unitType(), form.name(), sortOrder);
+            OrgUnitNode created = orgUnitService.create(form.parentId(), form.unitType(), form.name(), sortOrder);
             return ResponseEntity.ok(created);
         } catch (IllegalArgumentException e) {
             return error(400, "INVALID_INPUT", e.getMessage());

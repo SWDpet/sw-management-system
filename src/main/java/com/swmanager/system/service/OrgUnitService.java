@@ -3,6 +3,7 @@ package com.swmanager.system.service;
 import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.dto.orgunit.OrgMemberRow;
+import com.swmanager.system.dto.orgunit.OrgUnitNode;
 import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.ops.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,17 +71,17 @@ public class OrgUnitService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getChildren(Long parentId) {
+    public List<OrgUnitNode> getChildren(Long parentId) {
         List<OrgUnit> units = (parentId == null)
                 ? orgUnitRepository.findByParentIsNullAndUseYnOrderBySortOrderAsc("Y")
                 : orgUnitRepository.findByParent_UnitIdAndUseYnOrderBySortOrderAsc(parentId, "Y");
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (OrgUnit u : units) result.add(toDto(u));
+        List<OrgUnitNode> result = new ArrayList<>();
+        for (OrgUnit u : units) result.add(OrgUnitNode.from(u));
         return result;
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getRoots() {
+    public List<OrgUnitNode> getRoots() {
         return getChildren(null);
     }
 
@@ -98,7 +99,7 @@ public class OrgUnitService {
 
     // ======== CRUD ========
 
-    public Map<String, Object> create(Long parentId, String unitType, String name, Integer sortOrder) {
+    public OrgUnitNode create(Long parentId, String unitType, String name, Integer sortOrder) {
         validateType(unitType);
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("name 은 필수입니다.");
@@ -113,16 +114,16 @@ public class OrgUnitService {
         u.setName(name.trim());
         u.setSortOrder(sortOrder != null ? sortOrder : 0);
         u.setUseYn("Y");
-        return toDto(orgUnitRepository.save(u));
+        return OrgUnitNode.from(orgUnitRepository.save(u));
     }
 
-    public Map<String, Object> update(Long unitId, String name, Integer sortOrder, String useYn) {
+    public OrgUnitNode update(Long unitId, String name, Integer sortOrder, String useYn) {
         OrgUnit u = orgUnitRepository.findById(unitId)
                 .orElseThrow(() -> new IllegalArgumentException("조직 없음: " + unitId));
         if (name != null && !name.trim().isEmpty()) u.setName(name.trim());
         if (sortOrder != null) u.setSortOrder(sortOrder);
         if (useYn != null && (useYn.equals("Y") || useYn.equals("N"))) u.setUseYn(useYn);
-        return toDto(orgUnitRepository.save(u));
+        return OrgUnitNode.from(orgUnitRepository.save(u));
     }
 
     public void delete(Long unitId) {
