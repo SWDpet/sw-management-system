@@ -2,8 +2,13 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.workplan.ProcessMaster;
 import com.swmanager.system.domain.workplan.ServicePurpose;
+import com.swmanager.system.dto.workplan.InfraFindResult;
+import com.swmanager.system.dto.workplan.InfraNotFound;
 import com.swmanager.system.dto.workplan.ProcessMasterRow;
+import com.swmanager.system.dto.workplan.ProjectFilterRow;
+import com.swmanager.system.dto.workplan.RegionSigunguRow;
 import com.swmanager.system.dto.workplan.ServicePurposeRow;
+import com.swmanager.system.dto.workplan.SystemOptionRow;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -20,10 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 문서작성 폼의 지역·시스템·사업 cascade 조회 API — DocumentController 에서 분리 (S4 giant-class-split §6-5).
@@ -89,29 +91,18 @@ public class DocumentLookupController {
     /** 시도 → 시군구 목록 (행정구역코드 + 시군구명) */
     @ResponseBody
     @GetMapping("/api/region-sigungus")
-    public ResponseEntity<List<Map<String, Object>>> getRegionSigungus(@RequestParam String sidoNm) {
-        var list = sigunguCodeRepository.findBySidoNmOrderBySggNm(sidoNm);
-        List<Map<String, Object>> result = list.stream().map(s -> {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("admSectC", s.getAdmSectC());
-            m.put("sggNm", s.getSggNm());
-            m.put("sidoNm", s.getSidoNm());
-            return m;
-        }).toList();
+    public ResponseEntity<List<RegionSigunguRow>> getRegionSigungus(@RequestParam String sidoNm) {
+        List<RegionSigunguRow> result = sigunguCodeRepository.findBySidoNmOrderBySggNm(sidoNm)
+                .stream().map(RegionSigunguRow::from).toList();
         return ResponseEntity.ok(result);
     }
 
     /** 전체 시스템 목록 (sys_mst) */
     @ResponseBody
     @GetMapping("/api/systems-all")
-    public ResponseEntity<List<Map<String, Object>>> getSystemsAll() {
-        var list = sysMstRepository.findAll();
-        List<Map<String, Object>> result = list.stream().map(s -> {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("cd", s.getCd());
-            m.put("nm", s.getNm());
-            return m;
-        }).toList();
+    public ResponseEntity<List<SystemOptionRow>> getSystemsAll() {
+        List<SystemOptionRow> result = sysMstRepository.findAll()
+                .stream().map(SystemOptionRow::from).toList();
         return ResponseEntity.ok(result);
     }
 
@@ -141,44 +132,24 @@ public class DocumentLookupController {
 
     @ResponseBody
     @GetMapping("/api/infra-find")
-    public ResponseEntity<Map<String, Object>> findInfraByRegion(
+    public ResponseEntity<?> findInfraByRegion(
             @RequestParam String cityNm, @RequestParam String distNm, @RequestParam String sysNmEn) {
         var list = infraRepository.findByCityDistSystem(cityNm, distNm, sysNmEn);
-        Map<String, Object> body = new HashMap<>();
         if (list.isEmpty()) {
-            body.put("found", false);
-            return ResponseEntity.ok(body);
+            return ResponseEntity.ok(InfraNotFound.instance());
         }
-        var infra = list.get(0);
-        body.put("found", true);
-        body.put("infraId", infra.getInfraId());
-        body.put("cityNm", infra.getCityNm());
-        body.put("distNm", infra.getDistNm());
-        body.put("sysNm", infra.getSysNm());
-        body.put("sysNmEn", infra.getSysNmEn());
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(InfraFindResult.of(list.get(0)));
     }
 
     /** 최종: 연도+지자체+시스템 → 사업 목록 */
     @ResponseBody
     @GetMapping("/api/projects")
-    public ResponseEntity<List<Map<String, Object>>> getProjectsFiltered(
+    public ResponseEntity<List<ProjectFilterRow>> getProjectsFiltered(
             @RequestParam Integer year, @RequestParam String cityNm,
             @RequestParam String distNm, @RequestParam String sysNmEn) {
-        var projects = swProjectRepository.findByYearAndCityNmAndDistNmAndSysNmEnOrderByProjIdDesc(
-                year, cityNm, distNm, sysNmEn);
-        List<Map<String, Object>> result = projects.stream().map(p -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("projId", p.getProjId());
-            m.put("year", p.getYear());
-            m.put("projNm", p.getProjNm());
-            m.put("sysNm", p.getSysNm());
-            m.put("sysNmEn", p.getSysNmEn());
-            m.put("contAmt", p.getContAmt());
-            m.put("cityNm", p.getCityNm());
-            m.put("distNm", p.getDistNm());
-            return m;
-        }).toList();
+        List<ProjectFilterRow> result = swProjectRepository
+                .findByYearAndCityNmAndDistNmAndSysNmEnOrderByProjIdDesc(year, cityNm, distNm, sysNmEn)
+                .stream().map(ProjectFilterRow::from).toList();
         return ResponseEntity.ok(result);
     }
 
