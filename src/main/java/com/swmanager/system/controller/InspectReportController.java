@@ -5,6 +5,8 @@ import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.dto.InspectReportDTO;
+import com.swmanager.system.dto.inspection.InfraServerRow;
+import com.swmanager.system.dto.inspection.SnapshotRow;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.InspectMetricSnapshotRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -218,37 +220,8 @@ public class InspectReportController {
             return ResponseEntity.ok(java.util.Collections.emptyList());
         }
         var infra = infraList.get(0);
-        List<Map<String, Object>> servers = new ArrayList<>();
-        for (var s : infra.getServers()) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("serverId", s.getServerId());
-            m.put("serverType", s.getServerType());
-            m.put("hostName", s.getHostName());
-            m.put("ipAddr", s.getIpAddr());
-            m.put("osNm", s.getOsNm());
-            // [감사 P2 1-4] MAC 주소 응답 제외 (민감정보)
-            m.put("serverModel", s.getServerModel());
-            m.put("serialNo", s.getSerialNo());
-            m.put("cpuSpec", s.getCpuSpec());
-            m.put("memorySpec", s.getMemorySpec());
-            m.put("diskSpec", s.getDiskSpec());
-            m.put("networkSpec", s.getNetworkSpec());
-            m.put("powerSpec", s.getPowerSpec());
-            m.put("osDetail", s.getOsDetail());
-            m.put("rackLocation", s.getRackLocation());
-            m.put("note", s.getNote());
-            // 소프트웨어 목록
-            List<Map<String, String>> swList = new ArrayList<>();
-            for (var sw : s.getSoftwares()) {
-                Map<String, String> swMap = new LinkedHashMap<>();
-                swMap.put("swCategory", sw.getSwCategory());
-                swMap.put("swNm", sw.getSwNm());
-                swMap.put("swVer", sw.getSwVer() != null ? sw.getSwVer() : "");
-                swList.add(swMap);
-            }
-            m.put("softwares", swList);
-            servers.add(m);
-        }
+        // [감사 P2 1-4] InfraServerRow = 16키 화이트리스트(MAC·계정ID/PW 등 민감정보 응답 제외 보존)
+        List<InfraServerRow> servers = infra.getServers().stream().map(InfraServerRow::from).toList();
         return ResponseEntity.ok(servers);
     }
 
@@ -264,16 +237,11 @@ public class InspectReportController {
         if ("NONE".equals(getAuth())) {
             return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "조회 권한이 없습니다"));
         }
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<SnapshotRow> result = new ArrayList<>();
         for (var s : metricSnapshotRepository.findLatestPerRoleHost(pjtId)) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("serverRole", s.getServerRole());
-            m.put("hostName", s.getHostName());
             Map<String, String> specs = extractSnapshotSpecs(s.getRawPayload());
-            m.put("cpu", specs.get("cpu"));
-            m.put("memory", specs.get("memory"));
-            m.put("disk", specs.get("disk"));
-            result.add(m);
+            result.add(new SnapshotRow(s.getServerRole(), s.getHostName(),
+                    specs.get("cpu"), specs.get("memory"), specs.get("disk")));
         }
         return ResponseEntity.ok(result);
     }
