@@ -5,6 +5,8 @@ import com.swmanager.system.domain.ops.Partner;
 import com.swmanager.system.domain.ops.PartnerContact;
 import com.swmanager.system.dto.ops.ContactForm;
 import com.swmanager.system.dto.ops.PartnerForm;
+import com.swmanager.system.dto.ops.PartnerListContactRow;
+import com.swmanager.system.dto.ops.PartnerListRow;
 import com.swmanager.system.repository.ops.PartnerContactRepository;
 import com.swmanager.system.repository.ops.PartnerRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +17,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,29 +56,14 @@ public class PartnerController {
     // ===== 조회 =====
     @GetMapping("/api/list")
     @ResponseBody
-    public List<Map<String, Object>> list(@AuthenticationPrincipal CustomUserDetails u) {
-        List<Map<String, Object>> result = new ArrayList<>();
+    public List<PartnerListRow> list(@AuthenticationPrincipal CustomUserDetails u) {
+        List<PartnerListRow> result = new ArrayList<>();
         if (!canView(u)) return result;
         for (Partner p : partnerRepository.findByUseYnOrderByNameAsc("Y")) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("partner_id", p.getPartnerId());
-            m.put("name", p.getName());
-            m.put("partner_type", p.getPartnerType());
-            m.put("main_tel", p.getMainTel());
-            m.put("note", p.getNote());
-            List<Map<String, Object>> contacts = new ArrayList<>();
-            for (PartnerContact c : partnerContactRepository
-                    .findByPartner_PartnerIdAndUseYnOrderByNameAsc(p.getPartnerId(), "Y")) {
-                Map<String, Object> cm = new LinkedHashMap<>();
-                cm.put("contact_id", c.getContactId());
-                cm.put("name", c.getName());
-                cm.put("position", c.getPosition());
-                cm.put("tel", c.getTel());
-                cm.put("email", c.getEmail());
-                contacts.add(cm);
-            }
-            m.put("contacts", contacts);
-            result.add(m);
+            List<PartnerListContactRow> contacts = partnerContactRepository
+                    .findByPartner_PartnerIdAndUseYnOrderByNameAsc(p.getPartnerId(), "Y")
+                    .stream().map(PartnerListContactRow::from).toList();
+            result.add(PartnerListRow.from(p, contacts));
         }
         return result;
     }
