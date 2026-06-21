@@ -2,6 +2,8 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.workplan.ContractParticipant;
+import com.swmanager.system.dto.workplan.ContractParticipantRow;
+import com.swmanager.system.dto.workplan.SecureContractParticipantRow;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.workplan.ContractParticipantRepository;
@@ -71,21 +73,11 @@ public class DocumentParticipantController {
      */
     @GetMapping("/api/contract-participants/{projId}")
     @ResponseBody
-    public List<Map<String, Object>> getContractParticipants(@PathVariable Long projId) {
+    public List<ContractParticipantRow> getContractParticipants(@PathVariable Long projId) {
         List<ContractParticipant> list = contractParticipantRepository.findByProject_ProjIdOrderBySortOrder(projId);
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<ContractParticipantRow> result = new ArrayList<>();
         for (ContractParticipant cp : list) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("participantId", cp.getParticipantId());
-            m.put("userId", cp.getUser() != null ? cp.getUser().getUserSeq() : null);
-            m.put("userName", cp.getUser() != null ? cp.getUser().getUsername() : "");
-            m.put("position", cp.getUser() != null ? cp.getUser().getPositionTitle() : "");
-            m.put("roleType", cp.getRoleType());
-            m.put("techGrade", cp.getTechGrade());
-            m.put("taskDesc", cp.getTaskDesc());
-            m.put("isSiteRep", cp.getIsSiteRep());
-            m.put("tasks", cp.getUser() != null ? cp.getUser().getTasks() : "");
-            result.add(m);
+            result.add(ContractParticipantRow.from(cp));
         }
         return result;
     }
@@ -103,22 +95,9 @@ public class DocumentParticipantController {
             return ResponseEntity.status(403).body(forbidden);
         }
         List<ContractParticipant> list = contractParticipantRepository.findByProject_ProjIdOrderBySortOrder(projId);
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<SecureContractParticipantRow> result = new ArrayList<>();
         for (ContractParticipant cp : list) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("participantId", cp.getParticipantId());
-            m.put("userId", cp.getUser() != null ? cp.getUser().getUserSeq() : null);
-            m.put("userName", cp.getUser() != null ? cp.getUser().getUsername() : "");
-            m.put("position", cp.getUser() != null ? cp.getUser().getPositionTitle() : "");
-            m.put("roleType", cp.getRoleType());
-            m.put("techGrade", cp.getTechGrade());
-            m.put("taskDesc", cp.getTaskDesc());
-            m.put("isSiteRep", cp.getIsSiteRep());
-            m.put("tasks", cp.getUser() != null ? cp.getUser().getTasks() : "");
-            // 민감 필드
-            m.put("ssn", cp.getUser() != null ? cp.getUser().getSsn() : "");
-            m.put("certificate", cp.getUser() != null ? cp.getUser().getCertificate() : "");
-            result.add(m);
+            result.add(SecureContractParticipantRow.from(cp));
         }
         return ResponseEntity.ok(result);
     }
