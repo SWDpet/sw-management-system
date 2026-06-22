@@ -2,6 +2,7 @@ package com.swmanager.system.controller;
 
 import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.dto.orgunit.OrgMemberRow;
+import com.swmanager.system.dto.orgunit.OrgTreeNode;
 import com.swmanager.system.dto.orgunit.OrgUnitForm;
 import com.swmanager.system.dto.orgunit.OrgUnitNode;
 import com.swmanager.system.dto.orgunit.StaffCreateResult;
@@ -16,7 +17,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 조직도 조회(/api) + 관리 화면(/admin).
@@ -38,7 +38,7 @@ public class OrgUnitController {
 
     @GetMapping("/api/org-units/tree")
     @ResponseBody
-    public List<Map<String, Object>> getTree() {
+    public List<OrgTreeNode> getTree() {
         return orgUnitService.getTree();
     }
 

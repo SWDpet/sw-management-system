@@ -3,6 +3,7 @@ package com.swmanager.system.service;
 import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.dto.orgunit.OrgMemberRow;
+import com.swmanager.system.dto.orgunit.OrgTreeNode;
 import com.swmanager.system.dto.orgunit.OrgUnitNode;
 import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.ops.StaffRepository;
@@ -43,31 +44,32 @@ public class OrgUnitService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getTree() {
+    public List<OrgTreeNode> getTree() {
         List<OrgUnit> all = orgUnitRepository.findAllByUseYnOrderBySortOrderAsc("Y");
-        // id → node
-        Map<Long, Map<String, Object>> nodeMap = new LinkedHashMap<>();
+        // parentId → 자식들(조회순=sortOrder 보존). key=null 은 root.
+        // 부모가 활성집합에 없는 노드는 (비-null) 부모키 그룹에 머물러 어느 root 의 자손도 아니므로
+        // 재귀 미도달 → 트리에서 드롭(현행 nodeMap+children.add 의 orphan-drop 과 동치).
+        Map<Long, List<OrgUnit>> childrenByParent = new LinkedHashMap<>();
         for (OrgUnit u : all) {
-            Map<String, Object> node = toDto(u);
-            node.put("children", new ArrayList<Map<String, Object>>());
-            nodeMap.put(u.getUnitId(), node);
-        }
-        List<Map<String, Object>> roots = new ArrayList<>();
-        for (OrgUnit u : all) {
-            Map<String, Object> node = nodeMap.get(u.getUnitId());
             Long parentId = (u.getParent() != null) ? u.getParent().getUnitId() : null;
-            if (parentId == null) {
-                roots.add(node);
-            } else {
-                Map<String, Object> parentNode = nodeMap.get(parentId);
-                if (parentNode != null) {
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> children = (List<Map<String, Object>>) parentNode.get("children");
-                    children.add(node);
-                }
-            }
+            childrenByParent.computeIfAbsent(parentId, k -> new ArrayList<>()).add(u);
+        }
+        List<OrgTreeNode> roots = new ArrayList<>();
+        for (OrgUnit u : childrenByParent.getOrDefault(null, List.of())) {
+            roots.add(buildTreeNode(u, childrenByParent));
         }
         return roots;
+    }
+
+    private OrgTreeNode buildTreeNode(OrgUnit u, Map<Long, List<OrgUnit>> childrenByParent) {
+        List<OrgTreeNode> children = new ArrayList<>();
+        for (OrgUnit c : childrenByParent.getOrDefault(u.getUnitId(), List.of())) {
+            children.add(buildTreeNode(c, childrenByParent));
+        }
+        return new OrgTreeNode(
+                u.getUnitId(), u.getName(), u.getUnitType(),
+                u.getParent() != null ? u.getParent().getUnitId() : null,
+                u.getSortOrder(), children);
     }
 
     @Transactional(readOnly = true)
@@ -137,16 +139,6 @@ public class OrgUnitService {
     }
 
     // ======== 헬퍼 ========
-
-    private Map<String, Object> toDto(OrgUnit u) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("unit_id", u.getUnitId());
-        m.put("name", u.getName());
-        m.put("unit_type", u.getUnitType());
-        m.put("parent_id", u.getParent() != null ? u.getParent().getUnitId() : null);
-        m.put("sort_order", u.getSortOrder());
-        return m;
-    }
 
     private void validateType(String type) {
         if (!Arrays.asList("DIVISION", "DEPARTMENT", "TEAM").contains(type)) {
