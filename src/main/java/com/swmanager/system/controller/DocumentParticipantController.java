@@ -3,7 +3,9 @@ package com.swmanager.system.controller;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.domain.workplan.ContractParticipant;
 import com.swmanager.system.dto.workplan.ContractParticipantRow;
+import com.swmanager.system.dto.workplan.ParticipantSaveResult;
 import com.swmanager.system.dto.workplan.SecureContractParticipantRow;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.repository.workplan.ContractParticipantRepository;
@@ -19,8 +21,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -90,9 +90,9 @@ public class DocumentParticipantController {
     @ResponseBody
     public ResponseEntity<?> getContractParticipantsSecure(@PathVariable Long projId) {
         if (!"EDIT".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "민감 정보 조회 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            // 현행 wire 보존: {error:{code,message}} (success 키 없음 — ApiResult.fail 은 success 추가하므로 미사용)
+            return ResponseEntity.status(403)
+                    .body(Map.of("error", Map.of("code", "FORBIDDEN", "message", "민감 정보 조회 권한이 없습니다")));
         }
         List<ContractParticipant> list = contractParticipantRepository.findByProject_ProjIdOrderBySortOrder(projId);
         List<SecureContractParticipantRow> result = new ArrayList<>();
@@ -105,28 +105,23 @@ public class DocumentParticipantController {
     /** 사업별 과업참여자 저장 — 감사 P1-2 조치: EDIT 권한 체크 + HTTP 403 반환 (2026-04-19) */
     @PostMapping("/api/contract-participants/{projId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveContractParticipants(
+    public ResponseEntity<?> saveContractParticipants(
             @PathVariable Long projId,
             @RequestBody List<Map<String, Object>> participantList) {
         if (!"EDIT".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("success", false);
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "수정 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "수정 권한이 없습니다"));
         }
-        Map<String, Object> result = new HashMap<>();
         try {
             var project = swProjectRepository.findById(projId).orElse(null);
             if (project == null) {
-                result.put("success", false);
-                result.put("error", "사업을 찾을 수 없습니다.");
-                return ResponseEntity.status(404).body(result);
+                return ResponseEntity.status(404).body(ApiResult.failMessage("사업을 찾을 수 없습니다."));
             }
 
             // 기존 참여자 삭제 후 재등록
             List<ContractParticipant> existing = contractParticipantRepository.findByProject_ProjIdOrderBySortOrder(projId);
             contractParticipantRepository.deleteAll(existing);
 
+            // 요청바디는 lenient Map 파싱 보존(§6-4 participant-save-dto: 누락/null·string-boolean·malformed→200 의미 유지)
             int order = 0;
             for (Map<String, Object> item : participantList) {
                 ContractParticipant cp = new ContractParticipant();
@@ -147,13 +142,10 @@ public class DocumentParticipantController {
                 contractParticipantRepository.save(cp);
             }
 
-            result.put("success", true);
-            result.put("count", participantList.size());
+            return ResponseEntity.ok(new ParticipantSaveResult(true, participantList.size()));
         } catch (Exception e) {
             log.error("과업참여자 저장 실패: {}", e.getMessage(), e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResult.failMessage(e.getMessage()));
         }
-        return ResponseEntity.ok(result);
     }
 }
