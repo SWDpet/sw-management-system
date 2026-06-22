@@ -109,4 +109,8 @@ P0 → P1 → P2 → P3 → P4.
 ## codex 검토 이력
 - R1 (2026-06-16): ⚠ — P3 기간필터 누락, 로그아웃 방식 기획 불일치, 통계 SQL 미명시, 보조 인덱스 미확정, 로그아웃 테스트 강화, Javadoc 13 갱신, 테스트 필수화 지적 → v0.2 반영.
 - R2 (2026-06-16): ⚠(잔여 문서정밀화 3건) — P3 날짜경계 LocalDateTime화, 변경이력#1 기간무관 명확화(집계만 30일), 대시보드 인증 가드 테스트 → v0.3 반영. (로그아웃 A안·보조 인덱스·Javadoc 13→15 는 ⭕ 확정.)
-- 구현검증 R (2026-06-16): ⚠ — 핵심 경로(LogService 오버로드/로그아웃 authentication/중복적재/경계) ⭕. 반영: 통계쿼리 menu_nm·action_type NULL 제외, LOGIN 성공 핸들러 테스트, SwController CRUD 5경로 로깅 테스트(총 48 단위테스트 통과). **회사 PC 통합검증 잔여**: @DataJpaTest 네이티브 통계쿼리·로그관리 ADMIN 가드 MockMvc·대시보드 렌더 smoke(실 Postgres 필요).
+- 구현검증 R (2026-06-16): ⚠ — 핵심 경로(LogService 오버로드/로그아웃 authentication/중복적재/경계) ⭕. 반영: 통계쿼리 menu_nm·action_type NULL 제외, LOGIN 성공 핸들러 테스트, SwController CRUD 5경로 로깅 테스트(총 48 단위테스트 통과). ~~**회사 PC 통합검증 잔여**: @DataJpaTest 네이티브 통계쿼리·로그관리 ADMIN 가드 MockMvc·대시보드 렌더 smoke(실 Postgres 필요).~~
+- **회사 PC 통합검증 완료 (2026-06-23, 운영DB 192.168.10.194:5880)**: 잔여 3종 모두 RUN_DB_TESTS 게이트 통합테스트로 작성·실행(9 통과).
+  - `AccessLogStatsQueryIntegrationTest`(4) — 네이티브 통계쿼리(findDailyTrend30d/findMenuTop30d/findActionCounts30d/findTop6…) 실 스키마 무오류 실행 + MainController 소비계약(투영 타입·정렬 불변식) 검증. 읽기전용.
+  - `DashboardAndAdminLogsSecurityIntegrationTest`(5) — `/admin/logs` ADMIN 가드(익명 302/비-ADMIN 403/ADMIN 200) + 대시보드 Thymeleaf 실제 렌더 smoke(백지 회귀 가드). 저장소 첫 MockMvc+Security 통합 하네스. ADMIN 렌더는 실 CustomUserDetails principal 필요(top-nav `principal.user.authProject`).
+  - RUN_DB_TESTS 미설정 시 전부 skip(집/CI 안전).
