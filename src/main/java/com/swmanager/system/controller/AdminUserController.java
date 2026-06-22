@@ -4,6 +4,7 @@ import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.dto.AdminSensitiveFieldRow;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.exception.InsufficientPermissionException;
@@ -365,10 +366,7 @@ public class AdminUserController {
         String actor = (cu != null && cu.getUser() != null) ? cu.getUser().getUsername() : "unknown";
         logService.log(MenuName.USER, AccessActionType.SENSITIVE_VIEW,
                 "관리자 " + actor + " → userSeq=" + userSeq + " field=" + field);
-        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
-        body.put("field", field);
-        body.put("value", value != null ? value : "");
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(new AdminSensitiveFieldRow(field, value != null ? value : ""));
     }
 
     /**
