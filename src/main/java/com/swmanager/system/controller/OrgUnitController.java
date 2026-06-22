@@ -4,6 +4,7 @@ import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.dto.orgunit.OrgMemberRow;
 import com.swmanager.system.dto.orgunit.OrgUnitForm;
 import com.swmanager.system.dto.orgunit.OrgUnitNode;
+import com.swmanager.system.dto.orgunit.StaffCreateResult;
 import com.swmanager.system.dto.orgunit.StaffForm;
 import com.swmanager.system.repository.ops.StaffRepository;
 import com.swmanager.system.response.ApiResult;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -112,10 +112,7 @@ public class OrgUnitController {
         if (name == null || name.isBlank()) return error(400, "INVALID_INPUT", "이름은 필수입니다.");
         Staff s = new Staff();
         applyStaff(s, form);
-        Map<String, Object> ok = new LinkedHashMap<>();
-        ok.put("success", true);
-        ok.put("staff_id", staffRepository.save(s).getStaffId());
-        return ResponseEntity.ok(ok);
+        return ResponseEntity.ok(new StaffCreateResult(true, staffRepository.save(s).getStaffId()));
     }
 
     @PutMapping("/admin/api/staff/{id}")
