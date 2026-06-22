@@ -19,8 +19,6 @@ GET /admin/org-units
 GET /admin/system-graph
 GET /admin/system-graph/api/erd
 GET /admin/system-graph/api/infra
-GET /admin/team-monitor
-GET /admin/team-monitor/stream [produces=text/event-stream]
 GET /admin/users
 GET /admin/users/api/{userSeq}/sensitive
 GET /api/org-units/children/{parentId}

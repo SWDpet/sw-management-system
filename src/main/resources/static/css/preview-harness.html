@@ -258,16 +258,6 @@
         verdict 자동 추출 — prompt 마지막에 <code>최종 판정: ⭕/⚠/❌</code> 형식 요청
       </div>
     </div>
-
-    <div class="item">
-      <div class="h">R-14 — NIO atomic replace DELETE-only 보정 <span class="tag sprint">team-monitor-wildcard-watcher Phase 7</span></div>
-      <div class="desc">
-        Windows + JDK17 NIO + Git Bash <code>mv -f</code> 시 <code>ENTRY_DELETE</code> 만 발생하고 <code>ENTRY_CREATE/MODIFY</code> 누락 →
-        <code>JavaNioWatcher.handleStatusEvent</code> DELETE 분기에 <code>appearsReplacedQuickly()</code> (120ms backoff) 추가 + <code>stop()</code> 에 <code>thread.join(500)</code><br>
-        2026-04-27 라이브 스모크 통과: planner 카드 95→30→65→100% 자리유지 갱신 확인
-      </div>
-      <div class="why"><b>SoT</b> — memory/project_swmanager_setup.md "R-14" 섹션</div>
-    </div>
   </div>
 
   <!-- ============ 하단 — 사고 사례 + 2026-06-01 신설 ============ -->
@@ -280,7 +270,6 @@
         <li><strong>MSYS sed -i truncate</strong> — sed -i 가 파일 내용 비움. → 룰 "Edit 도구만" (C-1)</li>
         <li><strong>main-dashboard :root self-reference</strong> — <code>--primary: var(--primary)</code> invalid 토큰 → 라이트 모드 색 적용 X. 오늘(2026-06-01) commit <code>a0f1868</code> 에서 발견·fix</li>
         <li><strong>다른 머신 미커밋 분산</strong> — commit <code>902e819</code> 별 세션 미커밋 일괄 정리. → 룰 "분기·인벤토리 추적" (machines.md)</li>
-        <li><strong>Windows NIO DELETE-only</strong> — atomic replace 시 watcher 가 변경 못 잡음. → 룰 R-14 (D-3)</li>
         <li><strong>dummy 좌표 무심코 부팅</strong> — agent 가 example 복사 그대로 실행 위험. → 룰 fail-fast (A-3)</li>
         <li><strong>codex Windows PowerShell 차단</strong> — file read 실패로 정적 분석 불가. → 룰 prompt embed (D-1)</li>
       </ul>
