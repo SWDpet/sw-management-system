@@ -11,6 +11,7 @@ import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.domain.workplan.DocumentHistory;
 import com.swmanager.system.dto.DocumentDTO;
+import com.swmanager.system.dto.workplan.AttachmentRow;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
@@ -762,7 +763,7 @@ public class DocumentController {
 
     @ResponseBody
     @PostMapping("/api/signature/save")
-    public ResponseEntity<Map<String, Object>> saveSignature(@RequestBody Map<String, Object> data) {
+    public ResponseEntity<?> saveSignature(@RequestBody Map<String, Object> data) {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
@@ -789,7 +790,7 @@ public class DocumentController {
 
     @ResponseBody
     @PostMapping("/api/attachment/upload/{docId}")
-    public ResponseEntity<Map<String, Object>> uploadAttachment(
+    public ResponseEntity<?> uploadAttachment(
             @PathVariable Integer docId,
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         if (!"EDIT".equals(getAuth())) {
@@ -811,23 +812,15 @@ public class DocumentController {
 
     @ResponseBody
     @GetMapping("/api/attachments/{docId}")
-    public ResponseEntity<List<Map<String, Object>>> getAttachments(@PathVariable Integer docId) {
-        var attachments = attachmentService.getAttachments(docId);
-        List<Map<String, Object>> result = attachments.stream().map(a -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("attachId", a.getAttachId());
-            m.put("fileName", a.getFileName());
-            m.put("fileSize", a.getFileSize());
-            m.put("mimeType", a.getMimeType());
-            m.put("uploadedAt", a.getUploadedAt().toString());
-            return m;
-        }).toList();
+    public ResponseEntity<List<AttachmentRow>> getAttachments(@PathVariable Integer docId) {
+        List<AttachmentRow> result = attachmentService.getAttachments(docId)
+                .stream().map(AttachmentRow::from).toList();
         return ResponseEntity.ok(result);
     }
 
     @PostMapping("/api/attachment/delete/{attachId}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> deleteAttachment(@PathVariable Integer attachId) {
+    public ResponseEntity<?> deleteAttachment(@PathVariable Integer attachId) {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
@@ -841,7 +834,7 @@ public class DocumentController {
 
     @ResponseBody
     @PostMapping("/api/signed-scan/upload/{docId}")
-    public ResponseEntity<Map<String, Object>> uploadSignedScan(
+    public ResponseEntity<?> uploadSignedScan(
             @PathVariable Integer docId,
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         if (!"EDIT".equals(getAuth())) {
@@ -884,7 +877,7 @@ public class DocumentController {
 
     @ResponseBody
     @PostMapping("/api/signed-scan/delete/{docId}")
-    public ResponseEntity<Map<String, Object>> deleteSignedScan(@PathVariable Integer docId) {
+    public ResponseEntity<?> deleteSignedScan(@PathVariable Integer docId) {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
