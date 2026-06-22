@@ -12,6 +12,8 @@ import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.domain.workplan.DocumentHistory;
 import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.dto.workplan.AttachmentRow;
+import com.swmanager.system.dto.workplan.UserInfoRow;
+import com.swmanager.system.dto.workplan.UserInfoSecureRow;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
@@ -901,24 +903,10 @@ public class DocumentController {
      */
     @ResponseBody
     @GetMapping("/api/user/{userSeq}")
-    public ResponseEntity<Map<String, Object>> getUserInfo(@PathVariable Long userSeq) {
-        return userRepository.findById(userSeq).map(u -> {
-            Map<String, Object> data = new HashMap<>();
-            data.put("userSeq", u.getUserSeq());
-            data.put("username", u.getUsername());
-            data.put("positionTitle", u.getPositionTitle());
-            data.put("position", u.getPosition());
-            data.put("techGrade", u.getTechGrade());
-            data.put("mobile", u.getMobile());
-            data.put("tel", u.getTel());
-            data.put("address", u.getAddress());
-            data.put("tasks", u.getTasks());
-            data.put("deptNm", u.getDeptNm());
-            data.put("teamNm", u.getTeamNm());
-            data.put("careerYears", u.getCareerYears());
-            data.put("fieldRole", u.getFieldRole());
-            return ResponseEntity.ok(data);
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> getUserInfo(@PathVariable Long userSeq) {
+        return userRepository.findById(userSeq)
+                .<ResponseEntity<?>>map(u -> ResponseEntity.ok(UserInfoRow.from(u)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
@@ -928,33 +916,15 @@ public class DocumentController {
      */
     @ResponseBody
     @GetMapping("/api/user/{userSeq}/secure")
-    public ResponseEntity<Map<String, Object>> getUserInfoSecure(@PathVariable Long userSeq) {
+    public ResponseEntity<?> getUserInfoSecure(@PathVariable Long userSeq) {
         if (!"EDIT".equals(getAuth())) {
-            Map<String, Object> forbidden = new LinkedHashMap<>();
-            forbidden.put("error", Map.of("code", "FORBIDDEN", "message", "민감 정보 조회 권한이 없습니다"));
-            return ResponseEntity.status(403).body(forbidden);
+            // 현행 wire 보존: {error:{code,message}} (success 키 없음 — ApiResult.fail 은 success 추가하므로 미사용)
+            return ResponseEntity.status(403)
+                    .body(Map.of("error", Map.of("code", "FORBIDDEN", "message", "민감 정보 조회 권한이 없습니다")));
         }
-        return userRepository.findById(userSeq).map(u -> {
-            Map<String, Object> data = new HashMap<>();
-            data.put("userSeq", u.getUserSeq());
-            data.put("username", u.getUsername());
-            data.put("positionTitle", u.getPositionTitle());
-            data.put("position", u.getPosition());
-            data.put("techGrade", u.getTechGrade());
-            data.put("mobile", u.getMobile());
-            data.put("tel", u.getTel());
-            data.put("address", u.getAddress());
-            data.put("tasks", u.getTasks());
-            data.put("deptNm", u.getDeptNm());
-            data.put("teamNm", u.getTeamNm());
-            data.put("careerYears", u.getCareerYears());
-            data.put("fieldRole", u.getFieldRole());
-            // 민감 필드 — EDIT 권한자만 접근
-            data.put("ssn", u.getSsn());
-            data.put("certificate", u.getCertificate());
-            data.put("email", u.getEmail());
-            return ResponseEntity.ok(data);
-        }).orElse(ResponseEntity.notFound().build());
+        return userRepository.findById(userSeq)
+                .<ResponseEntity<?>>map(u -> ResponseEntity.ok(UserInfoSecureRow.from(u)))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // === sw_pjt 프로젝트 정보 API (착수계/기성계/준공계용) ===
