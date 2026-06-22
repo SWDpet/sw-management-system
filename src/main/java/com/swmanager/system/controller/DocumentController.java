@@ -13,6 +13,7 @@ import com.swmanager.system.domain.workplan.DocumentHistory;
 import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.dto.workplan.AttachmentRow;
 import com.swmanager.system.dto.workplan.BatchTargetRow;
+import com.swmanager.system.dto.workplan.DocumentSaveResult;
 import com.swmanager.system.dto.workplan.PlanData;
 import com.swmanager.system.dto.workplan.PlanManpowerRow;
 import com.swmanager.system.dto.workplan.PlanScheduleRow;
@@ -324,7 +325,7 @@ public class DocumentController {
 
     @ResponseBody
     @PostMapping("/api/save")
-    public ResponseEntity<Map<String, Object>> saveDocument(@RequestBody Map<String, Object> requestData) {
+    public ResponseEntity<?> saveDocument(@RequestBody Map<String, Object> requestData) {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
@@ -425,11 +426,8 @@ public class DocumentController {
                     DocumentDTO.getDocTypeLabel(docType) + " " + (docId != null ? "수정" : "등록") + " (ID: " + doc.getDocId() + ")");
             // Note: DocumentDTO.getDocTypeLabel(DocumentType) 은 Enum 직접 전달
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("success", true);
-            result.put("docId", doc.getDocId());
-            result.put("docNo", doc.getDocNo() != null ? doc.getDocNo() : "");
-            return ResponseEntity.ok(result);
+            return ResponseEntity.ok(new DocumentSaveResult(
+                    true, doc.getDocId(), doc.getDocNo() != null ? doc.getDocNo() : ""));
         } catch (Exception e) {
             log.error("문서 저장 실패", e);
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
@@ -440,9 +438,9 @@ public class DocumentController {
 
     @ResponseBody
     @PostMapping("/api/status/{id}")
-    public ResponseEntity<Map<String, Object>> changeStatus(@PathVariable Integer id,
-                                                             @RequestParam DocumentStatus status,
-                                                             @RequestParam(required = false) String comment) {
+    public ResponseEntity<?> changeStatus(@PathVariable Integer id,
+                                          @RequestParam DocumentStatus status,
+                                          @RequestParam(required = false) String comment) {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
