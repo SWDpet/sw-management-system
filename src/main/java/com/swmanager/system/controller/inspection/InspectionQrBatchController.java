@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swmanager.system.config.CustomUserDetails;
 import com.swmanager.system.dto.inspection.InspectionQrBatchRequest;
 import com.swmanager.system.dto.inspection.InspectionQrBatchResponse;
+import com.swmanager.system.dto.inspection.SiteNotMappedError;
 import com.swmanager.system.service.inspection.InspectionQrBatchService;
 import com.swmanager.system.service.inspection.QrBatchPayloadAdapter;
 import com.swmanager.system.service.inspection.SiteNotMappedException;
@@ -22,8 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -76,12 +75,10 @@ public class InspectionQrBatchController {
     // ── 예외 매핑 ────────────────────────────────────────────────────────────
 
     @ExceptionHandler(SiteNotMappedException.class)
-    public ResponseEntity<Map<String, Object>> handleSiteNotMapped(SiteNotMappedException e) {
+    public ResponseEntity<SiteNotMappedError> handleSiteNotMapped(SiteNotMappedException e) {
         log.warn("inspection-qr-batch fail reason=site_not_mapped site={}", e.getSiteCode());
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("error", "site_not_mapped");
-        body.put("site", e.getSiteCode());
-        body.put("hint", "사업관리 화면에서 해당 사이트의 site_code 를 설정하세요");
+        SiteNotMappedError body = new SiteNotMappedError(
+                "site_not_mapped", e.getSiteCode(), "사업관리 화면에서 해당 사이트의 site_code 를 설정하세요");
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
     }
 }
