@@ -103,6 +103,6 @@ A(도메인·스키마) → B(설정·서비스) → C(API) → D(DTO·UI) → E
 - **실 D 드라이브 쓰기·교체·다운로드·삭제 ⭕**: `DocumentSignedScanServiceDDriveIntegrationTest`(RUN_DB_TESTS 게이트) — 운영 위치 `D:\swmanager-scan` 하위 격리 임시폴더에 서비스 전 경로(업로드→원자적 move 교체→다운로드→삭제) end-to-end 통과. mock repo 사용 → **운영DB 무접촉**, 끝나면 임시폴더 정리. (집/C: @TempDir 로 검증하던 기존 20 단위테스트의 실볼륨 갭을 닫음.)
 - **move 실패 시 DB rollback**: 서비스가 `@Transactional(rollbackFor=Exception)` + 백업복구 후 rethrow(소스 §B-5 확인). 기존 단위테스트가 실패 시 메타 미변경을 mock 으로 검증. 실 트랜잭션매니저 롤백은 운영DB 행 생성/변경을 수반해 prod 리스크가 커 별도 작성 보류(annotation+복구로직 인스펙션으로 충족).
 - **운영 셋업 잔여(코드 아님, ops)**:
-  - ⚠ `DOC_SCAN_DIR` 환경변수가 **회사 PC 어디에도 미설정** → 현재 앱은 D 가 아닌 fallback `./uploads/scan`(C:) 사용. 운영 D 저장을 쓰려면 `DOC_SCAN_DIR=D:\swmanager-scan` 을 OS User 환경변수로 등록(DB_PASSWORD 패턴) + 앱 재기동 필요. `D:\swmanager-scan` 디렉토리는 이미 존재(비어 있음).
+  - ✅ `DOC_SCAN_DIR` 환경변수 **운영서버(DESKTOP-H9IKIOT) 등록 완료**(2026-06-23) — `DOC_SCAN_DIR=D:\swmanager-scan` 을 OS **User 환경변수**로 등재(`DB_PASSWORD` 와 동일 스코프). `D:\swmanager-scan` 디렉토리 존재 확인. ⚠ **Tomcat 재기동 후** 반영(환경변수는 프로세스 시작 시 로드 — 재기동 전까지는 fallback `./uploads/scan`(C:) 사용).
   - D드라이브 별도 백업/NAS 동기화(pg_dump 밖) 등재.
   - 다크모드/접근성 육안: 실행 앱+브라우저(document-list 날인본 컬럼) 별도 수행.
