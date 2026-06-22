@@ -12,6 +12,10 @@ import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.domain.workplan.DocumentHistory;
 import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.dto.workplan.AttachmentRow;
+import com.swmanager.system.dto.workplan.PlanData;
+import com.swmanager.system.dto.workplan.PlanManpowerRow;
+import com.swmanager.system.dto.workplan.PlanScheduleRow;
+import com.swmanager.system.dto.workplan.PlanTargetRow;
 import com.swmanager.system.dto.workplan.UserInfoRow;
 import com.swmanager.system.dto.workplan.UserInfoSecureRow;
 import com.swmanager.system.domain.PersonInfo;
@@ -1248,63 +1252,21 @@ public class DocumentController {
     /** 사업수행계획서 데이터 조회 */
     @ResponseBody
     @GetMapping("/api/plan/{projId}")
-    public ResponseEntity<Map<String, Object>> getPlanData(@PathVariable Long projId) {
-        Map<String, Object> result = new HashMap<>();
+    public ResponseEntity<?> getPlanData(@PathVariable Long projId) {
         var pOpt = swProjectRepository.findById(projId);
         if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
         var p = pOpt.get();
-        result.put("projPurpose", p.getProjPurpose());
-        result.put("supportType", p.getSupportType());
-        result.put("scopeText", p.getScopeText());
-        result.put("inspectMethod", p.getInspectMethod());
 
-        // targets
-        List<Map<String, Object>> targets = new ArrayList<>();
-        for (var t : pjtTargetRepository.findByProjIdOrderBySortOrderAsc(projId)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", t.getId());
-            m.put("productName", t.getProductName());
-            m.put("qty", t.getQty());
-            targets.add(m);
-        }
-        result.put("targets", targets);
+        List<PlanTargetRow> targets = pjtTargetRepository.findByProjIdOrderBySortOrderAsc(projId)
+                .stream().map(PlanTargetRow::from).toList();
+        List<PlanManpowerRow> manpowerPlans = pjtManpowerPlanRepository.findByProjIdOrderBySortOrderAsc(projId)
+                .stream().map(PlanManpowerRow::from).toList();
+        List<PlanScheduleRow> schedules = pjtScheduleRepository.findByProjIdOrderBySortOrderAsc(projId)
+                .stream().map(PlanScheduleRow::from).toList();
 
-        // manpower plans
-        List<Map<String, Object>> mps = new ArrayList<>();
-        for (var mp : pjtManpowerPlanRepository.findByProjIdOrderBySortOrderAsc(projId)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", mp.getId());
-            m.put("stepName", mp.getStepName());
-            m.put("startDt", mp.getStartDt() != null ? mp.getStartDt().toString() : null);
-            m.put("endDt", mp.getEndDt() != null ? mp.getEndDt().toString() : null);
-            m.put("gradeSpecial", mp.getGradeSpecial());
-            m.put("gradeHigh", mp.getGradeHigh());
-            m.put("gradeMid", mp.getGradeMid());
-            m.put("gradeLow", mp.getGradeLow());
-            m.put("funcHigh", mp.getFuncHigh());
-            m.put("funcMid", mp.getFuncMid());
-            m.put("funcLow", mp.getFuncLow());
-            m.put("remark", mp.getRemark());
-            mps.add(m);
-        }
-        result.put("manpowerPlans", mps);
-
-        // schedules
-        List<Map<String, Object>> schs = new ArrayList<>();
-        for (var s : pjtScheduleRepository.findByProjIdOrderBySortOrderAsc(projId)) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("id", s.getId());
-            m.put("processName", s.getProcessName());
-            m.put("m01", s.getM01()); m.put("m02", s.getM02()); m.put("m03", s.getM03());
-            m.put("m04", s.getM04()); m.put("m05", s.getM05()); m.put("m06", s.getM06());
-            m.put("m07", s.getM07()); m.put("m08", s.getM08()); m.put("m09", s.getM09());
-            m.put("m10", s.getM10()); m.put("m11", s.getM11()); m.put("m12", s.getM12());
-            m.put("remark", s.getRemark());
-            schs.add(m);
-        }
-        result.put("schedules", schs);
-
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(new PlanData(
+                p.getProjPurpose(), p.getSupportType(), p.getScopeText(), p.getInspectMethod(),
+                targets, manpowerPlans, schedules));
     }
 
     /** 사업수행계획서 데이터 저장 (overwrite) — 감사 P1-2 조치: EDIT 권한 체크 (2026-04-18) */
