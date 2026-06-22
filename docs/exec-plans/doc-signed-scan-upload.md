@@ -96,4 +96,13 @@ A(도메인·스키마) → B(설정·서비스) → C(API) → D(DTO·UI) → E
 - **codex 구현 검토 2라운드 반영**:
   - 1차 [필수]: FR-10 원자성(saveAndFlush 선행 + 기존 target 백업/복구 + `rollbackFor=Exception`), FR-2 스트리밍(전체 메모리 로딩 제거)+30MB+contentType, FR-8 delete 게이트, FR-9 download `toRealPath` symlink 차단.
   - 2차 [확인]: contentType `null` 허용 정책 확정(매직바이트가 1차 기준), 경계 테스트 6종 보강(크기 초과/octet-stream 허용/비-PDF MIME 거부/null 허용/base-밖 download 거부/base-밖 delete 미삭제).
-- **잔여(회사 PC 통합검증)**: 실 `D:\swmanager-scan` 쓰기·교체·다운로드, move 실패 시 DB rollback 통합테스트, 다크모드/접근성 육안. 운영 `DOC_SCAN_DIR` env + D드라이브 별도 백업 셋업.
+- ~~**잔여(회사 PC 통합검증)**: 실 `D:\swmanager-scan` 쓰기·교체·다운로드, move 실패 시 DB rollback 통합테스트, 다크모드/접근성 육안. 운영 `DOC_SCAN_DIR` env + D드라이브 별도 백업 셋업.~~
+
+## 6. 회사 PC 통합검증 (2026-06-23)
+
+- **실 D 드라이브 쓰기·교체·다운로드·삭제 ⭕**: `DocumentSignedScanServiceDDriveIntegrationTest`(RUN_DB_TESTS 게이트) — 운영 위치 `D:\swmanager-scan` 하위 격리 임시폴더에 서비스 전 경로(업로드→원자적 move 교체→다운로드→삭제) end-to-end 통과. mock repo 사용 → **운영DB 무접촉**, 끝나면 임시폴더 정리. (집/C: @TempDir 로 검증하던 기존 20 단위테스트의 실볼륨 갭을 닫음.)
+- **move 실패 시 DB rollback**: 서비스가 `@Transactional(rollbackFor=Exception)` + 백업복구 후 rethrow(소스 §B-5 확인). 기존 단위테스트가 실패 시 메타 미변경을 mock 으로 검증. 실 트랜잭션매니저 롤백은 운영DB 행 생성/변경을 수반해 prod 리스크가 커 별도 작성 보류(annotation+복구로직 인스펙션으로 충족).
+- **운영 셋업 잔여(코드 아님, ops)**:
+  - ⚠ `DOC_SCAN_DIR` 환경변수가 **회사 PC 어디에도 미설정** → 현재 앱은 D 가 아닌 fallback `./uploads/scan`(C:) 사용. 운영 D 저장을 쓰려면 `DOC_SCAN_DIR=D:\swmanager-scan` 을 OS User 환경변수로 등록(DB_PASSWORD 패턴) + 앱 재기동 필요. `D:\swmanager-scan` 디렉토리는 이미 존재(비어 있음).
+  - D드라이브 별도 백업/NAS 동기화(pg_dump 밖) 등재.
+  - 다크모드/접근성 육안: 실행 앱+브라우저(document-list 날인본 컬럼) 별도 수행.
