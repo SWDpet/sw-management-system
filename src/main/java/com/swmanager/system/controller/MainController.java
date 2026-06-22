@@ -7,6 +7,14 @@ import com.swmanager.system.domain.workplan.WorkPlan;
 import com.swmanager.system.repository.workplan.WorkPlanRepository;
 import com.swmanager.system.geonuris.domain.GeonurisLicense;
 import com.swmanager.system.geonuris.repository.GeonurisLicenseRepository;
+import com.swmanager.system.dto.dashboard.SystemStatRow;
+import com.swmanager.system.dto.dashboard.YearCountRow;
+import com.swmanager.system.dto.dashboard.DashYearBar;
+import com.swmanager.system.dto.dashboard.DashLogBar;
+import com.swmanager.system.dto.dashboard.DashMenuBar;
+import com.swmanager.system.dto.dashboard.DashActionBar;
+import com.swmanager.system.dto.dashboard.DashUpcoming;
+import com.swmanager.system.dto.dashboard.DashExpiring;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,9 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Controller
@@ -70,24 +76,21 @@ public class MainController {
         model.addAttribute("years", swProjectRepository.findDistinctYears());
         model.addAttribute("selectedYear", displayYear);
 
-        List<Map<String, Object>> stats = swProjectRepository.getSystemStats(queryYear);
+        List<SystemStatRow> stats = swProjectRepository.getSystemStats(queryYear);
         if (stats == null) stats = new ArrayList<>();
 
         long tProj=0,tComp=0,tProg=0,tAmt=0,maxAmt=0;
         // 항목별 금액 소계 (합계행): SW/컨설팅/DB구축/패키지SW/시스템개발/HW/기타
         long tSw=0,tCnslt=0,tDb=0,tPkg=0,tDev=0,tHw=0,tEtc=0;
-        List<Map<String, Object>> view = new ArrayList<>();
-        for (Map<String, Object> r : stats) {
-            Map<String, Object> m = new HashMap<>(r);
-            long comp=lng(r.get("compCnt")), prog=lng(r.get("progCnt")), total=lng(r.get("totalCnt")), amt=lng(r.get("sumCont"));
-            view.add(m);
+        for (SystemStatRow r : stats) {
+            long comp=lng(r.getCompCnt()), prog=lng(r.getProgCnt()), total=lng(r.getTotalCnt()), amt=lng(r.getSumCont());
             tProj+=total; tComp+=comp; tProg+=prog; tAmt+=amt;
-            tSw+=lng(r.get("sumSw")); tCnslt+=lng(r.get("sumCnslt")); tDb+=lng(r.get("sumDb"));
-            tPkg+=lng(r.get("sumPkg")); tDev+=lng(r.get("sumDev")); tHw+=lng(r.get("sumHw")); tEtc+=lng(r.get("sumEtc"));
+            tSw+=lng(r.getSumSw()); tCnslt+=lng(r.getSumCnslt()); tDb+=lng(r.getSumDb());
+            tPkg+=lng(r.getSumPkg()); tDev+=lng(r.getSumDev()); tHw+=lng(r.getSumHw()); tEtc+=lng(r.getSumEtc());
             if (amt>maxAmt) maxAmt=amt;
         }
 
-        model.addAttribute("stats", view);
+        model.addAttribute("stats", stats);
         model.addAttribute("totalProjects", tProj);
         model.addAttribute("totalCompleted", tComp);
         model.addAttribute("totalInProgress", tProg);
@@ -103,25 +106,24 @@ public class MainController {
         model.addAttribute("compPercent", tProj>0 ? Math.round((double)tComp/tProj*1000)/10.0 : 0.0);
 
         // 시스템별 금액 Top (bars) — sumCont 내림차순 6
-        List<Map<String, Object>> topAmount = new ArrayList<>(view);
-        topAmount.sort((a,b) -> Long.compare(lng(b.get("sumCont")), lng(a.get("sumCont"))));
+        List<SystemStatRow> topAmount = new ArrayList<>(stats);
+        topAmount.sort((a,b) -> Long.compare(lng(b.getSumCont()), lng(a.getSumCont())));
         if (topAmount.size() > 6) topAmount = new ArrayList<>(topAmount.subList(0, 6));
         model.addAttribute("topAmount", topAmount);
 
         // 연도별 추이
-        List<Map<String, Object>> yearRaw = swProjectRepository.countByYear();
+        List<YearCountRow> yearRaw = swProjectRepository.countByYear();
         long maxYear = 0;
-        if (yearRaw != null) for (Map<String, Object> r : yearRaw) maxYear = Math.max(maxYear, lng(r.get("c")));
+        if (yearRaw != null) for (YearCountRow r : yearRaw) maxYear = Math.max(maxYear, lng(r.getC()));
         // 상위 구간 확대 스케일: 최대*0.55 미만은 바닥(20%)으로 클램프, 그 위를 펼침 → 비슷한 값들 차이 가시화
         double floor = maxYear * 0.55;
         double span  = Math.max(1.0, maxYear - floor);
-        List<Map<String, Object>> yearCounts = new ArrayList<>();
-        if (yearRaw != null) for (Map<String, Object> r : yearRaw) {
-            long c = lng(r.get("c"));
+        List<DashYearBar> yearCounts = new ArrayList<>();
+        if (yearRaw != null) for (YearCountRow r : yearRaw) {
+            long c = lng(r.getC());
             double ratio = Math.max(0.0, Math.min(1.0, (c - floor) / span));
-            Map<String, Object> m = new HashMap<>(r);
-            m.put("h", (int) Math.round(20 + ratio * 80));   // 20~100%
-            yearCounts.add(m);
+            int h = (int) Math.round(20 + ratio * 80);   // 20~100%
+            yearCounts.add(new DashYearBar(r.getY(), c, h));
         }
         model.addAttribute("yearCounts", yearCounts);
         model.addAttribute("maxYearCount", maxYear);
@@ -132,71 +134,62 @@ public class MainController {
                         MenuName.PROJECT, List.of("등록", "수정", "삭제")));
 
         // 로그 통계 (최근 30일)
-        List<Map<String, Object>> logTrend = new ArrayList<>();
-        for (Object[] r : accessLogRepository.findDailyTrend30d()) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("date", r[0]);
-            m.put("act", ((Number) r[1]).longValue());
-            m.put("visitors", r[2] == null ? 0L : ((Number) r[2]).longValue());
-            logTrend.add(m);
-        }
-        long maxAct = logTrend.stream().mapToLong(m -> (Long) m.get("act")).max().orElse(1);
-        for (Map<String, Object> m : logTrend) {
-            m.put("h", (int) Math.round(10 + (Long) m.get("act") * 90.0 / Math.max(maxAct, 1)));
+        List<Object[]> logRaw = accessLogRepository.findDailyTrend30d();
+        long maxAct = 0;
+        for (Object[] r : logRaw) maxAct = Math.max(maxAct, ((Number) r[1]).longValue());
+        long maxActD = Math.max(maxAct, 1);
+        List<DashLogBar> logTrend = new ArrayList<>();
+        for (Object[] r : logRaw) {
+            long act = ((Number) r[1]).longValue();
+            long visitors = r[2] == null ? 0L : ((Number) r[2]).longValue();
+            int h = (int) Math.round(10 + act * 90.0 / maxActD);
+            logTrend.add(new DashLogBar(r[0], act, visitors, h));
         }
         model.addAttribute("logTrend", logTrend);
 
-        List<Map<String, Object>> menuTop = new ArrayList<>();
-        for (Object[] r : accessLogRepository.findMenuTop30d()) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("menu", r[0]);
-            m.put("cnt", ((Number) r[1]).longValue());
-            menuTop.add(m);
-        }
-        long maxMenu = menuTop.stream().mapToLong(m -> (Long) m.get("cnt")).max().orElse(1);
-        for (Map<String, Object> m : menuTop) {
-            m.put("w", (int) Math.round((Long) m.get("cnt") * 100.0 / Math.max(maxMenu, 1)));
+        List<Object[]> menuRaw = accessLogRepository.findMenuTop30d();
+        long maxMenu = 0;
+        for (Object[] r : menuRaw) maxMenu = Math.max(maxMenu, ((Number) r[1]).longValue());
+        long maxMenuD = Math.max(maxMenu, 1);
+        List<DashMenuBar> menuTop = new ArrayList<>();
+        for (Object[] r : menuRaw) {
+            long cnt = ((Number) r[1]).longValue();
+            int w = (int) Math.round(cnt * 100.0 / maxMenuD);
+            menuTop.add(new DashMenuBar(r[0], cnt, w));
         }
         model.addAttribute("menuTop", menuTop);
 
-        List<Map<String, Object>> actionCounts = new ArrayList<>();
-        for (Object[] r : accessLogRepository.findActionCounts30d()) {
-            Map<String, Object> m = new HashMap<>();
-            m.put("action", r[0]);
-            m.put("cnt", ((Number) r[1]).longValue());
-            actionCounts.add(m);
-        }
-        long maxAction = actionCounts.stream().mapToLong(m -> (Long) m.get("cnt")).max().orElse(1);
-        for (Map<String, Object> m : actionCounts) {
-            m.put("w", (int) Math.round((Long) m.get("cnt") * 100.0 / Math.max(maxAction, 1)));
+        List<Object[]> actionRaw = accessLogRepository.findActionCounts30d();
+        long maxAction = 0;
+        for (Object[] r : actionRaw) maxAction = Math.max(maxAction, ((Number) r[1]).longValue());
+        long maxActionD = Math.max(maxAction, 1);
+        List<DashActionBar> actionCounts = new ArrayList<>();
+        for (Object[] r : actionRaw) {
+            long cnt = ((Number) r[1]).longValue();
+            int w = (int) Math.round(cnt * 100.0 / maxActionD);
+            actionCounts.add(new DashActionBar(r[0], cnt, w));
         }
         model.addAttribute("actionCounts", actionCounts);
 
         // 임박 업무 일정 (오늘 이후, 완료/취소 제외)
         LocalDate today = LocalDate.now();
-        List<Map<String, Object>> upcoming = new ArrayList<>();
+        List<DashUpcoming> upcoming = new ArrayList<>();
         for (WorkPlan wp : workPlanRepository.findTop6ByStartDateGreaterThanEqualAndStatusNotInOrderByStartDateAsc(
                 today, List.of("COMPLETED", "CANCELLED"))) {
             if (wp.getStartDate() == null) continue;
-            Map<String, Object> m = new HashMap<>();
-            m.put("title", wp.getTitle());
-            m.put("date", wp.getStartDate());
-            m.put("dday", ChronoUnit.DAYS.between(today, wp.getStartDate()));
-            upcoming.add(m);
+            upcoming.add(new DashUpcoming(wp.getTitle(), wp.getStartDate(),
+                    ChronoUnit.DAYS.between(today, wp.getStartDate())));
         }
         model.addAttribute("upcoming", upcoming);
 
         // 만료 임박 라이선스 (GeoNURIS expiry_date)
-        List<Map<String, Object>> expiring = new ArrayList<>();
+        List<DashExpiring> expiring = new ArrayList<>();
         for (GeonurisLicense g : geonurisLicenseRepository.findTop6ByExpiryDateGreaterThanEqualOrderByExpiryDateAsc(LocalDateTime.now())) {
             if (g.getExpiryDate() == null) continue;
             String nm = (g.getOrganization() != null && !g.getOrganization().isBlank()) ? g.getOrganization()
                       : (g.getUserName() != null ? g.getUserName() : g.getLicenseType());
-            Map<String, Object> m = new HashMap<>();
-            m.put("name", nm);
-            m.put("type", g.getLicenseType());
-            m.put("days", ChronoUnit.DAYS.between(today, g.getExpiryDate().toLocalDate()));
-            expiring.add(m);
+            expiring.add(new DashExpiring(nm, g.getLicenseType(),
+                    ChronoUnit.DAYS.between(today, g.getExpiryDate().toLocalDate())));
         }
         model.addAttribute("expiring", expiring);
     }

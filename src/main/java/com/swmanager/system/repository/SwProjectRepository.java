@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -46,7 +45,7 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
            "SUM(CASE WHEN p.stat = '2' THEN 1 ELSE 0 END) as compCnt, " +
            "SUM(CASE WHEN p.stat = '1' THEN 1 ELSE 0 END) as progCnt " +
            "FROM SwProject p WHERE (:year IS NULL OR p.year = :year) GROUP BY p.sysNm, p.sysNmEn ORDER BY p.sysNm ASC")
-    List<Map<String, Object>> getSystemStats(@Param("year") Integer year);
+    List<com.swmanager.system.dto.dashboard.SystemStatRow> getSystemStats(@Param("year") Integer year);
 
     /**
      * 3. 커스텀 정렬 목록
@@ -102,7 +101,7 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
 
     /** [dashboard-preview] 연도별 사업 수 (추이 차트) */
     @Query("SELECT p.year AS y, COUNT(p) AS c FROM SwProject p WHERE p.year IS NOT NULL GROUP BY p.year ORDER BY p.year")
-    List<Map<String, Object>> countByYear();
+    List<com.swmanager.system.dto.dashboard.YearCountRow> countByYear();
 
     /** [dashboard-preview] 최근 등록 사업 (proj_id 역순 = 최신) */
     List<SwProject> findTop6ByOrderByProjIdDesc();
