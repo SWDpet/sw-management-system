@@ -12,10 +12,12 @@ import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.domain.workplan.DocumentHistory;
 import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.dto.workplan.AttachmentRow;
+import com.swmanager.system.dto.workplan.BatchTargetRow;
 import com.swmanager.system.dto.workplan.PlanData;
 import com.swmanager.system.dto.workplan.PlanManpowerRow;
 import com.swmanager.system.dto.workplan.PlanScheduleRow;
 import com.swmanager.system.dto.workplan.PlanTargetRow;
+import com.swmanager.system.dto.workplan.SystemAllRow;
 import com.swmanager.system.dto.workplan.UserInfoRow;
 import com.swmanager.system.dto.workplan.UserInfoSecureRow;
 import com.swmanager.system.domain.PersonInfo;
@@ -1002,25 +1004,23 @@ public class DocumentController {
     /** 일괄 대상 사업 목록 조회 API */
     @ResponseBody
     @GetMapping("/api/project-systems-all")
-    public ResponseEntity<List<Map<String, Object>>> getAllSystemsForYear(@RequestParam Integer year) {
+    public ResponseEntity<List<SystemAllRow>> getAllSystemsForYear(@RequestParam Integer year) {
         var projects = swProjectRepository.findAll().stream()
                 .filter(p -> year.equals(p.getYear()))
                 .filter(p -> p.getSysNmEn() != null && !p.getSysNmEn().isEmpty())
                 .toList();
         java.util.LinkedHashMap<String, String> map = new java.util.LinkedHashMap<>();
         projects.forEach(p -> map.putIfAbsent(p.getSysNmEn(), p.getSysNm()));
-        List<Map<String, Object>> result = map.entrySet().stream().map(e -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("sysNmEn", e.getKey());
-            m.put("sysNm", e.getValue());
-            return m;
-        }).sorted((a, b) -> String.valueOf(a.get("sysNmEn")).compareTo(String.valueOf(b.get("sysNmEn")))).toList();
+        List<SystemAllRow> result = map.entrySet().stream()
+                .map(e -> new SystemAllRow(e.getKey(), e.getValue()))
+                .sorted((a, b) -> String.valueOf(a.sysNmEn()).compareTo(String.valueOf(b.sysNmEn())))
+                .toList();
         return ResponseEntity.ok(result);
     }
 
     @ResponseBody
     @GetMapping("/api/batch/targets")
-    public ResponseEntity<List<Map<String, Object>>> getBatchTargets(
+    public ResponseEntity<List<BatchTargetRow>> getBatchTargets(
             @RequestParam Integer year, @RequestParam String docType,
             @RequestParam(required = false) String sysNmEn) {
 
@@ -1042,21 +1042,7 @@ public class DocumentController {
             projects = projects.stream().filter(p -> sysNmEn.equals(p.getSysNmEn())).toList();
         }
 
-        List<Map<String, Object>> result = projects.stream().map(p -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("projId", p.getProjId());
-            m.put("projNm", p.getProjNm());
-            m.put("sysNmEn", p.getSysNmEn());
-            m.put("cityNm", p.getCityNm());
-            m.put("distNm", p.getDistNm());
-            m.put("orgNm", p.getOrgNm());
-            m.put("contAmt", p.getContAmt());
-            m.put("contDt", p.getContDt() != null ? p.getContDt().toString() : null);
-            m.put("startDt", p.getStartDt() != null ? p.getStartDt().toString() : null);
-            m.put("endDt", p.getEndDt() != null ? p.getEndDt().toString() : null);
-            m.put("client", p.getClient());
-            return m;
-        }).toList();
+        List<BatchTargetRow> result = projects.stream().map(BatchTargetRow::from).toList();
         return ResponseEntity.ok(result);
     }
 
