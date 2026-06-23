@@ -12,7 +12,7 @@
 | Map 부채 ratchet (`MapDebtRatchetTest`) | 무타입 `Map<String,Object>` 총량 감소만 (baseline **188**) | ✅ |
 | 거대클래스 ratchet (`GiantClassRatchetTest`) | 컨트롤러>1500·서비스>2000줄 신규 0 (baseline **비움=부채 0**) | ✅ |
 | PIT 뮤테이션 게이트 (`-Ppit`) | 완전커버 7종 KILLED/TOTAL≥90% (현 95%) | ✅ |
-| 아키텍처 불변식 (`LayeredArchitectureTest`) | 도메인 순수성·상향의존 금지·Repo=인터페이스·명명 (위반 0) | ✅ |
+| 아키텍처 불변식 (`LayeredArchitectureTest`) | 순환의존 0·도메인 순수성·상향의존 금지·Repo=인터페이스·명명 (위반 0) | ✅ |
 | 컨트롤러→Repo ratchet (`ControllerRepositoryRatchetTest`) | 직접접근 신규 0 (baseline **295**) | ✅ |
 | Enum/Master sync (arch test) | 마스터 drift 0 | ✅ |
 
@@ -35,7 +35,7 @@
 | 테스트 | 🟢 **A** (+beyond-A) | S3 JaCoCo·골든·DB게이팅 + PIT 뮤테이션 게이트 |
 | 문서 | 🟢 **A** | 2026-06-23 라이브 레퍼런스 문서(ARCHITECTURE/FRONTEND/DESIGN/QUALITY_SCORE/PLANS/PRODUCT_SENSE/SECURITY/RELIABILITY) 코드 대조 검증·미검증 꼬리표 제거 |
 | 코드품질 | 🟡 **B** | S4 완료. A는 응답 envelope 전면 이관 필요하나 **plateau**(Map 188, 잔여 `put("success")`은 P6 도메인키 응답=형태변경 없인 이관불가) |
-| 아키텍처 | 🟡 **B+** | 거대클래스 부채 0·Excel/문서 분리 + **레이어 불변식 게이트화**(2026-06-23: 도메인순수성·상향의존금지·Repo인터페이스·명명 하드게이트 + controller→repo ratchet). 잔여 1: config↔service 순환(CustomUserDetails/SecurityLoginProperties를 security/로 이동 시 A — 세션영향 사용자 승인 대기) |
+| 아키텍처 | 🟢 **A** | 거대클래스 부채 0·Excel/문서 분리 + **레이어 불변식 5종 게이트화**(2026-06-23: 순환의존0·도메인순수성·상향의존금지·Repo인터페이스·명명 하드게이트 + controller→repo ratchet). config↔service 순환은 CustomUserDetails/SecurityLoginProperties를 security/로 분리해 해소(`7d46023`) |
 
 ## 2-1. 패키지별 평가
 
