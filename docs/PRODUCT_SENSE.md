@@ -1,7 +1,6 @@
 # PRODUCT_SENSE.md — 제품 컨텍스트·팀·의사결정 히스토리
 
-> ⚠ **자동 생성 초안 — 검증 필요**
-> 근거: `CLAUDE.md` 가상팀 + `README.md` + 기존 `docs/PRODUCT_SENSE.md` + `docs/design-docs/data-architecture-roadmap.md` 영구패스 의사결정
+> ✅ **2026-06-23 검증** — 제품 비전·가상팀 구조·의사결정 이력을 `AGENTS.md`·현행 도메인과 대조(일치). 이력성 결정은 시점 기록으로 보존.
 
 ---
 
@@ -57,6 +56,9 @@ Claude / codex 모두 해당 스프린트 추천 금지.
 ### 3-4. S16 업무계획 기능 유지 (2026-04-22)
 `tb_work_plan` 은 1행 뿐이지만 활성 기능. DROP 하지 않고 `work_plan_type_mst` + `work_plan_status_mst` 신설로 구조 개선.
 
+### 3-5. 장애·지원 + 지식베이스 (2026-06-13, ops-fault-support)
+SW지원부 업무일지 백서(748건)를 자산화해 장애처리·업무지원 문서(`tb_ops_doc` 5종)에 **증상→원인→조치 KB 추천**(`tb_ops_kb`, RuleKbMatcher) 연결. 관계자 마스터화(엔지니어/요청자 3종/외부업체 `tb_partner`) + 조직-인원(`users.org_unit_id`·`tb_staff`). 규칙 1차, AI(Ollama RAG) 후속.
+
 ---
 
 ## 4. 프로덕트 우선순위 원칙
@@ -67,4 +69,4 @@ Claude / codex 모두 해당 스프린트 추천 금지.
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 P1 (docs/PRODUCT_SENSE.md 통합)*
+*Last updated: 2026-06-23 · 검증(문서 A 승급) + §3-5 ops-fault-support 제품 맥락 추가*

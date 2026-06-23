@@ -1,7 +1,6 @@
 # ARCHITECTURE.md — 시스템 아키텍처 개요
 
-> ⚠ **자동 생성 초안 — 검증 필요**
-> 본 문서는 `pom.xml` + `src/main/java` 패키지 트리 + `docs/generated/erd.md` 요약 기반 초안입니다. 실제 설계와 불일치하는 부분은 PR 로 수정 요청 주세요.
+> ✅ **2026-06-23 코드 대조 검증** — 기술스택·패키지구조·도메인 모듈·마이그레이션 범위를 현행 소스(`pom.xml`, `src/main/java` 트리, `db_init_phase2.sql`, `swdept/sql/`)와 대조해 정정. 상세 ERD는 `docs/generated/erd.md`.
 
 ---
 
@@ -13,7 +12,7 @@
 | 프레임워크 | Spring Boot 3.2.1 (starter-web / thymeleaf / security / data-jpa / validation) |
 | 패키징 | WAR (외장 Tomcat or Spring Boot 내장) |
 | 뷰 | Thymeleaf + thymeleaf-extras-springsecurity6 |
-| DB | PostgreSQL (프로덕션) |
+| DB | PostgreSQL 16 (프로덕션 16.11) |
 | 기타 | Lombok, SpringDoc, ArchUnit (test), Apache POI (Excel), OpenHTMLToPDF (PDF), ZXing (QR) |
 | 빌드 | Maven 3+ (mvnw) |
 
@@ -34,11 +33,14 @@ com.swmanager.system/
 │   ├── QtCategory           # 견적서 분류 (S8)
 │   ├── QuoteTemplateType    # 견적서 템플릿 (S8-C)
 │   ├── WorkPlanType / WorkPlanStatus  # 업무계획 (S16)
+│   ├── OpsDocType           # 운영문서 5종 INSPECT/FAULT/SUPPORT/INSTALL/PATCH
 ├── constants/               # MenuName 등 String 상수
-├── controller/              # Spring MVC 컨트롤러
+├── controller/              # Spring MVC 컨트롤러 (+ controller/ops/ 장애·지원)
 ├── domain/                  # JPA Entity (최상위)
-│   └── workplan/            # 업무계획 하위 도메인
+│   ├── workplan/            # 업무계획 하위 도메인
+│   └── ops/                 # 장애·지원(ops-doc) 도메인: Partner, Staff, OpsDocument, OpsKb 등
 ├── dto/                     # DTO / VO
+├── response/                # ApiResult 응답 표준 envelope (dto-migration)
 ├── exception/               # 사용자 예외 + @ControllerAdvice
 ├── geonuris/                # GeoNURIS 라이선스 모듈
 │   ├── controller/ domain/ repository/ service/
@@ -62,13 +64,14 @@ com.swmanager.system/
 |------|----------------------|------|
 | 사업 관리 | `SwProject` / `SwService` | 프로젝트(사업) 마스터 |
 | 인프라 | `Infra`, `InfraServer`, `InfraSoftware` | 서버·SW 자산 |
-| 점검 | `InspectReport`, `InspectCheckResult`, `InspectTemplate` (+ `check_section_mst`, `check_category_mst`) | 문서관리 점검내역서 (S1, S10) |
-| 문서 | `Document`, `DocumentDetail`, `DocumentHistory`, `DocumentSignature` | 착수계/기성계/준공계 등 |
-| 업무계획 | `WorkPlan` (+ `work_plan_type_mst`, `work_plan_status_mst`) | 월별 업무 캘린더 (S16) |
-| 견적서 | `Quotation`, `QtCategory`, `RemarksPattern` | 견적서 발행 (S3/S8/S8-C) |
-| 사용자·권한 | `User`, `CustomUserDetails`, `AuthLevel`, `OrgUnit` | 인증·권한 |
-| 로그 | `AccessLog`, `LogService` | 접근 로그 (S5/S9) |
-| 담당자 | `PersonInfo`, `PsInfo` | 고객·내부 담당자 |
+| 점검 | `InspectReport`, `InspectCheckResult`, `InspectTemplate` (+ `check_section_mst`, `check_category_mst`) / `InspectReportController` | 점검내역서 (S1, S10). 거대클래스 분리로 `DocumentController`→`InspectReportController` 추출(§6-5, URL prefix `/document` 보존) |
+| 문서 | `Document`, `DocumentDetail`, `DocumentHistory`, `DocumentSignature` / `DocumentController` | 착수계/기성계/준공계. 점검·Lookup·Participant 분리로 2183→현재 1369줄(<1500 임계) |
+| 업무계획 | `WorkPlan`, `PjtSchedule`, `PjtTarget`, `PjtManpowerPlan`, `ProcessMaster`, `ServicePurpose` (+ `work_plan_type_mst`, `work_plan_status_mst`) | 월별 업무 캘린더, 공정/용역 마스터 (S16) |
+| 견적서 | `Quotation`, `QuotationItem`, `QuotationLedger`, `RemarksPattern`, `ProductPattern`, `WageRate` (+ Enum `QtCategory`) | 견적서 발행 (S3/S8/S8-C) |
+| **장애·지원(ops)** | `OpsDocument`, `OpsKb`, `Partner`, `PartnerContact`, `OpsDocPartner`, `Staff`, `OpsKbFeedback` / `OpsDocController`, `OpsKbController`, `PartnerController` | 장애처리·업무지원 문서 + 지식베이스 추천(ops-fault-support). 5종 INSPECT/FAULT/SUPPORT/INSTALL/PATCH |
+| 사용자·권한 | `User`, `CustomUserDetails`, `AuthLevel`, `OrgUnit` | 인증·권한 (`users.org_unit_id` SoT) |
+| 로그 | `AccessLog`, `LogService` | 접근 로그 (S5/S9, 로그인/로그아웃 적재) |
+| 담당자 | `PersonInfo` (`ps_info`) | 고객·내부 담당자 |
 | 라이선스 | `LicenseRegistry`, `GeonurisLicense`, `QrLicense` | 라이선스 이력 |
 
 ---
@@ -102,9 +105,11 @@ com.swmanager.system/
 - `tb_document`, `tb_document_signature`
 - `tb_work_plan`, `work_plan_type_mst` (10행, S16), `work_plan_status_mst` (7행, S16)
 - `qt_quotation`, `qt_category_mst` (3행, S8), `qt_remarks_pattern`
-- `access_logs`, `tb_process_master`, `tb_service_purpose`
+- `access_logs`, `tb_process_master`, `tb_service_purpose`, `tb_org_unit`, `tb_staff`
+- `tb_ops_doc`(5종), `tb_ops_doc_detail/history/attachment/signature`, `tb_partner`, `tb_partner_contact`, `tb_ops_doc_partner`, `tb_ops_kb`(지식베이스), `tb_ops_kb_feedback`
 
-**마이그레이션 이력**: `swdept/sql/V017_*.sql` ~ `V026_*.sql`
+**스키마 초기화**: `db_init_phase1.sql`(19 기초테이블) → `db_init_phase2.sql`(추가 테이블 + ops 도메인) → 시드(`db_seed_ops_kb.sql` 등). 기동 시 `DbInitRunner` 가 phase2+시드 멱등 적용.
+**마이그레이션 이력**: `swdept/sql/` — 숫자 버전 `V002`~`V031`(+`V100`) 및 날짜 버전 `V20260317`~`V20260611`(최신 `V20260611_add_region_to_work_plan.sql`).
 
 ---
 
@@ -116,4 +121,4 @@ com.swmanager.system/
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 P1 자동 생성 초안*
+*Last updated: 2026-06-23 · 코드 대조 검증(문서 A 승급): PG 16.11·OPS 도메인·거대클래스 분리·마이그레이션 범위·QtCategory(Enum) 정정*

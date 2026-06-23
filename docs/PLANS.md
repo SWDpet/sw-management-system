@@ -1,17 +1,23 @@
 # PLANS.md — 스프린트·로드맵 요약
 
-> ⚠ **자동 생성 초안 — 검증 필요**
-> 근거: `docs/design-docs/data-architecture-roadmap.md` + `docs/product-specs/*.md` 집계
+> ✅ **2026-06-23 검증** — 현행 활성 로드맵(§1)·완료 스프린트 갱신. 본 문서는 스프린트 **로그**(이력성)이며 §2 이하 표는 시점 기록으로 보존.
 
 ---
 
 ## 1. 활성 로드맵
 
-**[데이터 아키텍처 로드맵](./design-docs/data-architecture-roadmap.md)** (Wave 1~4)
-- Wave 1~3: ✅ 완료
-- Wave 4: ✅ 완료 (S15/S16)
-- S8-C 후속: ✅ 완료
-- S8-B (status 정규화), S16-B (repeat_type): 보류 — 단일값 사용 중, 긴급도 낮음
+### 1-a. S-tier 품질 (현재 주력) — `docs/QUALITY_CHARTER.md`
+등급=게이트 강제 불변식. 진행: §6-4 Map→DTO(ratchet **188 plateau**)·§6-5 거대클래스 분리(부채 **0**)·PIT 뮤테이션 게이트(95%)·문서 A 승급(2026-06-23). 차원별 등급은 `docs/QUALITY_SCORE.md`. 잔여: 코드품질/아키텍처 B→A(응답형태 변경 결정 필요), beyond-A(Testcontainers·커버리지·CI — 미착수).
+
+### 1-b. 데이터 아키텍처 로드맵 (`docs/design-docs/data-architecture-roadmap.md`, Wave 1~4)
+- Wave 1~4: ✅ 완료 (S15/S16), S8-C 후속 ✅
+- S8-B(status 정규화)·S16-B(repeat_type): 보류 — 단일값 사용 중, 긴급도 낮음
+
+### 1-c. 기능 스프린트 (최근, 모두 구현·검증·푸시 완료)
+- `ops-fault-support`(장애·지원 + KB 추천, 2026-06-13) / `doc-signed-scan-upload`(날인본 스캔) / `log-management-improvement`(로그관리·대시보드 통계) / `global-sidebar-responsive`(사이드바 전환)
+
+### 1-d. 봉인(PAUSED, 사용자 결정) — 재개 전 건드리지 않음
+- `phase2-vsql-external-deps` 외 fresh-init 재현성 백로그(§2-b): V-script replay 정리 — 저우선. (단 phase2 자기완결 3-테이블 갭은 2026-06-23 해소)
 
 ---
 

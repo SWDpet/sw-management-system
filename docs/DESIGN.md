@@ -47,15 +47,17 @@
 
 ---
 
-## 🧩 공용 GNB (Global Navigation Bar)
+## 🧩 공용 네비게이션 (사이드바)
+
+> ⚠ **2026-06-23 갱신**: 수평 GNB → **전역 사이드바**(`global-sidebar-responsive`)로 전환됨. 프래그먼트 파일명은 `top-nav.html` 이나 실제 렌더는 좌측 사이드바(`.app-sidebar`)이며 반응형(좁은 화면 토글). 아래 메뉴 항목·아이콘 매핑은 유효, 배치만 수평→수직.
 
 ### 위치
-- 프래그먼트: `src/main/resources/templates/fragments/top-nav.html`
-- 인라인: `main-dashboard.html` (동일 구조 복사)
+- 프래그먼트: `src/main/resources/templates/fragments/top-nav.html` (사이드바)
+- 인라인: `main-dashboard.html` (동일 구조)
 
-### 구조
+### 구조 (메뉴 항목)
 ```
-[SW Manager 칩] · · · [서버관리][사업관리][담당자관리][라이선스 관리 ▾][견적서 ▾][업무계획][문서관리 ▾][성과통계][관리자 ▾] [🌙][마이페이지][로그아웃]
+[SW Manager] · 서버관리 · 사업관리 · 담당자관리 · 라이선스 관리 ▾ · 견적서 ▾ · 업무계획 · 문서관리 ▾(사업문서/운영문서) · 성과통계 · 관리자 ▾ · 마이페이지 · 로그아웃
 ```
 
 ### 키 포인트
@@ -68,7 +70,7 @@
   - 👤 → `fa-circle-user`, 🚪 → `fa-arrow-right-from-bracket`
 - **마이페이지** 위치: 로그아웃 **바로 앞**
 - **로그아웃**: Ghost 스타일 (투명 배경 + 연한 회색 텍스트 + hover 시 코랄)
-- **다크모드 토글**: 🌙/☀️ 버튼 (마이페이지 앞)
+- **다크모드 토글**: ❌ 미구현 (CSS 토큰만 존재 — 아래 "다크모드" 절 참조)
 
 ---
 
@@ -190,10 +192,10 @@ button:active:not(:disabled) { transform: scale(0.97); transition: transform 0.0
 
 ## 🌙 다크모드 (실험적 · Phase 3)
 
-### 현재 상태 (2026-04 기준)
-- **메인 대시보드 전용** 실험 버전
-- GNB의 🌙/☀️ 버튼으로 토글
-- LocalStorage `sw_theme` 키에 선호 지속
+### 현재 상태 (2026-06-23 검증)
+- `design-system.css` 에 `[data-theme="dark"]` **토큰 정의만 존재**.
+- ❌ **사용자 토글 버튼·`localStorage`(`sw_theme`) 활성화 미구현** — 실사용은 라이트 모드만.
+- 사용자 결정: 신규 UI 는 "다크모드 비대상"(라이트 토큰 기준). 전면 다크모드는 아래 Phase 4(미착수).
 
 ### 스왑되는 토큰
 ```css
