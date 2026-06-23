@@ -1,6 +1,6 @@
 package com.swmanager.system.controller;
 
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.domain.workplan.ContractParticipant;
 import com.swmanager.system.dto.workplan.ContractParticipantRow;
 import com.swmanager.system.dto.workplan.ParticipantSaveResult;

@@ -2,7 +2,7 @@ package com.swmanager.system.controller.inspection;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.dto.inspection.InspectionQrBatchRequest;
 import com.swmanager.system.dto.inspection.InspectionQrBatchResponse;
 import com.swmanager.system.dto.inspection.SiteNotMappedError;

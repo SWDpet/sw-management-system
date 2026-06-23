@@ -1,4 +1,4 @@
-package com.swmanager.system.config;
+package com.swmanager.system.security;
 
 import com.swmanager.system.domain.User;
 import org.springframework.security.core.GrantedAuthority;

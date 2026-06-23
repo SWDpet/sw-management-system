@@ -1,6 +1,6 @@
 package com.swmanager.system.service;
 
-import com.swmanager.system.config.SecurityLoginProperties;
+import com.swmanager.system.security.SecurityLoginProperties;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

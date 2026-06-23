@@ -5,7 +5,7 @@ import com.swmanager.system.service.SwService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.constant.enums.AccessActionType;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.repository.*;
 
 import com.swmanager.system.dto.SwProjectDTO;

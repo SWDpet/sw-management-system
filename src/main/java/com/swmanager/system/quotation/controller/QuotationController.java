@@ -1,6 +1,6 @@
 package com.swmanager.system.quotation.controller;
 
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constant.enums.QuoteTemplateType;
 import com.swmanager.system.constants.MenuName;

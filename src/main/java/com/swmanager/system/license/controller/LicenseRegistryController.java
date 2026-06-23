@@ -6,7 +6,7 @@ import com.swmanager.system.license.domain.LicenseRegistry;
 import com.swmanager.system.license.domain.LicenseUploadHistory;
 import com.swmanager.system.license.service.LicenseRegistryService;
 import com.swmanager.system.service.LogService;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;

@@ -4,7 +4,7 @@ import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.SigunguCode;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
 import com.swmanager.system.repository.SysMstRepository;

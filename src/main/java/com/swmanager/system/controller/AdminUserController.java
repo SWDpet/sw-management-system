@@ -3,7 +3,7 @@ package com.swmanager.system.controller;
 import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.dto.AdminSensitiveFieldRow;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.service.LogService;

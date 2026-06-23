@@ -1,6 +1,6 @@
 package com.swmanager.system.controller.ops;
 
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;

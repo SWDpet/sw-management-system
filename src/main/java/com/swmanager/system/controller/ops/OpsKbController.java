@@ -1,6 +1,6 @@
 package com.swmanager.system.controller.ops;
 
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.domain.SysMst;
 import com.swmanager.system.dto.ops.KbCreateResult;
 import com.swmanager.system.dto.ops.OpsKbDto;

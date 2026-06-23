@@ -3,6 +3,7 @@ package com.swmanager.system.config;
 import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.service.LoginAttemptService;
 import com.swmanager.system.service.LogService;
 import jakarta.servlet.ServletException;

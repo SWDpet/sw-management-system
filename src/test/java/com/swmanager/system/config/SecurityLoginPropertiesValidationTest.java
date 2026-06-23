@@ -1,5 +1,6 @@
 package com.swmanager.system.config;
 
+import com.swmanager.system.security.SecurityLoginProperties;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

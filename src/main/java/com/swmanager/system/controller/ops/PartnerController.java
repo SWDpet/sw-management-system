@@ -1,6 +1,6 @@
 package com.swmanager.system.controller.ops;
 
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.domain.ops.Partner;
 import com.swmanager.system.domain.ops.PartnerContact;
 import com.swmanager.system.dto.ops.ContactForm;

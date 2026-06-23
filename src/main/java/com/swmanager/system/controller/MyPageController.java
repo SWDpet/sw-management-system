@@ -1,6 +1,6 @@
 package com.swmanager.system.controller;
 
-import com.swmanager.system.config.CustomUserDetails;  // ✅ config 패키지!
+import com.swmanager.system.security.CustomUserDetails;  // ✅ config 패키지!
 import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.domain.User;

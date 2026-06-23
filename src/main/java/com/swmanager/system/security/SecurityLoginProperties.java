@@ -1,4 +1,4 @@
-package com.swmanager.system.config;
+package com.swmanager.system.security;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

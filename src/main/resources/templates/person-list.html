@@ -129,7 +129,7 @@
             <h2><i class="fas fa-address-book"></i> 지역 담당자 현황</h2>
             <div class="header-btns">
                 <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')
-                                or (#authentication.principal instanceof T(com.swmanager.system.config.CustomUserDetails)
+                                or (#authentication.principal instanceof T(com.swmanager.system.security.CustomUserDetails)
                                     and #authentication.principal.user?.authPerson == 'EDIT')}">
                     <a th:href="@{/person/new}" class="btn-top btn-primary">
                         <i class="fas fa-user-plus"></i> 신규 담당자 등록

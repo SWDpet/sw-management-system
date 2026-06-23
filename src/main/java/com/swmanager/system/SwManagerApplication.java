@@ -1,6 +1,6 @@
 package com.swmanager.system; // ※ 패키지명은 기존 파일에 적힌 그대로 유지하세요.
 
-import com.swmanager.system.config.SecurityLoginProperties;
+import com.swmanager.system.security.SecurityLoginProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;

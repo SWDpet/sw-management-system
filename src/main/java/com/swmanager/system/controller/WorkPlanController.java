@@ -7,7 +7,7 @@ import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.WorkPlan;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.dto.WorkPlanDTO;
 import com.swmanager.system.dto.workplan.CalendarEvent;
 import com.swmanager.system.dto.workplan.PjtOptionRow;

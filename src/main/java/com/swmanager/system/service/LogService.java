@@ -2,7 +2,7 @@ package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.domain.AccessLog;
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.repository.AccessLogRepository;
 import com.swmanager.system.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;

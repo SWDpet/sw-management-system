@@ -1,6 +1,6 @@
 package com.swmanager.system.service;
 
-import com.swmanager.system.config.CustomUserDetails;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.i18n.MessageResolver;
