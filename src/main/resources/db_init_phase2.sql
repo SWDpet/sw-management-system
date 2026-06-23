@@ -932,7 +932,15 @@ END $$;
 -- ============================================================
 -- S8 qt-quotation-domain-normalize (2026-04-22):
 --   qt_category_mst 초기 시드 3행 (유지보수/용역/제품)
+--   ※ fresh-init 자기완결(2026-06-23): CREATE 는 V024_qt_category_master.sql 이지만
+--     DbInitRunner 는 phase2 만 적용 → 빈DB 부트스트랩 시 아래 INSERT 가 깨지므로
+--     CREATE IF NOT EXISTS 선행(운영DB 엔 이미 존재 → no-op).
 -- ============================================================
+CREATE TABLE IF NOT EXISTS qt_category_mst (
+  category_code  VARCHAR(10) PRIMARY KEY,
+  category_label VARCHAR(50) NOT NULL,
+  display_order  INT NOT NULL DEFAULT 0
+);
 INSERT INTO qt_category_mst (category_code, category_label, display_order) VALUES
   ('유지보수', '유지보수', 1),
   ('용역',     '용역',     2),
@@ -943,7 +951,20 @@ ON CONFLICT (category_code) DO NOTHING;
 -- ============================================================
 -- S16 tb-work-plan-decision (2026-04-22):
 --   work_plan_type_mst 10행 + work_plan_status_mst 7행 초기 시드
+--   ※ fresh-init 자기완결(2026-06-23): CREATE 는 V026_work_plan_master.sql →
+--     phase2 자기완결 위해 CREATE IF NOT EXISTS 선행(운영DB no-op).
 -- ============================================================
+CREATE TABLE IF NOT EXISTS work_plan_type_mst (
+  type_code     VARCHAR(20) PRIMARY KEY,
+  type_label    VARCHAR(50) NOT NULL,
+  color         VARCHAR(10) NOT NULL,
+  display_order INT NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS work_plan_status_mst (
+  status_code   VARCHAR(20) PRIMARY KEY,
+  status_label  VARCHAR(50) NOT NULL,
+  display_order INT NOT NULL DEFAULT 0
+);
 INSERT INTO work_plan_type_mst (type_code, type_label, color, display_order) VALUES
   ('CONTRACT',   '계약',     '#1565c0', 1),
   ('INSTALL',    '설치',     '#2e7d32', 2),

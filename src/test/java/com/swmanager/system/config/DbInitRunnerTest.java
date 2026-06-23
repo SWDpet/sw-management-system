@@ -200,6 +200,15 @@ class DbInitRunnerTest {
             .map(DbInitRunnerTest::sha256)
             .collect(Collectors.toList());
 
+        // 의도된 phase2 변경 시 재생성: GOLDEN_RECORD=1 ./mvnw test -Dtest=DbInitRunnerTest#ut12_c_nonDoStatementsUnchanged
+        // (MapDebtRatchetTest/GiantClassRatchetTest 와 동일 패턴 — 검토 후 커밋)
+        if ("1".equals(System.getenv("GOLDEN_RECORD"))) {
+            java.nio.file.Path out = java.nio.file.Path.of(
+                "src", "test", "resources", "db_init_phase2.baseline-non-do-hashes.txt");
+            java.nio.file.Files.writeString(out, String.join("\n", hashes) + "\n");
+            return; // 재생성 모드: 단언 생략
+        }
+
         List<String> baseline = loadBaselineHashes();
         assertEquals(baseline, hashes,
             "DO 블록 외 statement 의 SHA-256 목록이 베이스라인과 동일 (회귀 0)");
