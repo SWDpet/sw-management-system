@@ -194,14 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
+                                            <!-- ratchet floor: 실측 LINE 29.14%(2026-06-23) 직하. 감소 불가. coverage-core-services 스프린트로 상향. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.18</minimum>
+                                            <minimum>0.25</minimum>
                                         </limit>
                                         <limit>
+                                            <!-- ratchet floor: 실측 INSTRUCTION 24.34%(2026-06-23) 직하. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.14</minimum>
+                                            <minimum>0.21</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
