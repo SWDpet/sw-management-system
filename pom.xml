@@ -194,13 +194,13 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 39.27%(2026-06-24 +ExcelExportService 빌더/헬퍼). 의도적 ~2.2pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
+                                            <!-- ratchet floor: 실측 LINE 39.38%(2026-06-24 +LoginAttemptService). floor 0.37 유지(증분 작음) → ~2.4pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.37</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 33.15%(2026-06-24 +ExcelExportService 빌더/헬퍼). 의도적 ~2.2pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 33.23%(2026-06-24 +LoginAttemptService). floor 0.31 유지(증분 작음) → ~2.2pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.31</minimum>
