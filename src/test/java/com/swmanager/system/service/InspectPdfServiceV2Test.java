@@ -288,6 +288,26 @@ class InspectPdfServiceV2Test {
     }
 
     @Test
+    void v2_kpi_nonDivisibleAverage_roundsHalfUpToWholePercent() {
+        // 평균이 정수로 안 떨어지는 케이스로 %.0f 반올림(내림·올림 양방향) 고정.
+        InspectReportDTO rpt = report(20L, "UPIS", "2026-06", List.of());
+        when(inspectReportService.findById(18L)).thenReturn(rpt);
+        when(swProjectRepository.findById(20L)).thenReturn(Optional.empty());
+        OffsetDateTime d = OffsetDateTime.parse("2026-06-01T10:00:00+09:00");
+        // cpu (33+33+34)/3 = 33.33 → "33%"(내림), mem (67+67+66)/3 = 66.67 → "67%"(올림)
+        when(metricRepository.findRangeByPjtRole(eq(20L), eq("AP"), any(), any()))
+                .thenReturn(List.of(snap("33", "67", "10", d), snap("33", "67", "20", d)));
+        when(metricRepository.findRangeByPjtRole(eq(20L), eq("DB"), any(), any()))
+                .thenReturn(List.of(snap("34", "66", "30", d)));
+
+        Context ctx = renderAndCapture(18L);
+        InspectPdfService.Kpi kpi = (InspectPdfService.Kpi) ctx.getVariable("kpi");
+        assertThat(kpi.getCpu()).isEqualTo("33%");    // 33.33 반내림
+        assertThat(kpi.getMem()).isEqualTo("67%");    // 66.67 반올림
+        assertThat(kpi.getDisk()).isEqualTo("30%");   // max(10,20,30)
+    }
+
+    @Test
     void v2_kpi_emptySnapshots_returnsCollectingPlaceholder() {
         InspectReportDTO rpt = report(20L, "UPIS", "2026-06", List.of());
         when(inspectReportService.findById(9L)).thenReturn(rpt);
@@ -304,11 +324,16 @@ class InspectPdfServiceV2Test {
     void v2_kpi_nullPjtId_returnsCollectingPlaceholder() {
         InspectReportDTO rpt = report(null, "UPIS", "2026-06", List.of());   // pjtId null
         when(inspectReportService.findById(11L)).thenReturn(rpt);
+        // null 계약 명시: pjtId null 이면 프로젝트 조회는 null 키로 호출되어 빈 결과 → project=null,
+        // computeKpi/chartDataUri 는 pjtId null 가드로 메트릭/차트 조회를 건너뛴다.
+        when(swProjectRepository.findById(isNull())).thenReturn(Optional.empty());
 
         Context ctx = renderAndCapture(11L);
         InspectPdfService.Kpi kpi = (InspectPdfService.Kpi) ctx.getVariable("kpi");
         assertThat(kpi.getCpu()).isEqualTo("수집 대기");
-        verify(metricRepository, never()).findRangeByPjtRole(any(), any(), any(), any());
+        verify(swProjectRepository).findById(isNull());                       // 프로젝트 조회는 수행
+        verify(metricRepository, never()).findRangeByPjtRole(any(), any(), any(), any());   // 메트릭은 가드로 스킵
+        verify(metricChartService, never()).renderChart(any(), any(), any());              // 차트도 가드로 스킵
     }
 
     @Test
