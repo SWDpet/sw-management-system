@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 30.35%(2026-06-23 P1~P3) 직하. 감소 불가. coverage-core-services 스프린트. -->
+                                            <!-- ratchet floor: 실측 LINE 30.99%(2026-06-24 +WorkPlanService) 직하. 감소 불가. coverage-core-services 스프린트. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.27</minimum>
+                                            <minimum>0.28</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 25.25%(2026-06-23) 직하. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 25.92%(2026-06-24 +WorkPlanService) 직하. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.22</minimum>
+                                            <minimum>0.23</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
