@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 41.74%(2026-06-24 +Hwpx generateHwpx 구조테스트, 40% 돌파). 의도적 ~2.7pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
+                                            <!-- ratchet floor: 실측 LINE 43.38%(2026-06-24 +Hwpx commence_body 구조테스트). 의도적 ~2.4pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.39</minimum>
+                                            <minimum>0.41</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 34.99%(2026-06-24 +Hwpx generateHwpx 구조테스트). 의도적 ~3.0pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 36.66%(2026-06-24 +Hwpx commence_body 구조테스트). 의도적 ~2.7pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.32</minimum>
+                                            <minimum>0.34</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
