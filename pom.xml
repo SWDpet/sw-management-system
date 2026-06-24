@@ -194,13 +194,13 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 34.17%(2026-06-24 +OpsDocLink/InfraService). 의도적 ~2.2pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
+                                            <!-- ratchet floor: 실측 LINE 34.77%(2026-06-24 +attachment/signature). floor 0.32 유지(0.33 상향 시 ~1.8pp 과축소) → ~2.8pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.32</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 28.84%(2026-06-24 +OpsDocLink/InfraService). 의도적 ~1.8pp 버퍼(LINE 과 대칭 ratchet), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 29.29%(2026-06-24 +attachment/signature). floor 0.27 유지(0.28 상향 시 ~1.3pp 과축소) → ~2.3pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.27</minimum>
