@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 43.71%(2026-06-24 +InspectPdfService v2 renderToHtmlV2). floor 0.41 유지(증분 작음) → ~2.7pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
+                                            <!-- ratchet floor: 실측 LINE 44.24%(2026-06-24 +RuleKbMatcher·QrBatchPayloadAdapter 0→100%). floor 0.41→0.42 상향 → ~2.2pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. coverage-core-services 스프린트. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.41</minimum>
+                                            <minimum>0.42</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 37.09%(2026-06-24 +InspectPdfService v2 renderToHtmlV2). floor 0.34 유지(증분 작음) → ~3.1pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 37.60%(2026-06-24 +RuleKbMatcher·QrBatchPayloadAdapter 0→100%). floor 0.34→0.35 상향 → ~2.6pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.34</minimum>
+                                            <minimum>0.35</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
