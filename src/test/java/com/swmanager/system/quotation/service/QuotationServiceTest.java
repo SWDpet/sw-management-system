@@ -1,12 +1,16 @@
 package com.swmanager.system.quotation.service;
 
+import com.swmanager.system.constant.enums.QtCategory;
 import com.swmanager.system.quotation.domain.*;
 import com.swmanager.system.quotation.dto.QuotationDTO;
+import com.swmanager.system.quotation.dto.RemarksPatternDto;
 import com.swmanager.system.quotation.repository.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -215,5 +219,146 @@ class QuotationServiceTest {
         input.setYear(2027); input.setGradeName("초급");
         service.saveWageRate(input);
         verify(wageRateRepository).save(input); // 입력 그대로 저장
+    }
+
+    // ===== recalculateAllGrandTotals (마이그레이션 재계산 + 대장 동기화) =====
+
+    @Test
+    void recalculateAllGrandTotals_recomputesAndSyncsLedger() {
+        Quotation q = new Quotation();
+        q.setQuoteId(1L);
+        q.setVatIncluded(false);          // +VAT 10%
+        q.setRounddownUnit(1);
+        QuotationItem it = new QuotationItem(); it.setAmount(1_000_000L);
+        q.setItems(new ArrayList<>(List.of(it)));
+        when(quotationRepository.findAll()).thenReturn(List.of(q));
+        when(quotationRepository.save(any(Quotation.class))).thenAnswer(i -> i.getArgument(0));
+        QuotationLedger ledger = new QuotationLedger();
+        when(ledgerRepository.findByQuoteId(1L)).thenReturn(Optional.of(ledger));
+        when(ledgerRepository.save(any(QuotationLedger.class))).thenAnswer(i -> i.getArgument(0));
+
+        int count = service.recalculateAllGrandTotals();
+
+        assertThat(count).isEqualTo(1);
+        assertThat(q.getTotalAmount()).isEqualTo(1_000_000L);     // 품목 합계 원금 복원
+        assertThat(q.getGrandTotal()).isEqualTo(1_100_000L);      // calcGrandTotal: +VAT
+        verify(quotationRepository).save(q);
+        assertThat(ledger.getTotalAmount()).isEqualTo(1_000_000L); // 대장 동기화
+        assertThat(ledger.getGrandTotal()).isEqualTo(1_100_000L);
+        verify(ledgerRepository).save(ledger);
+    }
+
+    @Test
+    void recalculateAllGrandTotals_noLedger_skipsLedgerSave() {
+        Quotation q = new Quotation();
+        q.setQuoteId(2L);
+        q.setVatIncluded(true);           // VAT 포함 → 원금
+        q.setRounddownUnit(1);
+        QuotationItem it = new QuotationItem(); it.setAmount(500_000L);
+        q.setItems(new ArrayList<>(List.of(it)));
+        when(quotationRepository.findAll()).thenReturn(List.of(q));
+        when(quotationRepository.save(any(Quotation.class))).thenAnswer(i -> i.getArgument(0));
+        when(ledgerRepository.findByQuoteId(2L)).thenReturn(Optional.empty());
+
+        int count = service.recalculateAllGrandTotals();
+
+        assertThat(count).isEqualTo(1);
+        assertThat(q.getGrandTotal()).isEqualTo(500_000L);        // vatIncluded → raw
+        verify(quotationRepository).save(q);
+        verify(ledgerRepository, never()).save(any());
+    }
+
+    // ===== getStats =====
+
+    @Test
+    void getStats_returnsTotalAndCategoryCountsAmounts() {
+        when(quotationRepository.count()).thenReturn(10L);
+        when(quotationRepository.countByCategory("용역")).thenReturn(3L);
+        when(quotationRepository.sumAmountByCategory("용역")).thenReturn(300L);
+        when(quotationRepository.countByCategory("제품")).thenReturn(2L);
+        when(quotationRepository.sumAmountByCategory("제품")).thenReturn(200L);
+        when(quotationRepository.countByCategory("유지보수")).thenReturn(5L);
+        when(quotationRepository.sumAmountByCategory("유지보수")).thenReturn(500L);
+
+        Map<String, Object> stats = service.getStats();
+
+        assertThat(stats)
+                .containsEntry("total", 10L)
+                .containsEntry(QtCategory.SERVICE.getLabel() + "_count", 3L)
+                .containsEntry(QtCategory.SERVICE.getLabel() + "_amount", 300L)
+                .containsEntry(QtCategory.PRODUCT.getLabel() + "_count", 2L)
+                .containsEntry(QtCategory.MAINTENANCE.getLabel() + "_amount", 500L);
+    }
+
+    // ===== getRemarksPatterns =====
+
+    @Test
+    void getRemarksPatterns_mapsToDto_withRenderedContent() {
+        RemarksPattern p = new RemarksPattern();
+        p.setContent("원본 {name}");
+        p.setUserId(7L);
+        when(remarksPatternRepository.findAllByOrderBySortOrderAscPatternNameAsc()).thenReturn(List.of(p));
+        when(remarksRenderer.render(eq("원본 {name}"), eq(7L))).thenReturn("렌더링 결과");
+
+        List<RemarksPatternDto> out = service.getRemarksPatterns();
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).getRenderedContent()).isEqualTo("렌더링 결과");
+    }
+
+    // ===== getQuotations (필터 위임 + 매핑) =====
+
+    @Test
+    void getQuotations_delegatesFilter_normalizesBlankToNull() {
+        Quotation q = new Quotation(); q.setQuoteId(1L); q.setCategory("용역");
+        when(quotationRepository.findByFilter("용역", 2026, "작성")).thenReturn(List.of(q));
+        assertThat(service.getQuotations("용역", 2026, "작성")).hasSize(1);
+
+        when(quotationRepository.findByFilter(null, 2026, null)).thenReturn(List.of());
+        service.getQuotations("", 2026, "");           // 빈문자 → null 정규화
+        verify(quotationRepository).findByFilter(null, 2026, null);
+    }
+
+    // ===== 단순 위임 (조회/저장/삭제) =====
+
+    @Test
+    void simpleDelegates_readWriteDelete() {
+        // getLedger: category 유/무 2분기
+        when(ledgerRepository.findByYearAndCategoryOrderByLedgerNoAsc(2026, "용역")).thenReturn(List.of());
+        assertThat(service.getLedger(2026, "용역")).isEmpty();
+        when(ledgerRepository.findByYearOrderByLedgerNoAsc(2026)).thenReturn(List.of());
+        assertThat(service.getLedger(2026, null)).isEmpty();
+
+        // getPatterns: category 유/무 2분기
+        when(patternRepository.findByCategoryOrderByPatternGroupAscProductNameAsc("제품")).thenReturn(List.of());
+        assertThat(service.getPatterns("제품")).isEmpty();
+        when(patternRepository.findAllByOrderByCategoryAscPatternGroupAscProductNameAsc()).thenReturn(List.of());
+        assertThat(service.getPatterns(null)).isEmpty();
+
+        // getWageRates: year 유/무 2분기 + getWageRateYears
+        when(wageRateRepository.findByYearOrderByGradeNameAsc(2026)).thenReturn(List.of());
+        assertThat(service.getWageRates(2026)).isEmpty();
+        when(wageRateRepository.findAllByOrderByYearDescGradeNameAsc()).thenReturn(List.of());
+        assertThat(service.getWageRates(null)).isEmpty();
+        when(wageRateRepository.findDistinctYears()).thenReturn(List.of(2026));
+        assertThat(service.getWageRateYears()).containsExactly(2026);
+
+        // save 위임
+        ProductPattern pp = new ProductPattern();
+        when(patternRepository.save(pp)).thenReturn(pp);
+        assertThat(service.savePattern(pp)).isSameAs(pp);
+        RemarksPattern rp = new RemarksPattern();
+        when(remarksPatternRepository.save(rp)).thenReturn(rp);
+        assertThat(service.saveRemarksPattern(rp)).isSameAs(rp);
+
+        // deleteAllPatterns: count 반환 + deleteAll
+        when(patternRepository.count()).thenReturn(4L);
+        assertThat(service.deleteAllPatterns()).isEqualTo(4L);
+        verify(patternRepository).deleteAll();
+
+        // delete 위임 verify
+        service.deletePattern(1L);       verify(patternRepository).deleteById(1L);
+        service.deleteRemarksPattern(2L); verify(remarksPatternRepository).deleteById(2L);
+        service.deleteWageRate(3L);       verify(wageRateRepository).deleteById(3L);
     }
 }

@@ -327,11 +327,6 @@ public class QuotationService {
         return wageRateRepository.findDistinctYears();
     }
 
-    @Transactional(readOnly = true)
-    public Optional<WageRate> getWageRate(Integer year, String gradeName) {
-        return wageRateRepository.findByYearAndGradeName(year, gradeName);
-    }
-
     @Transactional
     public WageRate saveWageRate(WageRate wageRate) {
         // Check for existing entry and update
