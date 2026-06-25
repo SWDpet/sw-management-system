@@ -194,10 +194,10 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 52.67%(2026-06-25 +GlobalExceptionHandler/ErrorCode 테스트). floor 0.49→0.50 상향 → ~2.7pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 53.52%(2026-06-25 +UserDTO/AuthSummary 테스트). floor 0.50→0.51 상향 → ~2.5pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.50</minimum>
+                                            <minimum>0.51</minimum>
                                         </limit>
                                         <limit>
                                             <!-- ratchet floor: 실측 INSTRUCTION 44.17%(2026-06-25 +GlobalExceptionHandler/ErrorCode 테스트). floor 0.41→0.42 상향 → ~2.2pp 버퍼, 감소 불가. -->
