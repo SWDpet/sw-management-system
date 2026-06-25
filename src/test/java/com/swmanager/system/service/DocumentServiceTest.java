@@ -2,15 +2,23 @@ package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.DocumentStatus;
 import com.swmanager.system.constant.enums.DocumentType;
+import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.SwProject;
+import com.swmanager.system.domain.SysMst;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.*;
+import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.i18n.MessageResolver;
 import com.swmanager.system.repository.InfraRepository;
+import com.swmanager.system.repository.SigunguCodeRepository;
+import com.swmanager.system.repository.SysMstRepository;
 import com.swmanager.system.repository.workplan.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -20,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 /**
@@ -33,8 +42,9 @@ class DocumentServiceTest {
     private final DocumentHistoryRepository documentHistoryRepository = mock(DocumentHistoryRepository.class);
     private final InfraRepository infraRepository = mock(InfraRepository.class);
     private final MessageResolver messages = mock(MessageResolver.class);
-    private final com.swmanager.system.repository.InspectReportRepository inspectReportRepository =
-            mock(com.swmanager.system.repository.InspectReportRepository.class);
+    private final DocumentSignatureRepository documentSignatureRepository = mock(DocumentSignatureRepository.class);
+    private final SigunguCodeRepository sigunguCodeRepository = mock(SigunguCodeRepository.class);
+    private final SysMstRepository sysMstRepository = mock(SysMstRepository.class);
 
     private DocumentService service;
 
@@ -46,8 +56,18 @@ class DocumentServiceTest {
         ReflectionTestUtils.setField(service, "documentHistoryRepository", documentHistoryRepository);
         ReflectionTestUtils.setField(service, "infraRepository", infraRepository);
         ReflectionTestUtils.setField(service, "messages", messages);
-        ReflectionTestUtils.setField(service, "inspectReportRepository", inspectReportRepository);
+        ReflectionTestUtils.setField(service, "documentSignatureRepository", documentSignatureRepository);
+        ReflectionTestUtils.setField(service, "sigunguCodeRepository", sigunguCodeRepository);
+        ReflectionTestUtils.setField(service, "sysMstRepository", sysMstRepository);
         when(documentRepository.save(any(Document.class))).thenAnswer(i -> i.getArgument(0));
+    }
+
+    /** searchDocuments 를 1회 호출해 enrich 경로를 태운 결과 Page 반환(repo 는 주어진 문서들로 stub). */
+    private Page<DocumentDTO> runSearch(Document... docs) {
+        when(documentRepository.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(docs)));
+        return service.searchDocuments(null, null, null, null, null, null, null, null, null,
+                PageRequest.of(0, 10));
     }
 
     // ===== getDocumentById =====
@@ -189,5 +209,94 @@ class DocumentServiceTest {
         DocumentDetail out = service.saveSection(8, "newkey", Map.of("a", 1), null);
         assertThat(out.getSectionKey()).isEqualTo("newkey");
         assertThat(out.getSortOrder()).isEqualTo(0);        // null → 0
+    }
+
+    // ===== searchDocuments: 빈문자열 정규화 =====
+
+    @Test
+    void searchDocuments_blankParamsNormalizedToNull() {
+        when(documentRepository.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+        var pageable = PageRequest.of(0, 10);
+        // docType/status/cityNm/distNm/keyword/authorName 6개 공백 → repo 에 null 로 전달
+        service.searchDocuments("  ", "  ", "  ", "  ", null, null, null, "  ", "  ", pageable);
+        verify(documentRepository).searchDocuments(
+                isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(pageable));
+    }
+
+    // ===== searchDocuments → enrichRegion (private, 경유 검증) =====
+
+    private Document docRegion(String regionCode, String sysType) {
+        Document d = new Document();
+        d.setRegionCode(regionCode);
+        d.setSysType(sysType);
+        return d;
+    }
+
+    @Test
+    void searchDocuments_enrichRegion_buildsTargetDisplay() {
+        SigunguCode sc = new SigunguCode();
+        sc.setSidoNm("서울특별시"); sc.setSggNm("종로구");
+        when(sigunguCodeRepository.findById("11110")).thenReturn(Optional.of(sc));
+        SysMst sm = new SysMst(); sm.setNm("도시계획정보체계");
+        when(sysMstRepository.findById("UPIS")).thenReturn(Optional.of(sm));
+
+        DocumentDTO dto = runSearch(docRegion("11110", "UPIS")).getContent().get(0);
+        assertThat(dto.getRegionSidoNm()).isEqualTo("서울특별시");
+        assertThat(dto.getRegionSigunguNm()).isEqualTo("종로구");
+        assertThat(dto.getSysNm()).isEqualTo("도시계획정보체계");
+        assertThat(dto.getTargetDisplay()).isEqualTo("서울특별시 종로구 - 도시계획정보체계");
+    }
+
+    @Test
+    void searchDocuments_enrichRegion_sysTypeFallbackWhenNoSysNm() {
+        SigunguCode sc = new SigunguCode();
+        sc.setSidoNm("부산광역시"); sc.setSggNm("해운대구");
+        when(sigunguCodeRepository.findById("26350")).thenReturn(Optional.of(sc));
+        when(sysMstRepository.findById("ETC")).thenReturn(Optional.empty());  // sysNm 없음
+
+        DocumentDTO dto = runSearch(docRegion("26350", "ETC")).getContent().get(0);
+        // sysNm 없으면 sysType 코드로 폴백 표기
+        assertThat(dto.getTargetDisplay()).isEqualTo("부산광역시 해운대구 - ETC");
+    }
+
+    // ===== saveSignature =====
+
+    @Test
+    void saveSignature_setsFieldsAndSaves() {
+        Document d = new Document();
+        when(documentRepository.findById(3)).thenReturn(Optional.of(d));
+        when(documentSignatureRepository.save(any(DocumentSignature.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.saveSignature(3, "INSPECTOR", "홍길동", "정도UIT", "data:image/png;base64,AAA");
+        ArgumentCaptor<DocumentSignature> cap = ArgumentCaptor.forClass(DocumentSignature.class);
+        verify(documentSignatureRepository).save(cap.capture());
+        DocumentSignature sig = cap.getValue();
+        assertThat(sig.getDocument()).isSameAs(d);
+        assertThat(sig.getSignerType()).isEqualTo("INSPECTOR");
+        assertThat(sig.getSignerName()).isEqualTo("홍길동");
+        assertThat(sig.getSignerOrg()).isEqualTo("정도UIT");
+        assertThat(sig.getSignatureImage()).isEqualTo("data:image/png;base64,AAA");
+    }
+
+    // ===== 위임 메서드 =====
+
+    @Test
+    void getCityNames_delegates() {
+        when(documentRepository.findDistinctCityNames()).thenReturn(List.of("서울특별시", "부산광역시"));
+        assertThat(service.getCityNames()).containsExactly("서울특별시", "부산광역시");
+    }
+
+    @Test
+    void getDocumentHistory_delegates() {
+        DocumentHistory h = new DocumentHistory();
+        when(documentHistoryRepository.findByDocument_DocIdOrderByCreatedAtDesc(4)).thenReturn(List.of(h));
+        assertThat(service.getDocumentHistory(4)).containsExactly(h);
+    }
+
+    @Test
+    void deleteDocument_callsDeleteById() {
+        service.deleteDocument(9);
+        verify(documentRepository).deleteById(9);
     }
 }

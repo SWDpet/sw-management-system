@@ -22,9 +22,6 @@ public interface DocumentRepository extends JpaRepository<Document, Integer> {
     // 문서유형별 목록
     List<Document> findByDocTypeOrderByCreatedAtDesc(DocumentType docType);
 
-    // 인프라별 문서 목록
-    List<Document> findByInfra_InfraIdOrderByCreatedAtDesc(Long infraId);
-
     // 작성자별 문서 목록
     List<Document> findByAuthor_UserSeqOrderByCreatedAtDesc(Long userSeq);
 

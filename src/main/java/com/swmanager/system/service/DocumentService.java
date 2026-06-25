@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -42,19 +41,10 @@ public class DocumentService {
                 .orElseThrow(() -> new IllegalArgumentException(messages.get("error.document.not_found", docId)));
     }
 
-    @Transactional(readOnly = true)
-    public DocumentDTO getDocumentDTOById(Integer docId) {
-        return enrichRegion(DocumentDTO.fromEntity(getDocumentById(docId)));
-    }
-
     @Autowired(required = false)
     private com.swmanager.system.repository.SigunguCodeRepository sigunguCodeRepository;
     @Autowired(required = false)
     private com.swmanager.system.repository.SysMstRepository sysMstRepository;
-    @Autowired(required = false)
-    private com.swmanager.system.repository.InspectReportRepository inspectReportRepository;
-    @Autowired(required = false)
-    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Transactional(readOnly = true)
     public Page<DocumentDTO> searchDocuments(String docType, String status,
@@ -70,41 +60,7 @@ public class DocumentService {
 
         Page<Document> page = documentRepository.searchDocuments(
                 docType, status, cityNm, distNm, authorId, from, to, keyword, authorName, pageable);
-        return page.map(d -> enrichInspectMonth(enrichRegion(DocumentDTO.fromEntity(d))));
-    }
-
-    /** 점검내역서(INSPECT) docNo "INSP-{year}-{id}" 의 id 로 inspect_report.inspect_month 룩업해서 DTO 에 채움.
-     *  라이브 테이블이 비었으면 4/21 백업 테이블에서 fallback. 값은 "MM월" 형태로 정규화. */
-    private DocumentDTO enrichInspectMonth(DocumentDTO dto) {
-        if (dto == null) return dto;
-        if (dto.getDocType() == null || !"INSPECT".equals(dto.getDocType().name())) return dto;
-        String docNo = dto.getDocNo();
-        if (docNo == null) return dto;
-        String[] parts = docNo.split("-");
-        String idStr = parts[parts.length - 1];
-        long id;
-        try { id = Long.parseLong(idStr); } catch (NumberFormatException e) { return dto; }
-
-        String raw = null;
-        if (inspectReportRepository != null) {
-            raw = inspectReportRepository.findById(id).map(ir -> ir.getInspectMonth()).orElse(null);
-        }
-        if ((raw == null || raw.isBlank()) && jdbcTemplate != null) {
-            try {
-                raw = jdbcTemplate.query(
-                        "SELECT inspect_month FROM inspect_report_backup_20260421_235813 WHERE id = ?",
-                        rs -> rs.next() ? rs.getString(1) : null,
-                        id);
-            } catch (Exception ignore) {}
-        }
-        if (raw != null && !raw.isBlank()) dto.setInspectMonth(toMonthLabel(raw));
-        return dto;
-    }
-
-    /** "yyyy-MM" / "yyyy.MM" / "MM" / "yyyy년 MM월" 등에서 MM 만 추출 → "MM월" */
-    private String toMonthLabel(String s) {
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(0[1-9]|1[0-2])(?!\\d)").matcher(s);
-        return m.find() ? m.group(1) + "월" : s;
+        return page.map(d -> enrichRegion(DocumentDTO.fromEntity(d)));
     }
 
     /**
@@ -183,12 +139,6 @@ public class DocumentService {
     public List<String> getDistNamesByCity(String cityNm) {
         if (cityNm == null || cityNm.isBlank()) return List.of();
         return documentRepository.findDistinctDistNamesByCity(cityNm);
-    }
-
-    @Transactional(readOnly = true)
-    public List<DocumentDTO> getDocumentsByInfra(Long infraId) {
-        return documentRepository.findByInfra_InfraIdOrderByCreatedAtDesc(infraId)
-                .stream().map(DocumentDTO::fromEntity).collect(Collectors.toList());
     }
 
     /**
@@ -296,10 +246,4 @@ public class DocumentService {
         return documentSignatureRepository.save(sig);
     }
 
-    // === 성과통계용 ===
-
-    @Transactional(readOnly = true)
-    public Long countApprovedDocuments(DocumentType docType, Long userId, LocalDateTime from, LocalDateTime to) {
-        return documentRepository.countApprovedByTypeAndUser(docType, userId, from, to);
-    }
 }
