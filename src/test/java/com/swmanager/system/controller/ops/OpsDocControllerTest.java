@@ -218,18 +218,18 @@ class OpsDocControllerTest {
     void form_fault_returnsTemplate() {
         when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
         // 리터럴로 단언(enum 매핑 재유도 시 동어반복 회피).
-        assertThat(controller.form("FAULT", model())).isEqualTo("ops-doc/doc-fault");
+        assertThat(controller.form("FAULT", model(), editUser())).isEqualTo("ops-doc/doc-fault");
     }
 
     @Test
     void form_inspect_redirectsList() {
-        assertThat(controller.form("INSPECT", model())).isEqualTo("redirect:/ops-doc/list");
+        assertThat(controller.form("INSPECT", model(), editUser())).isEqualTo("redirect:/ops-doc/list");
     }
 
     @Test
     void form_unknown_throws() {
         // OpsDocType.fromString 은 미허용 값에 IllegalArgumentException 을 던진다(컨트롤러 null 분기는 도달 불가).
-        assertThatThrownBy(() -> controller.form("BOGUS", model()))
+        assertThatThrownBy(() -> controller.form("BOGUS", model(), editUser()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -239,7 +239,7 @@ class OpsDocControllerTest {
         doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT);
         when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
         when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
-        assertThat(controller.editForm("FAULT", 7L, model())).isEqualTo("ops-doc/doc-fault");
+        assertThat(controller.editForm("FAULT", 7L, model(), editUser())).isEqualTo("ops-doc/doc-fault");
     }
 
     @Test
@@ -247,26 +247,38 @@ class OpsDocControllerTest {
         OpsDocument doc = new OpsDocument();
         doc.setDocId(7L); doc.setDocType(OpsDocType.INSPECT); doc.setDocNo("INSP-2026-9");
         when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
-        assertThat(controller.editForm("INSPECT", 7L, model()))
+        assertThat(controller.editForm("INSPECT", 7L, model(), editUser()))
                 .isEqualTo("redirect:/document/inspect-detail/9");
     }
 
     @Test
     void editForm_notFound_throws() {
         when(opsDocService.findById(7L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> controller.editForm("FAULT", 7L, model()))
+        assertThatThrownBy(() -> controller.editForm("FAULT", 7L, model(), editUser()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    void detail_fault_returnsTemplate() {
+    void detail_fault_returnsTemplate_editUserCanEdit() {
         OpsDocument doc = new OpsDocument();
         doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT);
         when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
         when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
         Model m = model();
-        assertThat(controller.detail("FAULT", 7L, m)).isEqualTo("ops-doc/doc-fault");
+        assertThat(controller.detail("FAULT", 7L, m, editUser())).isEqualTo("ops-doc/doc-fault");
         assertThat(m.getAttribute("mode")).isEqualTo("view");
+        assertThat(m.getAttribute("canEdit")).isEqualTo(true);   // [viewer-action-button-guard] EDIT → 수정/삭제 노출
+    }
+
+    @Test
+    void detail_fault_viewUser_canEditFalse() {
+        OpsDocument doc = new OpsDocument();
+        doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT);
+        when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
+        when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
+        Model m = model();
+        controller.detail("FAULT", 7L, m, viewUser());
+        assertThat(m.getAttribute("canEdit")).isEqualTo(false);  // 조회자 → 수정/삭제 숨김
     }
 
     @Test
@@ -274,7 +286,7 @@ class OpsDocControllerTest {
         OpsDocument doc = new OpsDocument();
         doc.setDocId(7L); doc.setDocType(OpsDocType.INSPECT); doc.setDocNo("INSP-2026-12");
         when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
-        assertThat(controller.detail("INSPECT", 7L, model()))
+        assertThat(controller.detail("INSPECT", 7L, model(), editUser()))
                 .isEqualTo("redirect:/document/inspect-detail/12");
     }
 

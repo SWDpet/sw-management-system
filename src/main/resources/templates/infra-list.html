@@ -156,7 +156,7 @@
                         </th:block>
 
                         <td>
-                            <button class="btn-action btn-del" th:onclick="|deleteInfra(${infra.infraId})|">삭제</button>
+                            <button th:if="${userAuth == 'EDIT'}" class="btn-action btn-del" th:onclick="|deleteInfra(${infra.infraId})|">삭제</button>
                         </td>
                     </tr>
                     <tr th:if="${infraList.totalElements == 0}">

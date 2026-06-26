@@ -107,9 +107,9 @@
                       th:text="${report.status == 'COMPLETED' ? '작성완료' : '임시저장'}"></span>
             </h2>
             <div class="header-actions">
-                <a th:href="@{'/document/create?docType=INSPECT&reportId=' + ${report.id}}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
+                <a th:if="${userAuth == 'EDIT'}" th:href="@{'/document/create?docType=INSPECT&reportId=' + ${report.id}}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
                 <a th:href="@{'/document/inspect-preview/' + ${report.id}}" class="btn-preview"><i class="fas fa-eye"></i> 미리보기</a>
-                <a th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-file-pdf"></i> PDF 다운로드</a>
+                <a th:if="${userAuth == 'EDIT'}" th:href="@{'/document/api/inspect-pdf/' + ${report.id}}" class="btn-pdf"><i class="fas fa-file-pdf"></i> PDF 다운로드</a>
                 <a href="/ops-doc/list" class="btn-back"><i class="fas fa-arrow-left"></i> 문서목록</a>
             </div>
         </div>

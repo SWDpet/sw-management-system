@@ -143,9 +143,9 @@
             </div>
             <button type="submit" class="btn-search"><i class="fas fa-search"></i> 검색</button>
             <button type="button" class="btn-reset" onclick="window.__resetDocFilters()"><i class="fas fa-rotate-left"></i> 초기화</button>
-            <button type="button" class="btn-excel" onclick="downloadDocListExcel()"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
+            <button th:if="${userAuth == 'EDIT'}" type="button" class="btn-excel" onclick="downloadDocListExcel()"><i class="fas fa-file-excel"></i> 엑셀 다운로드</button>
             <!-- 일괄 산출물 다운로드 (doc-bulk-export) — 현재 필터(핀·작성자 포함) 전체 대상 -->
-            <div class="dropdown" id="bulkDropdown">
+            <div class="dropdown" id="bulkDropdown" th:if="${userAuth == 'EDIT'}">
                 <button type="button" class="btn-bulk" id="bulkBtn" aria-haspopup="true" aria-expanded="false"><i class="fas fa-file-archive"></i> 일괄 산출물 ▾</button>
                 <div class="dropdown-content" id="bulkMenu">
                     <a href="#" onclick="bulkDownload('letter'); return false;">공문 일괄</a>
@@ -345,7 +345,7 @@
                             <th:block th:if="${d.docType?.name() == 'COMMENCE' or d.docType?.name() == 'INTERIM' or d.docType?.name() == 'COMPLETION'}">
                                 <th:block th:if="${d.hasSignedScan}">
                                     <i class="fas fa-check-circle scan-have" title="날인본 보관됨"></i>
-                                    <button type="button" class="scan-dn" th:onclick="|event.stopPropagation(); scanDownload(${d.docId})|" aria-label="날인본 다운로드"><i class="fas fa-download"></i></button>
+                                    <button type="button" class="scan-dn" th:if="${userAuth == 'EDIT'}" th:onclick="|event.stopPropagation(); scanDownload(${d.docId})|" aria-label="날인본 다운로드"><i class="fas fa-download"></i></button>
                                     <button type="button" class="scan-rep" th:if="${userAuth == 'EDIT'}" th:onclick="|event.stopPropagation(); scanUpload(${d.docId})|" aria-label="날인본 교체">교체</button>
                                     <button type="button" class="scan-del" th:if="${userAuth == 'EDIT'}" th:onclick="|event.stopPropagation(); scanDelete(${d.docId})|" aria-label="날인본 삭제"><i class="fas fa-trash"></i></button>
                                 </th:block>

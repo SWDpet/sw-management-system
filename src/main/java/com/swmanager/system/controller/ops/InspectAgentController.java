@@ -53,6 +53,8 @@ public class InspectAgentController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "수집모듈 조회 권한이 없습니다");
         }
         model.addAttribute("agent", meta()); // null 이면 템플릿에서 "준비중" 표시
+        // [viewer-action-button-guard] 다운로드 버튼은 EDIT 만 노출
+        model.addAttribute("canEdit", "EDIT".equals(getAuth(cu)));
         return "ops-doc/inspect-agent";
     }
 

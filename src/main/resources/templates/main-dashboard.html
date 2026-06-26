@@ -114,7 +114,7 @@
         <option th:each="y : ${years}" th:value="${y}" th:text="${y} + '년'" th:selected="${y == selectedYear}">2026년</option>
       </select>
     </form>
-    <a class="btn" href="/projects/new"><i class="fas fa-plus"></i> 사업 등록</a>
+    <a class="btn" href="/projects/new" th:if="${canCreateProject}"><i class="fas fa-plus"></i> 사업 등록</a>
   </div>
 </div>
 

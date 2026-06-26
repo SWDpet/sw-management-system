@@ -228,12 +228,14 @@ public class OpsDocController {
 
     /** 신규 작성 폼 (4 종). */
     @GetMapping("/{type}/form")
-    public String form(@PathVariable("type") String type, Model model) {
+    public String form(@PathVariable("type") String type, Model model,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
         OpsDocType docType = OpsDocType.fromString(type);
         if (docType == null || docType == OpsDocType.INSPECT) return "redirect:/ops-doc/list";
         model.addAttribute("docType", docType);
         model.addAttribute("isEdit", false);
         model.addAttribute("mode", "new");
+        model.addAttribute("canEdit", hasDocEdit(currentUser));  // [viewer-action-button-guard]
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
         return docType.templateName();
@@ -251,7 +253,8 @@ public class OpsDocController {
 
     /** 수정 폼 (4 종). INSPECT 는 InspectReport 흐름으로 redirect. */
     @GetMapping("/{type}/{docId}/edit")
-    public String editForm(@PathVariable("type") String type, @PathVariable Long docId, Model model) {
+    public String editForm(@PathVariable("type") String type, @PathVariable Long docId, Model model,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
         OpsDocType docType = OpsDocType.fromString(type);
         OpsDocument doc = opsDocService.findById(docId)
                 .orElseThrow(() -> new IllegalArgumentException("not found: " + docId));
@@ -265,6 +268,7 @@ public class OpsDocController {
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);
         model.addAttribute("mode", "edit");
+        model.addAttribute("canEdit", hasDocEdit(currentUser));  // [viewer-action-button-guard]
         model.addAttribute("sectionData", mainSectionData(doc));
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
@@ -273,7 +277,8 @@ public class OpsDocController {
 
     /** 상세 보기. INSPECT 는 InspectReport 상세로 redirect. */
     @GetMapping("/{type}/{docId}")
-    public String detail(@PathVariable("type") String type, @PathVariable Long docId, Model model) {
+    public String detail(@PathVariable("type") String type, @PathVariable Long docId, Model model,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
         OpsDocType docType = OpsDocType.fromString(type);
         OpsDocument doc = opsDocService.findById(docId)
                 .orElseThrow(() -> new IllegalArgumentException("not found: " + docId));
@@ -287,6 +292,8 @@ public class OpsDocController {
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);   // 상세=기존 문서 → 템플릿 ${!isEdit}/${isEdit} 분기 null 방지(백지 해소)
         model.addAttribute("mode", "view");    // 읽기전용 상세 + 수정/삭제 버튼
+        // [viewer-action-button-guard] 조회자(VIEW)에게 수정/삭제/지원파일편집 숨김용 — EDIT 또는 ADMIN 만 true
+        model.addAttribute("canEdit", hasDocEdit(currentUser));
         model.addAttribute("sectionData", mainSectionData(doc));
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
@@ -394,12 +401,15 @@ public class OpsDocController {
 
     // ===== [M2] 관계자 (엔지니어 / 요청자) =====
 
+    /** 문서 편집 권한 술어 — authDocument=EDIT 또는 ROLE_ADMIN. UI canEdit·서버 가드 공용(dual-review: enforcement 와 분리). */
+    private boolean hasDocEdit(CustomUserDetails u) {
+        if (u == null || u.getUser() == null) return false;
+        return "ROLE_ADMIN".equals(u.getUser().getUserRole()) || "EDIT".equals(u.getUser().getAuthDocument());
+    }
+
     /** authDocument=EDIT 가드 (codex #5). 허용이면 null, 아니면 403. */
     private ResponseEntity<ApiResult> requireDocEdit(CustomUserDetails u) {
-        String auth = (u != null && u.getUser() != null) ? u.getUser().getAuthDocument() : null;
-        // ROLE_ADMIN 우회 — 다른 모든 편집 가드(KB/사업 canEdit, requireDocEditOrAdmin)와 일관.
-        boolean admin = u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
-        if (!admin && !"EDIT".equals(auth)) {
+        if (!hasDocEdit(u)) {
             return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "문서 편집 권한(authDocument=EDIT 또는 관리자)이 필요합니다."));
         }
         return null;

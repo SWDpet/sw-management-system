@@ -85,7 +85,7 @@
             </dd>
         </dl>
 
-        <a class="cta" th:href="@{/ops-doc/inspect-agent/download}">
+        <a th:if="${canEdit}" class="cta" th:href="@{/ops-doc/inspect-agent/download}">
             <i class="fas fa-download"></i> 다운로드 (.zip)
         </a>
     </div>

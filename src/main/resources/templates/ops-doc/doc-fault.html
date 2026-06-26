@@ -117,10 +117,10 @@
 
     <div class="ops-actions">
         <a class="ops-btn" th:href="@{/ops-doc/list}">목록</a>
-        <button th:if="${mode != 'view'}" class="ops-btn ops-btn-primary" onclick="saveFault()">저장</button>
-        <a th:if="${mode == 'view'}" class="ops-btn ops-btn-primary"
+        <button th:if="${mode != 'view' and canEdit}" class="ops-btn ops-btn-primary" onclick="saveFault()">저장</button>
+        <a th:if="${mode == 'view' and canEdit}" class="ops-btn ops-btn-primary"
            th:href="@{'/ops-doc/fault/' + ${doc.docId} + '/edit'}"><i class="fas fa-pen"></i> 수정</a>
-        <button th:if="${mode == 'view'}" class="ops-btn ops-btn-danger" onclick="deleteDoc()">
+        <button th:if="${mode == 'view' and canEdit}" class="ops-btn ops-btn-danger" onclick="deleteDoc()">
             <i class="fas fa-trash"></i> 삭제</button>
     </div>
 </main>

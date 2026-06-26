@@ -115,15 +115,15 @@
                 <span class="sf-name" th:text="${doc.supportFileOrigName}">파일명</span>
                 <span class="sf-size" th:if="${doc.supportFileSize != null}"
                       th:text="${#numbers.formatInteger(doc.supportFileSize / 1024, 0, 'COMMA') + ' KB'}">0 KB</span>
-                <a class="sf-act sf-dn" th:href="@{'/ops-doc/api/support-file/' + ${doc.docId}}"
+                <a th:if="${canEdit}" class="sf-act sf-dn" th:href="@{'/ops-doc/api/support-file/' + ${doc.docId}}"
                    aria-label="지원 문서 다운로드" title="다운로드"><i class="fas fa-download"></i></a>
-                <button type="button" class="sf-act sf-del" onclick="deleteSupportFile()"
+                <button th:if="${canEdit}" type="button" class="sf-act sf-del" onclick="deleteSupportFile()"
                         aria-label="지원 문서 삭제" title="삭제"><i class="fas fa-trash"></i></button>
             </div>
             <div th:if="${doc == null or doc.supportFilePath == null}" class="ops-attachment-area" id="sfEmpty">
                 첨부된 지원 문서가 없습니다.
             </div>
-            <div class="ops-file-upload">
+            <div class="ops-file-upload" th:if="${canEdit}">
                 <input type="file" id="sfInput" accept=".hwp,.hwpx,.xls,.xlsx,.doc,.docx,.pdf">
                 <button type="button" class="ops-btn ops-btn-primary" id="sfUpBtn" onclick="uploadSupportFile()">업로드</button>
                 <span class="sf-msg" id="sfMsg"></span>
@@ -142,10 +142,10 @@
 
     <div class="ops-actions">
         <a class="ops-btn" th:href="@{/ops-doc/list}">목록</a>
-        <button th:if="${mode != 'view'}" class="ops-btn ops-btn-primary" onclick="saveSupport()">저장</button>
-        <a th:if="${mode == 'view'}" class="ops-btn ops-btn-primary"
+        <button th:if="${mode != 'view' and canEdit}" class="ops-btn ops-btn-primary" onclick="saveSupport()">저장</button>
+        <a th:if="${mode == 'view' and canEdit}" class="ops-btn ops-btn-primary"
            th:href="@{'/ops-doc/support/' + ${doc.docId} + '/edit'}"><i class="fas fa-pen"></i> 수정</a>
-        <button th:if="${mode == 'view'}" class="ops-btn ops-btn-danger" onclick="deleteDoc()">
+        <button th:if="${mode == 'view' and canEdit}" class="ops-btn ops-btn-danger" onclick="deleteDoc()">
             <i class="fas fa-trash"></i> 삭제</button>
     </div>
 </main>

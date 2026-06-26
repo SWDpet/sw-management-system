@@ -398,6 +398,8 @@ public class InspectReportController {
             model.addAttribute("cntTotal", cN + cC + cV + cM);
 
             model.addAttribute("isAdmin", isAdmin());
+            // [viewer-action-button-guard] PDF 다운로드 등 편집/다운로드 버튼 숨김용
+            model.addAttribute("userAuth", getAuth());
             return "document/inspect-detail";
         } catch (Exception e) {
             log.error("점검내역서 상세 조회 실패: {}", e.getMessage(), e);

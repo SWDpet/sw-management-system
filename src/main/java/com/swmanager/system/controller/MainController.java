@@ -61,6 +61,11 @@ public class MainController {
         else if (year == 0) { queryYear = null; year = null; }
         else                { queryYear = year; }
 
+        // [viewer-action-button-guard] 사업등록 버튼 노출 — 웹 /projects/new 는 authProject=="EDIT" 전용(admin 우회 없음, SwController 와 일치)
+        boolean canCreateProject = (userDetails instanceof com.swmanager.system.security.CustomUserDetails cud)
+                && "EDIT".equals(cud.getUser().getAuthProject());
+        model.addAttribute("canCreateProject", canCreateProject);
+
         buildDashboardModel(queryYear, year, model);
         return "main-dashboard";
     }

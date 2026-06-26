@@ -179,8 +179,8 @@
         </div>
 
         <div class="btn-area">
-            <a th:href="@{/infra/edit/{id}(id=${infra.infraId})}" class="btn btn-edit"><i class="fas fa-edit"></i> 수정하기</a>
-            <button type="button" class="btn btn-del" th:onclick="|deleteInfra(${infra.infraId})|"><i class="fas fa-trash"></i> 삭제</button>
+            <a th:if="${userAuth == 'EDIT'}" th:href="@{/infra/edit/{id}(id=${infra.infraId})}" class="btn btn-edit"><i class="fas fa-edit"></i> 수정하기</a>
+            <button th:if="${userAuth == 'EDIT'}" type="button" class="btn btn-del" th:onclick="|deleteInfra(${infra.infraId})|"><i class="fas fa-trash"></i> 삭제</button>
             <a href="/infra/list" class="btn btn-list"><i class="fas fa-list"></i> 목록으로</a>
         </div>
     </div>

@@ -172,7 +172,7 @@
             </div>
             <div class="header-actions">
                 <a th:href="@{/license/registry/list}" class="btn-top"><i class="fas fa-clipboard-list"></i> 라이선스 대장</a>
-                <a th:href="@{/geonuris/license/download/csv}" class="btn-top"><i class="fas fa-download"></i> 전체 CSV</a>
+                <a th:if="${hasEditPermission}" th:href="@{/geonuris/license/download/csv}" class="btn-top"><i class="fas fa-download"></i> 전체 CSV</a>
                 <a th:if="${hasEditPermission}" th:href="@{/geonuris/license/new}" class="btn-top btn-primary"><i class="fas fa-plus"></i> 라이선스 발급</a>
             </div>
         </div>
@@ -197,31 +197,31 @@
                th:classappend="${selectedType == 'GSS30' ? ' active' : ''}">
                 <div class="stat-num" th:text="${stats.gss30}">0</div>
                 <div class="stat-label">GSS 3.0</div>
-                <a th:href="@{/geonuris/license/download/csv(type='GSS30')}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
+                <a th:href="@{/geonuris/license/download/csv(type='GSS30')}" th:if="${hasEditPermission}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
             </a>
             <a th:href="@{/geonuris/license/list(type='GSS35')}" class="stat-card"
                th:classappend="${selectedType == 'GSS35' ? ' active' : ''}">
                 <div class="stat-num" th:text="${stats.gss35}">0</div>
                 <div class="stat-label">GSS 3.5</div>
-                <a th:href="@{/geonuris/license/download/csv(type='GSS35')}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
+                <a th:href="@{/geonuris/license/download/csv(type='GSS35')}" th:if="${hasEditPermission}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
             </a>
             <a th:href="@{/geonuris/license/list(type='DESKTOP')}" class="stat-card"
                th:classappend="${selectedType == 'DESKTOP' ? ' active' : ''}">
                 <div class="stat-num" th:text="${stats.desktop}">0</div>
                 <div class="stat-label">Desktop</div>
-                <a th:href="@{/geonuris/license/download/csv(type='DESKTOP')}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
+                <a th:href="@{/geonuris/license/download/csv(type='DESKTOP')}" th:if="${hasEditPermission}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
             </a>
             <a th:href="@{/geonuris/license/list(type='SETL_AGENT')}" class="stat-card"
                th:classappend="${selectedType == 'SETL_AGENT' ? ' active' : ''}">
                 <div class="stat-num" th:text="${stats.setlAgent}">0</div>
                 <div class="stat-label">SETL Agent</div>
-                <a th:href="@{/geonuris/license/download/csv(type='SETL_AGENT')}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
+                <a th:href="@{/geonuris/license/download/csv(type='SETL_AGENT')}" th:if="${hasEditPermission}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
             </a>
             <a th:href="@{/geonuris/license/list(type='SETL_PROXY')}" class="stat-card"
                th:classappend="${selectedType == 'SETL_PROXY' ? ' active' : ''}">
                 <div class="stat-num" th:text="${stats.setlProxy}">0</div>
                 <div class="stat-label">SETL Proxy</div>
-                <a th:href="@{/geonuris/license/download/csv(type='SETL_PROXY')}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
+                <a th:href="@{/geonuris/license/download/csv(type='SETL_PROXY')}" th:if="${hasEditPermission}" class="stat-csv" title="CSV" onclick="event.stopPropagation();">CSV ⬇</a>
             </a>
         </div>
 
@@ -240,10 +240,10 @@
         <div class="table-section">
             <div class="table-header">
                 <h2>라이선스 목록 <span class="count">(총 <strong th:text="${licenses != null ? licenses.size() : 0}">0</strong>건)</span></h2>
-                <a th:if="${selectedType != null}"
+                <a th:if="${selectedType != null and hasEditPermission}"
                    th:href="@{/geonuris/license/download/csv(type=${selectedType})}"
                    class="btn-top"><i class="fas fa-download"></i> 현재 필터 CSV</a>
-                <a th:if="${selectedType == null}"
+                <a th:if="${selectedType == null and hasEditPermission}"
                    th:href="@{/geonuris/license/download/csv}"
                    class="btn-top"><i class="fas fa-download"></i> 전체 CSV</a>
             </div>
@@ -308,7 +308,7 @@
                         </form>
                     </td>
                     <td style="text-align:center;">
-                        <a th:if="${lic.licenseData != null}"
+                        <a th:if="${lic.licenseData != null and hasEditPermission}"
                            th:href="@{/geonuris/license/{id}/download(id=${lic.id})}"
                            class="btn btn-download"><i class="fas fa-download"></i> 다운로드</a>
                         <span th:unless="${lic.licenseData != null}" style="color:var(--muted); font-size:0.75rem;">없음</span>

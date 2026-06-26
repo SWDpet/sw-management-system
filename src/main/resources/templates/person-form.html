@@ -194,7 +194,7 @@
                 </div>
             </fieldset>
 
-            <div class="page-footer">
+            <div class="page-footer" th:if="${userAuth == 'EDIT'}">
                 <button type="submit" class="btn-save">저장</button>
                 <a th:href="@{/person/list}" class="btn-cancel">취소</a>
                 <button type="button" class="btn-delete" 

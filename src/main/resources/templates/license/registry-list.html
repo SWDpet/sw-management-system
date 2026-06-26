@@ -235,7 +235,7 @@
                     <button id="sortForeignBtn" class="btn-sort" onclick="toggleForeignSort()" title="한글이 아닌 등록자를 맨 위로 정렬">
                         <i class="fas fa-globe"></i> 외국인 등록자 상단
                     </button>
-                    <a th:href="@{/license/registry/download/csv}" class="btn-top">
+                    <a th:if="${hasEditPermission}" th:href="@{/license/registry/download/csv}" class="btn-top">
                         <i class="fas fa-download"></i> CSV 다운로드
                     </a>
                     <a th:if="${hasEditPermission}" th:href="@{/license/registry/upload}" class="btn-top btn-primary">
