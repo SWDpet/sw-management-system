@@ -9,12 +9,11 @@ import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
+import com.swmanager.system.security.DocumentAccessSupport;
 import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.service.DocumentAttachmentService;
 import com.swmanager.system.service.DocumentService;
 import com.swmanager.system.service.DocumentSignedScanService;
-import com.swmanager.system.service.ExcelExportService;
-import com.swmanager.system.service.HwpxExportService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.service.PdfExportService;
 import org.junit.jupiter.api.AfterEach;
@@ -73,9 +72,7 @@ class DocumentControllerTest {
     private SwProjectRepository swProjectRepository;
     private UserRepository userRepository;
     private LogService logService;
-    private PdfExportService pdfExportService;
-    private HwpxExportService hwpxExportService;
-    private ExcelExportService excelExportService;
+    private PdfExportService pdfExportService;   // [S4] previewDocument 잔존
     private DocumentAttachmentService attachmentService;
     private DocumentSignedScanService signedScanService;
 
@@ -89,8 +86,6 @@ class DocumentControllerTest {
         userRepository = mock(UserRepository.class);
         logService = mock(LogService.class);
         pdfExportService = mock(PdfExportService.class);
-        hwpxExportService = mock(HwpxExportService.class);
-        excelExportService = mock(ExcelExportService.class);
         attachmentService = mock(DocumentAttachmentService.class);
         signedScanService = mock(DocumentSignedScanService.class);
 
@@ -101,10 +96,9 @@ class DocumentControllerTest {
         inject("userRepository", userRepository);
         inject("logService", logService);
         inject("pdfExportService", pdfExportService);
-        inject("hwpxExportService", hwpxExportService);
-        inject("excelExportService", excelExportService);
         inject("attachmentService", attachmentService);
         inject("signedScanService", signedScanService);
+        inject("access", new DocumentAccessSupport()); // [S4] 인증 위임 — 잔존 권한 테스트가 getAuth()→access 경로 사용
 
         SecurityContextHolder.clearContext();
     }
@@ -188,35 +182,7 @@ class DocumentControllerTest {
         assertThat(controller.getDistList("강원도")).containsExactly("원주시");
     }
 
-    // ───────────────────────── Excel 목록 다운로드 ─────────────────────────
-
-    @Test
-    void excelList_none_forbidden() {
-        loginNone();
-        ResponseEntity<byte[]> res = controller.downloadDocumentListExcel(null, null, null, null, null);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(excelExportService);
-    }
-
-    @Test
-    void excelList_edit_ok() throws Exception {
-        loginEdit();
-        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Page.empty());
-        when(excelExportService.generateDocumentList(any())).thenReturn(new byte[]{1, 2});
-        ResponseEntity<byte[]> res = controller.downloadDocumentListExcel("COMMENCE", null, null, null, null);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(res.getBody()).hasSize(2);
-    }
-
-    @Test
-    void excelList_serviceThrows_500() {
-        loginEdit();
-        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenThrow(new RuntimeException("boom"));
-        ResponseEntity<byte[]> res = controller.downloadDocumentListExcel(null, null, null, null, null);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    // [S4 Phase 1] excelList* 다운로드 테스트는 DocumentDownloadControllerTest 로 이관.
 
     // ───────────────────────── D-10 상세 ─────────────────────────
 
@@ -354,119 +320,7 @@ class DocumentControllerTest {
         assertThat(m.getAttribute("docId")).isEqualTo(5);
     }
 
-    @Test
-    void downloadPdf_view_forbidden() { // [viewer-action-button-guard] 조회자 다운로드 차단
-        loginView();
-        ResponseEntity<byte[]> res = controller.downloadPdf(5);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(pdfExportService);
-    }
-
-    @Test
-    void downloadPdf_edit_ok() {
-        loginEdit();
-        when(pdfExportService.generatePdf(5)).thenReturn(new byte[]{1});
-        when(documentService.getDocumentById(5)).thenReturn(new Document());
-        ResponseEntity<byte[]> res = controller.downloadPdf(5);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void downloadPdf_admin_ok() { // getAuth() 가 admin→"EDIT" 매핑 → 관리자 다운로드 허용(차단 아님)
-        loginAdmin();
-        when(pdfExportService.generatePdf(5)).thenReturn(new byte[]{1});
-        when(documentService.getDocumentById(5)).thenReturn(new Document());
-        assertThat(controller.downloadPdf(5).getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void downloadPdf_throws_500() {
-        loginEdit(); // 권한 선행이므로 500 경로 검증엔 EDIT 필요
-        when(pdfExportService.generatePdf(5)).thenThrow(new RuntimeException("x"));
-        ResponseEntity<byte[]> res = controller.downloadPdf(5);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Test
-    void downloadHwpx_letter_edit_ok() {
-        loginEdit();
-        when(hwpxExportService.generateHwpx(eq(5), anyString())).thenReturn(new byte[]{1});
-        when(documentService.getDocumentById(5)).thenReturn(new Document());
-        ResponseEntity<byte[]> res = controller.downloadHwpx(5, "letter");
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void downloadHwpx_throws_500() {
-        loginEdit();
-        when(hwpxExportService.generateHwpx(anyInt(), anyString())).thenThrow(new RuntimeException("x"));
-        ResponseEntity<byte[]> res = controller.downloadHwpx(5, "completion_body");
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Test
-    void downloadExcel_design_edit_ok() throws Exception {
-        loginEdit();
-        Document doc = new Document(); // docType null → 설계내역서 분기
-        when(documentService.getDocumentById(5)).thenReturn(doc);
-        when(excelExportService.generateDesignEstimate(5)).thenReturn(new byte[]{1});
-        ResponseEntity<byte[]> res = controller.downloadExcel(5);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(excelExportService).generateDesignEstimate(5);
-    }
-
-    @Test
-    void downloadExcel_throws_500() {
-        loginEdit();
-        when(documentService.getDocumentById(5)).thenThrow(new RuntimeException("x"));
-        ResponseEntity<byte[]> res = controller.downloadExcel(5);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Test
-    void downloadZip_throws_500() {
-        loginEdit();
-        when(documentService.getDocumentById(5)).thenThrow(new RuntimeException("x"));
-        ResponseEntity<byte[]> res = controller.downloadZip(5);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    // ───────────────────────── 일괄 ZIP ─────────────────────────
-
-    @Test
-    void bulkZip_none_forbidden() {
-        loginNone();
-        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "letter");
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(documentService);
-    }
-
-    @Test
-    void bulkZip_invalidType_badRequest() {
-        loginEdit();
-        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "bogus");
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void bulkZip_noTargets_badRequest() {
-        loginEdit();
-        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Page.empty());
-        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "letter");
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void bulkZip_tooMany_payloadTooLarge() {
-        loginEdit();
-        // total > LIMIT(200) → 413. PageImpl(content, pageable, total) 로 totalElements 만 크게.
-        Page<DocumentDTO> page = new PageImpl<>(List.of(), PageRequest.of(0, 201), 500);
-        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(page);
-        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "letter");
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
-    }
+    // [S4 Phase 1] download*(pdf/hwpx/excel/zip)·bulkZip* 테스트는 DocumentDownloadControllerTest 로 이관.
 
     // ───────────────────────── 전자서명/첨부 가드 ─────────────────────────
 
@@ -733,29 +587,7 @@ class DocumentControllerTest {
         inject("pjtScheduleRepository", pjtScheduleRepo);
     }
 
-    // ───────────────────────── 정적 헬퍼 ─────────────────────────
-
-    @Test
-    void zipSafe_sanitizesForbiddenChars() {
-        assertThat(DocumentController.zipSafe("a/b:c*?\"<>|d")).isEqualTo("abcd");
-        assertThat(DocumentController.zipSafe(null)).isEqualTo("미상");
-        assertThat(DocumentController.zipSafe("   ")).isEqualTo("미상");
-        assertThat(DocumentController.zipSafe("..traversal")).isEqualTo("traversal");
-    }
-
-    @Test
-    void zipSafe_truncatesLongName() {
-        String s = DocumentController.zipSafe("가".repeat(100));
-        assertThat(s.length()).isLessThanOrEqualTo(60);
-    }
-
-    @Test
-    void bulkTypeLabel_mapsKnownTypes() {
-        assertThat(DocumentController.bulkTypeLabel("letter")).isEqualTo("공문");
-        assertThat(DocumentController.bulkTypeLabel("all")).isEqualTo("전체");
-        assertThat(DocumentController.bulkTypeLabel("design")).isEqualTo("설계내역서");
-        assertThat(DocumentController.bulkTypeLabel("unknown")).isEqualTo("산출물");
-    }
+    // [S4 Phase 1] zipSafe/bulkTypeLabel static 헬퍼 테스트는 DocumentDownloadControllerTest 로 이관.
 
     private static MockMultipartFile pdf() {
         return new MockMultipartFile("file", "a.pdf", "application/pdf", new byte[]{1, 2, 3});

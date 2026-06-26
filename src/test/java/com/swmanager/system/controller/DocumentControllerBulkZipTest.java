@@ -13,30 +13,30 @@ class DocumentControllerBulkZipTest {
     @Test
     void zipSafe_removesPathChars() {
         // 경로 금지문자(/ \ : * ? " < > |)·travers(..) 제거 → ZIP 엔트리 경로 안전
-        assertEquals("사업명", DocumentController.zipSafe("사\\업/명:*?\"<>|"));
-        assertFalse(DocumentController.zipSafe("../../etc").contains(".."));
-        assertFalse(DocumentController.zipSafe("a/b\\c").contains("/"));
-        assertFalse(DocumentController.zipSafe("a/b\\c").contains("\\"));
+        assertEquals("사업명", DocumentDownloadController.zipSafe("사\\업/명:*?\"<>|"));
+        assertFalse(DocumentDownloadController.zipSafe("../../etc").contains(".."));
+        assertFalse(DocumentDownloadController.zipSafe("a/b\\c").contains("/"));
+        assertFalse(DocumentDownloadController.zipSafe("a/b\\c").contains("\\"));
     }
 
     @Test
     void zipSafe_compressesWhitespaceAndCaps() {
-        assertEquals("강진 군", DocumentController.zipSafe("  강진   군  "));
-        assertTrue(DocumentController.zipSafe("가".repeat(120)).length() <= 60);
+        assertEquals("강진 군", DocumentDownloadController.zipSafe("  강진   군  "));
+        assertTrue(DocumentDownloadController.zipSafe("가".repeat(120)).length() <= 60);
     }
 
     @Test
     void zipSafe_nullEmptyFallback() {
-        assertEquals("미상", DocumentController.zipSafe(null));
-        assertEquals("미상", DocumentController.zipSafe("   "));
-        assertEquals("미상", DocumentController.zipSafe("\\/:*?\"<>|"));
+        assertEquals("미상", DocumentDownloadController.zipSafe(null));
+        assertEquals("미상", DocumentDownloadController.zipSafe("   "));
+        assertEquals("미상", DocumentDownloadController.zipSafe("\\/:*?\"<>|"));
     }
 
     @Test
     void bulkTypeLabel_maps() {
-        assertEquals("공문", DocumentController.bulkTypeLabel("letter"));
-        assertEquals("전체", DocumentController.bulkTypeLabel("all"));
-        assertEquals("기성내역서", DocumentController.bulkTypeLabel("interim"));
-        assertEquals("산출물", DocumentController.bulkTypeLabel("unknown"));
+        assertEquals("공문", DocumentDownloadController.bulkTypeLabel("letter"));
+        assertEquals("전체", DocumentDownloadController.bulkTypeLabel("all"));
+        assertEquals("기성내역서", DocumentDownloadController.bulkTypeLabel("interim"));
+        assertEquals("산출물", DocumentDownloadController.bulkTypeLabel("unknown"));
     }
 }
