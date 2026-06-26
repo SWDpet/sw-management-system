@@ -385,10 +385,17 @@ class OpsDocControllerTest {
     }
 
     @Test
-    void downloadSupportFile_ok() {
+    void downloadSupportFile_viewOnly_forbidden() { // [viewer-action-button-guard] 조회자 다운로드 차단(기존 requireDocView→EDIT)
+        ResponseEntity<Resource> res = controller.downloadSupportFile(1L, viewUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(supportFileService, never()).loadForDownload(anyLong());
+    }
+
+    @Test
+    void downloadSupportFile_edit_ok() {
         when(supportFileService.loadForDownload(1L)).thenReturn(new ByteArrayResource(new byte[]{1}));
         when(supportFileService.originalName(1L)).thenReturn("보고서.pdf");
-        ResponseEntity<Resource> res = controller.downloadSupportFile(1L, viewUser());
+        ResponseEntity<Resource> res = controller.downloadSupportFile(1L, editUser());
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
@@ -401,9 +408,9 @@ class OpsDocControllerTest {
     }
 
     @Test
-    void downloadSupportFile_notFound_404() {
+    void downloadSupportFile_edit_notFound_404() {
         when(supportFileService.loadForDownload(1L)).thenThrow(new RuntimeException("없음"));
-        ResponseEntity<Resource> res = controller.downloadSupportFile(1L, viewUser());
+        ResponseEntity<Resource> res = controller.downloadSupportFile(1L, editUser());
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 

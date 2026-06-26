@@ -85,6 +85,7 @@ class PerformanceControllerTest {
                 new UsernamePasswordAuthenticationToken(cud, "N/A", cud.getAuthorities()));
     }
     private void loginView()  { login("VIEW", "ROLE_USER"); }
+    private void loginEdit()  { login("EDIT", "ROLE_USER"); }
     private void loginNone()  { login("NONE", "ROLE_USER"); }
     private void loginAdmin() { login("NONE", "ROLE_ADMIN"); }
 
@@ -233,8 +234,27 @@ class PerformanceControllerTest {
     }
 
     @Test
-    void excel_view_ok() throws Exception {
+    void excel_view_forbidden() { // [viewer-action-button-guard] 조회자 다운로드 차단
         loginView();
+        ResponseEntity<byte[]> res = controller.downloadExcel(1L, 2026, 1, 2026, 12);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(performanceService, never()).getAggregatedPerformance(anyLong(), anyInt(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    void excel_admin_ok() throws Exception { // getAuth() admin→"EDIT" → 관리자 다운로드 허용
+        loginAdmin();
+        when(performanceService.getAggregatedPerformance(eq(1L), anyInt(), anyInt(), anyInt(), anyInt()))
+                .thenReturn(Map.of("details", List.of()));
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(excelExportService.generatePerformanceReport(any(), anyInt(), anyInt(), anyInt(), anyInt(), any(), any()))
+                .thenReturn(new byte[]{1});
+        assertThat(controller.downloadExcel(1L, 2026, 1, 2026, 12).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void excel_edit_ok() throws Exception {
+        loginEdit();
         when(performanceService.getAggregatedPerformance(eq(1L), anyInt(), anyInt(), anyInt(), anyInt()))
                 .thenReturn(Map.of("details", List.of()));
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
@@ -247,7 +267,7 @@ class PerformanceControllerTest {
 
     @Test
     void excel_serviceThrows_500() {
-        loginView();
+        loginEdit(); // 권한 선행 → 500 경로 검증엔 EDIT 필요
         when(performanceService.getAggregatedPerformance(anyLong(), anyInt(), anyInt(), anyInt(), anyInt()))
                 .thenThrow(new RuntimeException("boom"));
         ResponseEntity<byte[]> res = controller.downloadExcel(1L, 2026, 1, 2026, 12);

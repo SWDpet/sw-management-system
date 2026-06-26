@@ -370,7 +370,7 @@ public class GeonurisLicenseController {
             @RequestParam(required = false) String type,
             @AuthenticationPrincipal CustomUserDetails u) {
 
-        if (!hasViewPermission(u)) {
+        if (!hasEditPermission(u)) {  // [viewer-action-button-guard] 다운로드=EDIT(조회자 차단)
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -458,7 +458,7 @@ public class GeonurisLicenseController {
     public ResponseEntity<ByteArrayResource> download(
             @PathVariable Long id,
             @AuthenticationPrincipal CustomUserDetails u) {
-        if (!hasViewPermission(u)) {
+        if (!hasEditPermission(u)) {  // [viewer-action-button-guard] 다운로드=EDIT(조회자 차단)
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         try {

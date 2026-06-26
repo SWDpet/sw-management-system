@@ -298,6 +298,7 @@ public class InspectReportController {
     @GetMapping("/api/inspect-pdf/{reportId}")
     @ResponseBody
     public ResponseEntity<byte[]> downloadInspectPdf(@PathVariable Long reportId) {
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT(기존 무가드→신설)
         try {
             byte[] pdf = inspectPdfService.generatePdf(reportId);
             InspectReportDTO report = inspectReportService.findById(reportId);

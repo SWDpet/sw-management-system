@@ -464,7 +464,7 @@ public class OpsDocController {
     @GetMapping("/api/support-file/{docId}")
     public ResponseEntity<org.springframework.core.io.Resource> downloadSupportFile(
             @PathVariable Long docId, @AuthenticationPrincipal CustomUserDetails currentUser) {
-        if (requireDocView(currentUser) != null) return ResponseEntity.status(403).build();
+        if (!hasDocEdit(currentUser)) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT(기존 requireDocView→강화)
         try {
             org.springframework.core.io.Resource resource = supportFileService.loadForDownload(docId);
             String origName = supportFileService.originalName(docId);

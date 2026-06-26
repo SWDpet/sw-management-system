@@ -226,7 +226,7 @@ public class PerformanceController {
             @RequestParam int toYear, @RequestParam int toMonth) {
 
         String auth = getAuth();
-        if ("NONE".equals(auth)) {
+        if (!"EDIT".equals(auth)) {  // [viewer-action-button-guard] 다운로드=EDIT
             return ResponseEntity.status(403).build();
         }
 

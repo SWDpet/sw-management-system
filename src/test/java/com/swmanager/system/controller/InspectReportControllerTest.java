@@ -274,7 +274,23 @@ class InspectReportControllerTest {
     // ───────────────────────── PDF 다운로드 ─────────────────────────
 
     @Test
+    void downloadPdf_view_forbidden() { // [viewer-action-button-guard] 조회자 PDF 다운로드 차단(기존 무가드→EDIT)
+        loginView();
+        assertThat(controller.downloadInspectPdf(5L).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(inspectPdfService, never()).generatePdf(anyLong());
+    }
+
+    @Test
+    void downloadPdf_admin_ok() { // getAuth() admin→"EDIT" → 관리자 허용
+        loginAdmin();
+        when(inspectPdfService.generatePdf(5L)).thenReturn(new byte[]{1});
+        when(inspectReportService.findById(5L)).thenReturn(new InspectReportDTO());
+        assertThat(controller.downloadInspectPdf(5L).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void downloadPdf_inspectMonthSuffix_ok() {
+        loginEdit();
         InspectReportDTO report = new InspectReportDTO();
         report.setInspectMonth("2026-03");
         report.setDocTitle("UPIS 점검내역서");
@@ -289,6 +305,7 @@ class InspectReportControllerTest {
 
     @Test
     void downloadPdf_noMonth_emptySuffix_ok() {
+        loginEdit();
         InspectReportDTO report = new InspectReportDTO(); // visits/month 모두 null → suffix 없음
         when(inspectPdfService.generatePdf(5L)).thenReturn(new byte[]{1});
         when(inspectReportService.findById(5L)).thenReturn(report);
@@ -300,6 +317,7 @@ class InspectReportControllerTest {
 
     @Test
     void downloadPdf_throws_500() {
+        loginEdit(); // 권한 선행 → 500 경로 검증엔 EDIT 필요
         when(inspectPdfService.generatePdf(5L)).thenThrow(new RuntimeException("x"));
         assertThat(controller.downloadInspectPdf(5L).getStatusCode())
                 .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);

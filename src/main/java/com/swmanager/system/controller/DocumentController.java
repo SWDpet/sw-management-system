@@ -158,7 +158,7 @@ public class DocumentController {
             @RequestParam(name = "distNm", required = false) String distNm,
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "authorName", required = false) String authorName) {
-        if ("NONE".equals(getAuth())) {
+        if (!"EDIT".equals(getAuth())) {  // [viewer-action-button-guard] 다운로드=EDIT
             return ResponseEntity.status(403).build();
         }
         try {
@@ -488,6 +488,7 @@ public class DocumentController {
     @ResponseBody
     @GetMapping("/api/pdf/{id}")
     public ResponseEntity<byte[]> downloadPdf(@PathVariable Integer id) {
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT
         try {
             byte[] pdfBytes = pdfExportService.generatePdf(id);
 
@@ -512,6 +513,7 @@ public class DocumentController {
     @GetMapping("/api/hwpx/{id}")
     public ResponseEntity<byte[]> downloadHwpx(@PathVariable Integer id,
                                                 @RequestParam(defaultValue = "letter") String type) {
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT
         try {
             byte[] hwpxBytes = hwpxExportService.generateHwpx(id, type);
 
@@ -546,6 +548,7 @@ public class DocumentController {
     @ResponseBody
     @GetMapping("/api/excel/{id}")
     public ResponseEntity<byte[]> downloadExcel(@PathVariable Integer id) {
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT
         try {
             Document doc = documentService.getDocumentById(id);
             byte[] excelBytes;
@@ -577,6 +580,7 @@ public class DocumentController {
     @ResponseBody
     @GetMapping("/api/zip/{id}")
     public ResponseEntity<byte[]> downloadZip(@PathVariable Integer id) {
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT
         try {
             Document doc = documentService.getDocumentById(id);
             DocumentType docType = doc.getDocType();
@@ -631,7 +635,7 @@ public class DocumentController {
             @RequestParam(name = "authorName", required = false) String authorName,
             @RequestParam(name = "type", defaultValue = "letter") String type) {
 
-        if ("NONE".equals(getAuth())) return ResponseEntity.status(403).build();
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT
 
         java.util.Set<String> allowed = java.util.Set.of("letter", "all", "inspector", "interim", "commence_body", "design", "completion");
         if (!allowed.contains(type)) return bulkErr(400, "허용되지 않은 type 입니다.");
@@ -865,7 +869,7 @@ public class DocumentController {
 
     @GetMapping("/api/signed-scan/{docId}")
     public ResponseEntity<org.springframework.core.io.Resource> downloadSignedScan(@PathVariable Integer docId) {
-        if (getCurrentUser() == null) return ResponseEntity.status(403).build();
+        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT(기존 로그인만→강화)
         try {
             var resource = signedScanService.loadForDownload(docId);
             String origName = signedScanService.originalName(docId);

@@ -443,9 +443,9 @@ public class LicenseRegistryController {
     @GetMapping("/download/csv")
     public ResponseEntity<Resource> downloadCsv(@AuthenticationPrincipal CustomUserDetails userDetails) {
         log.info("=== CSV 다운로드 요청 ===");
-        
-        // 권한 체크 (VIEW 이상)
-        if (!hasViewPermission(userDetails)) {
+
+        // [viewer-action-button-guard] 다운로드=EDIT(조회자 차단). 기존 VIEW 이상 → EDIT 이상으로 강화.
+        if (!hasEditPermission(userDetails)) {
             log.warn("다운로드 권한 없음 - 사용자: {}", userDetails.getUsername());
             return ResponseEntity.status(403).build();
         }

@@ -96,11 +96,22 @@ class InspectAgentControllerTest {
     }
 
     @Test
-    void download_view_metaPresentButZipMissing_notFound() {
+    void download_view_forbidden() { // [viewer-action-button-guard] 조회자 다운로드 차단(기존 VIEW 허용→EDIT)
+        assertThat(controller.download(u("VIEW")).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void download_admin_forbiddenWhenNoZip_butGuardPasses() { // 관리자(getAuth admin→EDIT)는 가드 통과 → zip 없으니 404(403 아님)
+        adminContext();
+        assertThat(controller.download(u("NONE")).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void download_edit_metaPresentButZipMissing_notFound() {
         // 전제 명시: manifest 는 있으나 zip 본체는 classpath 미배치. zip 이 추가되면 이 단언이 전제 위반을 알림.
         assertThat(new ClassPathResource("agent/release-manifest.json").exists()).isTrue();
         assertThat(new ClassPathResource("agent/inspect-agent-1.0.0-test.zip").exists()).isFalse();
-        ResponseEntity<byte[]> res = controller.download(u("VIEW"));
+        ResponseEntity<byte[]> res = controller.download(u("EDIT"));
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

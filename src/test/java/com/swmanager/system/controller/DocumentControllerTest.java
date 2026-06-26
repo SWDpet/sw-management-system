@@ -355,7 +355,16 @@ class DocumentControllerTest {
     }
 
     @Test
-    void downloadPdf_ok() {
+    void downloadPdf_view_forbidden() { // [viewer-action-button-guard] 조회자 다운로드 차단
+        loginView();
+        ResponseEntity<byte[]> res = controller.downloadPdf(5);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(pdfExportService);
+    }
+
+    @Test
+    void downloadPdf_edit_ok() {
+        loginEdit();
         when(pdfExportService.generatePdf(5)).thenReturn(new byte[]{1});
         when(documentService.getDocumentById(5)).thenReturn(new Document());
         ResponseEntity<byte[]> res = controller.downloadPdf(5);
@@ -363,14 +372,24 @@ class DocumentControllerTest {
     }
 
     @Test
+    void downloadPdf_admin_ok() { // getAuth() 가 admin→"EDIT" 매핑 → 관리자 다운로드 허용(차단 아님)
+        loginAdmin();
+        when(pdfExportService.generatePdf(5)).thenReturn(new byte[]{1});
+        when(documentService.getDocumentById(5)).thenReturn(new Document());
+        assertThat(controller.downloadPdf(5).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void downloadPdf_throws_500() {
+        loginEdit(); // 권한 선행이므로 500 경로 검증엔 EDIT 필요
         when(pdfExportService.generatePdf(5)).thenThrow(new RuntimeException("x"));
         ResponseEntity<byte[]> res = controller.downloadPdf(5);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
-    void downloadHwpx_letter_ok() {
+    void downloadHwpx_letter_edit_ok() {
+        loginEdit();
         when(hwpxExportService.generateHwpx(eq(5), anyString())).thenReturn(new byte[]{1});
         when(documentService.getDocumentById(5)).thenReturn(new Document());
         ResponseEntity<byte[]> res = controller.downloadHwpx(5, "letter");
@@ -379,13 +398,15 @@ class DocumentControllerTest {
 
     @Test
     void downloadHwpx_throws_500() {
+        loginEdit();
         when(hwpxExportService.generateHwpx(anyInt(), anyString())).thenThrow(new RuntimeException("x"));
         ResponseEntity<byte[]> res = controller.downloadHwpx(5, "completion_body");
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Test
-    void downloadExcel_design_ok() throws Exception {
+    void downloadExcel_design_edit_ok() throws Exception {
+        loginEdit();
         Document doc = new Document(); // docType null → 설계내역서 분기
         when(documentService.getDocumentById(5)).thenReturn(doc);
         when(excelExportService.generateDesignEstimate(5)).thenReturn(new byte[]{1});
@@ -396,6 +417,7 @@ class DocumentControllerTest {
 
     @Test
     void downloadExcel_throws_500() {
+        loginEdit();
         when(documentService.getDocumentById(5)).thenThrow(new RuntimeException("x"));
         ResponseEntity<byte[]> res = controller.downloadExcel(5);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -403,6 +425,7 @@ class DocumentControllerTest {
 
     @Test
     void downloadZip_throws_500() {
+        loginEdit();
         when(documentService.getDocumentById(5)).thenThrow(new RuntimeException("x"));
         ResponseEntity<byte[]> res = controller.downloadZip(5);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -516,15 +539,23 @@ class DocumentControllerTest {
 
     @Test
     void downloadSignedScan_anonymous_forbidden() {
-        // 로그인 안함 → getCurrentUser null → 403
+        // 미로그인 → getAuth NONE → 403
         ResponseEntity<?> res = controller.downloadSignedScan(1);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         verifyNoInteractions(signedScanService);
     }
 
     @Test
-    void downloadSignedScan_notFound_404() {
+    void downloadSignedScan_view_forbidden() { // [viewer-action-button-guard] 조회자(로그인 VIEW) 다운로드 차단
         loginView();
+        ResponseEntity<?> res = controller.downloadSignedScan(1);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(signedScanService);
+    }
+
+    @Test
+    void downloadSignedScan_edit_notFound_404() {
+        loginEdit(); // 권한 통과 후 미존재 → 404
         when(signedScanService.loadForDownload(1)).thenThrow(new RuntimeException("없음"));
         ResponseEntity<?> res = controller.downloadSignedScan(1);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);

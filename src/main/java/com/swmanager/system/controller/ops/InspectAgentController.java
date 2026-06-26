@@ -61,7 +61,7 @@ public class InspectAgentController {
     /** zip 다운로드 (application/zip + Content-Length + attachment) */
     @GetMapping("/inspect-agent/download")
     public ResponseEntity<byte[]> download(@AuthenticationPrincipal CustomUserDetails cu) {
-        if ("NONE".equals(getAuth(cu))) {
+        if (!"EDIT".equals(getAuth(cu))) {  // [viewer-action-button-guard] 다운로드=EDIT
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         AgentMeta m = meta();

@@ -3,7 +3,7 @@
 - **작성팀**: 개발팀
 - **작성일**: 2026-06-26
 - **기획서**: `docs/product-specs/viewer-action-button-guard.md` (codex APPROVE-WITH-FIX 보완 + 사용자 최종승인).
-- **상태**: ✅ codex APPROVE-WITH-FIX 보완 반영 + **사용자 최종승인(2026-06-26)**. → C1 구현 진행.
+- **상태**: ✅ **완료(2026-06-26)**. C1(UI 숨김, `43b92bc`) + C2(서버 가드 EDIT + 테스트 갱신). 두 커밋 모두 dual-review 반영·듀얼푸시. ⚠운영배포는 C2 포함 최신본으로(C1 단독 금지). 브라우저 QA(VIEW/EDIT)는 배포 전 권장.
 
 ---
 
