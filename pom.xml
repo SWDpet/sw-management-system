@@ -194,13 +194,13 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 68.69%(2026-06-26 +MyPageController 테스트). 게인 작아 floor 0.65 유지(버퍼 ~3.7pp 흡수), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 69.00%(2026-06-26 +InspectAgentController 테스트, MyPage/InspectAgent 누적). floor 0.65→0.66 상향 → ~3.0pp 버퍼, 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.65</minimum>
+                                            <minimum>0.66</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 56.10%(2026-06-26 +MyPageController 테스트, Partner~MyPage 누적). floor 0.52→0.53 상향 → ~3.1pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 56.32%(2026-06-26 +InspectAgentController 테스트). 게인 작아 floor 0.53 유지(버퍼 ~3.3pp 흡수), 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.53</minimum>
