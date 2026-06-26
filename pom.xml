@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 62.16%(2026-06-26 +WorkPlanController 테스트). floor 0.58→0.59 상향 → ~3.2pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 63.43%(2026-06-26 +OpsKbController 테스트). floor 0.59→0.60 상향 → ~3.4pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.59</minimum>
+                                            <minimum>0.60</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 50.88%(2026-06-26 +WorkPlanController 테스트). floor 0.47→0.48 상향 → ~2.9pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 52.01%(2026-06-26 +OpsKbController 테스트). floor 0.48→0.49 상향 → ~3.0pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.48</minimum>
+                                            <minimum>0.49</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
