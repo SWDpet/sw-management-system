@@ -194,13 +194,13 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 66.10%(2026-06-26 +InfraController 테스트). floor 0.62→0.63 상향 → ~3.1pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 66.71%(2026-06-26 +PersonController 테스트). floor 0.63→0.64 상향 → ~2.7pp 버퍼(미테스트 신규코드·CI 변동 흡수), 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.63</minimum>
+                                            <minimum>0.64</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 54.24%(2026-06-26 +InfraController 테스트). 게인 작아 floor 0.51 유지(버퍼 ~3.2pp 흡수), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 54.65%(2026-06-26 +PersonController 테스트). 게인 작아 floor 0.51 유지(버퍼 ~3.7pp 흡수), 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.51</minimum>
