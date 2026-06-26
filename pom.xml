@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 68.01%(2026-06-26 +OrgUnitController 테스트, Person/Partner/DocParticipant/OrgUnit 누적). floor 0.64→0.65 상향 → ~3.0pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 68.69%(2026-06-26 +MyPageController 테스트). 게인 작아 floor 0.65 유지(버퍼 ~3.7pp 흡수), 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.65</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 55.68%(2026-06-26 +OrgUnitController 테스트). 게인 작아 floor 0.52 유지(버퍼 ~3.7pp 흡수), 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 56.10%(2026-06-26 +MyPageController 테스트, Partner~MyPage 누적). floor 0.52→0.53 상향 → ~3.1pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.52</minimum>
+                                            <minimum>0.53</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
