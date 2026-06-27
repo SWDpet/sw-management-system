@@ -1,18 +1,19 @@
 package com.swmanager.system.service.inspection;
 
 import com.swmanager.system.constant.enums.InspectResultCode;
-import com.swmanager.system.service.inspection.InspectionQrBatchService.ResultText;
+import com.swmanager.system.service.inspection.InspectQrMetricSupport.ResultText;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.swmanager.system.service.inspection.InspectionQrBatchService.buildRemarks;
-import static com.swmanager.system.service.inspection.InspectionQrBatchService.extractPercent;
-import static com.swmanager.system.service.inspection.InspectionQrBatchService.formatValue;
-import static com.swmanager.system.service.inspection.InspectionQrBatchService.formatValueWithContext;
-import static com.swmanager.system.service.inspection.InspectionQrBatchService.parseNumeric;
-import static com.swmanager.system.service.inspection.InspectionQrBatchService.resolveSection;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.buildRemarks;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.extractPercent;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.formatValue;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.formatValueWithContext;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.manifestSort;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.parseNumeric;
+import static com.swmanager.system.service.inspection.InspectQrMetricSupport.resolveSection;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -31,6 +32,15 @@ class InspectionQrBatchFormatTest {
         assertThat(resolveSection("gis.gws.running")).isEqualTo("GIS");
         assertThat(resolveSection("ap.hw.cpu")).isEqualTo("AP");
         assertThat(resolveSection("unknown.x")).isEqualTo("AP");
+    }
+
+    // ── manifestSort: itemId → sort_order(0-based) / 미매핑·null → null ──
+    @Test void manifestSort_mappedAndNull() {
+        assertThat(manifestSort("ap.led.system")).isEqualTo(0);
+        assertThat(manifestSort("db.os.users")).isEqualTo(23);
+        assertThat(manifestSort("ap.cable")).isEqualTo(5);    // adapter alias
+        assertThat(manifestSort("no.such.key")).isNull();      // 미매핑 → fallback 분기
+        assertThat(manifestSort(null)).isNull();
     }
 
     // ── parseNumeric: 비숫자 제거 후 파싱 ──
