@@ -891,10 +891,10 @@ public class HwpxExportService {
                     String spec = getStr(it, "specification", "");
                     String qty = getStr(it, "quantity", "");
                     String row = tpl
-                        .replace("{{m.category}}", escapeXml(cat))
-                        .replace("{{m.targetName}}", escapeXml(name))
-                        .replace("{{m.spec}}", escapeXmlMultiline(spec))
-                        .replace("{{m.qty}}", escapeXml(qty));
+                        .replace("{{m.category}}", HwpxXmlSupport.escapeXml(cat))
+                        .replace("{{m.targetName}}", HwpxXmlSupport.escapeXml(name))
+                        .replace("{{m.spec}}", HwpxXmlSupport.escapeXmlMultiline(spec))
+                        .replace("{{m.qty}}", HwpxXmlSupport.escapeXml(qty));
                     out.append(row);
                 }
             }
@@ -930,18 +930,18 @@ public class HwpxExportService {
                     else if ("CHECK".equals(resultCode)) resultLabel = "점검";
                     else resultLabel = resultCode;
                     String row = tpl
-                        .replace("{{i.date}}", escapeXml(dateStr))
-                        .replace("{{i.target}}", escapeXmlMultiline(target))
-                        .replace("{{i.result}}", escapeXml(resultLabel));
+                        .replace("{{i.date}}", HwpxXmlSupport.escapeXml(dateStr))
+                        .replace("{{i.target}}", HwpxXmlSupport.escapeXmlMultiline(target))
+                        .replace("{{i.result}}", HwpxXmlSupport.escapeXml(resultLabel));
                     out.append(row);
                 }
             }
             xml = xml.substring(0, is) + out.toString() + xml.substring(ie + iEnd.length());
         }
         // 멀티라인 sentinel → paragraph 분할
-        xml = expandMultilineParagraphs(xml);
+        xml = HwpxXmlSupport.expandMultilineParagraphs(xml);
         // 마커가 들어 있던 두 표의 rowCnt / rowAddr 을 실제 <hp:tr> 수에 맞춰 재동기화
-        xml = syncTableRowCounts(xml);
+        xml = HwpxXmlSupport.syncTableRowCounts(xml);
         return xml;
     }
 
@@ -949,144 +949,15 @@ public class HwpxExportService {
      * <hp:tbl> 단위로 실제 <hp:tr> 수를 세어 rowCnt 속성을 갱신하고,
      * 각 행의 cellAddr rowAddr 값을 0..N-1 로 재할당한다. 행 마커 치환 후 호출.
      */
-    private String syncTableRowCounts(String xml) {
-        StringBuilder out = new StringBuilder();
-        int cursor = 0;
-        java.util.regex.Pattern tblOpen = java.util.regex.Pattern.compile("<hp:tbl\\b");
-        java.util.regex.Matcher m = tblOpen.matcher(xml);
-        while (m.find(cursor)) {
-            int s = m.start();
-            out.append(xml, cursor, s);
-            // find matching </hp:tbl> with depth tracking
-            int depth = 0, i = s, e = -1;
-            while (i < xml.length()) {
-                if (xml.startsWith("<hp:tbl", i) && (i + 7 < xml.length()) && (xml.charAt(i + 7) == ' ' || xml.charAt(i + 7) == '>')) {
-                    depth++; i += 7;
-                } else if (xml.startsWith("</hp:tbl>", i)) {
-                    depth--;
-                    if (depth == 0) { e = i + 9; break; }
-                    i += 9;
-                } else { i++; }
-            }
-            if (e < 0) { out.append(xml.substring(s)); cursor = xml.length(); break; }
-            String tbl = xml.substring(s, e);
+    // [S4 거대클래스 #2] XML 후처리 순수함수 6종(escapeXml·escapeXmlMultiline·expandMultilineParagraphs·
+    // syncTableRowCounts·countTopLevelTags·reassignRowAddrs) + NL_SENTINEL 은 HwpxXmlSupport 로 이동.
+    // (removeTcContaining 은 호출처 0 dead code 라 이동 대신 삭제 — dual-review 합의.)
 
-            // count top-level <hp:tr> within this table
-            int rowCount = countTopLevelTags(tbl, "<hp:tr>", "</hp:tr>", "<hp:tbl", "</hp:tbl>");
-            // update rowCnt attribute on opening tag
-            int tagEnd = tbl.indexOf('>');
-            String openTag = tbl.substring(0, tagEnd + 1);
-            String rest = tbl.substring(tagEnd + 1);
-            java.util.regex.Matcher rm = java.util.regex.Pattern.compile("rowCnt=\"(\\d+)\"").matcher(openTag);
-            if (rm.find()) {
-                openTag = openTag.substring(0, rm.start()) + "rowCnt=\"" + rowCount + "\"" + openTag.substring(rm.end());
-            }
-            // reassign rowAddr per top-level row
-            rest = reassignRowAddrs(rest);
-            out.append(openTag).append(rest);
-            cursor = e;
-        }
-        out.append(xml.substring(cursor));
-        return out.toString();
-    }
-
-    private int countTopLevelTags(String s, String open, String close, String nestOpen, String nestClose) {
-        int count = 0, i = 0, depth = 0, nest = 0;
-        // skip the opening <hp:tbl ...> itself: caller passes whole tbl, so track outer tbl depth
-        while (i < s.length()) {
-            if (s.startsWith(nestOpen, i) && (i + nestOpen.length() < s.length()) && (s.charAt(i + nestOpen.length()) == ' ' || s.charAt(i + nestOpen.length()) == '>')) {
-                nest++; i += nestOpen.length();
-            } else if (s.startsWith(nestClose, i)) {
-                nest--; i += nestClose.length();
-            } else if (nest == 1 && s.startsWith(open, i)) {
-                // depth==0 means inside outermost tbl content
-                if (depth == 0) count++;
-                depth++; i += open.length();
-            } else if (s.startsWith(close, i)) {
-                depth--; i += close.length();
-            } else { i++; }
-        }
-        return count;
-    }
-
-    private String reassignRowAddrs(String tblBody) {
-        // Walk top-level <hp:tr>...</hp:tr> blocks; in each, replace rowAddr="N" with current index
-        StringBuilder out = new StringBuilder();
-        int i = 0, idx = 0, nest = 0;
-        while (i < tblBody.length()) {
-            if (tblBody.startsWith("<hp:tbl", i) && (i + 7 < tblBody.length()) && (tblBody.charAt(i + 7) == ' ' || tblBody.charAt(i + 7) == '>')) {
-                // nested table: copy as-is until matching close
-                int depth = 1, j = i + 7;
-                while (j < tblBody.length()) {
-                    if (tblBody.startsWith("<hp:tbl", j) && (j + 7 < tblBody.length()) && (tblBody.charAt(j + 7) == ' ' || tblBody.charAt(j + 7) == '>')) { depth++; j += 7; }
-                    else if (tblBody.startsWith("</hp:tbl>", j)) { depth--; j += 9; if (depth == 0) break; }
-                    else j++;
-                }
-                out.append(tblBody, i, j);
-                i = j;
-            } else if (nest == 0 && tblBody.startsWith("<hp:tr>", i)) {
-                int depth = 1, j = i + 7;
-                while (j < tblBody.length()) {
-                    if (tblBody.startsWith("<hp:tr>", j)) { depth++; j += 7; }
-                    else if (tblBody.startsWith("</hp:tr>", j)) { depth--; j += 8; if (depth == 0) break; }
-                    else j++;
-                }
-                String row = tblBody.substring(i, j);
-                final int rowIdx = idx;
-                row = row.replaceAll("rowAddr=\"\\d+\"", "rowAddr=\"" + rowIdx + "\"");
-                out.append(row);
-                idx++;
-                i = j;
-            } else {
-                out.append(tblBody.charAt(i));
-                i++;
-            }
-        }
-        return out.toString();
-    }
-
-    private String escapeXml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-    }
-
-    /** XML 이스케이프 + 줄바꿈을 sentinel 토큰으로 변환. expandMultilineParagraphs() 가 후처리. */
-    private static final String NL_SENTINEL = "\u0001NL\u0001";
-    private String escapeXmlMultiline(String s) {
-        if (s == null) return "";
-        String esc = escapeXml(s.replace("\r\n", "\n").replace("\r", "\n"));
-        return esc.replace("\n", NL_SENTINEL);
-    }
 
     /**
      * sentinel 이 들어 있는 <hp:p>...</hp:p> 블록을 찾아 줄 단위로 paragraph 를 복제한다.
      * 각 줄은 원본 paragraph 의 속성/스타일을 그대로 유지한다.
      */
-    private String expandMultilineParagraphs(String xml) {
-        while (true) {
-            int idx = xml.indexOf(NL_SENTINEL);
-            if (idx < 0) break;
-            int ps = xml.lastIndexOf("<hp:p ", idx);
-            if (ps < 0) { xml = xml.replace(NL_SENTINEL, " "); break; }
-            int peEnd = xml.indexOf("</hp:p>", idx);
-            if (peEnd < 0) { xml = xml.replace(NL_SENTINEL, " "); break; }
-            peEnd += "</hp:p>".length();
-            String para = xml.substring(ps, peEnd);
-            // text 노드 추출
-            int ts = para.indexOf("<hp:t>");
-            int te = para.indexOf("</hp:t>", ts);
-            if (ts < 0 || te < 0) { xml = xml.replace(NL_SENTINEL, " "); break; }
-            String fullText = para.substring(ts + "<hp:t>".length(), te);
-            String[] lines = fullText.split(java.util.regex.Pattern.quote(NL_SENTINEL), -1);
-            StringBuilder rebuilt = new StringBuilder();
-            for (String line : lines) {
-                String clone = para.substring(0, ts + "<hp:t>".length()) + line + para.substring(te);
-                rebuilt.append(clone);
-            }
-            xml = xml.substring(0, ps) + rebuilt.toString() + xml.substring(peEnd);
-        }
-        return xml;
-    }
 
     /**
      * Document의 details에서 sectionKey에 해당하는 sectionData 조회
@@ -1115,34 +986,6 @@ public class HwpxExportService {
      * 특정 placeholder 토큰을 포함하는 <hp:tc>...</hp:tc> 블록을 모두 제거하고
      * 부모 <hp:tbl>의 colCnt를 감소시킨다. (예정공정표 비활성 월 셀 제거용)
      */
-    private String removeTcContaining(String xml, String token) {
-        while (true) {
-            int p = xml.indexOf(token);
-            if (p < 0) break;
-            int tcStart = xml.lastIndexOf("<hp:tc ", p);
-            if (tcStart < 0) tcStart = xml.lastIndexOf("<hp:tc>", p);
-            if (tcStart < 0) break;
-            int tcEnd = xml.indexOf("</hp:tc>", p);
-            if (tcEnd < 0) break;
-            tcEnd += "</hp:tc>".length();
-            int tblStart = xml.lastIndexOf("<hp:tbl ", tcStart);
-            if (tblStart >= 0) {
-                int tagEnd = xml.indexOf(">", tblStart);
-                String tag = xml.substring(tblStart, tagEnd);
-                java.util.regex.Matcher m = java.util.regex.Pattern.compile("colCnt=\"(\\d+)\"").matcher(tag);
-                if (m.find()) {
-                    int cnt = Integer.parseInt(m.group(1));
-                    String newTag = tag.substring(0, m.start()) + "colCnt=\"" + (cnt - 1) + "\"" + tag.substring(m.end());
-                    xml = xml.substring(0, tblStart) + newTag + xml.substring(tagEnd);
-                    int delta = newTag.length() - tag.length();
-                    tcStart += delta;
-                    tcEnd += delta;
-                }
-            }
-            xml = xml.substring(0, tcStart) + xml.substring(tcEnd);
-        }
-        return xml;
-    }
 
     /**
      * 핵심 템플릿 처리: ZIP 읽기 -> section0.xml 내 플레이스홀더 치환 -> 새 ZIP 쓰기
