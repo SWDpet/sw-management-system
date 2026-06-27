@@ -604,4 +604,107 @@ class InspectionQrBatchServiceTest {
         assertThat(res.getWarnItems()).isEqualTo(1);   // c
         assertThat(res.getReportUrl()).isEqualTo("/document/inspect/101");
     }
+
+    // ── 15. merge — 동일 (pjt, month) 기존 report 존재 시 머지 ───────────────
+    @Test
+    @DisplayName("15. 기존 manual report 존재 → merge(batchId/source 기록 + 자동수집 섹션만 삭제)")
+    void upload_mergesIntoExistingReport() {
+        InspectionQrBatchRequest req = sampleRequest("dyg-2026-05");
+        InspectReport existing = new InspectReport();
+        existing.setId(500L);
+        existing.setPjtId(17L);
+        existing.setInspectMonth("2026-05");   // batchId null → merge 시 기록 대상
+
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        when(reportRepository.findByPjtIdAndInspectMonthAndDeletedAtIsNull(17L, "2026-05"))
+                .thenReturn(Optional.of(existing));
+        when(reportRepository.save(any(InspectReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        InspectionQrBatchResponse res = service.upload(req, 99L);
+
+        assertThat(res.getReportId()).isEqualTo(500L);                 // 기존 report 재사용
+        assertThat(existing.getBatchId()).isEqualTo("dyg-2026-05");
+        assertThat(existing.getSource()).isEqualTo("auto-qr-merged");
+        assertThat(existing.getInspUserId()).isEqualTo(99L);           // null 이던 점검자 주입
+        verify(checkResultRepository).deleteByReportIdAndSectionIn(
+                eq(500L), eq(List.of("AP", "DB", "DBMS", "GIS")));      // 자동수집 섹션만 삭제
+    }
+
+    // ── 16. db.os.disk mounts → DB_USAGE / ap.os.disk_summary drives → AP_USAGE ─
+    @Test
+    @DisplayName("16. disk 맵 → DB_USAGE / AP_USAGE 사용량 행 생성")
+    void usageRows_generatedFromDiskMaps() {
+        InspectionQrBatchRequest req = new InspectionQrBatchRequest();
+        InspectionQrBatchRequest.Payload p = new InspectionQrBatchRequest.Payload();
+        p.setId("usage-2026-05");
+        p.setSite("dyg");
+        p.setRound("2026-05");
+        InspectionQrBatchRequest.Tier db = new InspectionQrBatchRequest.Tier();
+        db.setItems(List.of(List.of("db.os.disk", "ok", Map.of("/", Map.of("p", 52)))));
+        InspectionQrBatchRequest.Tier ap = new InspectionQrBatchRequest.Tier();
+        ap.setItems(List.of(List.of("ap.os.disk_summary", "ok", Map.of("c", Map.of("t", 5, "f", 2)))));
+        p.setTiers(Map.of("db", db, "ap", ap));
+        req.setPayload(p);
+        InspectionQrBatchRequest.Header h = new InspectionQrBatchRequest.Header();
+        h.setHash("z");
+        req.setHeader(h);
+
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        ArgumentCaptor<InspectCheckResult> cap = ArgumentCaptor.forClass(InspectCheckResult.class);
+        service.upload(req, 1L);
+        verify(checkResultRepository, org.mockito.Mockito.atLeastOnce()).save(cap.capture());
+        List<InspectCheckResult> rows = cap.getAllValues();
+        // DB_USAGE: mount "/" → 사용률 "52%"
+        assertThat(rows).anySatisfy(r -> {
+            assertThat(r.getSection()).isEqualTo("DB_USAGE");
+            assertThat(r.getItemName()).isEqualTo("/");
+            assertThat(r.getResultText()).isEqualTo("52%");
+        });
+        // AP_USAGE: drive c → "Disk C:" 라벨, "5GB / 2GB 여유"
+        assertThat(rows).anySatisfy(r -> {
+            assertThat(r.getSection()).isEqualTo("AP_USAGE");
+            assertThat(r.getItemName()).isEqualTo("Disk C:");
+            assertThat(r.getResultText()).isEqualTo("5GB / 2GB 여유");
+        });
+    }
+
+    // ── 17. siteCode 직접 매핑 실패 → alias 폴백 ──────────────────────────────
+    @Test
+    @DisplayName("17. findBySiteCode empty → findFirstBySiteCodeAlias 폴백")
+    void siteCode_aliasFallback() {
+        InspectionQrBatchRequest req = sampleRequest("alias-2026-05");
+        req.getPayload().setSite("oldcode");
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("oldcode")).thenReturn(Optional.empty());
+        when(swProjectRepository.findFirstBySiteCodeAlias("oldcode")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        InspectionQrBatchResponse res = service.upload(req, 1L);
+        assertThat(res.getPjtId()).isEqualTo(17L);
+        verify(swProjectRepository).findFirstBySiteCodeAlias("oldcode");
+    }
+
+    // ── 18. ts null → snapshot collectedAt=now() 로 upsert ────────────────────
+    @Test
+    @DisplayName("18. payload.ts null 이어도 AP perf → snapshot upsert(collectedAt=now)")
+    void metricSnapshot_tsNull_usesNow() {
+        InspectionQrBatchRequest req = sampleRequest("tsnull-2026-05");
+        req.getPayload().setTs(null);
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        ArgumentCaptor<OffsetDateTime> tsCap = ArgumentCaptor.forClass(OffsetDateTime.class);
+        service.upload(req, 1L);
+        verify(metricSnapshotRepository, times(1)).upsertIgnore(
+                eq(17L), eq("AP"), eq("UPIS-AP"), isNull(),
+                tsCap.capture(),
+                eq(BigDecimal.valueOf(23.4)), eq(BigDecimal.valueOf(81.2)), isNull(), anyString());
+        // ts=null → collectedAt=now() 사용 검증 (payload.ts 기반 2026-05-11 과거값이 아니라 현재 시각)
+        assertThat(tsCap.getValue()).isAfter(OffsetDateTime.now().minusMinutes(5));
+    }
 }

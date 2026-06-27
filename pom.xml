@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 70.76%(2026-06-26 +SwService 테스트, 70% 안정). floor 0.67→0.68 상향 → ~2.8pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 73.15%(2026-06-27 +inspection QR 커버리지). floor 0.68→0.71 상향 → ~2.2pp 버퍼, 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.68</minimum>
+                                            <minimum>0.71</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 56.97%(2026-06-26 +SwController 테스트). floor 0.53→0.54 상향 → ~3.0pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 59.67%(2026-06-27 +inspection QR 커버리지). floor 0.54→0.57 상향 → ~2.7pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.54</minimum>
+                                            <minimum>0.57</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

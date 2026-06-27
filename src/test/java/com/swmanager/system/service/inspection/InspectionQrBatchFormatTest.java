@@ -130,6 +130,40 @@ class InspectionQrBatchFormatTest {
         assertThat(formatValueWithContext("ap.hw.adapter", Map.of("up", 2, "total", 3)))
                 .isEqualTo(new ResultText("2개 UP / 3개", false));
     }
+    // ── switch arm 표시값 전수 (미커버 분기 보강): Map 입력 → 단위 접미 ──
+    // ⚠ pct/used_pct/count 키는 switch 진입 전 우선반환되므로 미포함
+    @Test void fvc_switchArm_db_os() {
+        assertThat(formatValueWithContext("db.os.mem_info", Map.of("total_gb", 64))).isEqualTo(new ResultText("64GB", false));
+        assertThat(formatValueWithContext("db.os.adapter", Map.of("adapter_count", 4))).isEqualTo(new ResultText("4개", false));
+        assertThat(formatValueWithContext("db.os.network_ip", Map.of("ipv4", List.of("10.0.0.1")))).isEqualTo(new ResultText("10.0.0.1", false));
+        assertThat(formatValueWithContext("ap.net.ip", Map.of("ips", List.of(Map.of("IPAddress", "192.168.0.1"))))).isEqualTo(new ResultText("192.168.0.1", false));
+        assertThat(formatValueWithContext("db.os.iostat", Map.of("stderr", "err"))).isEqualTo(new ResultText("error", false));
+        assertThat(formatValueWithContext("db.os.iostat", Map.of("ok", 1))).isEqualTo(new ResultText("정상", false));
+        assertThat(formatValueWithContext("db.os.net_ping", Map.of("note", "host not found"))).isEqualTo(new ResultText("정상 (ping OK)", false));
+        assertThat(formatValueWithContext("db.os.net_ping", Map.of("note", "reachable"))).isEqualTo(new ResultText("-", false));
+        assertThat(formatValueWithContext("db.os.net_link", Map.of("established", 3))).isEqualTo(new ResultText("3건", false));
+        assertThat(formatValueWithContext("db.os.net_collisions", Map.of("total_coll", 2))).isEqualTo(new ResultText("2건", false));
+        assertThat(formatValueWithContext("db.os.lsvg_rootvg", Map.of("stale_count", 1))).isEqualTo(new ResultText("1건", false));
+    }
+    @Test void fvc_switchArm_oracle() {
+        assertThat(formatValueWithContext("db.oracle.wait_events", Map.of("top_events", List.of("a", "b")))).isEqualTo(new ResultText("2건", false));
+        assertThat(formatValueWithContext("db.oracle.export_last", Map.of("last_export", "2026-05"))).isEqualTo(new ResultText("2026-05", false));
+        assertThat(formatValueWithContext("db.oracle.export_last", Map.of("x", 1))).isEqualTo(new ResultText("없음", false));
+        assertThat(formatValueWithContext("db.oracle.standby_lag", Map.of("apply_lag", "0s"))).isEqualTo(new ResultText("0s", false));
+        assertThat(formatValueWithContext("db.oracle.standby_lag", Map.of("x", 1))).isEqualTo(new ResultText("N/A", false));
+        assertThat(formatValueWithContext("db.oracle.datafile_status", Map.of("total", 5))).isEqualTo(new ResultText("5개", false));
+    }
+    @Test void fvc_switchArm_gis_ap() {
+        assertThat(formatValueWithContext("gis.gws.running", Map.of("status", "UP"))).isEqualTo(new ResultText("UP", false));
+        assertThat(formatValueWithContext("gis.gws.http", Map.of("http_status", 200))).isEqualTo(new ResultText("200", false));
+        assertThat(formatValueWithContext("gis.uwes.dem_slop_preserved", Map.of("both_exist", true))).isEqualTo(new ResultText("보존", false));
+        assertThat(formatValueWithContext("gis.uwes.dem_slop_preserved", Map.of("both_exist", false))).isEqualTo(new ResultText("누락", false));
+        assertThat(formatValueWithContext("gis.gss.log_purge", Map.of("purged_count", 3))).isEqualTo(new ResultText("3파일", false));
+        assertThat(formatValueWithContext("ap.log.system_err", Map.of("error_count", 7))).isEqualTo(new ResultText("7건", false));
+        assertThat(formatValueWithContext("ap.net.routes", Map.of("routes", 10))).isEqualTo(new ResultText("10개", false));
+        assertThat(formatValueWithContext("ap.security.users", Map.of("enabled", 2))).isEqualTo(new ResultText("2계정", false));
+    }
+
     @Test void fvc_percentItems_byKeyPattern() {
         assertThat(formatValueWithContext("ap.perf.cpu", 55)).isEqualTo(new ResultText("55%", false));
         assertThat(formatValueWithContext("db.oracle.sga", 80)).isEqualTo(new ResultText("80%", false));
