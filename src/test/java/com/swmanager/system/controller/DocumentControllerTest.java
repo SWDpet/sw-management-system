@@ -1,10 +1,16 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constant.enums.DocumentStatus;
+import com.swmanager.system.constant.enums.DocumentType;
+import com.swmanager.system.domain.Infra;
+import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.Document;
+import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.dto.DocumentDTO;
+import com.swmanager.system.dto.workplan.DocumentSaveResult;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
@@ -305,6 +311,165 @@ class DocumentControllerTest {
         String view = controller.previewDocument(5, m);
         assertThat(view).isEqualTo("document/document-preview");
         assertThat(m.getAttribute("docId")).isEqualTo(5);
+    }
+
+    // ───────────────────── 생성 폼 수정모드 rich 분기 ─────────────────────
+
+    @Test
+    void createForm_editMode_projectFilled_populatesExistingAndLegacyText() {
+        loginEdit();
+        stubCreateFormLookups();
+        SwProject p = new SwProject();
+        p.setProjId(11L); p.setYear(2025); p.setCityNm("강원도"); p.setDistNm("춘천시");
+        p.setSysNm("UPIS"); p.setSysNmEn("upis"); p.setProjNm("춘천 UPIS 고도화");
+        Document existing = new Document();
+        existing.setDocId(7); existing.setTitle("기존문서"); existing.setSysType("UPIS");
+        existing.setProject(p);
+        DocumentDetail det = new DocumentDetail();
+        det.setSectionKey("cover"); det.setSectionData(Map.of("k", "v"));
+        existing.setDetails(List.of(det));
+        OrgUnit ou = new OrgUnit(); ou.setUnitId(3L);
+        existing.setOrgUnit(ou);
+        existing.setSupportTargetType("ORG"); existing.setEnvironment("PROD");
+        when(documentService.getDocumentById(7)).thenReturn(existing);
+
+        Model m = model();
+        String view = controller.createForm("COMMENCE", null, null, 7, null, m, rttr());
+
+        assertThat(view).isEqualTo(DocumentType.COMMENCE.templateName());
+        assertThat(m.containsAttribute("existingDoc")).isTrue();
+        assertThat((String) m.getAttribute("legacyTargetText")).contains("춘천시"); // 사업 포맷 분기
+        assertThat(m.getAttribute("existingOrgUnitId")).isEqualTo(3L);
+        assertThat(m.getAttribute("existingEnvironment")).isEqualTo("PROD");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> existingData = (Map<String, Object>) m.getAttribute("existingDoc");
+        assertThat(existingData).containsEntry("projId", 11L);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> sections = (Map<String, Object>) existingData.get("sections");
+        assertThat(sections).containsKey("cover"); // details→sectionsMap 분기
+    }
+
+    @Test
+    void createForm_editMode_infraFallback_buildsInfraLegacyText() {
+        loginEdit();
+        stubCreateFormLookups();
+        Infra inf = new Infra();
+        inf.setCityNm("부산"); inf.setDistNm("해운대"); inf.setSysNm("KRAS");
+        Document existing = new Document();
+        existing.setDocId(8); existing.setProject(null); existing.setInfra(inf); // project=null → infra 분기
+        when(documentService.getDocumentById(8)).thenReturn(existing);
+
+        Model m = model();
+        String view = controller.createForm("INTERIM", null, null, 8, null, m, rttr());
+
+        assertThat(view).isEqualTo(DocumentType.INTERIM.templateName());
+        assertThat((String) m.getAttribute("legacyTargetText")).contains("해운대"); // 인프라 포맷 분기
+    }
+
+    @Test
+    void createForm_editMode_loadThrows_caughtAndContinues() {
+        loginEdit();
+        stubCreateFormLookups();
+        when(documentService.getDocumentById(9)).thenThrow(new RuntimeException("load fail"));
+
+        Model m = model();
+        String view = controller.createForm("COMMENCE", null, null, 9, null, m, rttr());
+        // catch 로 삼키고 폼 정상 반환(예외 전파 없음)
+        assertThat(view).isEqualTo(DocumentType.COMMENCE.templateName());
+    }
+
+    // ───────────────────────── saveDocument 성공/중복 ─────────────────────────
+
+    @Test
+    void saveDocument_create_savesSectionsAndLogs() throws Exception {
+        loginEdit();
+        Document created = new Document(); created.setDocId(100);
+        when(documentService.findDuplicateProjDoc(any(), any(), any(), any())).thenReturn(null); // 중복 없음
+        when(documentService.createDocument(any(), any(), any(), any(), any(), any(), any())).thenReturn(created);
+        when(swProjectRepository.findById(10L)).thenReturn(Optional.of(new SwProject()));
+
+        ResponseEntity<?> res = controller.saveDocument(Map.of(
+                "docType", "COMMENCE", "projId", "10", "title", "착수계", "docNo", "D-1",
+                "sections", List.of(Map.of("sectionKey", "cover", "sectionData", Map.of()))));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        DocumentSaveResult body = (DocumentSaveResult) res.getBody();
+        assertThat(body.success()).isTrue();
+        assertThat(body.docId()).isEqualTo(100);
+        verify(documentService).createDocument(any(), any(), any(), any(), any(), any(), any());
+        verify(documentService).saveSection(eq(100), eq("cover"), any(), eq(0));
+    }
+
+    @Test
+    void saveDocument_update_existingDoc_blankDocNoCleared() throws Exception {
+        loginEdit();
+        Document existing = new Document(); existing.setDocId(100);
+        when(documentService.getDocumentById(100)).thenReturn(existing);
+
+        ResponseEntity<?> res = controller.saveDocument(Map.of(
+                "docType", "COMMENCE", "docId", "100", "title", "수정", "docNo", "   "));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(existing.getDocNo()).isNull(); // 공백 docNo → null
+        verify(documentService).getDocumentById(100);
+        verify(documentService, never()).createDocument(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void saveDocument_duplicateCommence_badRequest() {
+        loginEdit();
+        when(documentService.findDuplicateProjDoc(eq(10L), eq(DocumentType.COMMENCE), eq(null), eq(null)))
+                .thenReturn(55);
+
+        ResponseEntity<?> res = controller.saveDocument(Map.of(
+                "docType", "COMMENCE", "projId", "10", "title", "t"));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(documentService, never()).createDocument(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void saveDocument_duplicateInterim_parsesRound_badRequest() {
+        loginEdit();
+        when(documentService.findDuplicateProjDoc(eq(10L), eq(DocumentType.INTERIM), eq(2), eq(null)))
+                .thenReturn(77);
+
+        ResponseEntity<?> res = controller.saveDocument(Map.of(
+                "docType", "INTERIM", "projId", "10", "title", "기성",
+                "sections", List.of(Map.of("sectionKey", "inspector",
+                        "sectionData", Map.of("paymentRound", "2")))));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        // round 파싱(2) 이 findDuplicateProjDoc 에 전달됐는지 stub 매칭으로 검증됨
+        verify(documentService).findDuplicateProjDoc(eq(10L), eq(DocumentType.INTERIM), eq(2), eq(null));
+    }
+
+    @Test
+    void saveDocument_serviceThrows_500() {
+        loginEdit();
+        when(documentService.findDuplicateProjDoc(any(), any(), any(), any())).thenReturn(null); // 중복 없음
+        when(documentService.createDocument(any(), any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("boom"));
+
+        ResponseEntity<?> res = controller.saveDocument(Map.of(
+                "docType", "COMMENCE", "projId", "10", "title", "t"));
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // ───────────────────────── changeStatus 성공 ─────────────────────────
+
+    @Test
+    void changeStatus_edit_changesAndLogs() {
+        loginEdit();
+        Document doc = new Document(); doc.setStatus(DocumentStatus.COMPLETED);
+        when(documentService.changeStatus(eq(1), eq(DocumentStatus.COMPLETED), any(), anyString()))
+                .thenReturn(doc);
+
+        ResponseEntity<?> res = controller.changeStatus(1, DocumentStatus.COMPLETED, "완료");
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(documentService).changeStatus(eq(1), eq(DocumentStatus.COMPLETED), any(), eq("완료"));
+        verify(logService).log(anyString(), any(AccessActionType.class), anyString());
     }
 
     // [S4 Phase 1] download*(pdf/hwpx/excel/zip)·bulkZip* 테스트는 DocumentDownloadControllerTest 로 이관.

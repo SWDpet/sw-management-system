@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 74.65%(2026-06-27 +AdminUserController 100% 커버리지). floor 0.71→0.73 상향 → ~1.6pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 76.03%(2026-06-27 +Document download/controller 커버리지). floor 0.73→0.74 상향 → ~2.0pp 버퍼, 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.73</minimum>
+                                            <minimum>0.74</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 60.84%(2026-06-27 +AdminUserController 커버리지). floor 0.57→0.59 상향 → ~1.8pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 62.09%(2026-06-27 +Document download/controller 커버리지). floor 0.59→0.60 상향 → ~2.1pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.59</minimum>
+                                            <minimum>0.60</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
