@@ -11,9 +11,7 @@ import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.security.DocumentAccessSupport;
 import com.swmanager.system.security.CustomUserDetails;
-import com.swmanager.system.service.DocumentAttachmentService;
 import com.swmanager.system.service.DocumentService;
-import com.swmanager.system.service.DocumentSignedScanService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.service.PdfExportService;
 import org.junit.jupiter.api.AfterEach;
@@ -24,7 +22,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.ui.ExtendedModelMap;
@@ -73,8 +70,6 @@ class DocumentControllerTest {
     private UserRepository userRepository;
     private LogService logService;
     private PdfExportService pdfExportService;   // [S4] previewDocument 잔존
-    private DocumentAttachmentService attachmentService;
-    private DocumentSignedScanService signedScanService;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -86,8 +81,6 @@ class DocumentControllerTest {
         userRepository = mock(UserRepository.class);
         logService = mock(LogService.class);
         pdfExportService = mock(PdfExportService.class);
-        attachmentService = mock(DocumentAttachmentService.class);
-        signedScanService = mock(DocumentSignedScanService.class);
 
         inject("documentService", documentService);
         inject("infraRepository", infraRepository);
@@ -96,8 +89,6 @@ class DocumentControllerTest {
         inject("userRepository", userRepository);
         inject("logService", logService);
         inject("pdfExportService", pdfExportService);
-        inject("attachmentService", attachmentService);
-        inject("signedScanService", signedScanService);
         inject("access", new DocumentAccessSupport()); // [S4] 인증 위임 — 잔존 권한 테스트가 getAuth()→access 경로 사용
 
         SecurityContextHolder.clearContext();
@@ -322,106 +313,7 @@ class DocumentControllerTest {
 
     // [S4 Phase 1] download*(pdf/hwpx/excel/zip)·bulkZip* 테스트는 DocumentDownloadControllerTest 로 이관.
 
-    // ───────────────────────── 전자서명/첨부 가드 ─────────────────────────
-
-    @Test
-    void saveSignature_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.saveSignature(Map.of("docId", "1"));
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(documentService);
-    }
-
-    @Test
-    void uploadAttachment_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.uploadAttachment(1, pdf());
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(attachmentService);
-    }
-
-    @Test
-    void getAttachments_returnsRows() {
-        when(attachmentService.getAttachments(1)).thenReturn(List.of());
-        ResponseEntity<?> res = controller.getAttachments(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void deleteAttachment_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.deleteAttachment(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(attachmentService);
-    }
-
-    @Test
-    void deleteAttachment_edit_ok() {
-        loginEdit();
-        ResponseEntity<?> res = controller.deleteAttachment(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(attachmentService).deleteAttachment(1);
-    }
-
-    @Test
-    void deleteAttachment_admin_ok_evenWhenAuthNone() {
-        // ADMIN 분기: authDocument=NONE 이어도 isAdmin()→getAuth()="EDIT" 우회 (docstring ADMIN 커버 근거).
-        loginAdmin();
-        ResponseEntity<?> res = controller.deleteAttachment(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(attachmentService).deleteAttachment(1);
-    }
-
-    // ───────────────────────── 날인본 스캔 가드 ─────────────────────────
-
-    @Test
-    void uploadSignedScan_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.uploadSignedScan(1, pdf());
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(signedScanService);
-    }
-
-    @Test
-    void uploadSignedScan_badInput_badRequest() throws Exception {
-        loginEdit();
-        when(signedScanService.uploadOrReplace(eq(1), any(), any()))
-                .thenThrow(new IllegalArgumentException("PDF 만 허용"));
-        ResponseEntity<?> res = controller.uploadSignedScan(1, pdf());
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void downloadSignedScan_anonymous_forbidden() {
-        // 미로그인 → getAuth NONE → 403
-        ResponseEntity<?> res = controller.downloadSignedScan(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(signedScanService);
-    }
-
-    @Test
-    void downloadSignedScan_view_forbidden() { // [viewer-action-button-guard] 조회자(로그인 VIEW) 다운로드 차단
-        loginView();
-        ResponseEntity<?> res = controller.downloadSignedScan(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(signedScanService);
-    }
-
-    @Test
-    void downloadSignedScan_edit_notFound_404() {
-        loginEdit(); // 권한 통과 후 미존재 → 404
-        when(signedScanService.loadForDownload(1)).thenThrow(new RuntimeException("없음"));
-        ResponseEntity<?> res = controller.downloadSignedScan(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void deleteSignedScan_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.deleteSignedScan(1);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(signedScanService);
-    }
+    // [S4 Phase 4] 전자서명/첨부/날인본 가드·동작 테스트는 DocumentFileControllerTest 로 이관.
 
     // ───────────────────────── 사용자/사업 정보 ─────────────────────────
 
@@ -485,8 +377,4 @@ class DocumentControllerTest {
     // [S4 Phase 3] 사업수행계획서(getPlanData/savePlanData) 테스트는 DocumentPlanControllerTest 로 이관.
 
     // [S4 Phase 1] zipSafe/bulkTypeLabel static 헬퍼 테스트는 DocumentDownloadControllerTest 로 이관.
-
-    private static MockMultipartFile pdf() {
-        return new MockMultipartFile("file", "a.pdf", "application/pdf", new byte[]{1, 2, 3});
-    }
 }

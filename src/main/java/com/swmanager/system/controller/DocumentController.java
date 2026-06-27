@@ -11,7 +11,6 @@ import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.domain.workplan.DocumentDetail;
 import com.swmanager.system.domain.workplan.DocumentHistory;
 import com.swmanager.system.dto.DocumentDTO;
-import com.swmanager.system.dto.workplan.AttachmentRow;
 import com.swmanager.system.dto.workplan.DocumentSaveResult;
 import com.swmanager.system.dto.workplan.UserInfoRow;
 import com.swmanager.system.dto.workplan.UserInfoSecureRow;
@@ -22,7 +21,6 @@ import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.service.DocumentService;
-import com.swmanager.system.service.DocumentAttachmentService;
 import com.swmanager.system.service.PdfExportService;
 import com.swmanager.system.service.LogService;
 
@@ -422,138 +420,8 @@ public class DocumentController {
     // [S4 Phase 1] 단건/일괄 다운로드(pdf·hwpx·excel·zip·bulk-zip)와 zip/bulk 헬퍼는
     // DocumentDownloadController 로 이동(refactor-document-controller-split).
 
-    // === 전자서명 API ===
-
-    @ResponseBody
-    @PostMapping("/api/signature/save")
-    public ResponseEntity<?> saveSignature(@RequestBody Map<String, Object> data) {
-        if (!"EDIT".equals(getAuth())) {
-            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
-        }
-
-        try {
-            Integer docId = Integer.valueOf(data.get("docId").toString());
-            String signerType = (String) data.get("signerType");
-            String signerName = (String) data.get("signerName");
-            String signerOrg = (String) data.get("signerOrg");
-            String signatureImage = (String) data.get("signatureImage"); // Base64 data URL
-
-            documentService.saveSignature(docId, signerType, signerName, signerOrg, signatureImage);
-            logService.log(MenuName.DOCUMENT, AccessActionType.SIGN, "전자서명 저장 (문서ID: " + docId + ", " + signerType + ")");
-
-            return ResponseEntity.ok(Map.of("success", true));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // === 첨부파일 관리 ===
-
-    @Autowired private DocumentAttachmentService attachmentService;
-
-    @ResponseBody
-    @PostMapping("/api/attachment/upload/{docId}")
-    public ResponseEntity<?> uploadAttachment(
-            @PathVariable Integer docId,
-            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
-        if (!"EDIT".equals(getAuth())) {
-            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
-        }
-
-        try {
-            var attachment = attachmentService.saveAttachment(docId, file);
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "attachId", attachment.getAttachId(),
-                    "fileName", attachment.getFileName(),
-                    "fileSize", attachment.getFileSize()
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @ResponseBody
-    @GetMapping("/api/attachments/{docId}")
-    public ResponseEntity<List<AttachmentRow>> getAttachments(@PathVariable Integer docId) {
-        List<AttachmentRow> result = attachmentService.getAttachments(docId)
-                .stream().map(AttachmentRow::from).toList();
-        return ResponseEntity.ok(result);
-    }
-
-    @PostMapping("/api/attachment/delete/{attachId}")
-    @ResponseBody
-    public ResponseEntity<?> deleteAttachment(@PathVariable Integer attachId) {
-        if (!"EDIT".equals(getAuth())) {
-            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
-        }
-        attachmentService.deleteAttachment(attachId);
-        return ResponseEntity.ok(Map.of("success", true));
-    }
-
-    // === 날인본 스캔 (doc-signed-scan-upload) ===
-
-    @Autowired private com.swmanager.system.service.DocumentSignedScanService signedScanService;
-
-    @ResponseBody
-    @PostMapping("/api/signed-scan/upload/{docId}")
-    public ResponseEntity<?> uploadSignedScan(
-            @PathVariable Integer docId,
-            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
-        if (!"EDIT".equals(getAuth())) {
-            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
-        }
-        try {
-            CustomUserDetails cu = getCurrentUser();
-            Long uploaderSeq = (cu != null) ? cu.getUser().getUserSeq() : null;
-            var doc = signedScanService.uploadOrReplace(docId, file, uploaderSeq);
-            logService.log(MenuName.DOCUMENT, AccessActionType.UPLOAD, "날인본 스캔 업로드 (문서ID: " + docId + ")");
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "fileName", doc.getSignedScanOrigName(),
-                    "fileSize", doc.getSignedScanSize() != null ? doc.getSignedScanSize() : 0
-            ));
-        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/api/signed-scan/{docId}")
-    public ResponseEntity<org.springframework.core.io.Resource> downloadSignedScan(@PathVariable Integer docId) {
-        if (!"EDIT".equals(getAuth())) return ResponseEntity.status(403).build();  // [viewer-action-button-guard] 다운로드=EDIT(기존 로그인만→강화)
-        try {
-            var resource = signedScanService.loadForDownload(docId);
-            String origName = signedScanService.originalName(docId);
-            String encoded = java.net.URLEncoder.encode(origName, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-            logService.log(MenuName.DOCUMENT, AccessActionType.DOWNLOAD, "날인본 스캔 다운로드 (문서ID: " + docId + ")");
-            return ResponseEntity.ok()
-                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename*=UTF-8''" + encoded)
-                    .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
-                    .body(resource);
-        } catch (Exception e) {
-            return ResponseEntity.status(404).build();
-        }
-    }
-
-    @ResponseBody
-    @PostMapping("/api/signed-scan/delete/{docId}")
-    public ResponseEntity<?> deleteSignedScan(@PathVariable Integer docId) {
-        if (!"EDIT".equals(getAuth())) {
-            return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
-        }
-        try {
-            signedScanService.delete(docId);
-            logService.log(MenuName.DOCUMENT, AccessActionType.DELETE, "날인본 스캔 삭제 (문서ID: " + docId + ")");
-            return ResponseEntity.ok(Map.of("success", true));
-        } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
+    // [S4 Phase 4] 전자서명/첨부파일/날인본 스캔(7 엔드포인트 + attachmentService/signedScanService)은
+    // DocumentFileController 로 이동(refactor-document-controller-split-phase4).
 
     // === 사용자 정보 API (현장대리인/과업참여자용) ===
 
