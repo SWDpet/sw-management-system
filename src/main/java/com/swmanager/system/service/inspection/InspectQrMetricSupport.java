@@ -190,22 +190,18 @@ final class InspectQrMetricSupport {
         Map.entry("gis.gws.catalina_err", "건"), Map.entry("gis.gws.stdout_log_size", "MB")
     );
 
-    @SuppressWarnings("unchecked")
     static ResultText formatValueWithContext(String key, Object value) {  // package-private: 단위 테스트
         if (value == null) return new ResultText("", false);
 
         // 객체(Map) 형태의 value 처리
-        if (key != null && value instanceof Map) {
-            Map<String, Object> m = (Map<String, Object>) value;
+        if (key != null && value instanceof Map<?, ?> m) {
             // QR 축약 disk
             if (key.equals("ap.os.disk_summary")) {
                 // drives 맵: {c:{t,f,p}, d:{t,f,p}}
                 StringBuilder sb = new StringBuilder();
                 for (var de : m.entrySet()) {
-                    if (de.getValue() instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> dd = (Map<String, Object>) de.getValue();
-                        sb.append(de.getKey().toUpperCase()).append(": ").append(dd.get("p")).append("% ");
+                    if (de.getValue() instanceof Map<?, ?> dd) {
+                        sb.append(String.valueOf(de.getKey()).toUpperCase()).append(": ").append(dd.get("p")).append("% ");
                     }
                 }
                 return new ResultText(sb.toString().trim(), false);
@@ -261,7 +257,7 @@ final class InspectQrMetricSupport {
                     case "db.oracle.export_last" -> m.get("last_export") != null ? String.valueOf(m.get("last_export")) : "없음";
                     case "db.oracle.standby_lag" -> m.get("apply_lag") != null ? String.valueOf(m.get("apply_lag")) : "N/A";
                     case "db.oracle.datafile_status" -> { Object v=m.get("total"); yield v!=null? v+"개":"-"; }
-                    case "gis.gws.running" -> String.valueOf(m.getOrDefault("status", "-"));
+                    case "gis.gws.running" -> m.containsKey("status") ? String.valueOf(m.get("status")) : "-";
                     case "gis.gws.http" -> { Object v=m.get("http_status"); yield v!=null? String.valueOf(v):"-"; }
                     case "gis.gws.store_size" -> { Object v=m.get("total_gb"); yield v!=null? v+"GB":"-"; }
                     case "gis.gws.stdout_log_size" -> { Object v=m.get("total_mb"); yield v!=null? v+"MB":"-"; }
