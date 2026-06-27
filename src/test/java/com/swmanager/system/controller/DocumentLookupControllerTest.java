@@ -79,11 +79,30 @@ class DocumentLookupControllerTest {
 
     private void loginEdit() { login("EDIT", "ROLE_USER"); }
     private void loginView() { login("VIEW", "ROLE_USER"); }
+    private void loginNone() { login("NONE", "ROLE_USER"); }
+    private void loginAdmin() { login("NONE", "ROLE_ADMIN"); }
 
     // ───────────────────────── 사용자 정보 ─────────────────────────
 
     @Test
+    void getUserInfo_none_forbidden() { // [harden-read-api] 문서 권한 없는 인증 사용자 차단
+        loginNone();
+        assertThat(controller.getUserInfo(2L).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
     void getUserInfo_found() {
+        loginView();
+        User u = new User();
+        u.setUserSeq(2L);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(u));
+        assertThat(controller.getUserInfo(2L).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void getUserInfo_admin_ok() { // hasDocRead: admin→getAuth EDIT→통과(차단 아님)
+        loginAdmin();
         User u = new User();
         u.setUserSeq(2L);
         when(userRepository.findById(2L)).thenReturn(Optional.of(u));
@@ -92,6 +111,7 @@ class DocumentLookupControllerTest {
 
     @Test
     void getUserInfo_notFound() {
+        loginView();
         when(userRepository.findById(9L)).thenReturn(Optional.empty());
         assertThat(controller.getUserInfo(9L).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
@@ -116,13 +136,31 @@ class DocumentLookupControllerTest {
     // ───────────────────────── 사업 정보 ─────────────────────────
 
     @Test
+    void getProjectInfo_none_forbidden() { // [harden-read-api] 담당자 PII 무권한 차단
+        loginNone();
+        assertThat(controller.getProjectInfo(3L).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(swProjectRepository, personInfoRepository);
+    }
+
+    @Test
+    void getProjectInfo_admin_ok() { // hasDocRead: admin→getAuth EDIT→통과
+        loginAdmin();
+        SwProject p = new SwProject();
+        p.setProjId(3L);
+        when(swProjectRepository.findById(3L)).thenReturn(Optional.of(p));
+        assertThat(controller.getProjectInfo(3L).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void getProjectInfo_notFound() {
+        loginView();
         when(swProjectRepository.findById(9L)).thenReturn(Optional.empty());
         assertThat(controller.getProjectInfo(9L).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void getProjectInfo_found() {
+        loginView();
         SwProject p = new SwProject();
         p.setProjId(3L);
         p.setProjNm("사업A");
@@ -134,6 +172,7 @@ class DocumentLookupControllerTest {
 
     @Test
     void getProjectInfo_personMapping() { // [codex] personId 존재 시 담당자 필드 매핑(personId 자체는 응답 미포함)
+        loginView();
         SwProject p = new SwProject();
         p.setProjId(3L);
         p.setProjNm("사업A");

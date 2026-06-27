@@ -84,15 +84,38 @@ class DocumentPlanControllerTest {
 
     private void loginEdit() { login("EDIT", "ROLE_USER"); }
     private void loginView() { login("VIEW", "ROLE_USER"); }
+    private void loginNone() { login("NONE", "ROLE_USER"); }
+    private void loginAdmin() { login("NONE", "ROLE_ADMIN"); }
+
+    @Test
+    void getPlanData_none_forbidden() { // [harden-read-api] 무권한 계획서 조회 차단
+        loginNone();
+        assertThat(controller.getPlanData(3L).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(swProjectRepository, pjtTargetRepository, pjtManpowerPlanRepository, pjtScheduleRepository);
+    }
+
+    @Test
+    void getPlanData_admin_ok() { // hasDocRead: admin→getAuth EDIT→통과
+        loginAdmin();
+        SwProject p = new SwProject();
+        p.setProjId(3L);
+        when(swProjectRepository.findById(3L)).thenReturn(Optional.of(p));
+        when(pjtTargetRepository.findByProjIdOrderBySortOrderAsc(any())).thenReturn(List.of());
+        when(pjtManpowerPlanRepository.findByProjIdOrderBySortOrderAsc(any())).thenReturn(List.of());
+        when(pjtScheduleRepository.findByProjIdOrderBySortOrderAsc(any())).thenReturn(List.of());
+        assertThat(controller.getPlanData(3L).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
 
     @Test
     void getPlanData_notFound() {
+        loginView();
         when(swProjectRepository.findById(9L)).thenReturn(Optional.empty());
         assertThat(controller.getPlanData(9L).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void getPlanData_found() {
+        loginView();
         SwProject p = new SwProject();
         p.setProjId(3L);
         when(swProjectRepository.findById(3L)).thenReturn(Optional.of(p));

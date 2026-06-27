@@ -46,6 +46,7 @@ public class DocumentPlanController {
     @ResponseBody
     @GetMapping("/api/plan/{projId}")
     public ResponseEntity<?> getPlanData(@PathVariable Long projId) {
+        if (!access.hasDocRead()) return ResponseEntity.status(403).build();  // [harden-read-api] VIEW 이상(allowlist, admin 포함)
         var pOpt = swProjectRepository.findById(projId);
         if (pOpt.isEmpty()) return ResponseEntity.notFound().build();
         var p = pOpt.get();

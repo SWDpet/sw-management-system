@@ -94,6 +94,7 @@ public class DocumentFileController {
     @ResponseBody
     @GetMapping("/api/attachments/{docId}")
     public ResponseEntity<List<AttachmentRow>> getAttachments(@PathVariable Integer docId) {
+        if (!access.hasDocRead()) return ResponseEntity.status(403).build();  // [harden-read-api] VIEW 이상(allowlist, admin 포함)
         List<AttachmentRow> result = attachmentService.getAttachments(docId)
                 .stream().map(AttachmentRow::from).toList();
         return ResponseEntity.ok(result);

@@ -88,6 +88,7 @@ class DocumentFileControllerTest {
 
     private void loginEdit()  { login("EDIT", "ROLE_USER"); }
     private void loginView()  { login("VIEW", "ROLE_USER"); }
+    private void loginNone()  { login("NONE", "ROLE_USER"); }
     private void loginAdmin() { login("NONE", "ROLE_ADMIN"); }
 
     private static MockMultipartFile pdf() {
@@ -138,10 +139,26 @@ class DocumentFileControllerTest {
     }
 
     @Test
+    void getAttachments_none_forbidden() { // [harden-read-api] 무권한 첨부 메타 차단
+        loginNone();
+        ResponseEntity<?> res = controller.getAttachments(1);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(attachmentService);
+    }
+
+    @Test
     void getAttachments_returnsRows() {
+        loginView();
         when(attachmentService.getAttachments(1)).thenReturn(List.of());
         ResponseEntity<?> res = controller.getAttachments(1);
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void getAttachments_admin_ok() { // hasDocRead: admin(authDocument=NONE+ROLE_ADMIN)→getAuth EDIT→통과(차단 아님)
+        loginAdmin();
+        when(attachmentService.getAttachments(1)).thenReturn(List.of());
+        assertThat(controller.getAttachments(1).getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test

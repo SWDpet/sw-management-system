@@ -42,4 +42,13 @@ public class DocumentAccessSupport {
         String auth = cu.getUser().getAuthDocument();
         return (auth != null) ? auth : "NONE";
     }
+
+    /**
+     * 문서 조회(read) 권한 — VIEW 또는 EDIT(admin 은 getAuth()→"EDIT" 로 통과).
+     * 양성 allowlist(fail-closed): NONE·미인증·미상값은 모두 거부. read API 가드 공용(harden-document-read-api-auth).
+     */
+    public boolean hasDocRead() {
+        String a = getAuth();
+        return "VIEW".equals(a) || "EDIT".equals(a);
+    }
 }

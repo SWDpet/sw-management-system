@@ -206,6 +206,7 @@ public class DocumentLookupController {
     @ResponseBody
     @GetMapping("/api/user/{userSeq}")
     public ResponseEntity<?> getUserInfo(@PathVariable Long userSeq) {
+        if (!access.hasDocRead()) return ResponseEntity.status(403).build();  // [harden-read-api] VIEW 이상(allowlist, admin 포함)
         return userRepository.findById(userSeq)
                 .<ResponseEntity<?>>map(u -> ResponseEntity.ok(UserInfoRow.from(u)))
                 .orElse(ResponseEntity.notFound().build());
@@ -234,6 +235,7 @@ public class DocumentLookupController {
     @ResponseBody
     @GetMapping("/api/project/{projId}")
     public ResponseEntity<Map<String, Object>> getProjectInfo(@PathVariable Long projId) {
+        if (!access.hasDocRead()) return ResponseEntity.status(403).build();  // [harden-read-api] VIEW 이상(allowlist, admin 포함)
         return swProjectRepository.findById(projId).map(p -> {
             Map<String, Object> data = new HashMap<>();
             data.put("projId", p.getProjId());
