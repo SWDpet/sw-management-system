@@ -6,7 +6,6 @@ import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.dto.DocumentDTO;
 import com.swmanager.system.repository.InfraRepository;
-import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
 import com.swmanager.system.security.DocumentAccessSupport;
@@ -65,7 +64,6 @@ class DocumentControllerTest {
 
     private DocumentService documentService;
     private InfraRepository infraRepository;
-    private PersonInfoRepository personInfoRepository;
     private SwProjectRepository swProjectRepository;
     private UserRepository userRepository;
     private LogService logService;
@@ -76,7 +74,6 @@ class DocumentControllerTest {
         controller = new DocumentController();
         documentService = mock(DocumentService.class);
         infraRepository = mock(InfraRepository.class);
-        personInfoRepository = mock(PersonInfoRepository.class);
         swProjectRepository = mock(SwProjectRepository.class);
         userRepository = mock(UserRepository.class);
         logService = mock(LogService.class);
@@ -84,7 +81,6 @@ class DocumentControllerTest {
 
         inject("documentService", documentService);
         inject("infraRepository", infraRepository);
-        inject("personInfoRepository", personInfoRepository);
         inject("swProjectRepository", swProjectRepository);
         inject("userRepository", userRepository);
         inject("logService", logService);
@@ -315,59 +311,8 @@ class DocumentControllerTest {
 
     // [S4 Phase 4] 전자서명/첨부/날인본 가드·동작 테스트는 DocumentFileControllerTest 로 이관.
 
-    // ───────────────────────── 사용자/사업 정보 ─────────────────────────
-
-    @Test
-    void getUserInfo_found() {
-        User u = new User();
-        u.setUserSeq(2L);
-        when(userRepository.findById(2L)).thenReturn(Optional.of(u));
-        ResponseEntity<?> res = controller.getUserInfo(2L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void getUserInfo_notFound() {
-        when(userRepository.findById(9L)).thenReturn(Optional.empty());
-        ResponseEntity<?> res = controller.getUserInfo(9L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void getUserInfoSecure_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.getUserInfoSecure(2L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(userRepository);
-    }
-
-    @Test
-    void getUserInfoSecure_edit_found() {
-        loginEdit();
-        User u = new User();
-        u.setUserSeq(2L);
-        when(userRepository.findById(2L)).thenReturn(Optional.of(u));
-        ResponseEntity<?> res = controller.getUserInfoSecure(2L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void getProjectInfo_notFound() {
-        when(swProjectRepository.findById(9L)).thenReturn(Optional.empty());
-        ResponseEntity<?> res = controller.getProjectInfo(9L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void getProjectInfo_found() {
-        SwProject p = new SwProject();
-        p.setProjId(3L);
-        p.setProjNm("사업A");
-        when(swProjectRepository.findById(3L)).thenReturn(Optional.of(p));
-        ResponseEntity<Map<String, Object>> res = controller.getProjectInfo(3L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(res.getBody()).containsEntry("projNm", "사업A");
-    }
+    // [S4 Phase 5] 사용자/사업 정보 조회(getUserInfo/getUserInfoSecure/getProjectInfo) 테스트는
+    // DocumentLookupControllerTest 로 이관.
 
     // [S4 Phase 2] 일괄 작성(batchPage/batchTargets/allSystemsForYear/batchGenerate) 테스트는
     // DocumentBatchControllerTest 로 이관.
