@@ -319,6 +319,37 @@ class InspectionQrBatchServiceTest {
         assertThat(row.getRemarks()).contains("(truncated)");
     }
 
+    // ── 7-b. context-format 경로(truncated=false) 500 초과 → 2차 절단 시 remarks (truncated) (§8-1) ──
+
+    @Test
+    @DisplayName("7-b. formatValueWithContext 가 600자 truncated=false 반환 → 서비스 절단 + (truncated) 표기")
+    void resultTextTruncation_contextPath_flagReflected() {
+        String longExport = "e".repeat(600);   // db.oracle.export_last → String.valueOf(last_export), truncated=false
+        InspectionQrBatchRequest req = new InspectionQrBatchRequest();
+        InspectionQrBatchRequest.Payload p = new InspectionQrBatchRequest.Payload();
+        p.setId("longctx-2026-05");
+        p.setSite("dyg");
+        p.setRound("2026-05");
+        InspectionQrBatchRequest.Tier t = new InspectionQrBatchRequest.Tier();
+        t.setItems(List.of(List.of("db.oracle.export_last", "ok", Map.of("last_export", longExport))));
+        p.setTiers(Map.of("dbms", t));
+        req.setPayload(p);
+        InspectionQrBatchRequest.Header h = new InspectionQrBatchRequest.Header();
+        h.setHash("z");
+        req.setHeader(h);
+
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        ArgumentCaptor<InspectCheckResult> captor = ArgumentCaptor.forClass(InspectCheckResult.class);
+        service.upload(req, 1L);
+        verify(checkResultRepository).save(captor.capture());
+        InspectCheckResult row = captor.getValue();
+        assertThat(row.getResultText()).hasSize(500);
+        assertThat(row.getRemarks()).contains("(truncated)");   // §8-1: 2차 절단도 플래그 반영
+    }
+
     // ── 8. 빈 tier 항목 ───────────────────────────────────────────────────
 
     @Test

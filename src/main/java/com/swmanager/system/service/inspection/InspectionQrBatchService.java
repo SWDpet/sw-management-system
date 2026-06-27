@@ -211,11 +211,13 @@ public class InspectionQrBatchService {
 
                 InspectQrMetricSupport.ResultText resultText = InspectQrMetricSupport.formatValueWithContext(key, value);
                 String rtText = resultText.text();
+                boolean actuallyTruncated = resultText.truncated();
                 if (rtText != null && rtText.length() > InspectQrMetricSupport.RESULT_TEXT_MAX) {
                     rtText = rtText.substring(0, InspectQrMetricSupport.RESULT_TEXT_MAX);
+                    actuallyTruncated = true;   // 2차 절단도 (truncated) remarks 에 반영 (§8-1)
                 }
                 row.setResultText(rtText);
-                row.setRemarks(InspectQrMetricSupport.buildRemarks(status, code, resultText.truncated()));
+                row.setRemarks(InspectQrMetricSupport.buildRemarks(status, code, actuallyTruncated));
                 row.setSortOrder(sortOrder);
 
                 checkResultRepository.save(row);

@@ -152,6 +152,8 @@ final class InspectQrMetricSupport {
 
     static Double parseNumeric(String s) {  // package-private: 단위 테스트
         if (s == null) return null;
+        // 비숫자 문자 일괄 제거(콤마=천단위 포함). 다중 구분자(1.2.3·날짜 2026-05-01·범위 5-3)는
+        // parseDouble 실패→null 로 남겨 malformed 데이터를 마스킹하지 않음(§8-3 dual-review 합의).
         String cleaned = s.replaceAll("[^\\d.\\-]", "");
         if (cleaned.isEmpty()) return null;
         try { return Double.parseDouble(cleaned); }
@@ -221,8 +223,6 @@ final class InspectQrMetricSupport {
                 // mounts 맵: {"/":{p:52,t:5,f:2.4}, "/oracle":{...}, ...}
                 Object rootMount = m.get("/");
                 if (rootMount instanceof Map) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> rm = (Map<String, Object>) rootMount;
                     return new ResultText("worst " + m.size() + "개 마운트", false);
                 }
                 Object fsList = m.get("filesystems");
@@ -244,32 +244,32 @@ final class InspectQrMetricSupport {
                 memo = switch (key) {
                     case "ap.hw.cpu" -> { Object c=m.get("cores"); Object n=m.get("name"); yield (n!=null?n+" ":"")+(c!=null?c+"코어":""); }
                     case "ap.hw.memory" -> { Object g=m.get("installed_gb"); yield g!=null?g+"GB":"-"; }
-                    case "ap.hw.adapter" -> { Object u=m.get("up"); Object t=m.get("total"); yield u+"개 UP / "+t+"개"; }
+                    case "ap.hw.adapter" -> { Object u=m.get("up"); Object t=m.get("total"); yield (u!=null&&t!=null)? u+"개 UP / "+t+"개" : "-"; }
                     case "ap.os.disk_summary" -> { Object s=m.get("summary"); yield s!=null?String.valueOf(s):"-"; }
                     case "db.os.cpu_info" -> { Object c=m.get("cores"); Object g=m.get("clock_ghz"); yield (c!=null?c+"코어":"")+(g!=null?" "+g+"GHz":""); }
                     case "db.os.mem_info" -> { Object g=m.get("total_gb"); yield g!=null?g+"GB":"-"; }
                     case "db.os.adapter" -> { Object a=m.get("adapter_count"); yield a!=null?a+"개":"-"; }
                     case "db.os.network_ip" -> { Object ip = m.get("ipv4"); yield ip instanceof List && !((List<?>)ip).isEmpty() ? String.valueOf(((List<?>)ip).get(0)) : "-"; }
                     case "ap.net.ip" -> { Object ip = m.get("ips"); yield ip instanceof List && !((List<?>)ip).isEmpty() ? String.valueOf(((Map<?,?>)((List<?>)ip).get(0)).get("IPAddress")) : "-"; }
-                    case "db.os.netstat_perf" -> m.get("total_errs") + "건";
+                    case "db.os.netstat_perf" -> { Object v=m.get("total_errs"); yield v!=null? v+"건":"-"; }
                     case "db.os.iostat" -> m.get("stderr") != null ? "error" : "정상";
                     case "db.os.net_ping" -> { Object o=m.get("note"); yield o != null && String.valueOf(o).contains("not found") ? "정상 (ping OK)" : "-"; }
-                    case "db.os.net_link" -> m.get("established") + "건";
-                    case "db.os.net_collisions" -> m.get("total_coll") + "건";
-                    case "db.os.lsvg_rootvg" -> m.get("stale_count") + "건";
+                    case "db.os.net_link" -> { Object v=m.get("established"); yield v!=null? v+"건":"-"; }
+                    case "db.os.net_collisions" -> { Object v=m.get("total_coll"); yield v!=null? v+"건":"-"; }
+                    case "db.os.lsvg_rootvg" -> { Object v=m.get("stale_count"); yield v!=null? v+"건":"-"; }
                     case "db.oracle.wait_events" -> { Object te=m.get("top_events"); yield te instanceof List ? ((List<?>)te).size()+"건" : "-"; }
                     case "db.oracle.export_last" -> m.get("last_export") != null ? String.valueOf(m.get("last_export")) : "없음";
                     case "db.oracle.standby_lag" -> m.get("apply_lag") != null ? String.valueOf(m.get("apply_lag")) : "N/A";
-                    case "db.oracle.datafile_status" -> m.get("total") + "개";
+                    case "db.oracle.datafile_status" -> { Object v=m.get("total"); yield v!=null? v+"개":"-"; }
                     case "gis.gws.running" -> String.valueOf(m.getOrDefault("status", "-"));
-                    case "gis.gws.http" -> m.get("http_status") + "";
-                    case "gis.gws.store_size" -> m.get("total_gb") + "GB";
-                    case "gis.gws.stdout_log_size" -> m.get("total_mb") + "MB";
+                    case "gis.gws.http" -> { Object v=m.get("http_status"); yield v!=null? String.valueOf(v):"-"; }
+                    case "gis.gws.store_size" -> { Object v=m.get("total_gb"); yield v!=null? v+"GB":"-"; }
+                    case "gis.gws.stdout_log_size" -> { Object v=m.get("total_mb"); yield v!=null? v+"MB":"-"; }
                     case "gis.uwes.dem_slop_preserved" -> Boolean.TRUE.equals(m.get("both_exist")) ? "보존" : "누락";
-                    case "ap.log.system_err", "ap.log.security_err" -> m.get("error_count") + "건";
-                    case "ap.net.routes" -> m.get("routes") + "개";
-                    case "ap.security.users" -> m.get("enabled") + "계정";
-                    case "gis.gss.log_purge", "gis.gws.log_purge" -> m.get("purged_count") + "파일";
+                    case "ap.log.system_err", "ap.log.security_err" -> { Object v=m.get("error_count"); yield v!=null? v+"건":"-"; }
+                    case "ap.net.routes" -> { Object v=m.get("routes"); yield v!=null? v+"개":"-"; }
+                    case "ap.security.users" -> { Object v=m.get("enabled"); yield v!=null? v+"계정":"-"; }
+                    case "gis.gss.log_purge", "gis.gws.log_purge" -> { Object v=m.get("purged_count"); yield v!=null? v+"파일":"-"; }
                     default -> null;
                 };
             }

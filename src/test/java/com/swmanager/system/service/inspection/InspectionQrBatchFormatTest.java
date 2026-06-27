@@ -43,14 +43,16 @@ class InspectionQrBatchFormatTest {
         assertThat(manifestSort(null)).isNull();
     }
 
-    // ── parseNumeric: 비숫자 제거 후 파싱 ──
+    // ── parseNumeric: 비숫자 제거 후 파싱. 다중구분자는 null(§8-3 dual-review: malformed 비마스킹) ──
     @Test void parseNumeric_cleansAndParses() {
         assertThat(parseNumeric(null)).isNull();
         assertThat(parseNumeric("52%")).isEqualTo(52.0);
-        assertThat(parseNumeric("1,234")).isEqualTo(1234.0);       // 콤마 제거
+        assertThat(parseNumeric("1,234")).isEqualTo(1234.0);       // 콤마(천단위) 제거
         assertThat(parseNumeric("-3.5C")).isEqualTo(-3.5);
         assertThat(parseNumeric("abc")).isNull();                   // 숫자 없음 → null
         assertThat(parseNumeric("")).isNull();
+        assertThat(parseNumeric("1.2.3")).isNull();                 // 다중 소수점 → null(malformed 노출)
+        assertThat(parseNumeric("2026-05-01")).isNull();            // 날짜 구조 → null(숫자 오인 방지)
     }
 
     // ── extractPercent: Number/Map/String → Double ──
@@ -115,6 +117,18 @@ class InspectionQrBatchFormatTest {
                 .isEqualTo(new ResultText("32GB", false));
         assertThat(formatValueWithContext("db.os.cpu_info", Map.of("cores", 4, "clock_ghz", "2.4")))
                 .isEqualTo(new ResultText("4코어 2.4GHz", false));
+    }
+    // ── switch arm null 가드: 키 부재 시 "null<단위>" 대신 "-" (§8-4) ──
+    @Test void fvc_switchArm_nullGuard_returnsDash() {
+        assertThat(formatValueWithContext("db.os.netstat_perf", Map.of())).isEqualTo(new ResultText("-", false));
+        assertThat(formatValueWithContext("ap.hw.adapter", Map.of())).isEqualTo(new ResultText("-", false));
+        assertThat(formatValueWithContext("gis.gws.store_size", Map.of())).isEqualTo(new ResultText("-", false));
+        assertThat(formatValueWithContext("gis.gws.stdout_log_size", Map.of())).isEqualTo(new ResultText("-", false));
+        // 값 존재 시 출력 보존 (회귀 0)
+        assertThat(formatValueWithContext("db.os.netstat_perf", Map.of("total_errs", 5)))
+                .isEqualTo(new ResultText("5건", false));
+        assertThat(formatValueWithContext("ap.hw.adapter", Map.of("up", 2, "total", 3)))
+                .isEqualTo(new ResultText("2개 UP / 3개", false));
     }
     @Test void fvc_percentItems_byKeyPattern() {
         assertThat(formatValueWithContext("ap.perf.cpu", 55)).isEqualTo(new ResultText("55%", false));
