@@ -64,7 +64,7 @@ public class DocumentFileController {
 
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -88,7 +88,7 @@ public class DocumentFileController {
                     "fileSize", attachment.getFileSize()
             ));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -169,9 +169,9 @@ public class DocumentFileController {
             logService.log(MenuName.DOCUMENT, AccessActionType.DELETE, "날인본 스캔 삭제 (문서ID: " + docId + ")");
             return ResponseEntity.ok(Map.of("success", true));
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("error", ExceptionMessages.safe(e)));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", ExceptionMessages.safe(e)));
         }
     }
 }

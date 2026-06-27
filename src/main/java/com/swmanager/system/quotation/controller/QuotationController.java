@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.swmanager.system.util.ExceptionMessages;
 
 @Slf4j
 @Controller
@@ -375,7 +376,7 @@ public class QuotationController {
             log.error("견적서 생성 실패", e);
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
-                    "error", e.getMessage()
+                    "error", ExceptionMessages.safe(e)
             ));
         }
     }
@@ -397,7 +398,7 @@ public class QuotationController {
             return ResponseEntity.ok(Map.of("success", true, "message", "견적서가 수정되었습니다."));
         } catch (Exception e) {
             log.error("견적서 수정 실패", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -416,7 +417,7 @@ public class QuotationController {
             return ResponseEntity.ok(Map.of("success", true, "message", "견적서가 삭제되었습니다."));
         } catch (Exception e) {
             log.error("견적서 삭제 실패", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -438,7 +439,7 @@ public class QuotationController {
             logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "품명 패턴 등록: " + pattern.getProductName());
             return ResponseEntity.ok(Map.of("success", true, "patternId", saved.getPatternId()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -483,7 +484,7 @@ public class QuotationController {
             logService.log(MenuName.QUOTATION, AccessActionType.BATCH, "전체 패턴 초기화: " + count + "건 삭제");
             return ResponseEntity.ok(Map.of("success", true, "deleted", count));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -504,7 +505,7 @@ public class QuotationController {
             return ResponseEntity.ok(Map.of("success", true, "copied", copied));
         } catch (Exception e) {
             log.error("패턴 복사 실패", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -555,7 +556,7 @@ public class QuotationController {
             logService.log(MenuName.QUOTATION, AccessActionType.PATTERN_CRUD, "비고 패턴 등록: " + pattern.getPatternName());
             return ResponseEntity.ok(Map.of("success", true, "patternId", saved.getPatternId()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -620,7 +621,7 @@ public class QuotationController {
             logService.log(MenuName.QUOTATION, AccessActionType.WAGE_CRUD, wageRate.getYear() + "년 " + wageRate.getGradeName() + " 노임단가 등록");
             return ResponseEntity.ok(Map.of("success", true, "wageId", saved.getWageId()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -636,7 +637,7 @@ public class QuotationController {
             logService.log(MenuName.QUOTATION, AccessActionType.WAGE_CRUD, wageRate.getYear() + "년 " + wageRate.getGradeName() + " 노임단가 수정");
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -650,7 +651,7 @@ public class QuotationController {
             logService.log(MenuName.QUOTATION, AccessActionType.WAGE_CRUD, "노임단가 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 

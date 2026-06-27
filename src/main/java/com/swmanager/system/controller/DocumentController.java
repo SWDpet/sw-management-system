@@ -19,6 +19,7 @@ import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.service.DocumentService;
 import com.swmanager.system.service.PdfExportService;
 import com.swmanager.system.service.LogService;
+import com.swmanager.system.util.ExceptionMessages;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -358,7 +359,7 @@ public class DocumentController {
                     true, doc.getDocId(), doc.getDocNo() != null ? doc.getDocNo() : ""));
         } catch (Exception e) {
             log.error("문서 저장 실패", e);
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", ExceptionMessages.safe(e)));
         }
     }
 

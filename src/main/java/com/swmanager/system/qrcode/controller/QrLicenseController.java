@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import com.swmanager.system.util.ExceptionMessages;
 import java.util.Map;
 
 @Slf4j
@@ -124,7 +125,7 @@ public class QrLicenseController {
             return ResponseEntity.ok(Map.of("success", true, "qrId", saved.getQrId()));
         } catch (Exception e) {
             log.error("QR 발급 실패", e);
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -140,7 +141,7 @@ public class QrLicenseController {
             logService.log(MenuName.QR_LICENSE, AccessActionType.UPDATE, "QR 수정: " + saved.getEndUserName());
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -154,7 +155,7 @@ public class QrLicenseController {
             logService.log(MenuName.QR_LICENSE, AccessActionType.DELETE, "QR 삭제: ID " + id);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 
@@ -170,7 +171,7 @@ public class QrLicenseController {
             String base64 = qrLicenseService.generateQrBase64(content, 300, 300);
             return ResponseEntity.ok(Map.of("success", true, "image", base64));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", ExceptionMessages.safe(e)));
         }
     }
 }
