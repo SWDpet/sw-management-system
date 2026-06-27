@@ -477,75 +477,8 @@ class DocumentControllerTest {
         assertThat(res.getBody()).containsEntry("projNm", "사업A");
     }
 
-    // ───────────────────────── 일괄 작성 ─────────────────────────
-
-    @Test
-    void batchPage_nonEdit_redirectsList() {
-        loginView();
-        String view = controller.batchPage(model());
-        assertThat(view).isEqualTo("redirect:/document/list");
-    }
-
-    @Test
-    void batchPage_edit_rendersPage() {
-        loginEdit();
-        when(userRepository.findByEnabledTrue()).thenReturn(List.of());
-        String view = controller.batchPage(model());
-        assertThat(view).isEqualTo("document/doc-batch");
-    }
-
-    @Test
-    void batchTargets_invalidDocType_badRequest() {
-        ResponseEntity<?> res = controller.getBatchTargets(2026, "BOGUS", null);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void batchTargets_commence_badRequest() {
-        // COMMENCE 는 일괄 대상 아님 → 400
-        ResponseEntity<?> res = controller.getBatchTargets(2026, "COMMENCE", null);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void batchTargets_interim_ok() {
-        when(swProjectRepository.findByYearAndInterimYnOrderByCityNmAscDistNmAsc(2026, "Y"))
-                .thenReturn(List.of());
-        ResponseEntity<?> res = controller.getBatchTargets(2026, "INTERIM", null);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void allSystemsForYear_filtersByYear() {
-        when(swProjectRepository.findAll()).thenReturn(List.of());
-        ResponseEntity<?> res = controller.getAllSystemsForYear(2026);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void batchGenerate_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.batchGenerate(Map.of("docType", "INTERIM"));
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(documentService);
-    }
-
-    @Test
-    void batchGenerate_invalidDocType_badRequest() {
-        loginEdit();
-        ResponseEntity<?> res = controller.batchGenerate(Map.of("docType", "BOGUS"));
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void batchGenerate_missingProject_countsAsFail() {
-        loginEdit();
-        when(swProjectRepository.findById(99L)).thenReturn(Optional.empty());
-        Map<String, Object> req = Map.of("docType", "INTERIM", "projIds", List.of(99));
-        ResponseEntity<Map<String, Object>> res = controller.batchGenerate(req);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(res.getBody()).containsEntry("failCount", 1);
-    }
+    // [S4 Phase 2] 일괄 작성(batchPage/batchTargets/allSystemsForYear/batchGenerate) 테스트는
+    // DocumentBatchControllerTest 로 이관.
 
     // ───────────────────────── 사업수행계획서 ─────────────────────────
 
