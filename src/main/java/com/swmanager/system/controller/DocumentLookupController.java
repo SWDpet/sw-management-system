@@ -235,7 +235,7 @@ public class DocumentLookupController {
     @ResponseBody
     @GetMapping("/api/project/{projId}")
     public ResponseEntity<Map<String, Object>> getProjectInfo(@PathVariable Long projId) {
-        if (!access.hasDocRead()) return ResponseEntity.status(403).build();  // [harden-read-api] VIEW 이상(allowlist, admin 포함)
+        if (!"EDIT".equals(access.getAuth())) return ResponseEntity.status(403).build();  // [harden-getprojectinfo-pii] 담당자 PII=EDIT(admin 포함, 호출처=EDIT 전용 생성폼)
         return swProjectRepository.findById(projId).map(p -> {
             Map<String, Object> data = new HashMap<>();
             data.put("projId", p.getProjId());

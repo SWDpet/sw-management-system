@@ -136,14 +136,21 @@ class DocumentLookupControllerTest {
     // ───────────────────────── 사업 정보 ─────────────────────────
 
     @Test
-    void getProjectInfo_none_forbidden() { // [harden-read-api] 담당자 PII 무권한 차단
+    void getProjectInfo_none_forbidden() { // [harden-getprojectinfo-pii] 무권한 차단
         loginNone();
         assertThat(controller.getProjectInfo(3L).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         verifyNoInteractions(swProjectRepository, personInfoRepository);
     }
 
     @Test
-    void getProjectInfo_admin_ok() { // hasDocRead: admin→getAuth EDIT→통과
+    void getProjectInfo_view_forbidden() { // [harden-getprojectinfo-pii] 담당자 PII → VIEW 도 차단(EDIT 전용)
+        loginView();
+        assertThat(controller.getProjectInfo(3L).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verifyNoInteractions(swProjectRepository, personInfoRepository);
+    }
+
+    @Test
+    void getProjectInfo_admin_ok() { // admin→getAuth EDIT→통과
         loginAdmin();
         SwProject p = new SwProject();
         p.setProjId(3L);
@@ -153,14 +160,14 @@ class DocumentLookupControllerTest {
 
     @Test
     void getProjectInfo_notFound() {
-        loginView();
+        loginEdit();
         when(swProjectRepository.findById(9L)).thenReturn(Optional.empty());
         assertThat(controller.getProjectInfo(9L).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void getProjectInfo_found() {
-        loginView();
+        loginEdit();
         SwProject p = new SwProject();
         p.setProjId(3L);
         p.setProjNm("사업A");
@@ -172,7 +179,7 @@ class DocumentLookupControllerTest {
 
     @Test
     void getProjectInfo_personMapping() { // [codex] personId 존재 시 담당자 필드 매핑(personId 자체는 응답 미포함)
-        loginView();
+        loginEdit();
         SwProject p = new SwProject();
         p.setProjId(3L);
         p.setProjNm("사업A");
