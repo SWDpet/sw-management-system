@@ -482,43 +482,7 @@ class DocumentControllerTest {
 
     // ───────────────────────── 사업수행계획서 ─────────────────────────
 
-    @Test
-    void getPlanData_notFound() {
-        when(swProjectRepository.findById(9L)).thenReturn(Optional.empty());
-        ResponseEntity<?> res = controller.getPlanData(9L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void getPlanData_found() throws Exception {
-        SwProject p = new SwProject();
-        p.setProjId(3L);
-        when(swProjectRepository.findById(3L)).thenReturn(Optional.of(p));
-        // pjt* repository 는 미주입(null) → NPE 방지 위해 stub 주입
-        injectPjtRepos();
-        ResponseEntity<?> res = controller.getPlanData(3L);
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    void savePlanData_nonEdit_forbidden() {
-        loginView();
-        ResponseEntity<?> res = controller.savePlanData(3L, Map.of());
-        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        verifyNoInteractions(swProjectRepository);
-    }
-
-    private void injectPjtRepos() throws Exception {
-        var pjtTargetRepo = mock(com.swmanager.system.repository.PjtTargetRepository.class);
-        var pjtManpowerRepo = mock(com.swmanager.system.repository.PjtManpowerPlanRepository.class);
-        var pjtScheduleRepo = mock(com.swmanager.system.repository.PjtScheduleRepository.class);
-        when(pjtTargetRepo.findByProjIdOrderBySortOrderAsc(any())).thenReturn(List.of());
-        when(pjtManpowerRepo.findByProjIdOrderBySortOrderAsc(any())).thenReturn(List.of());
-        when(pjtScheduleRepo.findByProjIdOrderBySortOrderAsc(any())).thenReturn(List.of());
-        inject("pjtTargetRepository", pjtTargetRepo);
-        inject("pjtManpowerPlanRepository", pjtManpowerRepo);
-        inject("pjtScheduleRepository", pjtScheduleRepo);
-    }
+    // [S4 Phase 3] 사업수행계획서(getPlanData/savePlanData) 테스트는 DocumentPlanControllerTest 로 이관.
 
     // [S4 Phase 1] zipSafe/bulkTypeLabel static 헬퍼 테스트는 DocumentDownloadControllerTest 로 이관.
 
