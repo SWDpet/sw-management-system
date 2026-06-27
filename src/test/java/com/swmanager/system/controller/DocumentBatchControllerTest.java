@@ -150,6 +150,64 @@ class DocumentBatchControllerTest {
     }
 
     @Test
+    void batchGenerate_nullProjIds_badRequest() { // [harden-nullsafe] projIds 누락 → 400(500 아님)
+        loginEdit();
+        ResponseEntity<?> res = controller.batchGenerate(Map.of("docType", "COMPLETION"));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(documentService);
+    }
+
+    @Test
+    void batchGenerate_emptyProjIds_badRequest() { // [harden-nullsafe] 빈 배열 → 400
+        loginEdit();
+        ResponseEntity<?> res = controller.batchGenerate(Map.of("docType", "COMPLETION", "projIds", List.of()));
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(documentService);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void batchGenerate_nullNameFields_success() { // [harden-nullsafe] projNm/cityNm/distNm null 이어도 성공(orphan 아님)
+        loginEdit();
+        SwProject p = new SwProject();
+        p.setProjId(7L); // projNm/cityNm/distNm 모두 null
+        when(swProjectRepository.findById(7L)).thenReturn(Optional.of(p));
+        Document doc = new Document();
+        doc.setDocId(100);
+        when(documentService.createDocument(any(), any(), any(), any(), any(), any(), any())).thenReturn(doc);
+
+        Map<String, Object> req = Map.of("docType", "COMPLETION", "projIds", List.of(7));
+        ResponseEntity<Map<String, Object>> res = controller.batchGenerate(req);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Map<String, Object> body = res.getBody();
+        assertThat(body).containsEntry("successCount", 1).containsEntry("failCount", 0);
+        List<Map<String, Object>> results = (List<Map<String, Object>>) body.get("results");
+        assertThat(results.get(0)).containsEntry("success", true).containsEntry("docId", 100);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void batchGenerate_itemException_nullMessage_failsOne() { // [harden-nullsafe] null-message 예외도 해당 건만 실패(전체 500 아님)
+        loginEdit();
+        SwProject p = new SwProject();
+        p.setProjId(7L); p.setProjNm("사업A"); p.setCityNm("시"); p.setDistNm("군");
+        when(swProjectRepository.findById(7L)).thenReturn(Optional.of(p));
+        Document doc = new Document();
+        doc.setDocId(100);
+        when(documentService.createDocument(any(), any(), any(), any(), any(), any(), any())).thenReturn(doc);
+        // letter 섹션 저장에서 message 없는 예외 → 내부 catch safeErrorMessage 경로
+        org.mockito.Mockito.doThrow(new NullPointerException())
+                .when(documentService).saveSection(eq(100), eq("letter"), any(), eq(0));
+
+        Map<String, Object> req = Map.of("docType", "COMPLETION", "projIds", List.of(7));
+        ResponseEntity<Map<String, Object>> res = controller.batchGenerate(req);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK); // 배치 전체 500 아님
+        assertThat(res.getBody()).containsEntry("successCount", 0).containsEntry("failCount", 1);
+    }
+
+    @Test
     void batchGenerate_missingProject_countsAsFail() {
         loginEdit();
         when(swProjectRepository.findById(99L)).thenReturn(Optional.empty());

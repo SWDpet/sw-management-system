@@ -14,6 +14,7 @@ import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.security.DocumentAccessSupport;
 import com.swmanager.system.service.DocumentService;
 import com.swmanager.system.service.LogService;
+import com.swmanager.system.util.ExceptionMessages;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -127,6 +128,9 @@ public class DocumentBatchController {
             }
             @SuppressWarnings("unchecked")
             List<Number> projIds = (List<Number>) requestData.get("projIds");
+            if (projIds == null || projIds.isEmpty()) {  // [harden-nullsafe] 잘못된 요청 → 400(500 아님)
+                return ResponseEntity.badRequest().body(Map.of("error", "대상 사업이 없습니다."));
+            }
             @SuppressWarnings("unchecked")
             Map<String, Object> commonData = (Map<String, Object>) requestData.get("commonData");
 
@@ -215,12 +219,23 @@ public class DocumentBatchController {
                     }
 
                     successCount++;
-                    results.add(Map.of("projId", projId, "success", true, "docId", doc.getDocId(),
-                            "projNm", p.getProjNm(), "cityNm", p.getCityNm(), "distNm", p.getDistNm()));
+                    // [harden-nullsafe] projNm/cityNm/distNm 가 null 이어도 NPE 없이 성공 카운트(Map.of→HashMap).
+                    Map<String, Object> ok = new HashMap<>();
+                    ok.put("projId", projId);
+                    ok.put("success", true);
+                    ok.put("docId", doc.getDocId());
+                    ok.put("projNm", p.getProjNm());
+                    ok.put("cityNm", p.getCityNm());
+                    ok.put("distNm", p.getDistNm());
+                    results.add(ok);
 
                 } catch (Exception e) {
                     failCount++;
-                    results.add(Map.of("projId", projId, "success", false, "error", e.getMessage()));
+                    Map<String, Object> fail = new HashMap<>();  // [harden-nullsafe] 성공 branch 와 일관 + 방어
+                    fail.put("projId", projId);
+                    fail.put("success", false);
+                    fail.put("error", ExceptionMessages.safe(e));
+                    results.add(fail);
                 }
             }
 
@@ -236,7 +251,7 @@ public class DocumentBatchController {
             ));
         } catch (Exception e) {
             log.error("일괄 생성 실패", e);
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", ExceptionMessages.safe(e)));
         }
     }
 

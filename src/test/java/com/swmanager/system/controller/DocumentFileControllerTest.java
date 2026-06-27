@@ -209,6 +209,16 @@ class DocumentFileControllerTest {
     }
 
     @Test
+    void uploadSignedScan_nullOrigName_ok() throws Exception { // [harden-nullsafe] origName null 이어도 200(500 아님)
+        loginEdit();
+        Document doc = mock(Document.class);
+        when(doc.getSignedScanOrigName()).thenReturn(null);
+        when(doc.getSignedScanSize()).thenReturn(null);
+        when(signedScanService.uploadOrReplace(eq(1), any(), any())).thenReturn(doc);
+        assertThat(controller.uploadSignedScan(1, pdf()).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void uploadSignedScan_badInput_badRequest() throws Exception {
         loginEdit();
         when(signedScanService.uploadOrReplace(eq(1), any(), any()))

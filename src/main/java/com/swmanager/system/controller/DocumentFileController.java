@@ -9,6 +9,7 @@ import com.swmanager.system.service.DocumentAttachmentService;
 import com.swmanager.system.service.DocumentService;
 import com.swmanager.system.service.DocumentSignedScanService;
 import com.swmanager.system.service.LogService;
+import com.swmanager.system.util.ExceptionMessages;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -125,15 +126,17 @@ public class DocumentFileController {
             Long uploaderSeq = (cu != null) ? cu.getUser().getUserSeq() : null;
             var doc = signedScanService.uploadOrReplace(docId, file, uploaderSeq);
             logService.log(MenuName.DOCUMENT, AccessActionType.UPLOAD, "날인본 스캔 업로드 (문서ID: " + docId + ")");
+            // [harden-nullsafe] origName null 이어도 업로드 성공(200) — Map.of 는 null 값에 NPE.
+            String origName = doc.getSignedScanOrigName() != null ? doc.getSignedScanOrigName() : "";
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "fileName", doc.getSignedScanOrigName(),
+                    "fileName", origName,
                     "fileSize", doc.getSignedScanSize() != null ? doc.getSignedScanSize() : 0
             ));
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(400).body(Map.of("error", ExceptionMessages.safe(e)));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("error", ExceptionMessages.safe(e)));
         }
     }
 
