@@ -1,10 +1,18 @@
 package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.constant.enums.OpsDocType;
+import com.swmanager.system.domain.InspectReport;
+import com.swmanager.system.domain.OrgUnit;
 import com.swmanager.system.domain.PersonInfo;
 import com.swmanager.system.domain.SigunguCode;
+import com.swmanager.system.domain.SwProject;
+import com.swmanager.system.domain.SysMst;
 import com.swmanager.system.domain.User;
+import com.swmanager.system.domain.ops.OpsDocPartner;
 import com.swmanager.system.domain.ops.OpsDocument;
+import com.swmanager.system.domain.ops.Partner;
+import com.swmanager.system.domain.ops.PartnerContact;
+import com.swmanager.system.domain.ops.Staff;
 import com.swmanager.system.dto.ops.FeedbackForm;
 import com.swmanager.system.dto.ops.OpsDocForm;
 import com.swmanager.system.dto.ops.RequesterForm;
@@ -21,6 +29,7 @@ import com.swmanager.system.repository.ops.PartnerContactRepository;
 import com.swmanager.system.repository.ops.PartnerRepository;
 import com.swmanager.system.repository.ops.StaffRepository;
 import com.swmanager.system.security.CustomUserDetails;
+import com.swmanager.system.service.inspection.InspectMaintProfile;
 import com.swmanager.system.service.ops.KbMatcher;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.ops.OpsDocService;
@@ -28,9 +37,12 @@ import com.swmanager.system.service.ops.OpsDocSignatureService;
 import com.swmanager.system.service.ops.OpsSupportFileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -49,6 +61,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -565,5 +578,342 @@ class OpsDocControllerTest {
         when(opsDocService.findById(1L)).thenReturn(Optional.of(doc));
         Map<String, Object> m = controller.relations(1L);
         assertThat(m).containsEntry("requester_kind", "PERSON").containsEntry("requester_id", 5L);
+    }
+
+    // ───────── INSPECT 지역/유형 해석 (resolveRegion/resolveMaintType, nc 125-126,180-194,209) ─────────
+
+    /** 단일 후보: report→project, bySgg[distNm] 단일 → pick=cand.get(0) + maint 배지. */
+    @Test
+    void list_inspectDoc_singleCandidate_resolvesRegionAndMaintBadge() {
+        SigunguCode sgg = new SigunguCode();
+        sgg.setAdmSectC("11110"); sgg.setSidoNm("서울특별시"); sgg.setSggNm("종로구");
+        when(sigunguCodeRepository.findAll()).thenReturn(List.of(sgg));
+        when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of("서울특별시"));
+
+        OpsDocument inspect = new OpsDocument();
+        inspect.setDocId(7L); inspect.setDocType(OpsDocType.INSPECT); inspect.setDocNo("INSP-2026-42");
+        when(opsDocService.findAll()).thenReturn(List.of(inspect));
+        InspectReport report = new InspectReport(); report.setPjtId(70L);
+        when(inspectReportRepository.findById(42L)).thenReturn(Optional.of(report));
+        SwProject pj = new SwProject();
+        pj.setCityNm("서울특별시"); pj.setDistNm("종로구"); pj.setMaintType("HS");
+        when(swProjectRepository.findById(70L)).thenReturn(Optional.of(pj));
+
+        Model m = model();
+        controller.list(null, null, null, null, null, null, m);
+        @SuppressWarnings("unchecked") Map<Long, String> sidoByDoc = (Map<Long, String>) m.getAttribute("sidoByDoc");
+        @SuppressWarnings("unchecked") Map<Long, String> sggByDoc = (Map<Long, String>) m.getAttribute("sggByDoc");
+        @SuppressWarnings("unchecked") Map<Long, String> maintLabel = (Map<Long, String>) m.getAttribute("maintLabelByDoc");
+        @SuppressWarnings("unchecked") Map<Long, String> maintTone = (Map<Long, String>) m.getAttribute("maintToneByDoc");
+        assertThat(sidoByDoc.get(7L)).isEqualTo("서울특별시");
+        assertThat(sggByDoc.get(7L)).isEqualTo("종로구");
+        assertThat(maintLabel.get(7L)).isEqualTo(InspectMaintProfile.badgeLabel("HS"));
+        assertThat(maintTone.get(7L)).isEqualTo(InspectMaintProfile.badgeTone("HS"));
+    }
+
+    /** 복수 후보: cand.size()>1 → cityNm 매칭되는 2번째 후보 pick (cand.get(0) 아님). */
+    @Test
+    void list_inspectDoc_multiCandidate_picksBySido() {
+        SigunguCode c0 = new SigunguCode();
+        c0.setAdmSectC("26000"); c0.setSidoNm("부산광역시"); c0.setSggNm("중구");
+        SigunguCode c1 = new SigunguCode();
+        c1.setAdmSectC("11000"); c1.setSidoNm("서울특별시"); c1.setSggNm("중구");
+        when(sigunguCodeRepository.findAll()).thenReturn(List.of(c0, c1)); // bySgg["중구"]=[c0,c1]
+        when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of("서울특별시", "부산광역시"));
+
+        OpsDocument inspect = new OpsDocument();
+        inspect.setDocId(8L); inspect.setDocType(OpsDocType.INSPECT); inspect.setDocNo("INSP-2026-43");
+        when(opsDocService.findAll()).thenReturn(List.of(inspect));
+        InspectReport report = new InspectReport(); report.setPjtId(80L);
+        when(inspectReportRepository.findById(43L)).thenReturn(Optional.of(report));
+        SwProject pj = new SwProject();
+        pj.setCityNm("서울특별시"); pj.setDistNm("중구"); pj.setMaintType("DHS"); // c1 만 매칭
+        when(swProjectRepository.findById(80L)).thenReturn(Optional.of(pj));
+
+        Model m = model();
+        controller.list(null, null, null, null, null, null, m);
+        @SuppressWarnings("unchecked") Map<Long, String> sidoByDoc = (Map<Long, String>) m.getAttribute("sidoByDoc");
+        @SuppressWarnings("unchecked") Map<Long, String> sggByDoc = (Map<Long, String>) m.getAttribute("sggByDoc");
+        // cand.get(0)=부산이 아니라 cityNm 매칭된 서울(c1) 선택
+        assertThat(sidoByDoc.get(8L)).isEqualTo("서울특별시");
+        assertThat(sggByDoc.get(8L)).isEqualTo("중구"); // 선택된 후보의 sggNm 매핑 확인
+    }
+
+    /** 후보 없음: bySgg[distNm] 미존재 → {nz(cityNm), nz(distNm)} 폴백. */
+    @Test
+    void list_inspectDoc_noCandidate_fallsBackToProjectNames() {
+        when(sigunguCodeRepository.findAll()).thenReturn(List.of()); // bySgg 비어있음
+        when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
+
+        OpsDocument inspect = new OpsDocument();
+        inspect.setDocId(9L); inspect.setDocType(OpsDocType.INSPECT); inspect.setDocNo("INSP-2026-44");
+        when(opsDocService.findAll()).thenReturn(List.of(inspect));
+        InspectReport report = new InspectReport(); report.setPjtId(90L);
+        when(inspectReportRepository.findById(44L)).thenReturn(Optional.of(report));
+        SwProject pj = new SwProject();
+        pj.setCityNm("강원특별자치도"); pj.setDistNm("춘천시"); pj.setMaintType(null);
+        when(swProjectRepository.findById(90L)).thenReturn(Optional.of(pj));
+
+        Model m = model();
+        controller.list(null, null, null, null, null, null, m);
+        @SuppressWarnings("unchecked") Map<Long, String> sidoByDoc = (Map<Long, String>) m.getAttribute("sidoByDoc");
+        @SuppressWarnings("unchecked") Map<Long, String> sggByDoc = (Map<Long, String>) m.getAttribute("sggByDoc");
+        @SuppressWarnings("unchecked") Map<Long, String> maintLabel = (Map<Long, String>) m.getAttribute("maintLabelByDoc");
+        assertThat(sidoByDoc.get(9L)).isEqualTo("강원특별자치도");
+        assertThat(sggByDoc.get(9L)).isEqualTo("춘천시");
+        assertThat(maintLabel).doesNotContainKey(9L); // maintType null → 배지 미생성
+    }
+
+    /** parseReportId catch: docNo 끝이 숫자 아님 → reportId null → "-". (nc 218) */
+    @Test
+    void list_inspectDoc_unparseableDocNo_resolvesToDash() {
+        when(sigunguCodeRepository.findAll()).thenReturn(List.of());
+        when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
+        OpsDocument inspect = new OpsDocument();
+        inspect.setDocId(10L); inspect.setDocType(OpsDocType.INSPECT); inspect.setDocNo("INSP-2026-XX");
+        when(opsDocService.findAll()).thenReturn(List.of(inspect));
+
+        Model m = model();
+        controller.list(null, null, null, null, null, null, m);
+        @SuppressWarnings("unchecked") Map<Long, String> sidoByDoc = (Map<Long, String>) m.getAttribute("sidoByDoc");
+        assertThat(sidoByDoc.get(10L)).isEqualTo("-");
+        verify(inspectReportRepository, never()).findById(any());
+    }
+
+    // ───────── support-file 일반 예외 500 (nc 458-460, 495-497) ─────────
+
+    @Test
+    void uploadSupportFile_serverError_returns500() throws Exception {
+        when(supportFileService.uploadOrReplace(anyLong(), any(), any()))
+                .thenThrow(new RuntimeException("disk full"));
+        ResponseEntity<?> res = controller.uploadSupportFile(1L, file(), editUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @Test
+    void deleteSupportFile_serverError_returns500() {
+        org.mockito.Mockito.doThrow(new RuntimeException("io"))
+                .when(supportFileService).delete(anyLong());
+        ResponseEntity<?> res = controller.deleteSupportFile(1L, editUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // ───────── create 경유 applyRelations + savePartners (nc 504-517, 646-656) ─────────
+
+    /** PERSON 요청자 + 엔지니어 + partners 중복쌍 → 캡처 검증 + savePartners dedup 2회. */
+    @Test
+    void create_personRequesterAndPartners_appliesRelationsAndDedupes() {
+        User eng = new User(); eng.setUserSeq(5L);
+        when(userRepository.findById(5L)).thenReturn(Optional.of(eng));
+        PersonInfo reqP = new PersonInfo(); reqP.setId(9L);
+        when(personInfoRepository.findById(9L)).thenReturn(Optional.of(reqP));
+        OpsDocument saved = new OpsDocument(); saved.setDocId(100L); saved.setDocNo("FLT-100");
+        when(opsDocService.create(any(), any(), any())).thenReturn(saved);
+
+        OpsDocForm form = new OpsDocForm("제목", "GIS", null, null, null,
+                5L, "PERSON", 9L, null,
+                List.of(new OpsDocForm.PartnerRef(3L, "주관"),
+                        new OpsDocForm.PartnerRef(3L, "주관"),   // (3,주관) 중복 → 제거
+                        new OpsDocForm.PartnerRef(7L, "협력")));
+        ResponseEntity<?> res = controller.create("FAULT", form, editUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ArgumentCaptor<OpsDocument> docCap = ArgumentCaptor.forClass(OpsDocument.class);
+        verify(opsDocService).create(docCap.capture(), any(), any());
+        OpsDocument captured = docCap.getValue();
+        assertThat(captured.getEngineer()).isSameAs(eng);
+        assertThat(captured.getRequesterPerson()).isSameAs(reqP);
+        assertThat(captured.getRequesterContactId()).isNull();
+        assertThat(captured.getRequesterStaffId()).isNull();
+
+        ArgumentCaptor<OpsDocPartner> pCap = ArgumentCaptor.forClass(OpsDocPartner.class);
+        verify(opsDocPartnerRepository, times(2)).save(pCap.capture());
+        assertThat(pCap.getAllValues()).extracting(OpsDocPartner::getPartnerId).containsExactly(3L, 7L);
+        assertThat(pCap.getAllValues()).extracting(OpsDocPartner::getRoleLabel).containsExactly("주관", "협력");
+    }
+
+    /** CONTACT 요청자 → requesterContactId 세팅(personInfo 조회 없음). */
+    @Test
+    void create_contactRequester_setsContactId() {
+        OpsDocument saved = new OpsDocument(); saved.setDocId(101L); saved.setDocNo("FLT-101");
+        when(opsDocService.create(any(), any(), any())).thenReturn(saved);
+        OpsDocForm form = new OpsDocForm("제목", "GIS", null, null, null,
+                null, "CONTACT", 11L, null, null);
+        controller.create("FAULT", form, editUser());
+
+        ArgumentCaptor<OpsDocument> docCap = ArgumentCaptor.forClass(OpsDocument.class);
+        verify(opsDocService).create(docCap.capture(), any(), any());
+        assertThat(docCap.getValue().getRequesterContactId()).isEqualTo(11L);
+        assertThat(docCap.getValue().getRequesterPerson()).isNull();
+        verify(personInfoRepository, never()).findById(any());
+    }
+
+    /** STAFF 요청자 → requesterStaffId 세팅. */
+    @Test
+    void create_staffRequester_setsStaffId() {
+        OpsDocument saved = new OpsDocument(); saved.setDocId(102L); saved.setDocNo("FLT-102");
+        when(opsDocService.create(any(), any(), any())).thenReturn(saved);
+        OpsDocForm form = new OpsDocForm("제목", "GIS", null, null, null,
+                null, "STAFF", 22L, null, null);
+        controller.create("FAULT", form, editUser());
+
+        ArgumentCaptor<OpsDocument> docCap = ArgumentCaptor.forClass(OpsDocument.class);
+        verify(opsDocService).create(docCap.capture(), any(), any());
+        assertThat(docCap.getValue().getRequesterStaffId()).isEqualTo(22L);
+    }
+
+    // ───────── 검색/캐스케이드 데이터 경로 (Row.from 매핑, nc 530-543,581-582,624-637,666-696) ─────────
+
+    @Test
+    void engineers_withSwTeam_mapsRows() {
+        OrgUnit team = new OrgUnit(); team.setUnitId(3L);
+        when(orgUnitRepository.findFirstByNameAndUnitType("SW지원팀", "TEAM")).thenReturn(Optional.of(team));
+        User u = new User(); u.setUserSeq(5L); u.setUsername("홍길동"); u.setPosition("선임");
+        when(userRepository.findByOrgUnitIdAndEnabledTrueOrderByUsernameAsc(3L)).thenReturn(List.of(u));
+
+        var rows = controller.engineers();
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).id()).isEqualTo(5L);
+        assertThat(rows.get(0).name()).isEqualTo("홍길동");
+        assertThat(rows.get(0).position()).isEqualTo("선임");
+    }
+
+    @Test
+    void requesterSearch_withData_mapsRows() {
+        PersonInfo p = new PersonInfo();
+        p.setId(12L); p.setUserNm("김공무"); p.setOrgNm("강진군청"); p.setDeptNm("정보과"); p.setPos("주무관"); p.setTel("061-000");
+        when(personInfoRepository.findAllByKeyword(eq("kim"), any()))
+                .thenReturn(new PageImpl<>(List.of(p)));
+
+        var rows = controller.requesterSearch("kim");
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).id()).isEqualTo(12L);
+        assertThat(rows.get(0).name()).isEqualTo("김공무");
+        assertThat(rows.get(0).org()).isEqualTo("강진군청");
+        assertThat(rows.get(0).dept()).isEqualTo("정보과");
+        assertThat(rows.get(0).pos()).isEqualTo("주무관");
+        assertThat(rows.get(0).tel()).isEqualTo("061-000");
+    }
+
+    @Test
+    void partnerContactSearch_withData_mapsOrgFromPartner() {
+        Partner pt = new Partner(); pt.setName("(주)지오");
+        PartnerContact c = new PartnerContact();
+        c.setContactId(21L); c.setName("이담당"); c.setPartner(pt); c.setPosition("과장"); c.setTel("010-1");
+        when(partnerContactRepository.searchActive("a")).thenReturn(List.of(c));
+
+        var rows = controller.partnerContactSearch("a");
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).id()).isEqualTo(21L);
+        assertThat(rows.get(0).name()).isEqualTo("이담당");
+        assertThat(rows.get(0).org()).isEqualTo("(주)지오"); // partner.name
+        assertThat(rows.get(0).pos()).isEqualTo("과장");
+    }
+
+    @Test
+    void partnerSearch_withData_mapsRows() {
+        Partner p = new Partner(); p.setPartnerId(31L); p.setName("(주)협력"); p.setPartnerType("유지보수");
+        when(partnerRepository.findByUseYnAndNameContainingOrderByNameAsc("Y", "co")).thenReturn(List.of(p));
+
+        var rows = controller.partnerSearch("co");
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).id()).isEqualTo(31L);
+        assertThat(rows.get(0).name()).isEqualTo("(주)협력");
+        assertThat(rows.get(0).type()).isEqualTo("유지보수");
+    }
+
+    /** docPartners: partner found(업체명) + missing("#id") 양분기. */
+    @Test
+    void docPartners_withData_mapsFoundAndMissing() {
+        OpsDocPartner dp1 = new OpsDocPartner(); dp1.setPartnerId(41L); dp1.setRoleLabel("주관");
+        OpsDocPartner dp2 = new OpsDocPartner(); dp2.setPartnerId(42L); dp2.setRoleLabel("협력");
+        when(opsDocPartnerRepository.findByDocId(1L)).thenReturn(List.of(dp1, dp2));
+        Partner found = new Partner(); found.setPartnerId(41L); found.setName("(주)에이");
+        when(partnerRepository.findById(41L)).thenReturn(Optional.of(found));
+        when(partnerRepository.findById(42L)).thenReturn(Optional.empty());
+
+        var rows = controller.docPartners(1L);
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).name()).isEqualTo("(주)에이");
+        assertThat(rows.get(1).name()).isEqualTo("#42"); // missing 폴백
+    }
+
+    /** staffSearch: orgUnit found(라벨) + orgUnitId null(unit=null) 양분기. */
+    @Test
+    void staffSearch_withData_resolvesOrgUnitBranches() {
+        Staff s1 = new Staff(); s1.setStaffId(51L); s1.setName("박직원"); s1.setPosition("대리"); s1.setOrgUnitId(4L);
+        Staff s2 = new Staff(); s2.setStaffId(52L); s2.setName("최직원"); s2.setPosition("사원"); s2.setOrgUnitId(null);
+        when(staffRepository.searchActive("park")).thenReturn(List.of(s1, s2));
+        OrgUnit ou = new OrgUnit(); ou.setUnitId(4L); ou.setName("SW지원팀");
+        when(orgUnitRepository.findById(4L)).thenReturn(Optional.of(ou));
+
+        var rows = controller.staffSearch("park");
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).org()).isEqualTo("SW지원팀");
+        assertThat(rows.get(1).org()).isNull();
+    }
+
+    @Test
+    void cascadeSgg_withData_mapsRows() {
+        SigunguCode s = new SigunguCode();
+        s.setAdmSectC("11110"); s.setSidoNm("서울특별시"); s.setSggNm("종로구");
+        when(sigunguCodeRepository.findBySidoNmOrderBySggNm("서울특별시")).thenReturn(List.of(s));
+
+        var rows = controller.cascadeSgg("서울특별시");
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).admSectC()).isEqualTo("11110");
+        assertThat(rows.get(0).sggNm()).isEqualTo("종로구");
+        assertThat(rows.get(0).isUnit()).isFalse(); // sggNm != sidoNm
+    }
+
+    @Test
+    void cascadeSystems_withData_mapsRows() {
+        SysMst sys = new SysMst(); sys.setCd("KRAS"); sys.setNm("지반정보시스템");
+        when(sysMstRepository.findAll(any(Sort.class))).thenReturn(List.of(sys));
+
+        var rows = controller.cascadeSystems();
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).cd()).isEqualTo("KRAS");
+        assertThat(rows.get(0).nm()).isEqualTo("지반정보시스템");
+    }
+
+    // ───────── relations 프리필 CONTACT/STAFF (nc 727-739) ─────────
+
+    @Test
+    void relations_contactRequester_found_mapsLabel() {
+        OpsDocument doc = new OpsDocument();
+        doc.setRequesterContactId(61L);
+        when(opsDocService.findById(1L)).thenReturn(Optional.of(doc));
+        Partner pt = new Partner(); pt.setName("(주)지오");
+        PartnerContact c = new PartnerContact(); c.setContactId(61L); c.setName("이담당"); c.setPartner(pt);
+        when(partnerContactRepository.findById(61L)).thenReturn(Optional.of(c));
+
+        Map<String, Object> m = controller.relations(1L);
+        assertThat(m).containsEntry("requester_kind", "CONTACT").containsEntry("requester_id", 61L);
+        assertThat(m.get("requester_label")).isEqualTo("이담당 / (주)지오");
+    }
+
+    @Test
+    void relations_contactRequester_missing_fallsBackToHashId() {
+        OpsDocument doc = new OpsDocument();
+        doc.setRequesterContactId(62L);
+        when(opsDocService.findById(1L)).thenReturn(Optional.of(doc));
+        when(partnerContactRepository.findById(62L)).thenReturn(Optional.empty());
+
+        Map<String, Object> m = controller.relations(1L);
+        assertThat(m.get("requester_label")).isEqualTo("업체담당자 #62");
+    }
+
+    @Test
+    void relations_staffRequester_found_mapsLabel() {
+        OpsDocument doc = new OpsDocument();
+        doc.setRequesterStaffId(71L);
+        when(opsDocService.findById(1L)).thenReturn(Optional.of(doc));
+        Staff st = new Staff(); st.setStaffId(71L); st.setName("박직원"); st.setPosition("대리");
+        when(staffRepository.findById(71L)).thenReturn(Optional.of(st));
+
+        Map<String, Object> m = controller.relations(1L);
+        assertThat(m).containsEntry("requester_kind", "STAFF").containsEntry("requester_id", 71L);
+        assertThat(m.get("requester_label")).isEqualTo("박직원 대리");
     }
 }
