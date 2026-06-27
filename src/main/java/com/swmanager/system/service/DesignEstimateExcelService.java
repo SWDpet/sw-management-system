@@ -47,13 +47,10 @@ public class DesignEstimateExcelService {
         String location = (String) estData.getOrDefault("location", "");
         double bidRate = toDouble(estData.get("bidRate")) / 100.0;
         int rounddownUnit = normalizeRounddownUnit(estData.get("rounddownUnit"));
-        boolean vatSeparate = Boolean.TRUE.equals(estData.get("vatSeparate"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) estData.getOrDefault("items", List.of());
 
         // 프로젝트명
         String projNm = doc.getProject() != null ? doc.getProject().getProjNm() : "사업명";
-        String orgNm = doc.getProject() != null && doc.getProject().getOrgNm() != null ?
-                doc.getProject().getOrgNm() : "";
 
         // HW/SW 항목 분리
         List<Map<String, Object>> hwItems = items.stream()
@@ -82,6 +79,6 @@ public class DesignEstimateExcelService {
 
         // TYPE_A: 기존 템플릿 기반 생성 (밀양시 형식)
         return DesignEstimateWriter.generateFromTemplate(projNm, distNm, year, designDate, location,
-                bidRate, rounddownUnit, vatSeparate, hwItems, swItems);
+                bidRate, rounddownUnit, hwItems, swItems);
     }
 }

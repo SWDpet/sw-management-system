@@ -1,5 +1,7 @@
 package com.swmanager.system.service;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -29,9 +31,25 @@ import static com.swmanager.system.service.ExcelExportService.roundLabel;
  * 기획서: docs/product-specs/refactor-design-estimate-writer.md
  * 개발계획서: docs/exec-plans/refactor-design-estimate-writer.md
  */
+@Slf4j
 final class DesignEstimateWriter {
 
     private DesignEstimateWriter() {}
+
+    /** 필수 시트 — 없으면 fail-fast (§8-2). */
+    private static Sheet requireSheet(XSSFWorkbook wb, String name) {
+        Sheet s = wb.getSheet(name);
+        if (s == null) throw new IllegalStateException("설계내역서 템플릿 시트 누락: " + name);
+        return s;
+    }
+
+    /** 필수 행 — 없으면 fail-fast (§8-1). */
+    private static Row requireRow(Sheet sheet, int rowIdx) {
+        Row r = sheet.getRow(rowIdx);
+        if (r == null) throw new IllegalStateException(
+                "설계내역서 템플릿 행 누락: " + sheet.getSheetName() + " row " + (rowIdx + 1));
+        return r;
+    }
 
     /**
      * 원본 Excel 템플릿(design_estimate_template.xlsx)을 로드하여
@@ -45,7 +63,7 @@ final class DesignEstimateWriter {
      */
     static byte[] generateFromTemplate(String projNm, String distNm, int year,
                                          String designDate, String location,
-                                         double bidRate, int rounddownUnit, boolean vatSeparate,
+                                         double bidRate, int rounddownUnit,
                                          List<Map<String, Object>> hwItems,
                                          List<Map<String, Object>> swItems) throws IOException {
 
@@ -134,7 +152,12 @@ final class DesignEstimateWriter {
 
         // HW 항목 채우기 (row4=index4, row5=index5 ... 템플릿에 2행 있음)
         int hwDataStartRow = 4; // 0-based (Excel row 5)
-        for (int i = 0; i < hwItems.size(); i++) {
+        int hwTemplateRows = 2; // 원본 템플릿의 HW 데이터 행 수
+        if (hwItems.size() > hwTemplateRows) {
+            log.warn("설계내역서(TYPE_A) 총괄표 HW 항목 {}개 중 템플릿 슬롯 {} 초과분 누락(행침범 방지)",
+                    hwItems.size(), hwTemplateRows);
+        }
+        for (int i = 0; i < Math.min(hwItems.size(), hwTemplateRows); i++) {
             int rowIdx = hwDataStartRow + i;
             Map<String, Object> item = hwItems.get(i);
 
@@ -152,7 +175,6 @@ final class DesignEstimateWriter {
             simplifyMaintFormula(sheet, rowIdx);
         }
         // 템플릿보다 항목이 적으면 빈 행 클리어
-        int hwTemplateRows = 2; // 원본 템플릿의 HW 데이터 행 수
         for (int i = hwItems.size(); i < hwTemplateRows; i++) {
             int rowIdx = hwDataStartRow + i;
             clearDataRow(sheet, rowIdx);
@@ -160,7 +182,12 @@ final class DesignEstimateWriter {
 
         // SW 항목 채우기 (row8=index8, row9=index9 ... 템플릿에 2행 있음)
         int swDataStartRow = 8; // 0-based (Excel row 9)
-        for (int i = 0; i < swItems.size(); i++) {
+        int swTemplateRows = 2; // 원본 템플릿의 SW 데이터 행 수
+        if (swItems.size() > swTemplateRows) {
+            log.warn("설계내역서(TYPE_A) 총괄표 SW 항목 {}개 중 템플릿 슬롯 {} 초과분 누락(행침범 방지)",
+                    swItems.size(), swTemplateRows);
+        }
+        for (int i = 0; i < Math.min(swItems.size(), swTemplateRows); i++) {
             int rowIdx = swDataStartRow + i;
             Map<String, Object> item = swItems.get(i);
 
@@ -172,7 +199,6 @@ final class DesignEstimateWriter {
             setCellKeepStyle(sheet, rowIdx, 4, (double) unitPrice);
             simplifyMaintFormula(sheet, rowIdx);
         }
-        int swTemplateRows = 2; // 원본 템플릿의 SW 데이터 행 수
         for (int i = swItems.size(); i < swTemplateRows; i++) {
             int rowIdx = swDataStartRow + i;
             clearDataRow(sheet, rowIdx);
@@ -277,13 +303,13 @@ final class DesignEstimateWriter {
              XSSFWorkbook wb = new XSSFWorkbook(is)) {
 
             // 표지: B4(사업명), B8(설계년월), F12(지자체)
-            Sheet cover = wb.getSheet("표지");
+            Sheet cover = requireSheet(wb, "표지");
             setStringDirect(cover, 3, 1, projNm);
             setStringDirect(cover, 7, 1, designDate);
             setStringDirect(cover, 11, 5, distNm);
 
             // 갑지: A1(설계일자), A3(연도), A5(사업명), E10(HW), E11(SW)
-            Sheet gapji = wb.getSheet("갑지");
+            Sheet gapji = requireSheet(wb, "갑지");
             setStringDirect(gapji, 0, 0, designDate + "     설계");
             setStringDirect(gapji, 2, 0, "  " + year + "년도");
             setStringDirect(gapji, 4, 0, projNm);
@@ -354,13 +380,13 @@ final class DesignEstimateWriter {
              XSSFWorkbook wb = new XSSFWorkbook(is)) {
 
             // 표지
-            Sheet cover = wb.getSheet("표지");
+            Sheet cover = requireSheet(wb, "표지");
             setStringDirect(cover, 4, 0, projNm);          // A5
             setStringDirect(cover, 14, 0, designDate);      // A15
             setStringDirect(cover, 21, 0, distNm);          // A22
 
             // 설계갑지
-            Sheet gapji = wb.getSheet("설계갑지");
+            Sheet gapji = requireSheet(wb, "설계갑지");
             setStringDirect(gapji, 2, 0, "   " + year + " 년도 ");                       // A3
             setStringDirect(gapji, 5, 0, projNm);                                        // A6
             setStringDirect(gapji, 7, 3, " " + projNm);                                  // D8
@@ -373,11 +399,11 @@ final class DesignEstimateWriter {
             setStringDirect(gapji, 10, 3, swLine);  // D11
 
             // 총괄표
-            Sheet summary = wb.getSheet("총괄표");
+            Sheet summary = requireSheet(wb, "총괄표");
             // HW 항목: 행 4-5 (0-based 3-4)
-            fillTypeBItemRows(summary, hwItems, 3, "HW");
+            fillTypeBItemRows(summary, hwItems, 3);
             // SW 항목: 행 7-8 (0-based 6-7)
-            fillTypeBItemRows(summary, swItems, 6, "SW");
+            fillTypeBItemRows(summary, swItems, 6);
 
             // 낙찰율·절사 단위 적용 (H11 = row 10, col 7 / I11 = col 8)
             // rounddownUnit == 0 인 경우 절사 안 함 (사용자 미선택)
@@ -417,34 +443,34 @@ final class DesignEstimateWriter {
         }
     }
 
-    /** TYPE_B 총괄표의 항목 행을 채움. 템플릿엔 항목당 2행이 기본이며, 항목 개수에 맞게 비우거나 채움. */
-    private static void fillTypeBItemRows(Sheet summary, List<Map<String, Object>> items, int startRow0, String type) {
-        // 템플릿 기본 2행 가정. 항목이 많으면 시작 2행만 채움(추후 확장)
+    /** TYPE_B 총괄표의 항목 행을 채움. 템플릿엔 항목당 2행이 기본. 초과분은 행침범 방지를 위해 누락(§8-3). */
+    private static void fillTypeBItemRows(Sheet summary, List<Map<String, Object>> items, int startRow0) {
         int templateSlots = 2;
+        if (items.size() > templateSlots) {
+            log.warn("설계내역서(TYPE_B) 총괄표 항목 {}개 중 템플릿 슬롯 {} 초과분 누락(행침범 방지)",
+                    items.size(), templateSlots);
+        }
         for (int i = 0; i < templateSlots; i++) {
             int r = startRow0 + i;
-            Row row = summary.getRow(r);
-            if (row == null) continue;
+            requireRow(summary, r);   // 필수 항목 행 fail-fast (§8-1, fillTypeB 일관성)
             if (i < items.size()) {
                 Map<String, Object> it = items.get(i);
                 double rate = toDouble(it.get("rate")) / 100.0;
                 long price = toLong(it.get("unitPrice"));
-                // A열: 번호
-                if (row.getCell(0) != null) row.getCell(0).setCellValue(i + 1);
-                // B열: 품명
+                // A:번호 / B:품명 / D:적용율 / E:도입가 — create-if-absent 통일(§8-5)
+                setNumericDirect(summary, r, 0, i + 1);
                 setStringDirect(summary, r, 1, str(it.get("name")));
-                // D열: 적용율 (숫자)
-                if (row.getCell(3) != null) row.getCell(3).setCellValue(rate);
-                // E열: 도입가
-                if (row.getCell(4) != null) row.getCell(4).setCellValue(price);
+                setNumericDirect(summary, r, 3, rate);
+                setNumericDirect(summary, r, 4, price);
                 // I열: 비고
                 String remark = str(it.get("remark"));
                 if (!remark.isEmpty()) setStringDirect(summary, r, 8, remark);
             } else {
-                // 빈 행 처리: B,D,E,I 비움 (수식은 그대로 두면 0 출력)
+                // 빈 행 처리: A(번호),B,D,E,I 비움 (수식은 그대로 두면 0 출력)
+                setStringDirect(summary, r, 0, "");
                 setStringDirect(summary, r, 1, "");
-                if (row.getCell(3) != null) row.getCell(3).setCellValue(0);
-                if (row.getCell(4) != null) row.getCell(4).setCellValue(0);
+                setNumericDirect(summary, r, 3, 0);
+                setNumericDirect(summary, r, 4, 0);
                 setStringDirect(summary, r, 8, "");
             }
         }
@@ -466,31 +492,29 @@ final class DesignEstimateWriter {
             long swPrice = swItems.isEmpty() ? 0 : toLong(swItems.get(0).get("unitPrice"));
 
             // 표지: A5(사업명), A15(설계년월), A22(지자체)
-            Sheet cover = wb.getSheet("표지");
+            Sheet cover = requireSheet(wb, "표지");
             setStringDirect(cover, 4, 0, projNm);
             setStringDirect(cover, 14, 0, designDate);
             setStringDirect(cover, 21, 0, distNm);
 
             // 설계갑지: A5(서기 ~ 년도), A8(사업명), D10(사업명), D12(SW 항목)
-            Sheet gapji = wb.getSheet("설계갑지");
+            Sheet gapji = requireSheet(wb, "설계갑지");
             setStringDirect(gapji, 4, 0, "   서기 " + year + " 년도 ");
             setStringDirect(gapji, 7, 0, projNm);
             setStringDirect(gapji, 9, 3, projNm);
             setStringDirect(gapji, 11, 3, " 1. S/W :    " + swName + "  1식");
 
             // 총괄표
-            Sheet summary = wb.getSheet("총괄표");
-            // B5: SW 품명
+            Sheet summary = requireSheet(wb, "총괄표");
+            // B5: SW 품명 / D5: 적용율 / E5: 도입가 — create-if-absent 통일(§8-5)
+            requireRow(summary, 4);
             setStringDirect(summary, 4, 1, swName);
-            // D5: 적용율 (숫자)
-            Cell d5 = summary.getRow(4).getCell(3);
-            if (d5 != null) d5.setCellValue(swRate);
-            // E5: 도입가 (숫자)
-            Cell e5 = summary.getRow(4).getCell(4);
-            if (e5 != null) e5.setCellValue(swPrice);
+            setNumericDirect(summary, 4, 3, swRate);
+            setNumericDirect(summary, 4, 4, swPrice);
 
             // H8: 총용역비 수식 (낙찰율 적용)
-            Cell h8 = summary.getRow(7).getCell(7);
+            Row r8 = requireRow(summary, 7);
+            Cell h8 = r8.getCell(7);
             if (h8 != null) {
                 if (bidRate > 0 && bidRate < 1.0) {
                     h8.setCellFormula("ROUNDDOWN((H6+H7)*" + bidRate + ",-1)");
@@ -499,7 +523,7 @@ final class DesignEstimateWriter {
                 }
             }
             // I8: 낙찰율 라벨
-            Cell i8 = summary.getRow(7).getCell(8);
+            Cell i8 = r8.getCell(8);
             if (i8 != null) {
                 if (bidRate > 0 && bidRate < 1.0) {
                     i8.setCellValue("낙찰율 적용(" + Math.round(bidRate * 100) + "%)");
