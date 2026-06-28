@@ -194,16 +194,16 @@
                                     </includes>
                                     <limits>
                                         <limit>
-                                            <!-- ratchet floor: 실측 LINE 77.91%(2026-06-28 +OpsDocController 검색/INSPECT해석 커버리지). floor 0.74→0.75 상향 → ~2.9pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 LINE 80.24%(2026-06-28 +HwpxExportService generateHwpx 데이터분기·행마커 커버리지, 80% 돌파). floor 0.75→0.77 상향 → ~3.2pp 버퍼, 감소 불가. -->
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.75</minimum>
+                                            <minimum>0.77</minimum>
                                         </limit>
                                         <limit>
-                                            <!-- ratchet floor: 실측 INSTRUCTION 63.72%(2026-06-28 +OpsDocController 검색/INSPECT해석 커버리지). floor 0.60→0.61 상향 → ~2.7pp 버퍼, 감소 불가. -->
+                                            <!-- ratchet floor: 실측 INSTRUCTION 65.61%(2026-06-28 +HwpxExportService generateHwpx 데이터분기·행마커 커버리지). floor 0.61→0.63 상향 → ~2.6pp 버퍼, 감소 불가. -->
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.61</minimum>
+                                            <minimum>0.63</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

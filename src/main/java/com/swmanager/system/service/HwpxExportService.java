@@ -990,10 +990,6 @@ public class HwpxExportService {
     /**
      * 핵심 템플릿 처리: ZIP 읽기 -> section0.xml 내 플레이스홀더 치환 -> 새 ZIP 쓰기
      */
-    private byte[] processTemplate(String templatePath, Map<String, String> replacements) {
-        return processTemplate(templatePath, replacements, null);
-    }
-
     private byte[] processTemplate(String templatePath, Map<String, String> replacements, Document doc) {
         try {
             ClassPathResource resource = new ClassPathResource(templatePath);
