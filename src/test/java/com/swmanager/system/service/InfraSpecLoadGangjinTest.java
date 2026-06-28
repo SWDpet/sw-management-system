@@ -5,6 +5,7 @@ import com.swmanager.system.domain.InfraServer;
 import com.swmanager.system.repository.InfraRepository;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Commit;
@@ -22,6 +23,8 @@ import java.util.List;
  */
 @SpringBootTest
 @ActiveProfiles("local")
+@EnabledIfEnvironmentVariable(named = "RUN_DB_TESTS", matches = "true",
+        disabledReason = "Live DB required; set RUN_DB_TESTS=true to run. 기본 CI에서는 스킵.")   // 운영DB(local 프로파일) 직결
 class InfraSpecLoadGangjinTest {
 
     @Autowired private InfraRepository infraRepository;

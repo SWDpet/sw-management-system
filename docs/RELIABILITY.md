@@ -78,4 +78,15 @@ bash server-restart.sh
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 P1*
+## 8. CI 게이트 (GitHub Actions) — beyond-A `ci-fresh-init-gate-v1`
+
+`.github/workflows/ci.yml` 이 push/PR(master) 마다 자동 실행:
+
+- **`gates` job**: `./mvnw -B -ntp clean verify` — 단위테스트 + 전 게이트(JaCoCo floor 0.78/0.64·거대클래스 ratchet·ArchUnit·Map부채·골든·Enum sync)를 **CI 에서 강제**. DB 통합테스트(`RUN_DB_TESTS` 게이트)는 skip, GeoNURIS jar 는 checkout 포함, `DB_PASSWORD=ci` 는 컨텍스트 lazy 부팅용(실 DB 미연결).
+- **`fresh-init-smoke` job**: `postgres:16` service container 의 빈 DB 에 부트스트랩 DDL `db_init_phase1 → phase1_sigungu → phase2`(`psql -f`, `ON_ERROR_STOP=1`) 적용 + 핵심 테이블(sigungu_code/users/sw_pjt) 존재 sanity. **빈DB→부트스트랩 replay 멱등성 검증**.
+  - ⚠ **범위 = 부트스트랩(phase1+phase2)만.** V*.sql 전체 replay(봉인된 9건 결함·중복버전, "빈DB→운영동등 단일경로 부재")는 **범위 밖** — 별도 선결과제(차후 Testcontainers/CI 확장).
+- DB 통합테스트는 사내망 운영DB(192.168.10.194) 전용이라 CI 미실행(`@EnabledIfEnvironmentVariable(RUN_DB_TESTS)`). 운영DB 검증은 회사 PC 에서 `RUN_DB_TESTS=true` 로 별도 수행.
+
+---
+
+*Last updated: 2026-06-28 · §8 CI 게이트 추가 (ci-fresh-init-gate-v1)*
