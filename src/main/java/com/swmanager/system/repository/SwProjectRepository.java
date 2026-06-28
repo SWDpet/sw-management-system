@@ -48,17 +48,6 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
     List<com.swmanager.system.dto.dashboard.SystemStatRow> getSystemStats(@Param("year") Integer year);
 
     /**
-     * 3. 커스텀 정렬 목록
-     */
-    @Query("SELECT p FROM SwProject p ORDER BY p.year DESC, p.orgNm ASC")
-    List<SwProject> findAllOrderByCustom();
-
-    /**
-     * 4. 중복 체크
-     */
-    boolean existsByYearAndDistCdAndSysNmEn(Integer year, String distCd, String sysNmEn);
-
-    /**
      * 5. 통합 검색 (페이징 지원)
      */
     @Query("SELECT p FROM SwProject p WHERE " +
@@ -72,39 +61,9 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
            "p.client LIKE %:kw%)")
     Page<SwProject> findAllByKeyword(@Param("kw") String kw, Pageable pageable);
 
-    // ========== 추가 메서드 (선택사항) ==========
-
-    /**
-     * 프로젝트명으로 검색
-     */
-    Page<SwProject> findByProjNmContaining(String projNm, Pageable pageable);
-
-    /**
-     * 시스템명으로 검색
-     */
-    Page<SwProject> findBySysNmContaining(String sysNm, Pageable pageable);
-
-    /**
-     * 연도로 검색
-     */
-    Page<SwProject> findByYear(Integer year, Pageable pageable);
-
-    /**
-     * 연도와 상태로 검색
-     */
-    Page<SwProject> findByYearAndStat(Integer year, String stat, Pageable pageable);
-
-    /**
-     * 지자체(city/dist)별 프로젝트 목록
-     */
-    List<SwProject> findByCityNmAndDistNmOrderByYearDescProjIdDesc(String cityNm, String distNm);
-
     /** [dashboard-preview] 연도별 사업 수 (추이 차트) */
     @Query("SELECT p.year AS y, COUNT(p) AS c FROM SwProject p WHERE p.year IS NOT NULL GROUP BY p.year ORDER BY p.year")
     List<com.swmanager.system.dto.dashboard.YearCountRow> countByYear();
-
-    /** [dashboard-preview] 최근 등록 사업 (proj_id 역순 = 최신) */
-    List<SwProject> findTop6ByOrderByProjIdDesc();
 
     /**
      * [workplan-target-infra-cascade] 시도+시군구(들)별 사업 목록 — 캐스케이드 시스템 단계.
@@ -129,13 +88,6 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
             @Param("year") Integer year,
             @Param("cityNm") String cityNm,
             @Param("distNm") String distNm);
-
-    /**
-     * 연도별 지자체 목록 (city+dist 조합)
-     */
-    @Query("SELECT DISTINCT p.cityNm, p.distNm FROM SwProject p " +
-           "WHERE p.year = :year ORDER BY p.cityNm, p.distNm")
-    List<Object[]> findDistinctCityDistByYear(@Param("year") Integer year);
 
     /**
      * 연도별 시도(cityNm) 목록
@@ -175,16 +127,6 @@ public interface SwProjectRepository extends JpaRepository<SwProject, Long>,
     @Query("SELECT DISTINCT p.distNm FROM SwProject p " +
            "WHERE p.cityNm = :city AND p.distNm IS NOT NULL ORDER BY p.distNm")
     List<String> findAllDistinctDistNmsByCity(@Param("city") String city);
-
-    /**
-     * 기성계 대상 사업: pay_prog_yn = 'Y' (레거시)
-     */
-    List<SwProject> findByYearAndPayProgYnOrderByCityNmAscDistNmAsc(Integer year, String payProgYn);
-
-    /**
-     * 준공계 대상 사업: comp_yn = 'Y' (레거시)
-     */
-    List<SwProject> findByYearAndCompYnOrderByCityNmAscDistNmAsc(Integer year, String compYn);
 
     /**
      * 기성계 대상 사업: interim_yn = 'Y'

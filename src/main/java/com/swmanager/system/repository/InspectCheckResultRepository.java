@@ -15,8 +15,6 @@ public interface InspectCheckResultRepository extends JpaRepository<InspectCheck
 
     List<InspectCheckResult> findByReportIdOrderBySectionAscSortOrderAsc(Long reportId);
 
-    List<InspectCheckResult> findByReportIdAndSection(Long reportId, String section);
-
     @Modifying
     @Transactional
     @Query("DELETE FROM InspectCheckResult c WHERE c.reportId = :reportId")

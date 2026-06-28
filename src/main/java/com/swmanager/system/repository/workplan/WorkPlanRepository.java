@@ -46,9 +46,6 @@ public interface WorkPlanRepository extends JpaRepository<WorkPlan, Integer> {
     List<WorkPlan> findTop6ByStartDateGreaterThanEqualAndStatusNotInOrderByStartDateAsc(
             LocalDate today, List<String> statuses);
 
-    // 유형별 조회 (점검 방문 현황용)
-    List<WorkPlan> findByPlanTypeInOrderByStartDateDesc(List<String> planTypes);
-
     // 유형별 + 상태별 복합 검색
     @Query("SELECT wp FROM WorkPlan wp " +
            "WHERE (:type IS NULL OR wp.planType = :type) " +

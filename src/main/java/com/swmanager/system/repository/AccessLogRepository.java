@@ -15,12 +15,6 @@ import java.util.List;
 @Repository
 public interface AccessLogRepository extends JpaRepository<AccessLog, Long> {
 
-    // 검색 기능 (아이디, 이름, 내용 등)
-    @Query("SELECT l FROM AccessLog l WHERE " +
-           "(:kw IS NULL OR l.userid LIKE %:kw% OR l.username LIKE %:kw% OR l.actionDetail LIKE %:kw%) " +
-           "ORDER BY l.accessTime DESC")
-    Page<AccessLog> findAllWithSearch(Pageable pageable, @Param("kw") String kw);
-
     // ===== [log-mgmt P3] 로그관리 탭 분리: 접속자 로그 / 메뉴·행위 로그 =====
     // 날짜 경계는 컨트롤러에서 LocalDateTime(fromStart=시작일 00:00, toExclusive=종료일+1 00:00)으로 전달.
 

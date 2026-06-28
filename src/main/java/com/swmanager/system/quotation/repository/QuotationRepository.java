@@ -10,8 +10,6 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
 
     List<Quotation> findAllByOrderByCreatedAtDesc();
 
-    List<Quotation> findByCategoryOrderByCreatedAtDesc(String category);
-
     @Query("SELECT q FROM Quotation q WHERE " +
            "(:category IS NULL OR q.category = :category) AND " +
            "(:year IS NULL OR YEAR(q.quoteDate) = :year) AND " +

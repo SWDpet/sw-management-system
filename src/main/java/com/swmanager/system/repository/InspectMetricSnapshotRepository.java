@@ -20,58 +20,6 @@ import java.util.List;
 @Repository
 public interface InspectMetricSnapshotRepository extends JpaRepository<InspectMetricSnapshot, Long> {
 
-    /**
-     * 30일 차트용 — pjt + serverRole + (선택) hostName 단일 호스트 시계열.
-     *
-     * @param pjtId      SwProject.proj_id
-     * @param serverRole 'AP' / 'DB'
-     * @param hostName   특정 호스트 — null/blank 이면 {@link #findRecentByPjtRole} 사용 권장
-     * @param since      30일 전 시각 (예: now() - 30d)
-     */
-    @Query("""
-        SELECT m FROM InspectMetricSnapshot m
-         WHERE m.pjtId = :pjtId
-           AND m.serverRole = :role
-           AND m.hostName = :host
-           AND m.collectedAt >= :since
-         ORDER BY m.collectedAt ASC
-        """)
-    List<InspectMetricSnapshot> findRecentByPjtRoleHost(
-            @Param("pjtId") Long pjtId,
-            @Param("role") String serverRole,
-            @Param("host") String hostName,
-            @Param("since") OffsetDateTime since);
-
-    /**
-     * pjt + serverRole 의 모든 호스트 시계열 — 호스트별 line 분리 표시용 (DB팀 D-3).
-     */
-    @Query("""
-        SELECT m FROM InspectMetricSnapshot m
-         WHERE m.pjtId = :pjtId
-           AND m.serverRole = :role
-           AND m.collectedAt >= :since
-         ORDER BY m.hostName ASC, m.collectedAt ASC
-        """)
-    List<InspectMetricSnapshot> findRecentByPjtRole(
-            @Param("pjtId") Long pjtId,
-            @Param("role") String serverRole,
-            @Param("since") OffsetDateTime since);
-
-    /**
-     * pjt + serverRole 안 unique 호스트 목록 — 차트 line 색 매핑용.
-     */
-    @Query("""
-        SELECT DISTINCT m.hostName FROM InspectMetricSnapshot m
-         WHERE m.pjtId = :pjtId
-           AND m.serverRole = :role
-           AND m.collectedAt >= :since
-         ORDER BY m.hostName ASC
-        """)
-    List<String> findHostsByPjtRole(
-            @Param("pjtId") Long pjtId,
-            @Param("role") String serverRole,
-            @Param("since") OffsetDateTime since);
-
     // ── 점검주기 윈도우 [since, until) — 직전 점검월 ~ 이번 점검월 추이용 (2026-05-31) ──
     @Query("""
         SELECT m FROM InspectMetricSnapshot m

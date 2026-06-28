@@ -11,8 +11,6 @@ import java.util.List;
 @Repository
 public interface OpsKbRepository extends JpaRepository<OpsKb, Long> {
 
-    List<OpsKb> findByGubun(String gubun);
-
     // [ops-kb-workbench] active 필터 (추천 후보 — 소프트삭제/검증 제외)
     List<OpsKb> findByGubunAndStatus(String gubun, String status);
     List<OpsKb> findByStatusOrderByCaseCountDesc(String status);
