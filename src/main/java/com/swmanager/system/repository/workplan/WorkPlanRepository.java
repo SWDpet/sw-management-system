@@ -39,13 +39,6 @@ public interface WorkPlanRepository extends JpaRepository<WorkPlan, Integer> {
     List<WorkPlan> findByProcessStepAndStatusNotInOrderByStartDateAsc(
             Integer processStep, List<String> excludeStatuses);
 
-    // 사전연락 일정 조회 (알림용)
-    @Query("SELECT wp FROM WorkPlan wp " +
-           "WHERE wp.planType = 'PRE_CONTACT' " +
-           "AND wp.status = 'PLANNED' " +
-           "AND wp.startDate = :targetDate")
-    List<WorkPlan> findPreContactsByDate(@Param("targetDate") LocalDate targetDate);
-
     // 부모 플랜의 자식 조회
     List<WorkPlan> findByParentPlan_PlanId(Integer parentPlanId);
 

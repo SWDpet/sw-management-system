@@ -370,16 +370,4 @@ class WorkPlanServiceTest {
         // excludeStatuses 내용 전달 검증(eq) — identity 는 계약 아님(복사본 허용)
         verify(workPlanRepository).findByProcessStepAndStatusNotInOrderByStartDateAsc(eq(3), eq(exclude));
     }
-
-    @Test
-    void getPreContactsByDate_returnsRawList() {
-        LocalDate date = LocalDate.of(2026, 5, 10);
-        List<WorkPlan> raw = List.of(workPlan(4, "사전연락"));
-        when(workPlanRepository.findPreContactsByDate(date)).thenReturn(raw);
-
-        // 반환 타입이 List<WorkPlan>(=raw 엔티티, DTO 변환 없음)인 것 자체가 핵심. 내용 동치로 passthrough 단언.
-        List<WorkPlan> result = service.getPreContactsByDate(date);
-        assertThat(result).containsExactlyElementsOf(raw);
-        verify(workPlanRepository).findPreContactsByDate(eq(date));
-    }
 }

@@ -281,14 +281,6 @@ public class WorkPlanService {
     }
 
     /**
-     * 사전연락 일정 조회 (알림용)
-     */
-    @Transactional(readOnly = true)
-    public List<WorkPlan> getPreContactsByDate(LocalDate targetDate) {
-        return workPlanRepository.findPreContactsByDate(targetDate);
-    }
-
-    /**
      * 자식 업무 조회
      */
     @Transactional(readOnly = true)
