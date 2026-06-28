@@ -227,59 +227,8 @@ public class ExcelExportService {
     }
 
     // --- 스타일 헬퍼 ---
-    private CellStyle createTitleStyle(XSSFWorkbook wb, int fontSize) {
-        CellStyle style = wb.createCellStyle();
-        Font font = wb.createFont();
-        font.setFontName(FONT);
-        font.setBold(true);
-        font.setFontHeightInPoints((short) fontSize);
-        style.setFont(font);
-        style.setAlignment(HorizontalAlignment.CENTER);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-        return style;
-    }
-
-    private CellStyle createHeaderStyle(XSSFWorkbook wb) {
-        CellStyle style = wb.createCellStyle();
-        Font font = wb.createFont();
-        font.setFontName(FONT);
-        font.setBold(true);
-        font.setFontHeightInPoints((short) 10);
-        style.setFont(font);
-        style.setAlignment(HorizontalAlignment.CENTER);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-        style.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        setBorders(style);
-        return style;
-    }
-
-    private CellStyle createBodyStyle(XSSFWorkbook wb) {
-        CellStyle style = wb.createCellStyle();
-        Font font = wb.createFont();
-        font.setFontName(FONT);
-        font.setFontHeightInPoints((short) 10);
-        style.setFont(font);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-        setBorders(style);
-        return style;
-    }
-
-    private CellStyle createTotalStyle(XSSFWorkbook wb) {
-        CellStyle style = wb.createCellStyle();
-        Font font = wb.createFont();
-        font.setFontName(FONT);
-        font.setBold(true);
-        font.setFontHeightInPoints((short) 10);
-        style.setFont(font);
-        style.setAlignment(HorizontalAlignment.CENTER);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-        style.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        setBorders(style);
-        return style;
-    }
-
+    // createTitle/Header/Body/TotalStyle 4종은 §6-5 split 후 호출처 0(성과/목록 빌더는 인라인 스타일 사용,
+    // 설계/기성은 facade 위임)이라 삭제. setBorders 는 generatePerformanceReport 가 live 호출하므로 유지.
     private void setBorders(CellStyle style) {
         style.setBorderTop(BorderStyle.THIN);
         style.setBorderBottom(BorderStyle.THIN);

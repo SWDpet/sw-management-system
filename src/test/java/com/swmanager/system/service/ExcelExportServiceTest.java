@@ -8,6 +8,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * ExcelExportService 단위테스트 (커버리지 상향 beyond-A, mock 무관·순수 빌더).
@@ -161,5 +163,41 @@ class ExcelExportServiceTest {
             assertThat(sh.getRow(0).getCell(0).getStringCellValue()).isEqualTo("No");
             assertThat(sh.getRow(1)).isNull();   // 데이터 행 없음
         }
+    }
+
+    // ===== facade 위임(§6-5 split: 설계/기성 Excel 은 분리 서비스로 위임) =====
+    // 위임 메서드는 분기 없으나 잘못된 delegate/인자(설계↔기성 swap)·반환 누락 회귀를
+    // verify(인자 eq) + verifyNoInteractions(상대) + 반환 passthrough 로 박제.
+
+    @Test
+    void generateDesignEstimate_delegatesToDesignEstimateService() throws IOException {
+        DesignEstimateExcelService designSvc = mock(DesignEstimateExcelService.class);
+        InterimReportExcelService interimSvc = mock(InterimReportExcelService.class);
+        ReflectionTestUtils.setField(service, "designEstimateExcelService", designSvc);
+        ReflectionTestUtils.setField(service, "interimReportExcelService", interimSvc);
+        byte[] bytes = {1, 2, 3};
+        when(designSvc.generateDesignEstimate(7)).thenReturn(bytes);
+
+        byte[] out = service.generateDesignEstimate(7);
+
+        assertThat(out).isSameAs(bytes);                     // 반환 passthrough
+        verify(designSvc).generateDesignEstimate(7);          // 정확 인자 위임
+        verifyNoInteractions(interimSvc);                     // 설계↔기성 swap 회귀 방어
+    }
+
+    @Test
+    void generateInterimReport_delegatesToInterimReportService() throws IOException {
+        DesignEstimateExcelService designSvc = mock(DesignEstimateExcelService.class);
+        InterimReportExcelService interimSvc = mock(InterimReportExcelService.class);
+        ReflectionTestUtils.setField(service, "designEstimateExcelService", designSvc);
+        ReflectionTestUtils.setField(service, "interimReportExcelService", interimSvc);
+        byte[] bytes = {4, 5, 6};
+        when(interimSvc.generateInterimReport(9)).thenReturn(bytes);
+
+        byte[] out = service.generateInterimReport(9);
+
+        assertThat(out).isSameAs(bytes);
+        verify(interimSvc).generateInterimReport(9);
+        verifyNoInteractions(designSvc);
     }
 }
