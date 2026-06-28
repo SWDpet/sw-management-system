@@ -432,6 +432,10 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.exception.EnumErrorResponseFactory</param>
                                 <param>com.swmanager.system.quotation.service.RemarksRenderer</param>
                                 <param>com.swmanager.system.service.inspection.InspectMaintProfile</param>
+                                <param>com.swmanager.system.util.AuthSummary</param>
+                                <param>com.swmanager.system.util.ExceptionMessages</param>
+                                <param>com.swmanager.system.service.inspection.QrBatchPayloadAdapter</param>
+                                <param>com.swmanager.system.service.ops.RuleKbMatcher</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.swmanager.system.response.ApiResultTest</param>
@@ -442,6 +446,10 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.exception.EnumErrorResponseFactoryTest</param>
                                 <param>com.swmanager.system.quotation.service.RemarksRendererTest</param>
                                 <param>com.swmanager.system.service.inspection.InspectMaintProfileTest</param>
+                                <param>com.swmanager.system.util.AuthSummaryTest</param>
+                                <param>com.swmanager.system.util.ExceptionMessagesTest</param>
+                                <param>com.swmanager.system.service.inspection.QrBatchPayloadAdapterTest</param>
+                                <param>com.swmanager.system.service.ops.RuleKbMatcherTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>
@@ -453,11 +461,15 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>HTML</param>
                                 <param>XML</param>
                             </outputFormats>
-                            <!-- 게이트(ratchet floor): 완전커버 7종 KILLED/TOTAL 현재 95.5%(105/110).
-                                 floor=90 으로 회귀 방지(QUALITY_CHARTER S2 목표 충족). 잔존 noise=NO_COV 3
-                                 (MaskingDetector 1·InspectMaintProfile 2)+equivalent → 95.5% 고정, 5.5pt 헤드룸.
-                                 부분커버 클래스 보강·편입 시 floor 상향 가능. -->
-                            <mutationThreshold>90</mutationThreshold>
+                            <!-- 게이트(ratchet floor): 고신호 11종(NO_COV≤2) KILLED/TOTAL 현재 180/188=95.7%.
+                                 분모 reconcile: 기존 7종 105/108(InspectMaintProfile.includes dead 제거로 NO_COV 2 빠져
+                                 110→108) + 신규 4종 75/80(ExceptionMessages 3/3·QrBatchPayloadAdapter 18/19·
+                                 RuleKbMatcher 31/33·AuthSummary 23/25). 2026-06-28 beyond-A 게이트확장(7→11):
+                                 AuthSummary 는 readAuth 디스패치 강화로 72→92%. floor 90→93 ratchet(실측 95.7%,
+                                 ~2.7pt 헤드룸 — floor 정책 실측−2~2.5pp 일관). 잔존 noise=NO_COV 3(MaskingDetector 1·
+                                 AuthSummary L110 default 1·equivalent L90 1)+저가치 생존 5. HwpxXmlSupport(50%, XML 정규식)·
+                                 DTO(@Data boilerplate)·InspectionQrBatch(부분)는 게이트 제외. -->
+                            <mutationThreshold>93</mutationThreshold>
                             <failWhenNoMutations>true</failWhenNoMutations>
                         </configuration>
                     </plugin>

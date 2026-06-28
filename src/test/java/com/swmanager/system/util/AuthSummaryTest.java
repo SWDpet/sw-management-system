@@ -61,4 +61,31 @@ class AuthSummaryTest {
         assertThat(r.getList()).hasSize(5);
         assertThat(r.getMoreCount()).isZero();
     }
+
+    /**
+     * 10개 권한 전부 badge 생성 — readAuth 의 필드별 return-empty mutation + 값/라벨/순서 매핑을 박제.
+     * (EDIT/VIEW 교차+containsExactly 로 readAuth 의 어느 필드 반환을 ""로 바꿔도 badge 누락→탐지.
+     *  단 "getter 끼리 뒤바뀜"까지 증명하진 않음 — PIT 가 그런 mutant 를 생성하지 않으므로 본 목적엔 충분.)
+     */
+    @Test
+    void summarize_allTenFields_eachBadgeMappedInOrder() {
+        User u = new User();
+        u.setAuthDashboard("EDIT");   u.setAuthProject("VIEW");
+        u.setAuthPerson("EDIT");      u.setAuthInfra("VIEW");
+        u.setAuthLicense("EDIT");     u.setAuthQuotation("VIEW");
+        u.setAuthWorkPlan("EDIT");    u.setAuthDocument("VIEW");
+        u.setAuthContract("EDIT");    u.setAuthPerformance("VIEW");
+
+        AuthSummary.Result r = authSummary.summarize(u, 10);
+
+        assertThat(r.getList())
+                .extracting(AuthSummary.Badge::getLabel)
+                .containsExactly("대시E", "사업V", "담당E", "서버V", "라이E",
+                                 "견적V", "업무E", "문서V", "계약E", "성과V");
+        assertThat(r.getList())
+                .extracting(AuthSummary.Badge::getCssClass)
+                .containsExactly("edit", "view", "edit", "view", "edit",
+                                 "view", "edit", "view", "edit", "view");
+        assertThat(r.getMoreCount()).isZero();
+    }
 }
