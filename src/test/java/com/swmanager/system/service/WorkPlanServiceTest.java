@@ -320,4 +320,66 @@ class WorkPlanServiceTest {
         when(workPlanRepository.findByParentPlan_PlanId(1)).thenReturn(List.of(child));
         assertThat(service.getChildPlans(1)).hasSize(1);
     }
+
+    // ===== 캘린더/칸반/알림 조회 위임 (beyond-A) =====
+
+    private static WorkPlan workPlan(int id, String title) {
+        WorkPlan p = new WorkPlan();
+        p.setPlanId(id);
+        p.setTitle(title);
+        return p;
+    }
+
+    @Test
+    void getWorkPlansByDateRange_delegatesAndMaps() {
+        LocalDate start = LocalDate.of(2026, 5, 1);
+        LocalDate end = LocalDate.of(2026, 5, 31);   // start≠end → 인자순서 오류 관찰
+        when(workPlanRepository.findByDateRange(start, end)).thenReturn(List.of(workPlan(1, "캘린더")));
+
+        List<WorkPlanDTO> result = service.getWorkPlansByDateRange(start, end);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPlanId()).isEqualTo(1);
+        assertThat(result.get(0).getTitle()).isEqualTo("캘린더");   // fromEntity 매핑 경로
+        verify(workPlanRepository).findByDateRange(eq(start), eq(end));
+    }
+
+    @Test
+    void getWorkPlansByAssigneeAndDateRange_delegatesAndMaps() {
+        LocalDate start = LocalDate.of(2026, 5, 1);
+        LocalDate end = LocalDate.of(2026, 5, 31);
+        when(workPlanRepository.findByAssigneeAndDateRange(9L, start, end))
+                .thenReturn(List.of(workPlan(2, "담당자")));
+
+        List<WorkPlanDTO> result = service.getWorkPlansByAssigneeAndDateRange(9L, start, end);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPlanId()).isEqualTo(2);
+        assertThat(result.get(0).getTitle()).isEqualTo("담당자");
+        verify(workPlanRepository).findByAssigneeAndDateRange(eq(9L), eq(start), eq(end));
+    }
+
+    @Test
+    void getWorkPlansByProcessStep_delegatesAndMaps() {
+        List<String> exclude = List.of("DONE", "CANCELED");
+        when(workPlanRepository.findByProcessStepAndStatusNotInOrderByStartDateAsc(3, exclude))
+                .thenReturn(List.of(workPlan(3, "칸반")));
+
+        List<WorkPlanDTO> result = service.getWorkPlansByProcessStep(3, exclude);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPlanId()).isEqualTo(3);
+        assertThat(result.get(0).getTitle()).isEqualTo("칸반");
+        // excludeStatuses 내용 전달 검증(eq) — identity 는 계약 아님(복사본 허용)
+        verify(workPlanRepository).findByProcessStepAndStatusNotInOrderByStartDateAsc(eq(3), eq(exclude));
+    }
+
+    @Test
+    void getPreContactsByDate_returnsRawList() {
+        LocalDate date = LocalDate.of(2026, 5, 10);
+        List<WorkPlan> raw = List.of(workPlan(4, "사전연락"));
+        when(workPlanRepository.findPreContactsByDate(date)).thenReturn(raw);
+
+        // 반환 타입이 List<WorkPlan>(=raw 엔티티, DTO 변환 없음)인 것 자체가 핵심. 내용 동치로 passthrough 단언.
+        List<WorkPlan> result = service.getPreContactsByDate(date);
+        assertThat(result).containsExactlyElementsOf(raw);
+        verify(workPlanRepository).findPreContactsByDate(eq(date));
+    }
 }
