@@ -3,6 +3,7 @@ package com.swmanager.system.service.ops;
 import com.swmanager.system.constant.enums.OpsDocType;
 import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.SysMst;
+import com.swmanager.system.domain.User;
 import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentDetail;
 import com.swmanager.system.repository.SigunguCodeRepository;
@@ -13,6 +14,7 @@ import com.swmanager.system.repository.ops.OpsDocumentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -26,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -266,6 +269,162 @@ class OpsSupportFileServiceTest {
         assertTrue(OpsSupportFileService.magicOk("xls", withMagic(M_OLE2, 8)));
         assertFalse(OpsSupportFileService.magicOk("pdf", withMagic(M_ZIP, 8)));
         assertFalse(OpsSupportFileService.magicOk("hwp", new byte[]{(byte)0xD0,(byte)0xCF})); // 짧음
+        assertFalse(OpsSupportFileService.magicOk("txt", withMagic(M_PDF, 8)));   // 허용계열 외 → 기본 false
         assertEquals("지원대상미상", OpsSupportFileService.seg("  ///  ", "지원대상미상"));
+    }
+
+    // T7b: sectionValue 가 "main" 아닌 섹션만 있을 때 루프 통과→null(supportTarget 미상 fallback)
+    @Test
+    void upload_nonMainSectionOnly_supportTargetFallback() throws IOException {
+        OpsDocument d = supportDoc();
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        OpsDocumentDetail other = new OpsDocumentDetail();
+        other.setSectionKey("other");
+        other.setSectionData(new HashMap<>(Map.of("support_target", "무시될값")));
+        when(detailRepo.findByDocument_DocIdOrderBySortOrderAsc(anyLong())).thenReturn(List.of(other));
+        mockRegionSystem();
+
+        OpsDocument out = service.uploadOrReplace(1L, file("a.pdf", pdf((byte) 1)), null);
+        // "main" 섹션 부재 → sectionValue 가 루프를 돌아 null 반환 → supportTarget "지원대상미상".
+        // 파일명은 {supportTarget}_{docNo}.{ext} 이므로 docNo(SUP-2026-42)로 끝난다(연도 무관, 연도는 폴더).
+        assertTrue(out.getSupportFilePath().endsWith("지원대상미상_SUP-2026-42.pdf"),
+                "비-main 섹션 fallback: " + out.getSupportFilePath());
+    }
+
+    // ===== beyond-A 보강: 조회 성공/거부·uploaderSeq·동일경로 backup·not-found 람다 =====
+
+    /** %PDF- 매직 + 구분용 마지막 바이트(내용 동일성 단언용). */
+    private static byte[] pdf(byte tag) {
+        byte[] b = new byte[20];
+        System.arraycopy(M_PDF, 0, b, 0, M_PDF.length);
+        b[19] = tag;
+        return b;
+    }
+
+    // T1: originalName
+    @Test
+    void originalName_found_returnsOrigName() {
+        OpsDocument d = supportDoc();
+        d.setSupportFileOrigName("plan.hwpx");
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        assertEquals("plan.hwpx", service.originalName(1L));
+    }
+
+    @Test
+    void originalName_notFound_returnsFallback() {
+        when(docRepo.findById(9L)).thenReturn(Optional.empty());
+        assertEquals("support-file", service.originalName(9L));
+    }
+
+    // T2: loadForDownload 성공 경로
+    @Test
+    void loadForDownload_success_returnsResource() throws IOException {
+        OpsDocument d = supportDoc();
+        Path dir = tempDir.resolve("업무지원").resolve("2026");
+        Files.createDirectories(dir);
+        Path f = dir.resolve("a_SUP-2026-42.pdf");
+        Files.write(f, pdf((byte) 7));
+        d.setSupportFilePath(f.toString());
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+
+        Resource r = service.loadForDownload(1L);
+        assertTrue(r.exists());
+        assertEquals("a_SUP-2026-42.pdf", r.getFilename());
+    }
+
+    // T3: loadForDownload 거부(null·not-exists)
+    @Test
+    void loadForDownload_nullPath_throws() {
+        OpsDocument d = supportDoc();
+        d.setSupportFilePath(null);
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.loadForDownload(1L));
+        assertTrue(ex.getMessage().contains("지원문서가 없습니다"));
+    }
+
+    @Test
+    void loadForDownload_notExists_throws() {
+        OpsDocument d = supportDoc();
+        d.setSupportFilePath(tempDir.resolve("업무지원").resolve("2026").resolve("missing_SUP.pdf").toString());
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.loadForDownload(1L));
+        assertTrue(ex.getMessage().contains("파일이 존재하지 않습니다"));
+    }
+
+    // T4: uploaderSeq != null → userRepository 조회 + setUploadedBy
+    @Test
+    void upload_uploaderSeq_setsUploadedBy() throws IOException {
+        OpsDocument d = supportDoc();
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        mockSectionDefault();
+        mockRegionSystem();
+        User u = new User();
+        u.setUserSeq(5L);
+        when(userRepo.findById(5L)).thenReturn(Optional.of(u));
+
+        OpsDocument out = service.uploadOrReplace(1L, file("a.pdf", pdf((byte) 1)), 5L);
+
+        assertSame(u, out.getSupportFileUploadedBy());
+        verify(userRepo).findById(5L);
+    }
+
+    // T5: 동일 target 경로 교체 → backup→원자이동→backup 삭제
+    @Test
+    void upload_sameTargetPath_backupRotate() throws IOException {
+        OpsDocument d = supportDoc();
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        mockSectionDefault();
+        mockRegionSystem();
+
+        OpsDocument out1 = service.uploadOrReplace(1L, file("a.pdf", pdf((byte) 1)), null);
+        Path target1 = Paths.get(out1.getSupportFilePath());
+
+        // 동일 docId·동일 section/region·동일 ext → 동일 파일명 → 동일 target(backup 분기 진입)
+        OpsDocument out2 = service.uploadOrReplace(1L, file("a.pdf", pdf((byte) 2)), null);
+        Path target2 = Paths.get(out2.getSupportFilePath());
+
+        assertEquals(target1, target2);                                  // 동일 target → backup 분기
+        assertArrayEquals(pdf((byte) 2), Files.readAllBytes(target2));   // 원자이동: 최종 내용 = 2차 payload
+        try (Stream<Path> s = Files.list(target2.getParent())) {
+            assertEquals(0L, s.filter(p -> p.getFileName().toString().contains(".bak-")).count(),
+                    "성공 후 .bak- 백업 잔존 없음");
+        }
+    }
+
+    // T6: findById not-found orElseThrow 람다 3종
+    @Test
+    void upload_docNotFound_throws() {
+        when(docRepo.findById(7L)).thenReturn(Optional.empty());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.uploadOrReplace(7L, file("a.pdf", pdf((byte) 1)), null));
+        assertTrue(ex.getMessage().contains("문서를 찾을 수 없습니다"));
+    }
+
+    @Test
+    void delete_docNotFound_throws() {
+        when(docRepo.findById(7L)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> service.delete(7L));
+    }
+
+    @Test
+    void download_docNotFound_throws() {
+        when(docRepo.findById(7L)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> service.loadForDownload(7L));
+    }
+
+    // T7: yearFolder "연도미상"(request_date 없음 + createdAt null)
+    @Test
+    void upload_yearFolder_unknown_whenNoDateAndNoCreatedAt() throws IOException {
+        OpsDocument d = supportDoc();
+        d.setCreatedAt(null);
+        when(docRepo.findById(1L)).thenReturn(Optional.of(d));
+        when(detailRepo.findByDocument_DocIdOrderBySortOrderAsc(anyLong())).thenReturn(List.of());
+
+        OpsDocument out = service.uploadOrReplace(1L, file("a.pdf", pdf((byte) 1)), null);
+        String sep = java.io.File.separator;
+        assertTrue(out.getSupportFilePath().contains(sep + "연도미상" + sep),
+                "연도미상 경로: " + out.getSupportFilePath());
     }
 }
