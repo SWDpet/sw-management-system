@@ -69,11 +69,6 @@ public class OpsKbController {
     private ResponseEntity<?> forbiddenAdmin() {
         return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "승인/반려는 관리자만 가능합니다."));
     }
-    private List<String> sysList() {
-        List<String> l = new ArrayList<>();
-        for (SysMst s : sysMstRepository.findAll(Sort.by("nm"))) l.add(s.getCd());
-        return l;
-    }
     private List<SysMstOption> sysOptions() {
         List<SysMstOption> l = new ArrayList<>();
         for (SysMst s : sysMstRepository.findAll(Sort.by("nm"))) l.add(SysMstOption.from(s));

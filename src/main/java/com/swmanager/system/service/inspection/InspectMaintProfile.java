@@ -61,11 +61,6 @@ public final class InspectMaintProfile {
         return s;
     }
 
-    /** 특정 섹션이 점검 범위 내인지. */
-    public static boolean includes(String maintType, boolean hasStandard, String section) {
-        return sections(maintType, hasStandard).contains(section);
-    }
-
     /** 표지 유형 배지 라벨. */
     public static String badgeLabel(String maintType) {
         return switch (norm(maintType)) {
