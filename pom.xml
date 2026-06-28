@@ -168,6 +168,19 @@
                  check : com/swmanager/** 한정, 기본 mvn test 실측(LINE 21.9%/INSTRUCTION 16.9%)
                          아래의 ratchet floor. mvn verify 시 미달이면 빌드 실패.
                          ※ com/swmanager 로 스코프 — assembly 가 target/classes 에 푼 의존성 제외. -->
+
+            <!-- 테스트 로케일 고정(ko_KR): MessageResolver 는 LocaleContextHolder(=JVM 기본 로케일)로
+                 messages 번들을 선택 → 로컬(ko)=한국어, CI/ubuntu(en)=영어(messages_en) 로 MessageResolverTest
+                 가 환경에 따라 실패(CI 가 검출). user.language=ko 로 고정해 모든 환경에서 결정적.
+                 @{argLine} = jacoco prepare-agent 가 설정한 agent argLine 을 보존(late property eval). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -Duser.language=ko -Duser.country=KR</argLine>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
