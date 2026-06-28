@@ -707,4 +707,70 @@ class InspectionQrBatchServiceTest {
         // ts=null → collectedAt=now() 사용 검증 (payload.ts 기반 2026-05-11 과거값이 아니라 현재 시각)
         assertThat(tsCap.getValue()).isAfter(OffsetDateTime.now().minusMinutes(5));
     }
+
+    // ── 19. public findExisting — 멱등 응답 직접 반환(upload 내부경로와 별개) ────
+    @Test
+    @DisplayName("19. findExisting(payloadId) → 멱등 응답(toIdempotentResponse) 반환")
+    void findExisting_found_returnsIdempotent() {
+        InspectQrBatch batch = new InspectQrBatch();
+        batch.setId(7L);
+        batch.setPayloadId("dyg-2026-05");
+        batch.setReportId(101L);
+        batch.setSiteCode("dyg");
+        Map<String, Object> ap = new LinkedHashMap<>();
+        // item a(3요소 ok)·b(2요소 manual) — manual 항목은 값 필드 없는 2요소가 정상 계약(test-17 동일)
+        ap.put("i", List.of(List.of("a", "ok", 1), List.of("b", "M")));
+        Map<String, Object> tiers = new LinkedHashMap<>();
+        tiers.put("ap", ap);
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("tiers", tiers);
+        batch.setPayloadJson(json);
+
+        when(batchRepository.findByPayloadId("dyg-2026-05")).thenReturn(Optional.of(batch));
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));   // present → alias 미호출
+
+        Optional<InspectionQrBatchResponse> res = service.findExisting("dyg-2026-05");
+
+        assertThat(res).isPresent();
+        InspectionQrBatchResponse r = res.get();
+        assertThat(r.isIdempotent()).isTrue();
+        assertThat(r.getPjtId()).isEqualTo(17L);
+        assertThat(r.getReportId()).isEqualTo(101L);
+        assertThat(r.getReportUrl()).isEqualTo("/document/inspect/101");
+        assertThat(r.getTierCount()).isEqualTo(1);
+        assertThat(r.getItemCount()).isEqualTo(2);     // a, b
+        assertThat(r.getManualItems()).isEqualTo(1);   // b
+    }
+
+    // ── 20. usage mount 값이 non-Map → String.valueOf(mval)+"%" (else 분기) ─────
+    @Test
+    @DisplayName("20. db.os.disk mount 값 비-Map(75) → DB_USAGE '75%'")
+    void usageRows_nonMapMountValue_plainPercent() {
+        InspectionQrBatchRequest req = new InspectionQrBatchRequest();
+        InspectionQrBatchRequest.Payload p = new InspectionQrBatchRequest.Payload();
+        p.setId("usage2-2026-05");
+        p.setSite("dyg");
+        p.setRound("2026-05");
+        InspectionQrBatchRequest.Tier db = new InspectionQrBatchRequest.Tier();
+        db.setItems(List.of(List.of("db.os.disk", "ok", Map.of("/", 75))));   // 75=Integer(비-Map) → else 분기
+        p.setTiers(Map.of("db", db));
+        req.setPayload(p);
+        InspectionQrBatchRequest.Header h = new InspectionQrBatchRequest.Header();
+        h.setHash("z");
+        req.setHeader(h);
+
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(1L);
+
+        ArgumentCaptor<InspectCheckResult> cap = ArgumentCaptor.forClass(InspectCheckResult.class);
+        service.upload(req, 1L);
+        verify(checkResultRepository, org.mockito.Mockito.atLeastOnce()).save(cap.capture());
+        // mount "/" 값이 Map 아님 → "75%" (Map 분기였다면 p 키 추출이라 다른 경로).
+        // 정확히 1개 DB_USAGE "/" 행(중복행 회귀까지 차단).
+        assertThat(cap.getAllValues())
+                .filteredOn(r -> "DB_USAGE".equals(r.getSection()) && "/".equals(r.getItemName()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getResultText()).isEqualTo("75%"));
+    }
 }
