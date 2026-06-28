@@ -1,9 +1,15 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.constant.enums.AccessActionType;
+import com.swmanager.system.domain.Infra;
+import com.swmanager.system.domain.InfraServer;
 import com.swmanager.system.domain.InspectMetricSnapshot;
+import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.User;
 import com.swmanager.system.dto.InspectCheckResultDTO;
 import com.swmanager.system.dto.InspectReportDTO;
+import com.swmanager.system.dto.InspectVisitLogDTO;
+import com.swmanager.system.dto.inspection.InfraServerRow;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.InspectMetricSnapshotRepository;
 import com.swmanager.system.dto.inspection.SnapshotRow;
@@ -30,6 +36,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -402,5 +409,126 @@ class InspectReportControllerTest {
         r.setSection(section);
         r.setResultCode(resultCode);
         return r;
+    }
+
+    // ───────────── 조회 API 예외경로(catch→failMessage) ─────────────
+
+    /** failMessage(e.getMessage()) 경로 검증 — success=false + error 가 던진 메시지여야 함(fail()/fail(code)와 구별). */
+    private static void assertFailMessage(ResponseEntity<?> res, String expectedMessage) {
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(res.getBody()).isInstanceOf(ApiResult.class);   // 비-ApiResult 본문은 명확한 단언 실패로
+        ApiResult body = (ApiResult) res.getBody();
+        assertThat(body.success()).isFalse();
+        assertThat(body.error()).isEqualTo(expectedMessage);
+    }
+
+    @Test
+    void listInspectReports_serviceThrows_failMessage() {
+        when(inspectReportService.findByProject(7L)).thenThrow(new RuntimeException("boom"));
+        assertFailMessage(controller.listInspectReports(7L), "boom");
+    }
+
+    @Test
+    void findInspectReport_serviceThrows_failMessage() {
+        when(inspectReportService.findByProjectAndMonth(7L, "2026-05")).thenThrow(new RuntimeException("boom"));
+        assertFailMessage(controller.findInspectReport(7L, "2026-05"), "boom");
+    }
+
+    @Test
+    void getPreviousVisits_serviceThrows_failMessage() {
+        when(inspectReportService.getPreviousVisits(7L, "2026-05")).thenThrow(new RuntimeException("boom"));
+        assertFailMessage(controller.getPreviousVisits(7L, "2026-05"), "boom");
+    }
+
+    @Test
+    void getInspectTemplate_serviceThrows_failMessage() {
+        when(inspectReportService.getTemplateItems("KRAS")).thenThrow(new RuntimeException("boom"));
+        assertFailMessage(controller.getInspectTemplate("KRAS"), "boom");
+    }
+
+    // ───────────── 관리자 가드통과 후 예외 ─────────────
+
+    @Test
+    void deleteInspectReport_adminServiceThrows_failMessage() {
+        loginAdmin();
+        doThrow(new RuntimeException("boom")).when(inspectReportService).delete(9L);
+        ResponseEntity<?> res = controller.deleteInspectReport(9L);
+        // 가드(isAdmin) 통과 후 예외경로 — 403 아닌 200 failMessage("boom")
+        assertFailMessage(res, "boom");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void resetAllInspect_adminServiceThrows_errorMap() {
+        loginAdmin();
+        when(inspectReportService.resetAllInspectData()).thenThrow(new RuntimeException("boom"));
+        ResponseEntity<?> res = controller.resetAllInspect();
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Map<String, Object> body = (Map<String, Object>) res.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.get("success")).isEqualTo(false);
+        assertThat(body.get("error")).isEqualTo("boom");   // e.getMessage()
+        // log 오버로드 모호성 회피 — (String, AccessActionType, String) 오버로드로 타입 명시
+        verify(logService, never()).log(any(String.class), any(AccessActionType.class), any(String.class));
+    }
+
+    // ───────────── getInfraServers 데이터 경로 ─────────────
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getInfraServers_withData_mapsRows() {
+        loginView();
+        Infra infra = new Infra();
+        InfraServer server = new InfraServer();
+        server.setServerId(10L); server.setHostName("h1"); server.setIpAddr("10.0.0.1");
+        infra.setServers(new java.util.ArrayList<>(List.of(server)));   // 도메인 기본값 비의존(명시 초기화). softwares 기본 빈리스트 → InfraServerRow.from 안전
+        when(infraRepository.findByDistNmAndSysNmEn("양양군", "UPIS")).thenReturn(List.of(infra));
+
+        ResponseEntity<?> res = controller.getInfraServers("양양군", "UPIS");
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List<InfraServerRow> rows = (List<InfraServerRow>) res.getBody();
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).serverId()).isEqualTo(10L);
+        assertThat(rows.get(0).hostName()).isEqualTo("h1");
+        assertThat(rows.get(0).ipAddr()).isEqualTo("10.0.0.1");
+    }
+
+    // ───────────── downloadInspectPdf visits 월suffix ─────────────
+
+    @Test
+    void downloadInspectPdf_withVisits_monthSuffixFromVisit() throws Exception {
+        loginEdit();
+        when(inspectPdfService.generatePdf(5L)).thenReturn(new byte[]{1, 2, 3});
+        InspectReportDTO report = new InspectReportDTO();
+        report.setDocTitle("점검내역서");
+        InspectVisitLogDTO visit = new InspectVisitLogDTO();
+        visit.setVisitMonth("5");
+        report.setVisits(List.of(visit));
+        when(inspectReportService.findById(5L)).thenReturn(report);
+
+        ResponseEntity<byte[]> res = controller.downloadInspectPdf(5L);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String disposition = res.getHeaders().getFirst("Content-Disposition");
+        // filename 은 URL 인코딩 — '_5월' → '_5%EC%9B%94'
+        assertThat(disposition).contains("_5%EC%9B%94");
+    }
+
+    // ───────────── inspectDetail project-infra 분기 ─────────────
+
+    @Test
+    void inspectDetail_withProject_setsInfraList() {
+        InspectReportDTO report = new InspectReportDTO();
+        report.setPjtId(70L);   // checkResults 기본값(빈 리스트/null) → 집계 안전
+        when(inspectReportService.findById(3L)).thenReturn(report);
+        SwProject project = new SwProject();
+        project.setDistNm("양양군"); project.setSysNmEn("UPIS");
+        when(swProjectRepository.findById(70L)).thenReturn(java.util.Optional.of(project));
+        when(infraRepository.findByDistNmAndSysNmEn("양양군", "UPIS")).thenReturn(List.of(new Infra()));
+
+        Model m = model();
+        String view = controller.inspectDetail(3L, m);
+        assertThat(view).isEqualTo("document/inspect-detail");   // 성공 뷰(미존재 시 redirect 와 구별)
+        assertThat(m.getAttribute("project")).isSameAs(project);
+        assertThat((List<?>) m.getAttribute("infraList")).hasSize(1);
     }
 }
