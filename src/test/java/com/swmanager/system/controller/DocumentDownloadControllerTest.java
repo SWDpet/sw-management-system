@@ -297,6 +297,7 @@ class DocumentDownloadControllerTest {
 
     /** ZIP body → 엔트리 이름 목록(바이트 내용은 비단언, 구조만 검증). */
     private static List<String> zipEntryNames(byte[] zip) throws Exception {
+        assertThat(zip).as("ZIP 본문이 null 이면 안 됨(200 응답 body)").isNotNull();
         List<String> names = new ArrayList<>();
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zip))) {
             ZipEntry e;
@@ -462,6 +463,112 @@ class DocumentDownloadControllerTest {
         ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "design");
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(zipEntryNames(res.getBody())).anyMatch(n -> n.contains("설계내역서"));
+    }
+
+    // ───────────── 일괄ZIP 유형불일치(else fails.add)·outer catch·COMPLETION (beyond-A) ─────────────
+
+    /** 일괄 검색 페이지 크기 — 컨트롤러 LIMIT(200) 초과 감지를 위한 LIMIT+1. */
+    private static final int BULK_PAGE_SIZE = 201;
+
+    /** 단일 비매칭 문서 1건을 type 으로 일괄 요청 → 실패목록만 포함되고 산출물 엔트리는 없음. */
+    private ResponseEntity<byte[]> bulkSingle(DocumentType docType, String type) {
+        Page<DocumentDTO> page = new PageImpl<>(List.of(
+                dto(1, docType, "서울", "강남", "사업X")), PageRequest.of(0, BULK_PAGE_SIZE), 1);
+        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(page);
+        return controller.downloadBulkZip(null, null, null, null, null, type);
+    }
+
+    @Test
+    void bulkZip_interim_mismatchWritesFailList() throws Exception {
+        loginEdit();
+        ResponseEntity<byte[]> res = bulkSingle(DocumentType.COMMENCE, "interim"); // 기성계 아님
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(zipEntryNames(res.getBody()))
+                .anyMatch(n -> n.contains("_실패목록.txt"))
+                .noneMatch(n -> n.contains("기성내역서"));
+    }
+
+    @Test
+    void bulkZip_commenceBody_mismatchWritesFailList() throws Exception {
+        loginEdit();
+        ResponseEntity<byte[]> res = bulkSingle(DocumentType.INTERIM, "commence_body"); // 착수계 아님
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // filename 의 bulkTypeLabel("commence_body") 경로 동반 + 실패목록
+        assertThat(zipEntryNames(res.getBody()))
+                .anyMatch(n -> n.contains("_실패목록.txt"))
+                .noneMatch(n -> n.contains("착수계본문"));
+    }
+
+    @Test
+    void bulkZip_design_mismatchWritesFailList() throws Exception {
+        loginEdit();
+        ResponseEntity<byte[]> res = bulkSingle(DocumentType.INTERIM, "design"); // 착수계 아님
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(zipEntryNames(res.getBody()))
+                .anyMatch(n -> n.contains("_실패목록.txt"))
+                .noneMatch(n -> n.contains("설계내역서"));
+    }
+
+    @Test
+    void bulkZip_completion_mismatchWritesFailList() throws Exception {
+        loginEdit();
+        ResponseEntity<byte[]> res = bulkSingle(DocumentType.COMMENCE, "completion"); // 준공계 아님
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(zipEntryNames(res.getBody()))
+                .anyMatch(n -> n.contains("_실패목록.txt"))
+                .noneMatch(n -> n.contains("준공계"));
+    }
+
+    /** type=letter 인데 generateHwpx 가 throw → bulkAddSingle outer catch → 실패목록, 200 유지. */
+    @Test
+    void bulkZip_letterExportThrows_writesFailList() throws Exception {
+        loginEdit();
+        when(hwpxExportService.generateHwpx(anyInt(), anyString())).thenThrow(new RuntimeException("export"));
+        Page<DocumentDTO> page = new PageImpl<>(List.of(
+                dto(1, DocumentType.COMMENCE, "서울", "강남", "사업L")), PageRequest.of(0, BULK_PAGE_SIZE), 1);
+        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(page);
+
+        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "letter");
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);   // 예외 삼킴
+        assertThat(zipEntryNames(res.getBody())).anyMatch(n -> n.contains("_실패목록.txt"));
+        // outer catch 경로 입증 — generateHwpx(letter)가 실제 호출돼 throw 됐음
+        verify(hwpxExportService).generateHwpx(1, "letter");
+    }
+
+    /** type=all + COMPLETION 문서 → bulkAddAll completion 분기 → 준공계 KRAS/UPIS. */
+    @Test
+    void bulkZip_all_completionDoc_buildsKrasUpis() throws Exception {
+        loginEdit();
+        // completion 일괄은 generateHwpx(letter/completion_body/_upis)만 사용 → 협소 stub
+        when(hwpxExportService.generateHwpx(anyInt(), anyString())).thenReturn(new byte[]{1});
+        Page<DocumentDTO> page = new PageImpl<>(List.of(
+                dto(1, DocumentType.COMPLETION, "서울", "강남", "사업준공")), PageRequest.of(0, BULK_PAGE_SIZE), 1);
+        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(page);
+
+        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "all");
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List<String> names = zipEntryNames(res.getBody());
+        assertThat(names).anyMatch(n -> n.contains("KRAS")).anyMatch(n -> n.contains("UPIS"));
+    }
+
+    /**
+     * 계약: ZIP 조립 중 예기치 못한 오류가 나면 스택트레이스 누출 없이 graceful 500 으로 닫는다
+     * (downloadBulkZip outer catch). null 문서는 그 오류를 유발하는 contrived trigger 일 뿐 —
+     * 실제 searchDocuments 는 null 원소를 반환하지 않음. 향후 null-가드가 생기면 이 특성화 테스트는 갱신 대상.
+     */
+    @Test
+    void bulkZip_assemblyError_returnsGraceful500() {
+        loginEdit();
+        Page<DocumentDTO> page = new PageImpl<>(
+                java.util.Arrays.asList((DocumentDTO) null), PageRequest.of(0, BULK_PAGE_SIZE), 1);
+        when(documentService.searchDocuments(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(page);
+
+        ResponseEntity<byte[]> res = controller.downloadBulkZip(null, null, null, null, null, "letter");
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // ───────────────────────── downloadHwpx typeLabel switch ─────────────────────────
