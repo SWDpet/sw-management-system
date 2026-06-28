@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  [dependency-scan, beyond-A] OWASP dependency-check 오탐 억제 파일.
+  첫 리포트 triage 후 false positive 를 여기에 추가한다.
+
+  예시(GeoNURIS 자체 jar 등 내부 바이너리 오탐 억제):
+  <suppress>
+    <notes>GeoNURIS_License.jar 는 내부 라이선스 발급 바이너리(외부 CVE 무관)</notes>
+    <filePath regex="true">.*GeoNURIS_License\.jar</filePath>
+    <cpe>cpe:/a:.*</cpe>
+  </suppress>
+
+  스키마: https://jeremylong.github.io/DependencyCheck/general/suppression.html
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- 초기 빈 상태. 첫 스캔 리포트 검토 후 항목 추가. -->
+</suppressions>

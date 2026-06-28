@@ -489,6 +489,38 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                 </plugins>
             </build>
         </profile>
+
+        <!-- [dependency-scan, beyond-A] OWASP dependency-check — 의존성 CVE 스캔.
+             라이프사이클 미바인딩(PIT 와 동일) → 기본 빌드/PR 게이트 무영향.
+             실행: ./mvnw -Psecurity-scan org.owasp:dependency-check-maven:check
+             NVD 키: 환경변수 NVD_API_KEY (없으면 rate-limited). 주1회 scheduled workflow 에서 호출. -->
+        <profile>
+            <id>security-scan</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>12.1.0</version>
+                        <configuration>
+                            <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+                            <!-- NVD DB 캐시 위치(워크플로 actions/cache 대상). 첫 동기화 후 재사용. -->
+                            <dataDirectory>${project.basedir}/.dependency-check-data</dataDirectory>
+                            <formats>
+                                <format>HTML</format>
+                                <format>JSON</format>
+                            </formats>
+                            <suppressionFiles>
+                                <suppressionFile>${project.basedir}/dependency-check-suppressions.xml</suppressionFile>
+                            </suppressionFiles>
+                            <!-- critical(CVSS≥9) 발견 시 실패 = 보안 신호. NVD 동기화 실패와는 별개(로그/summary 로 구분). -->
+                            <failBuildOnCVSS>9</failBuildOnCVSS>
+                            <!-- 평가 정확도 향상: retired/experimental 분석기 비활성(기본), assembly 풀린 의존성 노이즈 축소는 suppression 으로. -->
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>

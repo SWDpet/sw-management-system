@@ -33,15 +33,17 @@
 
 ---
 
-## 3. CSRF
+## 3. CSRF — 정식화 완료 (2026-06-29, `csrf-formalization`)
 
-- **폼 요청(로그인·로그아웃 등)**: Spring Security 기본 CSRF 토큰 보호 활성
-  - Thymeleaf: `<meta name="_csrf" content="...">` + `<meta name="_csrf_header" content="...">`
-  - fetch 요청 시 헤더 수동 부착 패턴 (`admin-user.js`, `project-form.html` 등)
-- **JSON API 경로는 CSRF 면제** (`SecurityConfig.java` `ignoringRequestMatchers`): `/api/**`, `/admin/api/**`, `/document/api/**`, `/admin/api/org-units/**`, `/ops-kb/api/**`, `/ops-doc/api/**` — 세션 쿠키 기반 인증이라 토큰 미부착 호출을 허용하기 위함(스프린트 5 v2, 이후 ops-doc 403 해소).
-  - **완화책**: 세션 쿠키 `SameSite=lax` (`application.properties`) — 교차 사이트 POST/DELETE 시 쿠키 미전송으로 CSRF 위험 제한.
-  - **보완**: CSRF 면제 경로는 보호를 **서버측 권한 가드**에 의존한다. 따라서 변이 JSON API는 컨트롤러에서 `requireDocEdit`/`requireDocEditOrAdmin` 등으로 명시 가드해야 한다(예: `OpsDocController` 첨부/삭제 API — S1, 2026-06-19).
-  - **후속(미완)**: 면제 폭 축소는 프론트 fetch 전반에 CSRF 토큰 부착이 선행돼야 안전(미적용 시 403 회귀). 별도 스프린트로 분리.
+- **전 경로 CSRF 보호 활성.** 과거 JSON API 면제(`ignoringRequestMatchers` 6경로)는 **전면 제거**됨.
+- **폼 요청**: Spring Security + Thymeleaf 가 `<form th:action ...>` 에 hidden `_csrf` 자동주입(로그인·견적 등 17개 폼).
+- **fetch/AJAX 요청**: 공통 fragment `fragments/csrf.html` 의 **전역 `window.fetch` 인터셉터**가 동일출처 상태변경(POST/PUT/DELETE/PATCH)에 `X-CSRF-TOKEN` 헤더 자동주입.
+  - 토큰은 `data-attribute`(`_csrf_meta`)로 노출(Thymeleaf escaping). 중복래핑 가드·robust URL 파싱·Request 객체 처리·기존 헤더 미덮어씀.
+  - `top-nav`(54화면) + **standalone 페이지(`document-preview` 등)** 가 `~{fragments/csrf :: interceptor}` 공통 include.
+  - ⚠ **신규 standalone 페이지(top-nav 미포함)에 상태변경 fetch 추가 시 이 fragment 를 직접 include 필수**(미포함 시 403).
+  - ⚠ **fetch 전용 가정**: 코드베이스에 XHR/jQuery/axios 없음(검증). 비-fetch AJAX 도입 시 인터셉터 확장 필요.
+- **다층 방어**: 서버측 권한 가드(`requireDocEdit`/`requireDocEditOrAdmin` 등) + 세션 쿠키 `SameSite=lax` 는 그대로 유지(CSRF 토큰과 병행).
+- `actuator` 체인(Chain1)은 STATELESS+httpBasic 으로 `csrf.disable()` 유지(별개).
 
 ---
 
@@ -89,4 +91,25 @@
 
 ---
 
-*Last updated: 2026-04-24 · docs-renewal-01 P1*
+## 9. 의존성 취약점 스캔 — OWASP dependency-check (beyond-A, 2026-06-29)
+
+의존성(라이브러리) 알려진 CVE 스캔. codex 자문대로 **PR 게이트가 아닌 주1회 scheduled + 수동** 워크플로로 분리(NVD 동기화 느림·외부 의존).
+
+- **워크플로**: `.github/workflows/dependency-scan.yml` — `schedule`(매주 월 18:00 UTC) + `workflow_dispatch`(수동). PR/push 미차단. HTML/JSON 리포트 artifact 업로드(30일).
+- **로컬 실행**: `./mvnw -Psecurity-scan org.owasp:dependency-check-maven:check` (pom `security-scan` 프로파일, 라이프사이클 미바인딩 → 기본 빌드 무영향).
+- **실패 정책**: `failBuildOnCVSS=9` — critical(CVSS≥9) 발견 시 실패(보안 신호). NVD 동기화 실패와는 로그로 구분(취약점-발견 ≠ 인프라-실패).
+
+### NVD API 키 설정 (필수 권장)
+2023+ NVD 는 API 키 권장 — **미설정 시 첫 동기화가 심하게 rate-limit(수십분~수시간/실패 가능)**.
+1. https://nvd.nist.gov/developers/request-an-api-key 에서 무료 키 발급.
+2. GitHub 저장소 → Settings → Secrets and variables → Actions → New repository secret: 이름 `NVD_API_KEY`.
+3. (로컬) 환경변수 `NVD_API_KEY` 설정 후 위 명령 실행.
+- NVD DB 는 워크플로에서 `actions/cache`(`.dependency-check-data`)로 캐시 → 첫 동기화 후 재사용.
+
+### 오탐 억제
+- `dependency-check-suppressions.xml` — 첫 리포트 triage 후 false positive 추가(예: 내부 `GeoNURIS_License.jar` 오탐).
+- ⚠ **검증 한계**: 본 스캔은 NVD 외부 의존 → PIT/CI/CSRF 와 달리 **첫 실제 실행 검증은 `NVD_API_KEY` secret 추가 후** 가능(스캐폴드까지 구축됨).
+
+---
+
+*Last updated: 2026-06-29 · §3 CSRF 정식화 + §9 의존성 스캔 추가 (beyond-A)*

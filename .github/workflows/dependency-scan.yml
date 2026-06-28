@@ -1,0 +1,59 @@
+name: Dependency Scan
+
+# beyond-A (dependency-scan): OWASP dependency-check 로 의존성 CVE 스캔.
+# codex 자문: NVD API/느린 동기화 때문에 PR 게이트가 아닌 "주1회 scheduled + 수동" 으로 분리.
+# 기획: docs/product-specs/beyond-a-dependency-scan.md
+# ⚠ NVD_API_KEY secret 설정 시 빠르고 안정적. 미설정 시 rate-limited(느림/실패 가능) — degrade.
+
+on:
+  schedule:
+    - cron: '0 18 * * 1'        # 매주 월 18:00 UTC (화 03:00 KST). PR/push 미차단.
+  workflow_dispatch: {}          # 수동 실행
+
+permissions:
+  contents: read
+
+concurrency:
+  group: depscan-${{ github.ref }}
+  cancel-in-progress: false      # 긴 NVD 첫 동기화(최대 120m) 중단 방지(수동×스케줄 겹침 시)
+
+jobs:
+  dependency-check:
+    name: OWASP dependency-check (CVE 스캔)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120         # NVD 첫 동기화 대비(키 없으면 매우 느림). 캐시 후엔 빠름.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: 캐시 주차 키 계산
+        id: cachekey
+        run: echo "week=$(date -u +%Y%V)" >> "$GITHUB_OUTPUT"   # 주1회 갱신·주내 재사용
+      - name: NVD DB 캐시 (첫 동기화 후 재사용, 주차 키)
+        uses: actions/cache@v4
+        with:
+          path: .dependency-check-data
+          key: depcheck-nvd-${{ steps.cachekey.outputs.week }}
+          restore-keys: |
+            depcheck-nvd-
+      - name: dependency-check 실행
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}   # 미설정 시 빈 값 → rate-limited degrade
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -B -ntp -Psecurity-scan org.owasp:dependency-check-maven:check
+        # failBuildOnCVSS=9 → critical CVE 발견 시 이 step 실패(보안 신호).
+        # NVD 동기화 실패도 step 실패지만 로그로 구분(취약점-발견 ≠ 인프라-실패).
+      - name: 리포트 artifact 업로드 (성공/실패 무관)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: |
+            target/dependency-check-report.html
+            target/dependency-check-report.json
+          if-no-files-found: warn
+          retention-days: 30

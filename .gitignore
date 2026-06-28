@@ -112,6 +112,10 @@ inspection-poc/docs/report-drafts/v3_check.*
 inspection-poc/docs/report-drafts/v3_check.files/
 inspection-poc/docs/report-drafts/build/
 
+# OWASP dependency-check NVD 로컬 DB(대용량 53MB+) + 리포트 — repo 미포함(워크플로 캐시/artifact)
+.dependency-check-data/
+dependency-check-report.*
+
 # === inspector agent 런타임 산물 ===
 inspection-poc/agent-windows/snapshots/
 inspection-poc/agent-windows/out/
