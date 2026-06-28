@@ -88,18 +88,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // [스프린트 5 v2] JSON API 경로는 CSRF 면제 (세션 쿠키 기반 인증).
-            // 폼 로그인·로그아웃은 기본 CSRF 보호 유지.
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers(
-                    "/api/**",
-                    "/admin/api/**",
-                    "/document/api/**",
-                    "/admin/api/org-units/**",
-                    "/ops-kb/api/**",
-                    "/ops-doc/api/**"
-                )
-            )
+            // [csrf-formalization, 2026-06-29] JSON API CSRF 면제 전면 제거.
+            // 모든 상태변경 fetch 는 fragments/top-nav 의 전역 인터셉터가 X-CSRF-TOKEN 헤더 자동주입,
+            // 폼은 Thymeleaf 가 hidden _csrf 자동주입 → 면제 불필요. (CSRF 기본 보호 전 경로 적용.)
+            // actuator 체인(Chain1)은 STATELESS+httpBasic 으로 별도 csrf.disable() 유지.
             .authorizeHttpRequests(auth -> auth
                 // 인증 없이 접근 가능한 경로
                 .requestMatchers("/login", "/signup", "/logout").permitAll()

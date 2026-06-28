@@ -5,6 +5,9 @@
 <!-- [global-sidebar-responsive] 공통 사이드바 (기존 top-nav :: nav 이름 유지 → 51개 화면 무편집 전파) -->
 <th:block th:fragment="nav">
 
+  <!-- [csrf-formalization] 전역 fetch CSRF 인터셉터 (공통 fragment). fragment 가 body 상단 포함 → 페이지 스크립트보다 먼저 window.fetch 래핑. -->
+  <th:block th:replace="~{fragments/csrf :: interceptor}"></th:block>
+
   <!-- [global-sidebar-responsive] self-contained: 토큰 + 사이드바/셸/반응형 CSS 내장 (design-system.css 미링크 페이지에서도 동작) -->
   <style>
   :root{

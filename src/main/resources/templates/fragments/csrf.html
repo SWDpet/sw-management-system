@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- [csrf-formalization] 전역 fetch CSRF 인터셉터 (재사용 fragment).
+     동일출처 상태변경(POST/PUT/DELETE/PATCH) fetch 요청에 X-CSRF-TOKEN 헤더 자동주입.
+     top-nav(54화면) + standalone 페이지(document-preview 등)에서 공통 include.
+     토큰은 data-attribute 로 노출(Thymeleaf attribute escaping, <script> 인라인 [[ 회피).
+     ⚠ fetch 전용 가정: 현 코드베이스에 XHR/jQuery.ajax/axios 없음(grep 확인). 향후 비-fetch
+        AJAX 추가 시 XMLHttpRequest.prototype.open/send 도 동일 헤더 주입하도록 확장 필요. -->
+<th:block th:fragment="interceptor">
+  <span id="_csrf_meta" style="display:none"
+        th:attr="data-token=${_csrf != null ? _csrf.token : ''},data-header=${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"></span>
+  <script>
+  (function () {
+    if (window.__csrfFetchWrapped) return;          // 중복 래핑 방지(fragment 2회 포함 등)
+    var el = document.getElementById('_csrf_meta');
+    if (!el || !window.fetch) return;
+    var token = el.getAttribute('data-token');
+    var header = el.getAttribute('data-header') || 'X-CSRF-TOKEN';
+    if (!token) return;
+    window.__csrfFetchWrapped = true;
+    var MUTATING = { POST: 1, PUT: 1, DELETE: 1, PATCH: 1 };
+    var nativeFetch = window.fetch.bind(window);
+    function sameOrigin(u) {
+      try { return new URL(u, window.location.href).origin === window.location.origin; }
+      catch (e) { return false; }                   // 파싱불가 = 미주입(토큰 유출 방지)
+    }
+    window.fetch = function (input, init) {
+      init = init || {};
+      var isReq = (typeof Request !== 'undefined') && (input instanceof Request);
+      var method = (init.method || (isReq && input.method) || 'GET').toUpperCase();
+      var url = isReq ? input.url : String(input);
+      if (MUTATING[method] && sameOrigin(url)) {
+        if (isReq && !init.headers) {               // Request 입력: 기존 헤더 보존하며 토큰 추가
+          if (!input.headers.has(header)) {
+            var rh = new Headers(input.headers);
+            rh.set(header, token);
+            input = new Request(input, { headers: rh });
+          }
+        } else {
+          var headers = new Headers(init.headers || {});
+          if (!headers.has(header)) headers.set(header, token);   // 기존 토큰 미덮어씀
+          init.headers = headers;
+        }
+      }
+      return nativeFetch(input, init);
+    };
+  })();
+  </script>
+</th:block>
+</body>
+</html>

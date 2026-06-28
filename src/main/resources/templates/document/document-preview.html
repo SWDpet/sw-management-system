@@ -49,6 +49,9 @@
     </style>
 </head>
 <body>
+    <!-- [csrf-formalization] standalone 페이지(top-nav 미포함) → 전역 fetch CSRF 인터셉터 직접 포함 -->
+    <th:block th:replace="~{fragments/csrf :: interceptor}"></th:block>
+
     <!-- 도구바 -->
     <div class="toolbar">
         <h3><i class="fas fa-file-pdf"></i> 문서 미리보기 (D-11)</h3>
