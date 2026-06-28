@@ -7,6 +7,7 @@ import com.swmanager.system.quotation.domain.Quotation;
 import com.swmanager.system.quotation.domain.RemarksPattern;
 import com.swmanager.system.quotation.domain.WageRate;
 import com.swmanager.system.quotation.dto.QuotationDTO;
+import com.swmanager.system.response.ApiResult;
 import com.swmanager.system.quotation.service.QuotationService;
 import com.swmanager.system.repository.SwProjectRepository;
 import com.swmanager.system.repository.UserRepository;
@@ -29,8 +30,11 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -593,5 +597,124 @@ class QuotationControllerTest {
         assertThatThrownBy(controller::getStats)
                 .isInstanceOf(InsufficientPermissionException.class);
         verifyNoInteractions(quotationService);
+    }
+
+    // ───────────── CRUD catch 예외경로 (가드 통과 후 서비스 예외 → 400 + error) ─────────────
+
+    /** Map 형태 에러: badRequest + {success:false, error: ExceptionMessages.safe(e)=메시지}. */
+    @SuppressWarnings("unchecked")
+    private static void assertMapError(ResponseEntity<?> res) {
+        assertThat(res.getStatusCode().value()).isEqualTo(400);
+        assertThat(res.getBody()).isInstanceOf(Map.class);   // assertApiResultError 와 대칭(형태 불일치 시 명확한 실패)
+        Map<String, Object> body = (Map<String, Object>) res.getBody();
+        assertThat(body.get("success")).isEqualTo(false);
+        assertThat(body.get("error")).isEqualTo("boom");
+    }
+
+    /** ApiResult 형태 에러: badRequest + failMessage(e.getMessage()). */
+    private static void assertApiResultError(ResponseEntity<?> res) {
+        assertThat(res.getStatusCode().value()).isEqualTo(400);
+        assertThat(res.getBody()).isInstanceOf(ApiResult.class);
+        ApiResult body = (ApiResult) res.getBody();
+        assertThat(body.success()).isFalse();
+        assertThat(body.error()).isEqualTo("boom");
+    }
+
+    private static final RuntimeException BOOM = new RuntimeException("boom");
+
+    // ----- Map 형태 -----
+
+    @Test
+    void updateQuotation_serviceThrows_mapError() {
+        loginAdmin();   // isAdmin → 작성자 가드 통과
+        when(quotationService.updateQuotation(any())).thenThrow(BOOM);
+        assertMapError(controller.updateQuotation(1L, QuotationDTO.builder().build()));
+    }
+
+    @Test
+    void deleteQuotation_serviceThrows_mapError() {
+        loginAdmin();
+        doThrow(BOOM).when(quotationService).deleteQuotation(1L);
+        assertMapError(controller.deleteQuotation(1L));
+    }
+
+    @Test
+    void savePattern_serviceThrows_mapError() {
+        loginEdit();
+        when(quotationService.savePattern(any())).thenThrow(BOOM);
+        assertMapError(controller.savePattern(new ProductPattern()));
+    }
+
+    @Test
+    void deleteAllPatterns_serviceThrows_mapError() {
+        loginAdmin();
+        when(quotationService.deleteAllPatterns()).thenThrow(BOOM);
+        assertMapError(controller.deleteAllPatterns());
+    }
+
+    @Test
+    void copyPatterns_serviceThrows_mapError() {
+        loginEdit();
+        // 컨트롤러가 List<Number>→List<Long> 변환 후 호출 → anyList 매처
+        when(quotationService.copyPatterns(anyList(), eq("A"))).thenThrow(BOOM);
+        assertMapError(controller.copyPatterns(Map.of("patternIds", List.of(1), "targetCategory", "A")));
+    }
+
+    @Test
+    void saveRemarksPattern_serviceThrows_mapError() {
+        loginEdit();
+        when(quotationService.saveRemarksPattern(any())).thenThrow(BOOM);
+        assertMapError(controller.saveRemarksPattern(new RemarksPattern()));
+    }
+
+    @Test
+    void saveWageRate_serviceThrows_mapError() {
+        loginEdit();
+        when(quotationService.saveWageRate(any())).thenThrow(BOOM);
+        assertMapError(controller.saveWageRate(new WageRate()));
+    }
+
+    @Test
+    void updateWageRate_serviceThrows_mapError() {
+        loginEdit();
+        when(quotationService.saveWageRate(any())).thenThrow(BOOM);   // update 는 save 위임
+        assertMapError(controller.updateWageRate(1L, new WageRate()));
+    }
+
+    @Test
+    void deleteWageRate_serviceThrows_mapError() {
+        loginEdit();
+        doThrow(BOOM).when(quotationService).deleteWageRate(1L);
+        assertMapError(controller.deleteWageRate(1L));
+    }
+
+    // ----- ApiResult 형태 -----
+
+    @Test
+    void updatePattern_serviceThrows_apiResultError() {
+        loginEdit();
+        when(quotationService.savePattern(any())).thenThrow(BOOM);   // update 는 save 위임
+        assertApiResultError((ResponseEntity<?>) controller.updatePattern(1L, new ProductPattern()));
+    }
+
+    @Test
+    void deletePattern_serviceThrows_apiResultError() {
+        loginEdit();
+        doThrow(BOOM).when(quotationService).deletePattern(1L);
+        assertApiResultError((ResponseEntity<?>) controller.deletePattern(1L));
+    }
+
+    @Test
+    void updateRemarksPattern_serviceThrows_apiResultError() {
+        loginEdit();
+        when(quotationService.saveRemarksPattern(any())).thenThrow(BOOM);
+        assertApiResultError((ResponseEntity<?>) controller.updateRemarksPattern(1L, new RemarksPattern()));
+    }
+
+    @Test
+    void deleteRemarksPattern_serviceThrows_apiResultError() {
+        loginEdit();
+        doThrow(BOOM).when(quotationService).deleteRemarksPattern(1L);
+        assertApiResultError((ResponseEntity<?>) controller.deleteRemarksPattern(1L));
     }
 }
