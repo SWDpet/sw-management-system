@@ -11,15 +11,19 @@
 | JaCoCo ratchet | `com/swmanager` LINE≥18%/INSTRUCTION≥14% floor (`mvn verify`) | ✅ |
 | Map 부채 ratchet (`MapDebtRatchetTest`) | 무타입 `Map<String,Object>` 총량 감소만 (baseline **188**) | ✅ |
 | 거대클래스 ratchet (`GiantClassRatchetTest`) | 컨트롤러>1500·서비스>2000줄 신규 0 (baseline **비움=부채 0**) | ✅ |
-| PIT 뮤테이션 게이트 (`-Ppit`) | 완전커버 7종 KILLED/TOTAL≥90% (현 95%) | ✅ |
+| PIT 뮤테이션 게이트 (`-Ppit`) | 고신호 **15종** KILLED/TOTAL≥**94%** (현 96.4%) | ✅ |
 | 아키텍처 불변식 (`LayeredArchitectureTest`) | 순환의존 0·도메인 순수성·상향의존 금지·Repo=인터페이스·명명 (위반 0) | ✅ |
 | 컨트롤러→Repo ratchet (`ControllerRepositoryRatchetTest`) | 직접접근 신규 0 (baseline **295**) | ✅ |
 | Enum/Master sync (arch test) | 마스터 drift 0 | ✅ |
+| **CI 자동 강제 (GitHub Actions `ci.yml`)** | **위 전 게이트를 매 push/PR 자동 강제** (gates=verify·fresh-init-smoke·mutation 3 job) | ✅ |
+| fresh-init smoke (CI) | 빈 postgres:16 에 부트스트랩 DDL replay + Testcontainers `BootstrapSchemaContainerTest` | ✅ |
+| 의존성 CVE 스캔 (OWASP, scheduled) | 주1회 dependency-check (NVD 키 후 완주) | ◑ |
 
 ## 1. 평가 기준
 
 | 등급 | 정의 |
 |------|------|
+| 🟢 **S** (beyond-A) | A 충족 + **게이트가 CI 에서 자동 강제** + 뮤테이션/통합 등 심화 검증(일반 A 초과) |
 | 🟢 A | 감사 지적 0, 테스트 커버리지 있음, Enum/Master 활용, 게이트로 회귀 봉인 |
 | 🟡 B | 감사 지적 1~2건 또는 매직넘버·리터럴 일부 잔존 |
 | 🔴 C | 감사 지적 3+ 또는 주요 하드코딩 다수 |
@@ -28,14 +32,17 @@
 
 ## 2. 차원별 등급 (S-tier 로드맵)
 
+> **2026-06-29 codex×Claude 재평가** (beyond-A 15커밋 후). S=beyond-A(게이트 자동강제로 일반 A 초과). 종합=**A+**, 단일 병목=코드품질 B+(MapDebt 188 plateau).
+
 | 차원 | 등급 | 근거 |
 |------|------|------|
-| SQL/데이터접근 | 🟢 **A** | 전건 파라미터 바인딩 (원천) |
-| 보안 | 🟢 **A** | S1 — ops-doc 첨부/삭제 가드(`OpsDocControllerAttachmentGuardTest`) |
-| 테스트 | 🟢 **A** (+beyond-A) | S3 JaCoCo·골든·DB게이팅 + PIT 뮤테이션 게이트 |
-| 문서 | 🟢 **A** | 2026-06-23 라이브 레퍼런스 문서(ARCHITECTURE/FRONTEND/DESIGN/QUALITY_SCORE/PLANS/PRODUCT_SENSE/SECURITY/RELIABILITY) 코드 대조 검증·미검증 꼬리표 제거 |
-| 코드품질 | 🟡 **B** | S4 완료. A는 응답 envelope 전면 이관 필요하나 **plateau**(Map 188, 잔여 `put("success")`은 P6 도메인키 응답=형태변경 없인 이관불가) |
-| 아키텍처 | 🟢 **A** | 거대클래스 부채 0·Excel/문서 분리 + **레이어 불변식 5종 게이트화**(2026-06-23: 순환의존0·도메인순수성·상향의존금지·Repo인터페이스·명명 하드게이트 + controller→repo ratchet). config↔service 순환은 CustomUserDetails/SecurityLoginProperties를 security/로 분리해 해소(`7d46023`) |
+| SQL/데이터접근 | 🟢 **S−** | 전건 파라미터 바인딩 + fresh-init smoke(CI) + Testcontainers 부트스트랩 검증. V*.sql 전체 replay 미검증으로 S− |
+| 보안 | 🟢 **A+** | 인증/권한 가드 + **CSRF 정식화**(JSON API 면제 제거 + 전역 fetch 토큰 인터셉터) + 마스킹 + 의존성스캔 scaffold. dependency-check 첫 완주(NVD 키) 후 S |
+| 테스트 | 🟢 **S** | **beyond-A 달성** — JaCoCo floor·**PIT 15종 게이트(94%)**·골든·Enum + **CI 매 push 강제(3 job)** + **MockMvc net 3종** + Testcontainers. 서비스 4종 뮤테이션 강화(52~81→94~98%) |
+| 문서 | 🟢 **A** | 라이브 레퍼런스 문서 코드 대조 + QUALITY_SCORE/SECURITY/RELIABILITY 현행화(beyond-A 반영) |
+| 코드품질 | 🟡 **B+** | DTO/record 전환 진행 + **plateau**(MapDebt baseline 188 = Excel/HWPX/JSONB 동적데이터·legacy envelope·@RequestBody Map 보존군). A는 응답계약 변경(프론트 동반) 필요 — codex·Claude "0으로 만들지 말 것" |
+| 아키텍처 | 🟢 **A** | 거대클래스 부채 0 + **레이어 불변식 5종 게이트(CI 강제)** + controller→repo ratchet(295). config↔service 순환 해소(`7d46023`) |
+| 운영/CI 재현성 | 🟢 **S−** | push/PR CI 3 job·fresh-init postgres service·PIT job·의존성스캔 scheduled·timeout/concurrency. NVD 외부의존·V*.sql replay 백로그로 S− |
 
 ## 2-1. 패키지별 평가
 
@@ -43,7 +50,7 @@
 |--------|------|------|
 | `constant/enums/`, `constants/` | 🟢 A | Enum 체계화(+OpsDocType), MenuName |
 | `service/` (core), `response/` | 🟢 A | LogService fail-soft, ApiResult 표준 envelope |
-| `controller/` | 🟡 B | 거대클래스 분리 완료(Document/InspectReport/Excel)·ApiResult 부분 이관, 잔여 도메인키 Map |
+| `controller/` | 🟡 B+ | 거대클래스 분리 완료·ApiResult 부분 이관 + **standalone MockMvc net 3종(Sw·Quotation·Document)으로 HTTP 표면 박제**. 잔여 도메인키 Map(응답계약) |
 | `dto/` | 🟡 B | record/DTO 화 진행(§6-4), 요청바디·jsonb 보존군 잔존 |
 | `quotation/` | 🟡 B | S3/S8/S8-C 완료, S8-B 보류 |
 | `domain/workplan/`, `domain/ops/` | 🟢 A | S1/S10/S16 + ops-fault-support 정규화 |
@@ -73,4 +80,4 @@
 
 ---
 
-*Last updated: 2026-06-23 · 코드 대조 재채점(문서 A 승급): 활성 게이트·차원별 등급·패키지 현행화. 등급=게이트 강제 불변식*
+*Last updated: 2026-06-29 · codex×Claude beyond-A 재평가(15커밋 후): 테스트 A→S·보안 A→A+·코드품질 B→B+·SQL/운영 S−·전체 A+. 전 게이트 CI 자동강제. 등급=게이트 강제 불변식*

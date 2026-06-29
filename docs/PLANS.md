@@ -7,7 +7,9 @@
 ## 1. 활성 로드맵
 
 ### 1-a. S-tier 품질 (현재 주력) — `docs/QUALITY_CHARTER.md`
-등급=게이트 강제 불변식. 진행: §6-4 Map→DTO(ratchet **188 plateau**)·§6-5 거대클래스 분리(부채 **0**)·PIT 뮤테이션 게이트(95%)·문서 A 승급(2026-06-23). 차원별 등급은 `docs/QUALITY_SCORE.md`. 잔여: 코드품질/아키텍처 B→A(응답형태 변경 결정 필요), beyond-A(Testcontainers·커버리지·CI — 미착수).
+등급=게이트 강제 불변식. 진행: §6-4 Map→DTO(ratchet **188 plateau**)·§6-5 거대클래스 분리(부채 **0**)·PIT 뮤테이션 게이트·문서 A. 차원별 등급은 `docs/QUALITY_SCORE.md`.
+- ✅ **beyond-A 완료(2026-06-29, codex×Claude 재평가)**: 전 게이트 **CI 매 push 강제**(GitHub Actions `ci.yml` gates+fresh-init-smoke+mutation 3 job)·**PIT 7→15클래스(94%)**·서비스 4종 뮤테이션 강화(52~81→94~98%)·**CSRF 정식화**·Testcontainers 부트스트랩·의존성스캔(scheduled, NVD키 대기)·**컨트롤러 standalone MockMvc net 3종**(Sw·Quotation·Document). → **테스트 S·전체 A+**.
+- 잔여(plateau/보류): 코드품질 B+→A(응답계약 Map 188=동적데이터/legacy/요청바디 보존군, 프론트 동반결정 — codex "0으로 만들지 말 것"), V*.sql 전체 fresh-init replay, 관측성(소규모, 나중).
 
 ### 1-b. 데이터 아키텍처 로드맵 (`docs/design-docs/data-architecture-roadmap.md`, Wave 1~4)
 - Wave 1~4: ✅ 완료 (S15/S16), S8-C 후속 ✅
