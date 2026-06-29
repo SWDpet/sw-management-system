@@ -155,7 +155,7 @@
                 });
                 if (rows.length === 1) { applyPerson(rows[0]); hint.textContent = '담당자 1명 자동 입력(수정 가능).'; }
                 else if (rows.length > 1) { hint.textContent = rows.length + '명 후보 — 이름 입력칸에서 선택하세요.'; }
-                else { hint.textContent = '기존 담당자 없음 — 새로 입력하면 ps_info 에 추가됩니다.'; }
+                else { hint.textContent = '기존 담당자 없음 — 새로 입력하면 담당자 명부에 등록됩니다.'; }
             });
     }
     function applyPerson(p) {
