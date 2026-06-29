@@ -106,6 +106,24 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- [beyond-A testcontainers] 신선 postgres 로 DB 통합테스트(운영DB 비접촉). 버전=spring-boot-dependencies BOM.
+             Docker 가용 시에만 실행(@Testcontainers disabledWithoutDocker). 로컬 Docker 없으면 skip. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- QR Code Generation (ZXing) -->
         <dependency>
             <groupId>com.google.zxing</groupId>
