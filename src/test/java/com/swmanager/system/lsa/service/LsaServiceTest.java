@@ -23,7 +23,8 @@ class LsaServiceTest {
     private final LsaRepository repo = mock(LsaRepository.class);
     private final PersonInfoRepository personRepo = mock(PersonInfoRepository.class);
     private final SigunguCodeRepository sigunguRepo = mock(SigunguCodeRepository.class);
-    private final LsaService service = new LsaService(repo, personRepo, sigunguRepo);
+    private final com.swmanager.system.repository.UserRepository userRepo = mock(com.swmanager.system.repository.UserRepository.class);
+    private final LsaService service = new LsaService(repo, personRepo, sigunguRepo, userRepo);
 
     private Lsa sample() {
         Lsa l = new Lsa();
@@ -246,6 +247,35 @@ class LsaServiceTest {
         when(repo.findById(404L)).thenReturn(java.util.Optional.empty());
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.delete(404L))
                 .isInstanceOf(com.swmanager.system.exception.ResourceNotFoundException.class);
+    }
+
+    // ===== P3-b: 발급자 후보 + 부서/팀 prefill =====
+
+    /** issuerCandidates: 활성 사용자 실명 distinct·정렬·blank 제거. */
+    @Test
+    void issuerCandidates_distinctSortedNonBlank() {
+        com.swmanager.system.domain.User a = new com.swmanager.system.domain.User(); a.setUsername("박욱진");
+        com.swmanager.system.domain.User b = new com.swmanager.system.domain.User(); b.setUsername("김한준");
+        com.swmanager.system.domain.User c = new com.swmanager.system.domain.User(); c.setUsername("박욱진"); // 중복
+        com.swmanager.system.domain.User d = new com.swmanager.system.domain.User(); d.setUsername("  ");   // blank
+        when(userRepo.findByEnabledTrue()).thenReturn(List.of(a, b, c, d));
+
+        assertThat(service.issuerCandidates()).containsExactly("김한준", "박욱진");   // 정렬·중복/blank 제거
+    }
+
+    /** findPersonCandidates: PersonRow 에 부서/팀도 매핑(prefill 용). */
+    @Test
+    void findPersonCandidates_mapsDeptTeam() {
+        PersonInfo p = new PersonInfo();
+        p.setCityNm("전라남도"); p.setDistNm("강진군"); p.setDeptNm("도시과"); p.setTeamNm("GIS팀");
+        p.setUserNm("홍길동"); p.setTel("061-1"); p.setEmail("h@x.kr");
+        when(personRepo.findCandidates("전라남도", "강진군", null, null)).thenReturn(List.of(p));
+
+        var rows = service.findPersonCandidates("전라남도", "강진군", null, null);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).deptNm()).isEqualTo("도시과");
+        assertThat(rows.get(0).teamNm()).isEqualTo("GIS팀");
+        assertThat(rows.get(0).userNm()).isEqualTo("홍길동");
     }
 
     // ===== 캐스케이드 =====

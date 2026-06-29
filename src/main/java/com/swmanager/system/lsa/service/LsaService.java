@@ -9,6 +9,7 @@ import com.swmanager.system.lsa.dto.PersonRow;
 import com.swmanager.system.lsa.repository.LsaRepository;
 import com.swmanager.system.repository.PersonInfoRepository;
 import com.swmanager.system.repository.SigunguCodeRepository;
+import com.swmanager.system.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +27,19 @@ public class LsaService {
     private final LsaRepository lsaRepository;
     private final PersonInfoRepository personInfoRepository;
     private final SigunguCodeRepository sigunguCodeRepository;
+    private final UserRepository userRepository;
 
     /** 시도 목록(드롭다운). */
     public List<String> sidoList() {
         return sigunguCodeRepository.findDistinctSidoNm();
+    }
+
+    /** 발급자 후보(활성 사용자 실명, 중복 제거) — 관리자 발급자 선택용. */
+    public List<String> issuerCandidates() {
+        return userRepository.findByEnabledTrue().stream()
+                .map(com.swmanager.system.domain.User::getUsername)
+                .filter(java.util.Objects::nonNull).filter(n -> !n.isBlank())
+                .distinct().sorted().toList();
     }
 
     /** 시군구 목록(시도 캐스케이드) — sggNm 만. */

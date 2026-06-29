@@ -91,6 +91,7 @@ public class LsaController {
         model.addAttribute("sidoList", lsaService.sidoList());
         model.addAttribute("isAdmin", isAdmin());
         model.addAttribute("issuer", getCurrentUser().getUser().getUsername());   // 로그인 실명
+        model.addAttribute("userList", lsaService.issuerCandidates());            // 관리자 발급자 선택
         return "lsa/lsa-form";
     }
 
@@ -113,6 +114,7 @@ public class LsaController {
         model.addAttribute("sidoList", lsaService.sidoList());
         model.addAttribute("isAdmin", isAdmin());
         model.addAttribute("issuer", getCurrentUser().getUser().getUsername());
+        model.addAttribute("userList", lsaService.issuerCandidates());
         return "lsa/lsa-form";
     }
 

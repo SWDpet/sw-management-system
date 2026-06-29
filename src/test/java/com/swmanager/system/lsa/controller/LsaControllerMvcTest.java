@@ -106,10 +106,11 @@ class LsaControllerMvcTest {
     void newForm_edit_rendersForm() throws Exception {
         login("EDIT", "ROLE_USER");
         when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
+        when(lsaService.issuerCandidates()).thenReturn(java.util.List.of("박욱진", "테스터"));
         mockMvc.perform(get("/lsa/new"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("lsa/lsa-form"))
-                .andExpect(model().attributeExists("sidoList"))
+                .andExpect(model().attributeExists("sidoList", "userList"))
                 .andExpect(model().attribute("isAdmin", false))
                 .andExpect(model().attribute("issuer", "테스터"));   // 로그인 실명
     }
@@ -198,10 +199,11 @@ class LsaControllerMvcTest {
         login("EDIT", "ROLE_USER");
         when(lsaService.getById(5L)).thenReturn(dto());
         when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
+        when(lsaService.issuerCandidates()).thenReturn(java.util.List.of("박욱진"));
         mockMvc.perform(get("/lsa/5/edit"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("lsa/lsa-form"))
-                .andExpect(model().attributeExists("lsa", "sidoList"));
+                .andExpect(model().attributeExists("lsa", "sidoList", "userList"));
     }
 
     // ── 15. /{id}/edit VIEW → 403 ────────────────────────────────────────────
