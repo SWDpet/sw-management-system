@@ -66,9 +66,11 @@ class InspectReportServiceTest {
     }
 
     @Test
-    void getPreviousVisits_valid_delegates() {
-        when(visitLogRepository.findPreviousVisitsByProject(1L, "2026-05")).thenReturn(List.of());
-        assertThat(service.getPreviousVisits(1L, "2026-05")).isEmpty();
+    void getPreviousVisits_valid_returnsMappedNonEmpty() {
+        InspectVisitLog v = new InspectVisitLog(); v.setReportId(1L);
+        when(visitLogRepository.findPreviousVisitsByProject(1L, "2026-05")).thenReturn(List.of(v));
+        // 비빈 데이터 반환 단언 → EmptyObjectReturnVals(L191, return List.of()) mutant kill
+        assertThat(service.getPreviousVisits(1L, "2026-05")).hasSize(1);
         verify(visitLogRepository).findPreviousVisitsByProject(1L, "2026-05");
     }
 
@@ -92,7 +94,9 @@ class InspectReportServiceTest {
         var items = service.getTemplateItems("UPIS");
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getSection()).isEqualTo("서버");
+        assertThat(items.get(0).getCategory()).isEqualTo("성능");    // L282 setCategory kill
         assertThat(items.get(0).getItemName()).isEqualTo("CPU");
+        assertThat(items.get(0).getItemMethod()).isEqualTo("육안");  // L284 setItemMethod kill
         assertThat(items.get(0).getSortOrder()).isEqualTo(1);
     }
 
@@ -129,20 +133,28 @@ class InspectReportServiceTest {
     void delete_softDeletes_andCleansOpsDocs() {
         InspectReport r = new InspectReport();
         r.setId(3L); r.setInspectMonth("2026-05");
+        r.setBatchId("BATCH-999");   // 사전 batchId → setBatchId(null)(L226) 제거 mutant 검출
         when(reportRepository.findById(3L)).thenReturn(Optional.of(r));
         when(reportRepository.save(any(InspectReport.class))).thenAnswer(i -> i.getArgument(0));
-        when(opsDocumentRepository.findByDocNo(anyString())).thenReturn(Optional.empty());
+        // 3포맷 모두 문서 존재 → ifPresent delete(L235·L240) 실행 검증
+        OpsDocument doc1 = new OpsDocument(), doc2 = new OpsDocument(), doc3 = new OpsDocument();
+        when(opsDocumentRepository.findByDocNo("INSP-2026-3")).thenReturn(Optional.of(doc1));
+        when(opsDocumentRepository.findByDocNo("INSP-3")).thenReturn(Optional.of(doc2));
+        when(opsDocumentRepository.findByDocNo("INSP-2026-05-3")).thenReturn(Optional.of(doc3));
 
         service.delete(3L);
 
         assertThat(r.getDeletedAt()).isNotNull();          // soft delete
-        assertThat(r.getBatchId()).isNull();
+        assertThat(r.getBatchId()).isNull();               // L226 setBatchId(null)
         verify(reportRepository).save(r);
         verify(qrBatchRepository).deleteByReportId(3L);
-        // INSP-2026-3 / INSP-3 / INSP-2026-05-3 3포맷 룩업
+        // INSP-2026-3 / INSP-3 / INSP-2026-05-3 3포맷 룩업 + 존재 시 삭제
         verify(opsDocumentRepository).findByDocNo("INSP-2026-3");
         verify(opsDocumentRepository).findByDocNo("INSP-3");
         verify(opsDocumentRepository).findByDocNo("INSP-2026-05-3");
+        verify(opsDocumentRepository).delete(doc1);        // L235 ifPresent delete
+        verify(opsDocumentRepository).delete(doc2);
+        verify(opsDocumentRepository).delete(doc3);        // L240 ifPresent delete
     }
 
     // ===== save (신규 보고서 — currentUser 폴백 + 비-COMPLETED) =====
@@ -256,13 +268,14 @@ class InspectReportServiceTest {
     }
 
     @Test
-    void save_savesVisits_withSortOrderAssigned() {
+    void save_savesVisits_withSortOrderAssigned_andIdReset() {
         SecurityContextHolder.clearContext();
         InspectReportDTO dto = new InspectReportDTO();
         dto.setStatus(DocumentStatus.DRAFT);                  // 신규(id=null)
-        InspectVisitLogDTO v1 = new InspectVisitLogDTO();     // sortOrder null → 1
+        InspectVisitLogDTO v1 = new InspectVisitLogDTO(); v1.setId(999L);  // 사전 id → setId(null)(L113) 검출
         InspectVisitLogDTO v2 = new InspectVisitLogDTO(); v2.setSortOrder(0);   // 0 → 2
-        dto.setVisits(List.of(v1, v2));
+        InspectVisitLogDTO v3 = new InspectVisitLogDTO(); v3.setSortOrder(5);   // 비0 → 보존(NegateConditionals L114 kill)
+        dto.setVisits(List.of(v1, v2, v3));
 
         when(reportRepository.save(any(InspectReport.class))).thenAnswer(i -> {
             InspectReport r = i.getArgument(0); r.setId(70L); return r;
@@ -272,8 +285,10 @@ class InspectReportServiceTest {
         service.save(dto);
 
         ArgumentCaptor<InspectVisitLog> cap = ArgumentCaptor.forClass(InspectVisitLog.class);
-        verify(visitLogRepository, times(2)).save(cap.capture());
-        assertThat(cap.getAllValues()).extracting(InspectVisitLog::getSortOrder).containsExactly(1, 2);
+        verify(visitLogRepository, times(3)).save(cap.capture());
+        // v1(null→1), v2(0→2), v3(5 보존). id 는 모두 null 로 리셋(L113).
+        assertThat(cap.getAllValues()).extracting(InspectVisitLog::getSortOrder).containsExactly(1, 2, 5);
+        assertThat(cap.getAllValues()).extracting(InspectVisitLog::getId).containsOnlyNulls();
     }
 
     @Test
@@ -437,5 +452,109 @@ class InspectReportServiceTest {
         verify(opsDocumentRepository).findByDocNo(matches("INSP-\\d{4}-3"));  // 연도 fallback(month null) 경로
         verify(opsDocumentRepository).findByDocNo("INSP-3");
         verify(opsDocumentRepository, never()).findByDocNo(matches("INSP-\\d{4}-\\d{2}-3"));  // month null → 월포함 docNo 미조회
+    }
+
+    // ===== A6: save 수정 경로에서 기존 보고서 부재 → orElseThrow(L62~63 커버 + NullReturnVals kill) =====
+
+    @Test
+    void save_update_existingNotFound_throws() {
+        SecurityContextHolder.clearContext();
+        InspectReportDTO dto = new InspectReportDTO();
+        dto.setId(404L); dto.setStatus(DocumentStatus.DRAFT);   // id 보유 → 수정 경로 → findById
+        when(reportRepository.findById(404L)).thenReturn(Optional.empty());
+        when(messages.get(eq("error.inspect_report.not_found"), any())).thenReturn("보고서 없음");
+        // 메시지 단언 → orElseThrow 람다 NullReturnVals(null→NPE) mutant kill
+        assertThatThrownBy(() -> service.save(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("보고서 없음");
+    }
+
+    // ===== A7: findById 가 visits/checkResults/previousVisits 를 채우는지(VoidMethodCall + 분기 kill) =====
+
+    @Test
+    void findById_populatesAllCollections_withPreviousVisits() {
+        InspectReport r = new InspectReport();
+        r.setId(40L); r.setPjtId(1L); r.setInspectMonth("2026-05");   // pjtId+month → previousVisits 분기(L163)
+        when(reportRepository.findById(40L)).thenReturn(Optional.of(r));
+        InspectVisitLog v = new InspectVisitLog(); v.setReportId(40L);
+        when(visitLogRepository.findByReportIdOrderBySortOrderAsc(40L)).thenReturn(List.of(v));
+        InspectVisitLog pv = new InspectVisitLog(); pv.setReportId(40L);
+        when(visitLogRepository.findPreviousVisitsByProject(1L, "2026-05")).thenReturn(List.of(pv));
+        InspectCheckResult cr = new InspectCheckResult(); cr.setSection("S");
+        when(checkResultRepository.findByReportIdOrderBySectionAscSortOrderAsc(40L)).thenReturn(List.of(cr));
+
+        InspectReportDTO dto = service.findById(40L);
+
+        assertThat(dto.getVisits()).hasSize(1);            // L160 setVisits kill
+        assertThat(dto.getPreviousVisits()).hasSize(1);    // L163 분기 + L169 setPreviousVisits kill
+        assertThat(dto.getCheckResults()).hasSize(1);      // L177 setCheckResults kill
+    }
+
+    @Test
+    void findById_noPjtId_skipsPreviousVisits() {
+        InspectReport r = new InspectReport();
+        r.setId(41L); r.setPjtId(null); r.setInspectMonth("2026-05");   // pjtId null → previousVisits skip
+        when(reportRepository.findById(41L)).thenReturn(Optional.of(r));
+        when(visitLogRepository.findByReportIdOrderBySortOrderAsc(41L)).thenReturn(List.of());
+        when(checkResultRepository.findByReportIdOrderBySectionAscSortOrderAsc(41L)).thenReturn(List.of());
+
+        service.findById(41L);
+
+        verify(visitLogRepository, never()).findPreviousVisitsByProject(any(), any());   // L163 분기
+    }
+
+    // ===== A8: save 신규의 checkResult id 리셋(L128) =====
+
+    @Test
+    void save_new_checkResult_idReset() {
+        SecurityContextHolder.clearContext();
+        InspectReportDTO dto = new InspectReportDTO();
+        dto.setStatus(DocumentStatus.DRAFT);
+        InspectCheckResultDTO cr = new InspectCheckResultDTO();
+        cr.setSection("S"); cr.setId(888L);   // 사전 id → setId(null)(L128) 제거 mutant 검출
+        dto.setCheckResults(List.of(cr));
+
+        when(reportRepository.save(any(InspectReport.class))).thenAnswer(i -> {
+            InspectReport r = i.getArgument(0); r.setId(75L); return r;
+        });
+        stubFinalFindById(75L, DocumentStatus.DRAFT);
+
+        service.save(dto);
+
+        ArgumentCaptor<InspectCheckResult> cap = ArgumentCaptor.forClass(InspectCheckResult.class);
+        verify(checkResultRepository).save(cap.capture());
+        assertThat(cap.getValue().getId()).isNull();   // L128 setId(null)
+    }
+
+    // ===== A9: delete month 길이 경계(L232 >= 4) =====
+
+    @Test
+    void delete_monthLength4_usesSubstringYyyy() {
+        InspectReport r = new InspectReport();
+        r.setId(3L); r.setInspectMonth("2026");   // length 4 → `>= 4` true → substring(0,4)="2026", length>=7 false
+        when(reportRepository.findById(3L)).thenReturn(Optional.of(r));
+        when(reportRepository.save(any(InspectReport.class))).thenAnswer(i -> i.getArgument(0));
+        when(opsDocumentRepository.findByDocNo(anyString())).thenReturn(Optional.empty());
+
+        service.delete(3L);
+
+        verify(opsDocumentRepository).findByDocNo("INSP-2026-3");   // substring yyyy (fallback 아님)
+        verify(opsDocumentRepository).findByDocNo("INSP-3");
+        verify(opsDocumentRepository, never()).findByDocNo(matches("INSP-\\d{4}-\\d{2}-3"));  // length<7 → 월 블록 skip
+    }
+
+    @Test
+    void delete_monthLength3_usesCurrentYearFallback() {
+        InspectReport r = new InspectReport();
+        r.setId(3L); r.setInspectMonth("202");    // length 3 → `>= 4` false → 연도 now() fallback
+        when(reportRepository.findById(3L)).thenReturn(Optional.of(r));
+        when(reportRepository.save(any(InspectReport.class))).thenAnswer(i -> i.getArgument(0));
+        when(opsDocumentRepository.findByDocNo(anyString())).thenReturn(Optional.empty());
+
+        service.delete(3L);
+
+        // length<4 → substring 미사용, now().getYear() fallback (연말 경계 회피 위해 정규식)
+        verify(opsDocumentRepository).findByDocNo(matches("INSP-\\d{4}-3"));
+        verify(opsDocumentRepository).findByDocNo("INSP-3");
     }
 }

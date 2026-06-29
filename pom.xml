@@ -475,6 +475,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.service.inspection.QrBatchPayloadAdapter</param>
                                 <param>com.swmanager.system.service.ops.RuleKbMatcher</param>
                                 <param>com.swmanager.system.quotation.service.QuotationService</param>
+                                <param>com.swmanager.system.service.InspectReportService</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.swmanager.system.response.ApiResultTest</param>
@@ -490,6 +491,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.service.inspection.QrBatchPayloadAdapterTest</param>
                                 <param>com.swmanager.system.service.ops.RuleKbMatcherTest</param>
                                 <param>com.swmanager.system.quotation.service.QuotationServiceTest</param>
+                                <param>com.swmanager.system.service.InspectReportServiceTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>
@@ -501,13 +503,14 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>HTML</param>
                                 <param>XML</param>
                             </outputFormats>
-                            <!-- 게이트(ratchet floor): 고신호 12종(NO_COV≤2) KILLED/TOTAL 현재 329/341=96.5%.
-                                 이력: 7종(90)→11종(93, 2026-06-28 AuthSummary readAuth 강화 72→92%)
-                                 →12종(94, 2026-06-29 QuotationService 편입). QuotationService 는 테스트 강화로
-                                 뮤테이션 52→97.4%(생존 68→4: ArgumentCaptor 저장엔티티 전필드단언+조건분기 양쪽+
-                                 비빈 distinct 데이터; 잔존 4=equivalent roundDown L30·setLastSeq(0) 등). floor 93→94
-                                 ratchet(실측 96.5%, ~2.5pt 헤드룸 — floor 정책 실측−2~2.5pp 일관). HwpxXmlSupport(50%
-                                 XML정규식)·SwController(68%)·InspectionQrBatch(44%)·DTO(@Data)는 게이트 제외. -->
+                            <!-- 게이트(ratchet floor): 고신호 13종(NO_COV≤2) KILLED/TOTAL 현재 406/419=96.9%.
+                                 이력: 7종(90)→11종(93, 2026-06-28 AuthSummary 72→92%)→12종(94, QuotationService
+                                 52→97.4% 편입)→13종(2026-06-29 InspectReportService 78→98.7% 편입). 약한테스트 강화법
+                                 =PIT 생존 mutator별(VoidMethodCall→ArgumentCaptor 저장엔티티 전필드단언, NegateConditionals
+                                 →분기양쪽, EmptyObjectReturnVals→비빈데이터, NO_COV→경로 테스트). threshold 94 유지
+                                 (실측 96.9%, ~2.9pt 헤드룸 — 정책 −2.5pp 보다 약간 보수적·13종 안정 클래스라 안전측). 잔존=equivalent(roundDown
+                                 L30·setLastSeq(0)·delete month 경계 등). HwpxXmlSupport(50%)·SwController(68%)·
+                                 WorkPlanService(70%)·InspectionQrBatch(44%)·DTO(@Data)는 게이트 제외(더 큰 강화 필요). -->
                             <mutationThreshold>94</mutationThreshold>
                             <failWhenNoMutations>true</failWhenNoMutations>
                         </configuration>
