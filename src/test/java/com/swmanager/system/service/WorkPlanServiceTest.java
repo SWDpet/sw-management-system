@@ -1,6 +1,7 @@
 package com.swmanager.system.service;
 
 import com.swmanager.system.constant.enums.WorkPlanStatus;
+import com.swmanager.system.domain.Infra;
 import com.swmanager.system.domain.SigunguCode;
 import com.swmanager.system.domain.SwProject;
 import com.swmanager.system.domain.User;
@@ -241,6 +242,115 @@ class WorkPlanServiceTest {
 
         assertThat(saved.getTargetSysNm()).isEqualTo("상수도 시스템");
         assertThat(saved.getRegionDistNm()).isEqualTo("고성군");        // 서버 출처
+    }
+
+    // ===== beyond-A 뮤테이션 강화: saveWorkPlan 전 필드 캡처 + set-null 분기(prior 값) + 헬퍼 분기 =====
+
+    /** saveWorkPlan 기본정보 setter 전 필드 단언(planType·processStep·title·description·location·statusReason·endDate). */
+    @Test
+    void saveWorkPlan_capturesAllBasicFields() {
+        WorkPlanDTO dto = WorkPlanDTO.builder()
+                .planType("SUPPORT").processStep(3).title("제목").description("설명")
+                .location("위치").startDate("2026-06-01").endDate("2026-06-30")
+                .repeatType("WEEKLY").status("IN_PROGRESS").statusReason("사유").build();
+
+        WorkPlan saved = service.saveWorkPlan(dto, new User());
+
+        assertThat(saved.getPlanType()).isEqualTo("SUPPORT");           // L143
+        assertThat(saved.getProcessStep()).isEqualTo(3);                // L144
+        assertThat(saved.getTitle()).isEqualTo("제목");                  // L145
+        assertThat(saved.getDescription()).isEqualTo("설명");            // L146
+        assertThat(saved.getStartDate()).isEqualTo(LocalDate.of(2026, 6, 1));  // L147
+        assertThat(saved.getEndDate()).isEqualTo(LocalDate.of(2026, 6, 30)); // L148(유효 날짜)
+        assertThat(saved.getLocation()).isEqualTo("위치");               // L149
+        assertThat(saved.getStatusReason()).isEqualTo("사유");           // L152
+    }
+
+    /** 계약대상(projId) → 기존 infra 를 null 로 비움(L171). */
+    @Test
+    void saveWorkPlan_contractTarget_clearsExistingInfra() {
+        WorkPlan existing = new WorkPlan();
+        existing.setInfra(new Infra());                                  // prior infra
+        when(workPlanRepository.findById(11)).thenReturn(Optional.of(existing));
+        SwProject proj = new SwProject();
+        proj.setProjId(200L); proj.setCityNm("서울특별시"); proj.setDistNm("강남구");
+        when(swProjectRepository.findById(200L)).thenReturn(Optional.of(proj));
+        when(sigunguCodeRepository.findBySidoNmAndSggNm(anyString(), anyString())).thenReturn(List.of());
+
+        WorkPlanDTO dto = WorkPlanDTO.builder().planId(11).projId(200L).planType("INSPECT").title("t").build();
+        WorkPlan saved = service.saveWorkPlan(dto, new User());
+
+        assertThat(saved.getInfra()).isNull();                          // L171 setInfra(null)
+        assertThat(saved.getProject()).isSameAs(proj);
+    }
+
+    /** 미계약 직접입력(SUPPORT) → 기존 project/infra 를 null 로 비움(L198·199). */
+    @Test
+    void saveWorkPlan_directInput_clearsExistingProjectInfra() {
+        WorkPlan existing = new WorkPlan();
+        existing.setProject(new SwProject()); existing.setInfra(new Infra());
+        when(workPlanRepository.findById(13)).thenReturn(Optional.of(existing));
+        SigunguCode sgg = new SigunguCode();
+        sgg.setAdmSectC("42820"); sgg.setSidoNm("강원도"); sgg.setSggNm("고성군");
+        when(sigunguCodeRepository.findById("42820")).thenReturn(Optional.of(sgg));
+
+        WorkPlanDTO dto = WorkPlanDTO.builder().planId(13).planType("SUPPORT").title("t")
+                .regionCode("42820").targetSysNm("시스템").build();
+        WorkPlan saved = service.saveWorkPlan(dto, new User());
+
+        assertThat(saved.getProject()).isNull();                        // L198
+        assertThat(saved.getInfra()).isNull();                          // L199
+        assertThat(saved.getRegionCode()).isEqualTo("42820");
+    }
+
+    /** 대상 없음 → 기존 project/infra/region 전부 비움(L208~210 + clearRegion L257~260). */
+    @Test
+    void saveWorkPlan_noTarget_clearsExistingProjectInfraAndRegion() {
+        WorkPlan existing = new WorkPlan();
+        existing.setProject(new SwProject()); existing.setInfra(new Infra());
+        existing.setRegionCode("999"); existing.setRegionCityNm("c");
+        existing.setRegionDistNm("d"); existing.setTargetSysNm("s");
+        when(workPlanRepository.findById(12)).thenReturn(Optional.of(existing));
+
+        WorkPlanDTO dto = WorkPlanDTO.builder().planId(12).planType("SUPPORT").title("t").build();  // 대상 없음
+        WorkPlan saved = service.saveWorkPlan(dto, new User());
+
+        assertThat(saved.getProject()).isNull();                        // L208
+        assertThat(saved.getInfra()).isNull();                          // L209
+        assertThat(saved.getRegionCode()).isNull();                     // L257 clearRegion
+        assertThat(saved.getRegionCityNm()).isNull();                   // L258
+        assertThat(saved.getRegionDistNm()).isNull();                   // L259
+        assertThat(saved.getTargetSysNm()).isNull();                    // L260
+    }
+
+    /** resolveRegionCode: cityNm 공백 → regionCode null(L215 isBlank 분기 + EmptyObjectReturnVals kill). */
+    @Test
+    void saveWorkPlan_contractTarget_blankCityNm_regionCodeNull() {
+        SwProject proj = new SwProject();
+        proj.setProjId(201L); proj.setCityNm("  "); proj.setDistNm("강남구");
+        when(swProjectRepository.findById(201L)).thenReturn(Optional.of(proj));
+
+        WorkPlanDTO dto = WorkPlanDTO.builder().projId(201L).planType("INSPECT").title("t").build();
+        WorkPlan saved = service.saveWorkPlan(dto, new User());
+
+        assertThat(saved.getRegionCode()).isNull();                     // L215 isBlank(cityNm) → null
+    }
+
+    /** resolveRegionCode: distNm 도청 → 시도 self-행 직접 조회(L217 도청/본청 분기). */
+    @Test
+    void saveWorkPlan_contractTarget_provincialOffice_usesSelfRow() {
+        SwProject proj = new SwProject();
+        proj.setProjId(202L); proj.setCityNm("강원도"); proj.setDistNm("도청");
+        when(swProjectRepository.findById(202L)).thenReturn(Optional.of(proj));
+        SigunguCode self = new SigunguCode(); self.setAdmSectC("42000");
+        when(sigunguCodeRepository.findBySidoNmAndSggNm("강원도", "강원도")).thenReturn(List.of(self));
+
+        WorkPlanDTO dto = WorkPlanDTO.builder().projId(202L).planType("INSPECT").title("t").build();
+        WorkPlan saved = service.saveWorkPlan(dto, new User());
+
+        assertThat(saved.getRegionCode()).isEqualTo("42000");           // 도청 → firstAdmSectC(city,city)
+        // 도청 분기는 ("강원도","도청") 조회 안 함 → NegateConditionals(L217) mutant 검출
+        verify(sigunguCodeRepository, never()).findBySidoNmAndSggNm("강원도", "도청");
     }
 
     // ===== 담당자/부모계획 연동 + parseDate + 상태/반복 override =====
