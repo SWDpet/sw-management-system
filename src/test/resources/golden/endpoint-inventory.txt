@@ -108,7 +108,10 @@ GET /license/registry/list
 GET /license/registry/upload
 GET /login
 GET /logout
+GET /lsa/api/districts
+GET /lsa/api/persons
 GET /lsa/list
+GET /lsa/new
 GET /mypage
 GET /ops-doc/api/attachments/{docId}
 GET /ops-doc/api/engineers
@@ -207,6 +210,7 @@ POST /infra/delete/{id}
 POST /infra/save
 POST /license/registry/update
 POST /license/registry/upload
+POST /lsa/save
 POST /mypage/password
 POST /mypage/update
 POST /ops-doc/api/attachment/upload/{docId}

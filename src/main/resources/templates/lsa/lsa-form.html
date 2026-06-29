@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>LSA 발급 작성 - SW Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <link rel="stylesheet" href="/css/design-system.css">
+    <style>
+        body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); margin:0; color:var(--text); font-size:13.5px; }
+        .container { max-width:1000px; margin:auto; padding:28px 32px 56px; }
+        .form-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+        .form-title { margin:0; font-size:1.4rem; font-weight:700; display:flex; align-items:center; gap:10px; }
+        .form-section { background:var(--surface); padding:24px 26px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06); border:1px solid var(--border); margin-bottom:18px; }
+        .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:18px; margin-bottom:8px; }
+        .form-group { display:flex; flex-direction:column; }
+        .form-label { font-size:0.85rem; font-weight:600; color:var(--text); margin-bottom:7px; }
+        input[type=text], select { font-family:'Noto Sans KR',sans-serif; border:1px solid var(--border2); border-radius:7px; padding:9px 12px; font-size:0.86rem; background:var(--surface); }
+        input[type=text]:focus, select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-lt); }
+        input[readonly] { background:var(--bg); color:var(--muted); }
+        .btn { display:inline-flex; align-items:center; gap:5px; padding:8px 18px; border-radius:8px; font-size:0.86rem; font-weight:600; text-decoration:none; border:none; cursor:pointer; transition:all 0.15s; font-family:'Noto Sans KR',sans-serif; }
+        .btn-primary { background:var(--primary); color:#fff; } .btn-primary:hover { background:var(--primary2); }
+        .btn-outline { background:var(--surface); color:var(--primary); border:1.5px solid var(--primary); } .btn-outline:hover { background:var(--primary-lt); }
+        .btn-ghost { background:var(--surface); color:var(--text2); border:1.5px solid var(--border2); }
+        .form-actions { display:flex; gap:10px; justify-content:flex-end; }
+        .hint { font-size:0.76rem; color:var(--muted); margin-top:6px; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+
+<div class="container">
+    <div class="form-header">
+        <h2 class="form-title"><i class="fas fa-certificate" style="color:var(--primary);"></i> LSA 발급 작성</h2>
+    </div>
+
+    <form method="post" th:action="@{/lsa/save}">
+        <div class="form-section">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">시도 <span style="color:var(--danger,#DA1F1F)">*</span></label>
+                    <select id="cityNm" name="cityNm" required>
+                        <option value="">-- 시도 선택 --</option>
+                        <option th:each="s : ${sidoList}" th:value="${s}" th:text="${s}"></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">시군구 <span style="color:var(--danger,#DA1F1F)">*</span></label>
+                    <select id="distNm" name="distNm" required><option value="">-- 시군구 선택 --</option></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">부서</label>
+                    <input type="text" id="deptNm" name="deptNm">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">팀</label>
+                    <input type="text" id="teamNm" name="teamNm">
+                </div>
+            </div>
+            <div style="margin:4px 0 16px;">
+                <button type="button" class="btn btn-outline" onclick="loadPersons()"><i class="fas fa-user-check"></i> 담당자 불러오기(ps_info)</button>
+                <span class="hint" id="personHint"></span>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">이름 <span style="color:var(--danger,#DA1F1F)">*</span></label>
+                    <input type="text" id="userNm" name="userNm" list="personList" required>
+                    <datalist id="personList"></datalist>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">전화번호</label>
+                    <input type="text" id="tel" name="tel">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">이메일</label>
+                    <input type="text" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">버전 <span style="color:var(--danger,#DA1F1F)">*</span></label>
+                    <input type="text" id="version" name="version" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">발급자</label>
+                    <input type="text" id="issuer" name="issuer" th:value="${issuer}"
+                           th:readonly="${!isAdmin}">
+                    <span class="hint" th:if="${!isAdmin}">로그인 사용자로 자동 기록됩니다.</span>
+                    <span class="hint" th:if="${isAdmin}">관리자는 발급자를 변경할 수 있습니다.</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-ghost" th:href="@{/lsa/list}">취소</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 저장</button>
+        </div>
+    </form>
+</div>
+
+<script th:inline="none">
+    // 시군구 캐스케이드
+    document.getElementById('cityNm').addEventListener('change', function () {
+        var sido = this.value, dist = document.getElementById('distNm');
+        dist.innerHTML = '<option value="">-- 시군구 선택 --</option>';
+        if (!sido) return;
+        fetch('/lsa/api/districts?sido=' + encodeURIComponent(sido))
+            .then(function (r) { return r.json(); })
+            .then(function (list) {
+                list.forEach(function (sgg) {
+                    var o = document.createElement('option'); o.value = sgg; o.textContent = sgg; dist.appendChild(o);
+                });
+            });
+    });
+    // ps_info 담당자 prefill
+    var lastCandidates = [];
+    function loadPersons() {
+        var city = document.getElementById('cityNm').value, dist = document.getElementById('distNm').value;
+        var dept = document.getElementById('deptNm').value, team = document.getElementById('teamNm').value;
+        var hint = document.getElementById('personHint');
+        if (!city || !dist) { hint.textContent = '시도·시군구를 먼저 선택하세요.'; return; }
+        var q = '?city=' + encodeURIComponent(city) + '&dist=' + encodeURIComponent(dist)
+              + '&dept=' + encodeURIComponent(dept) + '&team=' + encodeURIComponent(team);
+        fetch('/lsa/api/persons' + q)
+            .then(function (r) { return r.json(); })
+            .then(function (rows) {
+                lastCandidates = rows;
+                var dl = document.getElementById('personList'); dl.innerHTML = '';
+                rows.forEach(function (p) {
+                    var o = document.createElement('option'); o.value = p.userNm; dl.appendChild(o);
+                });
+                if (rows.length === 1) { applyPerson(rows[0]); hint.textContent = '담당자 1명 자동 입력(수정 가능).'; }
+                else if (rows.length > 1) { hint.textContent = rows.length + '명 후보 — 이름 입력칸에서 선택하세요.'; }
+                else { hint.textContent = '기존 담당자 없음 — 새로 입력하면 ps_info 에 추가됩니다.'; }
+            });
+    }
+    function applyPerson(p) {
+        document.getElementById('userNm').value = p.userNm || '';
+        document.getElementById('tel').value = p.tel || '';
+        document.getElementById('email').value = p.email || '';
+    }
+    // 이름 datalist 선택 시 tel/email 채움
+    document.getElementById('userNm').addEventListener('change', function () {
+        var match = lastCandidates.find(function (p) { return p.userNm === this.value; }, this);
+        if (match) applyPerson(match);
+    });
+</script>
+</body>
+</html>

@@ -2,11 +2,13 @@ package com.swmanager.system.lsa.controller;
 
 import com.swmanager.system.domain.User;
 import com.swmanager.system.exception.GlobalExceptionHandler;
+import com.swmanager.system.lsa.dto.LsaForm;
 import com.swmanager.system.lsa.service.LsaService;
 import com.swmanager.system.security.CustomUserDetails;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
@@ -95,5 +98,71 @@ class LsaControllerMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("lsa/lsa-list"))
                 .andExpect(model().attribute("canEdit", true));
+    }
+
+    // ── 6. /new EDIT → 200 + lsa-form + model(sidoList/isAdmin/issuer) ───────
+    @Test
+    void newForm_edit_rendersForm() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
+        mockMvc.perform(get("/lsa/new"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lsa/lsa-form"))
+                .andExpect(model().attributeExists("sidoList"))
+                .andExpect(model().attribute("isAdmin", false))
+                .andExpect(model().attribute("issuer", "테스터"));   // 로그인 실명
+    }
+
+    // ── 7. /new VIEW(편집권한 부족) → checkEditAuth 403 ───────────────────────
+    @Test
+    void newForm_viewOnly_403() throws Exception {
+        login("VIEW", "ROLE_USER");
+        mockMvc.perform(get("/lsa/new")).andExpect(status().isForbidden());
+        verify(lsaService, never()).sidoList();
+    }
+
+    // ── 8. POST /save EDIT → 3xx /lsa/list + 비관리자 발급자 강제(실명) ────────
+    @Test
+    void save_edit_nonAdmin_forcesIssuerToLoginName() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.create(any(), any(), any())).thenReturn(1L);
+        mockMvc.perform(post("/lsa/save")
+                        .param("cityNm", "전라남도").param("distNm", "강진군")
+                        .param("userNm", "홍길동").param("issuer", "위조된관리자"))   // 폼 위조 시도
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/lsa/list"));
+        ArgumentCaptor<String> issuer = ArgumentCaptor.forClass(String.class);
+        verify(lsaService).create(any(LsaForm.class), issuer.capture(), eq("tester"));
+        // 비관리자 → 폼 issuer 무시, 로그인 실명("테스터") 강제
+        org.assertj.core.api.Assertions.assertThat(issuer.getValue()).isEqualTo("테스터");
+    }
+
+    // ── 9. POST /save VIEW → checkEditAuth 403 ───────────────────────────────
+    @Test
+    void save_viewOnly_403() throws Exception {
+        login("VIEW", "ROLE_USER");
+        mockMvc.perform(post("/lsa/save").param("userNm", "x")).andExpect(status().isForbidden());
+        verify(lsaService, never()).create(any(), any(), any());
+    }
+
+    // ── 10. /api/districts VIEW → JSON ───────────────────────────────────────
+    @Test
+    void districts_api_returnsJson() throws Exception {
+        login("VIEW", "ROLE_USER");
+        when(lsaService.districtList("전라남도")).thenReturn(java.util.List.of("강진군"));
+        mockMvc.perform(get("/lsa/api/districts").param("sido", "전라남도"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$[0]").value("강진군"));
+    }
+
+    // ── 11. /api/persons VIEW → JSON (prefill 후보) ──────────────────────────
+    @Test
+    void persons_api_returnsJson() throws Exception {
+        login("VIEW", "ROLE_USER");
+        when(lsaService.findPersonCandidates(any(), any(), any(), any())).thenReturn(java.util.List.of());
+        mockMvc.perform(get("/lsa/api/persons").param("city", "전라남도").param("dist", "강진군"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"));
     }
 }

@@ -29,4 +29,14 @@ public interface PersonInfoRepository extends JpaRepository<PersonInfo, Long> {
            "p.tel LIKE %:kw% OR " +
            "p.email LIKE %:kw%)")
     Page<PersonInfo> findAllByKeyword(@Param("kw") String kw, Pageable pageable);
+
+    /**
+     * [LSA prefill/dedup] 지자체(시도·시군구) + 부서·팀 매칭 담당자 후보.
+     * dept/team 은 blank→null 정규화 후 호출(null 이면 해당 조건 무시).
+     */
+    @Query("SELECT p FROM PersonInfo p WHERE p.cityNm = :city AND p.distNm = :dist " +
+           "AND (:dept IS NULL OR p.deptNm = :dept) AND (:team IS NULL OR p.teamNm = :team) " +
+           "ORDER BY p.userNm")
+    java.util.List<PersonInfo> findCandidates(@Param("city") String city, @Param("dist") String dist,
+                                              @Param("dept") String dept, @Param("team") String team);
 }

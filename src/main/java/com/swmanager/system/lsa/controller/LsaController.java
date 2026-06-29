@@ -1,6 +1,8 @@
 package com.swmanager.system.lsa.controller;
 
 import com.swmanager.system.exception.InsufficientPermissionException;
+import com.swmanager.system.lsa.dto.LsaForm;
+import com.swmanager.system.lsa.dto.PersonRow;
 import com.swmanager.system.lsa.service.LsaService;
 import com.swmanager.system.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.List;
 
 /**
  * LSA(라이선스 발급 대장) 컨트롤러.
@@ -47,6 +54,23 @@ public class LsaController {
         }
     }
 
+    /** LSA 편집 권한 체크 (EDIT 또는 관리자) */
+    private void checkEditAuth() {
+        CustomUserDetails cu = getCurrentUser();
+        if (cu == null) throw new InsufficientPermissionException("로그인");
+        String role = cu.getUser().getUserRole();
+        String authLsa = cu.getUser().getAuthLsa();
+        if (!"ROLE_ADMIN".equals(role) && !"EDIT".equals(authLsa)) {
+            log.warn("LSA 편집 권한 없음 - 사용자: {}, authLsa: {}", cu.getUsername(), authLsa);
+            throw new InsufficientPermissionException("LSA 작성");
+        }
+    }
+
+    private boolean isAdmin() {
+        CustomUserDetails cu = getCurrentUser();
+        return cu != null && "ROLE_ADMIN".equals(cu.getUser().getUserRole());
+    }
+
     /** LSA 목록 + 키워드 검색 (지자체/이름/버전/발급자) */
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String keyword, Model model) {
@@ -58,5 +82,45 @@ public class LsaController {
         String authLsa = cu.getUser().getAuthLsa();
         model.addAttribute("canEdit", "ROLE_ADMIN".equals(role) || "EDIT".equals(authLsa));
         return "lsa/lsa-list";
+    }
+
+    /** LSA 작성 폼 (EDIT|admin) */
+    @GetMapping("/new")
+    public String newForm(Model model) {
+        checkEditAuth();
+        model.addAttribute("sidoList", lsaService.sidoList());
+        model.addAttribute("isAdmin", isAdmin());
+        model.addAttribute("issuer", getCurrentUser().getUser().getUsername());   // 로그인 실명
+        return "lsa/lsa-form";
+    }
+
+    /** LSA 저장 — 발급자: 비관리자=로그인 실명 강제, 관리자=폼값 */
+    @PostMapping("/save")
+    public String save(@ModelAttribute LsaForm form) {
+        checkEditAuth();
+        CustomUserDetails cu = getCurrentUser();
+        String loginName = cu.getUser().getUsername();
+        String issuer = isAdmin() && form.getIssuer() != null && !form.getIssuer().isBlank()
+                ? form.getIssuer().trim() : loginName;   // 위조 방지: 비관리자 폼값 무시
+        lsaService.create(form, issuer, cu.getUsername());
+        return "redirect:/lsa/list";
+    }
+
+    /** 시군구 캐스케이드 (시도 → sggNm 목록) */
+    @GetMapping("/api/districts")
+    @ResponseBody
+    public List<String> districts(@RequestParam String sido) {
+        checkViewAuth();
+        return lsaService.districtList(sido);
+    }
+
+    /** ps_info prefill 담당자 후보 (userNm/tel/email 만 — 엔티티 직접반환 금지) */
+    @GetMapping("/api/persons")
+    @ResponseBody
+    public List<PersonRow> persons(@RequestParam String city, @RequestParam String dist,
+                                   @RequestParam(required = false) String dept,
+                                   @RequestParam(required = false) String team) {
+        checkViewAuth();
+        return lsaService.findPersonCandidates(city, dist, dept, team);
     }
 }
