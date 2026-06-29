@@ -474,6 +474,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.util.ExceptionMessages</param>
                                 <param>com.swmanager.system.service.inspection.QrBatchPayloadAdapter</param>
                                 <param>com.swmanager.system.service.ops.RuleKbMatcher</param>
+                                <param>com.swmanager.system.quotation.service.QuotationService</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.swmanager.system.response.ApiResultTest</param>
@@ -488,6 +489,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.util.ExceptionMessagesTest</param>
                                 <param>com.swmanager.system.service.inspection.QrBatchPayloadAdapterTest</param>
                                 <param>com.swmanager.system.service.ops.RuleKbMatcherTest</param>
+                                <param>com.swmanager.system.quotation.service.QuotationServiceTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>
@@ -499,15 +501,14 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>HTML</param>
                                 <param>XML</param>
                             </outputFormats>
-                            <!-- 게이트(ratchet floor): 고신호 11종(NO_COV≤2) KILLED/TOTAL 현재 180/188=95.7%.
-                                 분모 reconcile: 기존 7종 105/108(InspectMaintProfile.includes dead 제거로 NO_COV 2 빠져
-                                 110→108) + 신규 4종 75/80(ExceptionMessages 3/3·QrBatchPayloadAdapter 18/19·
-                                 RuleKbMatcher 31/33·AuthSummary 23/25). 2026-06-28 beyond-A 게이트확장(7→11):
-                                 AuthSummary 는 readAuth 디스패치 강화로 72→92%. floor 90→93 ratchet(실측 95.7%,
-                                 ~2.7pt 헤드룸 — floor 정책 실측−2~2.5pp 일관). 잔존 noise=NO_COV 3(MaskingDetector 1·
-                                 AuthSummary L110 default 1·equivalent L90 1)+저가치 생존 5. HwpxXmlSupport(50%, XML 정규식)·
-                                 DTO(@Data boilerplate)·InspectionQrBatch(부분)는 게이트 제외. -->
-                            <mutationThreshold>93</mutationThreshold>
+                            <!-- 게이트(ratchet floor): 고신호 12종(NO_COV≤2) KILLED/TOTAL 현재 329/341=96.5%.
+                                 이력: 7종(90)→11종(93, 2026-06-28 AuthSummary readAuth 강화 72→92%)
+                                 →12종(94, 2026-06-29 QuotationService 편입). QuotationService 는 테스트 강화로
+                                 뮤테이션 52→97.4%(생존 68→4: ArgumentCaptor 저장엔티티 전필드단언+조건분기 양쪽+
+                                 비빈 distinct 데이터; 잔존 4=equivalent roundDown L30·setLastSeq(0) 등). floor 93→94
+                                 ratchet(실측 96.5%, ~2.5pt 헤드룸 — floor 정책 실측−2~2.5pp 일관). HwpxXmlSupport(50%
+                                 XML정규식)·SwController(68%)·InspectionQrBatch(44%)·DTO(@Data)는 게이트 제외. -->
+                            <mutationThreshold>94</mutationThreshold>
                             <failWhenNoMutations>true</failWhenNoMutations>
                         </configuration>
                     </plugin>
