@@ -33,6 +33,14 @@ public class LicenseRegistryService {
     private final LicenseRegistryRepository licenseRegistryRepository;
     private final LicenseUploadHistoryRepository uploadHistoryRepository;
 
+    /**
+     * 보존 필드(field-preservation): 갱신 시 덮어쓰지 않고 기존값을 유지하는 사용자 큐레이션 필드.
+     * 사용자가 한글화하는 등록자/연락처/기관 정보. {@link #copyUpdatableFields} 가 이 목록을 복사 대상에서 제외.
+     */
+    public static final java.util.List<String> PRESERVED_USER_FIELDS = java.util.List.of(
+            "registeredTo", "fullName", "email", "company", "telephone",
+            "fax", "street", "city", "zipCode", "country");
+
     // ===== 공유 upsert 코어 (D2) — 수동 업로드(CSV)와 월간 연동(Derby)이 동일 기준 공유 =====
 
     /** 1건 upsert 판정 결과 (FR-7 분리 집계용) */
@@ -59,8 +67,8 @@ public class LicenseRegistryService {
             boolean stringChanged   = !Objects.equals(ex.getLicenseString(), incoming.getLicenseString());
 
             if (hardwareChanged || stringChanged) {
-                // Hardware ID 또는 License String 변경 → 전체 필드 갱신
-                copyAllFields(incoming, ex);
+                // Hardware ID 또는 License String 변경 → 기술 필드 갱신(사용자 큐레이션 필드는 보존)
+                copyUpdatableFields(incoming, ex);
                 ex.setUploadDate(LocalDateTime.now());
                 ex.setUploadedBy(uploadedBy);
                 return new UpsertDecision(LicenseUpsertOutcome.UPDATED, ex);
@@ -194,10 +202,15 @@ public class LicenseRegistryService {
     }
     
     /**
-     * CSV 파싱 결과(src)의 모든 CSV 필드를 기존 엔티티(dest)에 복사
-     * id, uploadDate, uploadedBy 등 시스템 필드는 dest 것을 유지
+     * 갱신(UPDATE) 시 기존 엔티티(dest)에 복사할 필드 — License4J 권위의 기술/라이선스 필드만.
+     *
+     * <p><b>보존 정책(field-preservation 스프린트, B1)</b>: 사용자가 수기로 큐레이션(한글화)하는
+     * {@link #PRESERVED_USER_FIELDS} 10개 필드는 <b>복사하지 않고 dest(기존값)를 유지</b>한다.
+     * (월간 연동/수동 재업로드가 한글 등록자·회사·지역 등을 Derby 로마자 원본으로 덮어쓰는 사고 방지.)
+     * id, uploadDate, uploadedBy 등 시스템 필드도 dest 것을 유지.
+     * <p>신규(NEW) 행은 본 메서드를 거치지 않고 incoming 전체가 저장되므로 영향 없음.
      */
-    private void copyAllFields(LicenseRegistry src, LicenseRegistry dest) {
+    private void copyUpdatableFields(LicenseRegistry src, LicenseRegistry dest) {
         dest.setProductId(src.getProductId());
         dest.setLicenseType(src.getLicenseType());
         dest.setValidProductEdition(src.getValidProductEdition());
@@ -209,16 +222,9 @@ public class LicenseRegistryService {
         dest.setQuantity(src.getQuantity());
         dest.setAllowedUseCount(src.getAllowedUseCount());
         dest.setHardwareId(src.getHardwareId());
-        dest.setRegisteredTo(src.getRegisteredTo());
-        dest.setFullName(src.getFullName());
-        dest.setEmail(src.getEmail());
-        dest.setCompany(src.getCompany());
-        dest.setTelephone(src.getTelephone());
-        dest.setFax(src.getFax());
-        dest.setStreet(src.getStreet());
-        dest.setCity(src.getCity());
-        dest.setZipCode(src.getZipCode());
-        dest.setCountry(src.getCountry());
+        // ── 보존(PRESERVED_USER_FIELDS) — 갱신 시 덮어쓰지 않음(B1): ──
+        //   registeredTo, fullName, email, company, telephone, fax, street, city, zipCode, country
+        //   (사용자 큐레이션 한글 보존. 위 필드들은 의도적으로 복사하지 않음)
         dest.setActivationRequired(src.getActivationRequired());
         dest.setAutoActivationsDisabled(src.getAutoActivationsDisabled());
         dest.setManualActivationsDisabled(src.getManualActivationsDisabled());

@@ -86,4 +86,64 @@ class LicenseRegistryServiceUpsertTest {
         assertThat(d.outcome()).isEqualTo(LicenseUpsertOutcome.UPDATED);
         assertThat(d.toSave().getLicenseString()).isEqualTo("STR_NEW");
     }
+
+    @Test
+    @DisplayName("갱신 시 사용자 큐레이션 한글 필드 10개 전부 보존 (field-preservation)")
+    void preservesUserCuratedFieldsOnUpdate() {
+        // 기존: 사용자가 한글화한 보존 10필드
+        LicenseRegistry existing = lic("L1", "P1", "HW", "STR_OLD");
+        existing.setRegisteredTo("박욱진");
+        existing.setFullName("박욱진");
+        existing.setEmail("한글이메일@정도.kr");
+        existing.setCompany("(주)정도유아이티");
+        existing.setTelephone("전화-한글");
+        existing.setFax("팩스-한글");
+        existing.setStreet("서울특별시 강남구");
+        existing.setCity("서울");
+        existing.setZipCode("우06236");
+        existing.setCountry("대한민국");
+        when(repo.findByLicenseIdAndProductId("L1", "P1")).thenReturn(Optional.of(existing));
+
+        // incoming(Derby): 보존 10필드 전부 로마자 + license_string 변경
+        LicenseRegistry incoming = lic("L1", "P1", "HW", "STR_NEW");
+        incoming.setRegisteredTo("Park Ukjin");
+        incoming.setFullName("Park Ukjin");
+        incoming.setEmail("eng@jungdo.kr");
+        incoming.setCompany("JungdoUIT");
+        incoming.setTelephone("02-000-0000");
+        incoming.setFax("02-000-0001");
+        incoming.setStreet("Gangnam-gu, Seoul");
+        incoming.setCity("Seoul");
+        incoming.setZipCode("06236");
+        incoming.setCountry("Korea");
+        incoming.setLicenseType("License Text");   // 기술 필드는 갱신되어야
+
+        UpsertDecision d = service.classifyUpsert(incoming, "tester");
+
+        assertThat(d.outcome()).isEqualTo(LicenseUpsertOutcome.UPDATED);
+        // 기술 필드는 갱신
+        assertThat(d.toSave().getLicenseString()).isEqualTo("STR_NEW");
+        assertThat(d.toSave().getLicenseType()).isEqualTo("License Text");
+        // 보존 10필드 전부 기존(한글)값 유지 — 어느 하나라도 setter 재추가 시 실패
+        LicenseRegistry s = d.toSave();
+        assertThat(s.getRegisteredTo()).isEqualTo("박욱진");
+        assertThat(s.getFullName()).isEqualTo("박욱진");
+        assertThat(s.getEmail()).isEqualTo("한글이메일@정도.kr");
+        assertThat(s.getCompany()).isEqualTo("(주)정도유아이티");
+        assertThat(s.getTelephone()).isEqualTo("전화-한글");
+        assertThat(s.getFax()).isEqualTo("팩스-한글");
+        assertThat(s.getStreet()).isEqualTo("서울특별시 강남구");
+        assertThat(s.getCity()).isEqualTo("서울");
+        assertThat(s.getZipCode()).isEqualTo("우06236");
+        assertThat(s.getCountry()).isEqualTo("대한민국");
+    }
+
+    @Test
+    @DisplayName("보존 필드 상수 = 10개 (목록 고정)")
+    void preservedFieldsConstantHas10() {
+        assertThat(LicenseRegistryService.PRESERVED_USER_FIELDS)
+            .hasSize(10)
+            .containsExactlyInAnyOrder("registeredTo", "fullName", "email", "company",
+                "telephone", "fax", "street", "city", "zipCode", "country");
+    }
 }
