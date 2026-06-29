@@ -134,8 +134,8 @@
                 <h3><i class="fas fa-circle-info"></i> 업로드 안내</h3>
                 <ul>
                     <li>LSA Basic 2.5 형식의 CSV 파일만 업로드 가능합니다.</li>
-                    <li>License ID + Product ID 조합이 동일한 라이선스는 자동으로 스킵됩니다.</li>
-                    <li>신규 라이선스만 등록되며, 중복된 라이선스는 업로드되지 않습니다.</li>
+                    <li>License ID + Product ID 조합으로 기존 라이선스를 식별합니다.</li>
+                    <li>기존 라이선스는 Hardware ID 또는 License String이 변경된 경우에만 갱신되고, 동일하면 스킵됩니다.</li>
                     <li>Generation Date Time + Validity Period를 자동 계산하여 만료일시를 설정합니다.</li>
                     <li>업로드 후 결과 메시지에서 성공/중복/실패 개수를 확인할 수 있습니다.</li>
                 </ul>
@@ -150,6 +150,61 @@
                     <div><button type="submit" class="upload-btn" id="uploadBtn" disabled><i class="fas fa-upload"></i> 업로드</button></div>
                 </div>
             </form>
+        </div>
+
+        <!-- License4J 라이선스 서버 자동 연동 (월말 자동 + ADMIN 수동) -->
+        <div class="upload-section">
+            <h2><i class="fas fa-rotate"></i> 라이선스 서버 자동 연동 (License4J)</h2>
+
+            <div class="guide-box">
+                <h3><i class="fas fa-circle-info"></i> 연동 안내</h3>
+                <ul>
+                    <li>매월 말 라이선스 서버(License4J)의 데이터를 자동으로 대장에 반영합니다.</li>
+                    <li>반영 직전 현재 대장을 자동 백업하며, 위 CSV 업로드와 동일한 기준(중복키·변경분 갱신)을 따릅니다.</li>
+                    <li>관리자(ADMIN)는 아래 버튼으로 즉시 연동을 실행할 수 있습니다.</li>
+                </ul>
+            </div>
+
+            <div th:if="${isAdmin}" style="margin-bottom:18px;">
+                <form th:action="@{/license/sync/run}" method="post"
+                      onsubmit="return confirm('라이선스 서버에서 지금 연동을 실행할까요? (대장 자동 백업 후 반영)');">
+                    <button type="submit" class="upload-btn" style="margin-top:0;">
+                        <i class="fas fa-rotate"></i> 지금 서버에서 연동
+                    </button>
+                </form>
+            </div>
+
+            <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
+                <thead>
+                    <tr style="text-align:left; color:var(--text2); border-bottom:1px solid var(--border);">
+                        <th style="padding:8px;">시작</th>
+                        <th style="padding:8px;">구분</th>
+                        <th style="padding:8px;">상태</th>
+                        <th style="padding:8px;">총</th>
+                        <th style="padding:8px;">신규</th>
+                        <th style="padding:8px;">갱신</th>
+                        <th style="padding:8px;">중복</th>
+                        <th style="padding:8px;">실패</th>
+                        <th style="padding:8px;">실행자</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(syncHistory)}">
+                        <td colspan="9" style="padding:14px; color:var(--muted); text-align:center;">연동 이력이 없습니다.</td>
+                    </tr>
+                    <tr th:each="s : ${syncHistory}" style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px;" th:text="${#temporals.format(s.startedAt, 'yyyy-MM-dd HH:mm')}">-</td>
+                        <td style="padding:8px;" th:text="${s.runType}">-</td>
+                        <td style="padding:8px;" th:text="${s.status}">-</td>
+                        <td style="padding:8px;" th:text="${s.totalCount}">0</td>
+                        <td style="padding:8px;" th:text="${s.newCount}">0</td>
+                        <td style="padding:8px;" th:text="${s.updatedCount}">0</td>
+                        <td style="padding:8px;" th:text="${s.duplicateCount}">0</td>
+                        <td style="padding:8px;" th:text="${s.failCount}">0</td>
+                        <td style="padding:8px;" th:text="${s.triggeredBy}">-</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 

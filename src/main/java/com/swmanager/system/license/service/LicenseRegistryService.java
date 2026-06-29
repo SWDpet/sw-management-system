@@ -32,7 +32,46 @@ public class LicenseRegistryService {
     
     private final LicenseRegistryRepository licenseRegistryRepository;
     private final LicenseUploadHistoryRepository uploadHistoryRepository;
-    
+
+    // ===== 공유 upsert 코어 (D2) — 수동 업로드(CSV)와 월간 연동(Derby)이 동일 기준 공유 =====
+
+    /** 1건 upsert 판정 결과 (FR-7 분리 집계용) */
+    public enum LicenseUpsertOutcome { NEW, UPDATED, DUPLICATE, FAILED }
+
+    /** 판정 결과 + 저장 대상(없으면 null=중복) */
+    public record UpsertDecision(LicenseUpsertOutcome outcome, LicenseRegistry toSave) {}
+
+    /**
+     * 라이선스 1건 upsert 판정 — 기존 CSV 업로드 기준(중복키 License ID+Product ID, 변경분 갱신) 그대로.
+     * 저장은 호출측이 배치(saveAll)로 수행. CSV 업로드/Derby 연동 양쪽에서 공유.
+     *
+     * @param incoming   적재 대상 레코드(파싱 또는 Derby 매핑 결과)
+     * @param uploadedBy 업로더/연동 주체
+     * @return NEW/UPDATED → toSave 채워짐, DUPLICATE → toSave null
+     */
+    public UpsertDecision classifyUpsert(LicenseRegistry incoming, String uploadedBy) {
+        Optional<LicenseRegistry> existing = licenseRegistryRepository
+                .findByLicenseIdAndProductId(incoming.getLicenseId(), incoming.getProductId());
+
+        if (existing.isPresent()) {
+            LicenseRegistry ex = existing.get();
+            boolean hardwareChanged = !Objects.equals(ex.getHardwareId(),    incoming.getHardwareId());
+            boolean stringChanged   = !Objects.equals(ex.getLicenseString(), incoming.getLicenseString());
+
+            if (hardwareChanged || stringChanged) {
+                // Hardware ID 또는 License String 변경 → 전체 필드 갱신
+                copyAllFields(incoming, ex);
+                ex.setUploadDate(LocalDateTime.now());
+                ex.setUploadedBy(uploadedBy);
+                return new UpsertDecision(LicenseUpsertOutcome.UPDATED, ex);
+            }
+            return new UpsertDecision(LicenseUpsertOutcome.DUPLICATE, null);
+        }
+        incoming.setUploadDate(LocalDateTime.now());
+        incoming.setUploadedBy(uploadedBy);
+        return new UpsertDecision(LicenseUpsertOutcome.NEW, incoming);
+    }
+
     /**
      * CSV 파일 업로드 및 파싱
      */
@@ -75,34 +114,22 @@ public class LicenseRegistryService {
                 try {
                     LicenseRegistry registry = parseCsvLine(line, headerMap);
 
-                    // 중복 체크: License ID + Product ID 조합
-                    Optional<LicenseRegistry> existing = licenseRegistryRepository
-                            .findByLicenseIdAndProductId(registry.getLicenseId(), registry.getProductId());
-
-                    if (existing.isPresent()) {
-                        LicenseRegistry ex = existing.get();
-                        boolean hardwareChanged = !Objects.equals(ex.getHardwareId(),     registry.getHardwareId());
-                        boolean stringChanged   = !Objects.equals(ex.getLicenseString(),  registry.getLicenseString());
-
-                        if (hardwareChanged || stringChanged) {
-                            // Hardware ID 또는 License String이 바뀐 경우 → 전체 필드 업데이트
-                            copyAllFields(registry, ex);
-                            ex.setUploadDate(LocalDateTime.now());
-                            ex.setUploadedBy(uploadedBy);
-                            registries.add(ex);   // saveAll로 merge됨 (id 있음)
+                    // 공유 upsert 코어로 판정 (중복키 License ID+Product ID, 변경분 갱신)
+                    UpsertDecision decision = classifyUpsert(registry, uploadedBy);
+                    switch (decision.outcome()) {
+                        case NEW, UPDATED -> {
+                            registries.add(decision.toSave());   // saveAll 로 insert/merge
                             successCount++;
-                            log.info("라이선스 업데이트 - License ID: {}, 변경: hardware={}, string={}",
-                                    ex.getLicenseId(), hardwareChanged, stringChanged);
-                        } else {
+                        }
+                        case DUPLICATE -> {
                             duplicateCount++;
                             log.debug("완전 중복 스킵 - License ID: {}, Product ID: {}",
                                     registry.getLicenseId(), registry.getProductId());
                         }
-                    } else {
-                        registry.setUploadDate(LocalDateTime.now());
-                        registry.setUploadedBy(uploadedBy);
-                        registries.add(registry);
-                        successCount++;
+                        case FAILED -> {
+                            failCount++;
+                            errors.add("라인 " + lineNumber + ": 처리 실패");
+                        }
                     }
 
                 } catch (Exception e) {

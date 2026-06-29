@@ -4,6 +4,7 @@ import com.swmanager.system.constant.enums.AccessActionType;
 import com.swmanager.system.constants.MenuName;
 import com.swmanager.system.license.domain.LicenseRegistry;
 import com.swmanager.system.license.domain.LicenseUploadHistory;
+import com.swmanager.system.license.repository.LicenseSyncHistoryRepository;
 import com.swmanager.system.license.service.LicenseRegistryService;
 import com.swmanager.system.service.LogService;
 import com.swmanager.system.security.CustomUserDetails;
@@ -39,6 +40,7 @@ public class LicenseRegistryController {
     
     private final LicenseRegistryService registryService;
     private final LogService logService;
+    private final LicenseSyncHistoryRepository syncHistoryRepository;
     
     // ========================================
     // 권한 체크 헬퍼 메서드
@@ -97,7 +99,11 @@ public class LicenseRegistryController {
         
         model.addAttribute("totalCount", totalCount);
         model.addAttribute("latestUploadDate", latestUploadDate);
-        
+
+        // License4J 자동 연동 이력 + ADMIN 여부 (수동 트리거 버튼 노출용)
+        model.addAttribute("syncHistory", syncHistoryRepository.findTop20ByOrderByStartedAtDesc());
+        model.addAttribute("isAdmin", isAdmin(userDetails));
+
         return "license/registry-upload";
     }
     

@@ -162,6 +162,14 @@
             <version>1.5.4</version>
         </dependency>
 
+        <!-- Apache Derby (embedded) — license4j-monthly-sync: License4J Derby 10.10 DB read-only 읽기.
+             P0 게이트로 10.14.2.0 ↔ 10.10 readOnly 부팅 호환 검증 완료(2026-06-29). -->
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derby</artifactId>
+            <version>10.14.2.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

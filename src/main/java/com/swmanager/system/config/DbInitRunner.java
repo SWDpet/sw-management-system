@@ -37,7 +37,12 @@ public class DbInitRunner implements ApplicationRunner {
     private JdbcTemplate jdbcTemplate;
 
     /** 스키마 → 시드 순서. 시드는 스키마(CREATE) 이후 실행되어야 함. */
-    private static final String[] SQL_FILES = { "db_init_phase2.sql", "db_seed_ops_kb.sql", "db_seed_ops_staff.sql" };
+    private static final String[] SQL_FILES = {
+        "db_init_phase2.sql",
+        "db_license4j_sync.sql",   // license4j-monthly-sync: 연동 이력/대장 백업 테이블(IF NOT EXISTS 멱등)
+        "db_seed_ops_kb.sql",
+        "db_seed_ops_staff.sql"
+    };
 
     @Override
     public void run(ApplicationArguments args) {
