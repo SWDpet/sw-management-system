@@ -477,6 +477,7 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.quotation.service.QuotationService</param>
                                 <param>com.swmanager.system.service.InspectReportService</param>
                                 <param>com.swmanager.system.service.WorkPlanService</param>
+                                <param>com.swmanager.system.service.inspection.InspectionQrBatchService</param>
                             </targetClasses>
                             <targetTests>
                                 <param>com.swmanager.system.response.ApiResultTest</param>
@@ -495,6 +496,8 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>com.swmanager.system.service.InspectReportServiceTest</param>
                                 <param>com.swmanager.system.service.WorkPlanServiceTest</param>
                                 <param>com.swmanager.system.service.WorkPlanTargetTest</param>
+                                <param>com.swmanager.system.service.inspection.InspectionQrBatchServiceTest</param>
+                                <param>com.swmanager.system.service.inspection.InspectionQrBatchFormatTest</param>
                             </targetTests>
                             <excludedTestClasses>
                                 <param>*IT</param>
@@ -506,15 +509,17 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                 <param>HTML</param>
                                 <param>XML</param>
                             </outputFormats>
-                            <!-- 게이트(ratchet floor): 고신호 14종(NO_COV≤2) KILLED/TOTAL 현재 505/521=96.9%.
+                            <!-- 게이트(ratchet floor): 고신호 15종(NO_COV 작음) KILLED/TOTAL 현재 640/664=96.4%.
                                  이력: 7종(90)→11종(93, AuthSummary 72→92%)→12종(94, QuotationService 52→97.4%)
-                                 →13종(InspectReportService 78→98.7%)→14종(2026-06-29 WorkPlanService 70→97.1%).
-                                 약한테스트 강화법=PIT 생존 mutator별(VoidMethodCall→ArgumentCaptor/prior값+전필드단언,
-                                 NegateConditionals→분기양쪽, EmptyObjectReturnVals→비빈데이터, NO_COV→경로 테스트).
-                                 ⚠클래스가 여러 테스트로 커버되면 targetTests 에 전부 추가(WorkPlanService=Service+Target 2테스트).
-                                 threshold 94 유지(실측 96.9%, ~2.9pt 헤드룸 — 14종 안정 클래스 안전측). 잔존=equivalent
-                                 (roundDown·setLastSeq(0)·month/sysNm 길이경계 등). HwpxXmlSupport(50%)·SwController(68%)·
-                                 InspectionQrBatch(44%)·DTO(@Data)는 게이트 제외(더 큰 강화 필요). -->
+                                 →13종(InspectReportService 78→98.7%)→14종(WorkPlanService 70→97.1%)
+                                 →15종(2026-06-29 InspectionQrBatchService 81.8→94.4%). 약한테스트 강화법=PIT 생존
+                                 mutator별(VoidMethodCall→ArgumentCaptor/prior값+전필드단언, NegateConditionals→분기양쪽,
+                                 EmptyObjectReturnVals→비빈데이터, NO_COV→경로 테스트). ⚠클래스가 여러 테스트로 커버되면
+                                 targetTests 에 전부 추가(WorkPlan=Service+Target, InspectionQrBatch=Service+Format 테스트).
+                                 threshold 94 유지(실측 96.4%, ~2.4pt 헤드룸). 잔존=equivalent(roundDown·setLastSeq(0)·길이경계)
+                                 + InspectionQrBatch NO_COV 3(verifyHash warn-only ok/예외 경로 — "ok"는 encode.py 호환
+                                 해시 재유도라 순환·취약 테스트라 미강제, 예외는 직렬화실패 필요라 low-value). HwpxXmlSupport(50%)·
+                                 SwController(68%, 컨트롤러=MockMvc 적합)·DTO(@Data)는 게이트 제외. -->
                             <mutationThreshold>94</mutationThreshold>
                             <failWhenNoMutations>true</failWhenNoMutations>
                         </configuration>

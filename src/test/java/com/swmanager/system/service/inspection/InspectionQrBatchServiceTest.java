@@ -773,4 +773,123 @@ class InspectionQrBatchServiceTest {
                 .singleElement()
                 .satisfies(r -> assertThat(r.getResultText()).isEqualTo("75%"));
     }
+
+    // ── 21. buildReport 신규 보고서 감사필드(beyond-A 뮤테이션 강화) ──────────────
+    @Test
+    @DisplayName("21. buildReport — inspUserId/createdBy/updatedBy 박제(L175~177)")
+    void buildReport_setsAuditFields() {
+        InspectionQrBatchRequest req = sampleRequest("audit-2026-05");
+        when(batchRepository.findByPayloadId("audit-2026-05")).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(210L);
+
+        service.upload(req, 42L);
+
+        ArgumentCaptor<InspectReport> cap = ArgumentCaptor.forClass(InspectReport.class);
+        verify(reportRepository).save(cap.capture());
+        InspectReport r = cap.getValue();
+        assertThat(r.getInspUserId()).isEqualTo(42L);    // L175
+        assertThat(r.getCreatedBy()).isEqualTo("42");     // L176
+        assertThat(r.getUpdatedBy()).isEqualTo("42");     // L177
+        assertThat(r.getSource()).isEqualTo("auto-qr");
+        assertThat(r.getBatchId()).isEqualTo("audit-2026-05");
+    }
+
+    // ── 22. verifyHash 직접 호출 — null/blank→skip, 불일치→warn(L384·395 + sha1Hex L419) ──
+    @Test
+    @DisplayName("22. verifyHash null/blank→skip, 불일치→warn")
+    void verifyHash_skipAndWarn() {
+        InspectionQrBatchRequest.Payload p = sampleRequest("vh-2026-05").getPayload();
+        assertThat(service.verifyHash(p, null)).isEqualTo("skip");      // L384 null
+        assertThat(service.verifyHash(p, "   ")).isEqualTo("skip");     // L384 blank
+        // 실제 계산해시(6-hex)는 "zzzzzz"와 절대 불일치 → "warn". sha1Hex 가 ""(mutant)면 substring 예외→"skip"이라 kill.
+        assertThat(service.verifyHash(p, "zzzzzz")).isEqualTo("warn");  // L395 + sha1Hex L419
+    }
+
+    // ── 23. DB_USAGE/AP_USAGE 행 reportId + sortOrder 박제(L251·255·275·279) ──────
+    @Test
+    @DisplayName("23. usage 행 reportId+sortOrder 증가")
+    void usageRows_reportIdAndSortOrder() {
+        InspectionQrBatchRequest req = new InspectionQrBatchRequest();
+        InspectionQrBatchRequest.Payload p = new InspectionQrBatchRequest.Payload();
+        p.setId("usort-2026-05"); p.setSite("dyg"); p.setRound("2026-05");
+        InspectionQrBatchRequest.Tier db = new InspectionQrBatchRequest.Tier();
+        Map<String, Object> mounts = new LinkedHashMap<>();
+        mounts.put("/", Map.of("p", 55));
+        mounts.put("/backup", Map.of("p", 70));
+        db.setItems(List.of(List.of("db.os.disk", "ok", mounts)));
+        InspectionQrBatchRequest.Tier ap = new InspectionQrBatchRequest.Tier();
+        Map<String, Object> drives = new LinkedHashMap<>();
+        drives.put("c", Map.of("p", 60));
+        drives.put("d", Map.of("p", 40));   // 2번째 드라이브 → diskSort 2,3 증가(L279 Increments kill)
+        ap.setItems(List.of(List.of("ap.os.disk_summary", "ok", drives)));
+        Map<String, InspectionQrBatchRequest.Tier> tiers = new LinkedHashMap<>();
+        tiers.put("db", db); tiers.put("ap", ap);
+        p.setTiers(tiers); req.setPayload(p);
+        InspectionQrBatchRequest.Header h = new InspectionQrBatchRequest.Header();
+        req.setHeader(h);   // hash null → verifyHash skip
+
+        when(batchRepository.findByPayloadId(any())).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        stubReportSaveWithId(220L);
+
+        ArgumentCaptor<InspectCheckResult> cap = ArgumentCaptor.forClass(InspectCheckResult.class);
+        service.upload(req, 1L);
+        verify(checkResultRepository, org.mockito.Mockito.atLeastOnce()).save(cap.capture());
+
+        var dbUsage = cap.getAllValues().stream().filter(r -> "DB_USAGE".equals(r.getSection())).toList();
+        assertThat(dbUsage).allSatisfy(r -> assertThat(r.getReportId()).isEqualTo(220L));     // L251
+        assertThat(dbUsage).extracting(InspectCheckResult::getSortOrder).containsExactly(0, 1); // L255 usageSort++
+        var apUsage = cap.getAllValues().stream().filter(r -> "AP_USAGE".equals(r.getSection())).toList();
+        assertThat(apUsage).allSatisfy(r -> assertThat(r.getReportId()).isEqualTo(220L));     // L275
+        assertThat(apUsage).extracting(InspectCheckResult::getSortOrder).containsExactly(2, 3); // L279 diskSort 2,3 증가
+    }
+
+    // ── 24. upload 기존 회차 merge 경로 — updatedBy 갱신(L117) ────────────────────
+    @Test
+    @DisplayName("24. merge 경로 — 기존 보고서 updatedBy 갱신(L117)")
+    void upload_mergeExistingReport_updatesUpdatedBy() {
+        InspectionQrBatchRequest req = sampleRequest("merge-2026-05");
+        when(batchRepository.findByPayloadId("merge-2026-05")).thenReturn(Optional.empty());
+        when(swProjectRepository.findBySiteCode("dyg")).thenReturn(Optional.of(pjt));
+        InspectReport existing = new InspectReport();
+        existing.setId(500L);
+        existing.setBatchId("prior");          // 이미 batchId 있음 → 보존
+        existing.setUpdatedBy("old");
+        when(reportRepository.findByPjtIdAndInspectMonthAndDeletedAtIsNull(17L, "2026-05"))
+                .thenReturn(Optional.of(existing));
+
+        service.upload(req, 99L);
+
+        // merge 경로에서 updatedBy 를 userId 로 갱신(L117). userId 99 → "99".
+        assertThat(existing.getUpdatedBy()).isEqualTo("99");
+        assertThat(existing.getBatchId()).isEqualTo("prior");   // 기존 batchId 보존(이미 머지된 회차)
+        verify(reportRepository).save(existing);
+    }
+
+    // ── 25. 멱등 — site_code 직접 미매핑, alias 폴백 경로(toIdempotentResponse L425) ──
+    @Test
+    @DisplayName("25. 멱등 alias 폴백 — findBySiteCode 빈값 → findFirstBySiteCodeAlias")
+    void idempotent_aliasFallback_resolvesPjt() {
+        InspectQrBatch existing = new InspectQrBatch();
+        existing.setId(8L); existing.setPayloadId("alias-2026-05");
+        existing.setReportId(303L); existing.setSiteCode("aliasSite"); existing.setHashCheck("ok");
+
+        when(batchRepository.findByPayloadId("alias-2026-05")).thenReturn(Optional.of(existing));
+        when(swProjectRepository.findBySiteCode("aliasSite")).thenReturn(Optional.empty());   // 직접 미매핑
+        SwProject aliasPjt = new SwProject(); aliasPjt.setProjId(77L);
+        when(swProjectRepository.findFirstBySiteCodeAlias("aliasSite")).thenReturn(Optional.of(aliasPjt));  // alias 폴백
+
+        InspectionQrBatchResponse res = service.upload(sampleRequest2("alias-2026-05", "aliasSite"), 1L);
+
+        assertThat(res.isIdempotent()).isTrue();
+        assertThat(res.getPjtId()).isEqualTo(77L);    // alias 폴백으로 해소(L425)
+    }
+
+    /** site/payloadId 를 지정하는 sampleRequest 변형(멱등 alias 테스트용). */
+    private InspectionQrBatchRequest sampleRequest2(String payloadId, String site) {
+        InspectionQrBatchRequest req = sampleRequest(payloadId);
+        req.getPayload().setSite(site);
+        return req;
+    }
 }
