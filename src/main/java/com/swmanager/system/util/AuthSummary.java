@@ -58,6 +58,7 @@ public class AuthSummary {
         {"authPerson",      "담당"},
         {"authInfra",       "서버"},
         {"authLicense",     "라이"},
+        {"authLsa",         "LSA"},
         {"authQuotation",   "견적"},
         {"authWorkPlan",    "업무"},
         {"authDocument",    "문서"},
@@ -66,7 +67,7 @@ public class AuthSummary {
     };
 
     /**
-     * 10개 권한을 스캔하여 NONE 이 아닌 것만 뱃지 생성. max 초과분은 moreCount.
+     * 11개 권한을 스캔하여 NONE 이 아닌 것만 뱃지 생성. max 초과분은 moreCount.
      */
     public Result summarize(User u, int max) {
         if (u == null) return new Result(Collections.emptyList(), 0);
@@ -102,6 +103,7 @@ public class AuthSummary {
             case "authPerson":      return u.getAuthPerson();
             case "authInfra":       return u.getAuthInfra();
             case "authLicense":     return u.getAuthLicense();
+            case "authLsa":         return u.getAuthLsa();
             case "authQuotation":   return u.getAuthQuotation();
             case "authWorkPlan":    return u.getAuthWorkPlan();
             case "authDocument":    return u.getAuthDocument();

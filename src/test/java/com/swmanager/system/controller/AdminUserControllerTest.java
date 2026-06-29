@@ -266,7 +266,7 @@ class AdminUserControllerTest {
         when(userRepository.findById(5L)).thenReturn(Optional.of(u));
 
         String view = controller.approveUser(5L, "VIEW", "EDIT", "NONE", "VIEW",
-                "NONE", "NONE", "NONE", "NONE", "NONE", "NONE");
+                "NONE", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE");  // +authLsa(6번째 NONE)
 
         assertThat(view).isEqualTo("redirect:/admin/users");
         assertThat(u.isEnabled()).isTrue();
@@ -283,7 +283,7 @@ class AdminUserControllerTest {
         when(messages.get(eq("error.user.not_found"), any())).thenReturn("없음");
 
         assertThatThrownBy(() -> controller.approveUser(99L, "NONE", "NONE", "NONE", "NONE",
-                "NONE", "NONE", "NONE", "NONE", "NONE", "NONE"))
+                "NONE", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE"))  // +authLsa
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -317,7 +317,7 @@ class AdminUserControllerTest {
     private String update(User u, Integer page, String expand) {
         return controller.updateUser(u.getUserSeq(), "부서", "팀", "010", "010-0000-0000",
                 "a@b.c", "직책", "주소", "ssn", "자격", "특급", "업무",
-                "VIEW", "VIEW", "NONE", "VIEW", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE",
+                "VIEW", "VIEW", "NONE", "VIEW", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE", "NONE",  // +authLsa(5번째 NONE 뒤)
                 expand, page);
     }
 

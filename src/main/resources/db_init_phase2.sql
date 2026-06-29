@@ -127,6 +127,28 @@ UPDATE users SET career_years = '22년' WHERE username = '박욱진' AND (career
 UPDATE users SET career_years = '13년' WHERE username = '김한준' AND (career_years IS NULL OR career_years = '');
 UPDATE users SET career_years = '8년'  WHERE username = '서현규' AND (career_years IS NULL OR career_years = '');
 
+-- LSA (lsa-license-ledger P1): 라이선스 발급 대장(LSA) 권한 컬럼 + 발급 대장 테이블
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_lsa VARCHAR(10) DEFAULT 'NONE';
+UPDATE users SET auth_lsa = 'NONE' WHERE auth_lsa IS NULL;
+CREATE SEQUENCE IF NOT EXISTS lsa_license_id_seq;
+CREATE TABLE IF NOT EXISTS lsa_license (
+    id          bigint PRIMARY KEY DEFAULT nextval('lsa_license_id_seq'),
+    city_nm     varchar(50),
+    dist_nm     varchar(200),
+    dept_nm     varchar(100),
+    team_nm     varchar(100),
+    user_nm     varchar(50),
+    tel         varchar(20),
+    email       varchar(100),
+    version     varchar(50),
+    issuer      varchar(50),
+    ps_info_id  bigint REFERENCES ps_info(id),
+    created_by  varchar(50),
+    created_at  timestamp without time zone DEFAULT now(),
+    updated_by  varchar(50),
+    updated_at  timestamp without time zone
+);
+
 -- ============================================================
 -- 점검내역서 관련 테이블
 -- ============================================================

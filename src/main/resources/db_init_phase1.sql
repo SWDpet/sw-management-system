@@ -138,6 +138,7 @@ CREATE TABLE IF NOT EXISTS users (
     username character varying(50),
     auth_infra character varying(10) DEFAULT 'NONE'::character varying,
     auth_license character varying(10) DEFAULT 'NONE'::character varying,
+    auth_lsa character varying(10) DEFAULT 'NONE'::character varying,
     auth_quotation character varying(10) DEFAULT 'NONE'::character varying,
     failed_attempts integer DEFAULT 0,
     lock_time timestamp without time zone,

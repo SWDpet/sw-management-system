@@ -62,30 +62,46 @@ class AuthSummaryTest {
         assertThat(r.getMoreCount()).isZero();
     }
 
-    /**
-     * 10개 권한 전부 badge 생성 — readAuth 의 필드별 return-empty mutation + 값/라벨/순서 매핑을 박제.
-     * (EDIT/VIEW 교차+containsExactly 로 readAuth 의 어느 필드 반환을 ""로 바꿔도 badge 누락→탐지.
-     *  단 "getter 끼리 뒤바뀜"까지 증명하진 않음 — PIT 가 그런 mutant 를 생성하지 않으므로 본 목적엔 충분.)
-     */
-    @Test
-    void summarize_allTenFields_eachBadgeMappedInOrder() {
+    /** 11권한(authLsa 포함) 전부 EDIT/VIEW 세팅한 User — readAuth 의 필드별 매핑 박제용. */
+    private User allElevenAuths() {
         User u = new User();
         u.setAuthDashboard("EDIT");   u.setAuthProject("VIEW");
         u.setAuthPerson("EDIT");      u.setAuthInfra("VIEW");
-        u.setAuthLicense("EDIT");     u.setAuthQuotation("VIEW");
-        u.setAuthWorkPlan("EDIT");    u.setAuthDocument("VIEW");
-        u.setAuthContract("EDIT");    u.setAuthPerformance("VIEW");
+        u.setAuthLicense("EDIT");     u.setAuthLsa("VIEW");
+        u.setAuthQuotation("EDIT");   u.setAuthWorkPlan("VIEW");
+        u.setAuthDocument("EDIT");    u.setAuthContract("VIEW");
+        u.setAuthPerformance("EDIT");
+        return u;   // 11개 — edit/view 교차(시작 edit)
+    }
 
-        AuthSummary.Result r = authSummary.summarize(u, 10);
+    /**
+     * 11개 권한 전부 badge 생성 — readAuth 의 필드별 return-empty mutation + 값/라벨/순서 매핑을 박제.
+     * (authLsa 는 authLicense 다음 6번째 — LSA 라벨. EDIT/VIEW 교차+containsExactly 로 어느 필드 반환을
+     *  ""로 바꿔도 badge 누락→탐지.)
+     */
+    @Test
+    void summarize_allElevenFields_eachBadgeMappedInOrder() {
+        AuthSummary.Result r = authSummary.summarize(allElevenAuths(), 11);
 
         assertThat(r.getList())
                 .extracting(AuthSummary.Badge::getLabel)
-                .containsExactly("대시E", "사업V", "담당E", "서버V", "라이E",
-                                 "견적V", "업무E", "문서V", "계약E", "성과V");
+                .containsExactly("대시E", "사업V", "담당E", "서버V", "라이E", "LSAV",
+                                 "견적E", "업무V", "문서E", "계약V", "성과E");
         assertThat(r.getList())
                 .extracting(AuthSummary.Badge::getCssClass)
-                .containsExactly("edit", "view", "edit", "view", "edit",
-                                 "view", "edit", "view", "edit", "view");
+                .containsExactly("edit", "view", "edit", "view", "edit", "view",
+                                 "edit", "view", "edit", "view", "edit");
         assertThat(r.getMoreCount()).isZero();
+    }
+
+    /** trim: 11권한 중 max=10 → 10 표시 + moreCount==1 (codex 권고: 경계 박제). */
+    @Test
+    void summarize_elevenFields_maxTen_trimsToTenWithMoreCountOne() {
+        AuthSummary.Result r = authSummary.summarize(allElevenAuths(), 10);
+
+        assertThat(r.getList()).hasSize(10);
+        assertThat(r.getList().get(0).getLabel()).isEqualTo("대시E");
+        assertThat(r.getList().get(9).getLabel()).isEqualTo("계약V");  // 11번째(성과E) 잘림
+        assertThat(r.getMoreCount()).isEqualTo(1);                     // 11 - 10
     }
 }

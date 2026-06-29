@@ -113,10 +113,12 @@
     <div class="sb-group">자산</div>
     <a class="sb-link" href="/infra/list" data-prefix="/infra"
        th:if="${#authentication.principal.user?.authInfra != null and #authentication.principal.user.authInfra != 'NONE'}" sec:authorize="isAuthenticated()"><i class="fas fa-server"></i><span>서버관리</span></a>
-    <!-- 라이선스 그룹 -->
-    <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" sec:authorize="isAuthenticated()">
-      <a class="sb-link" href="/license/registry/list" data-prefix="/license"><i class="fas fa-clipboard-list"></i><span>라이선스 대장</span></a>
-      <a class="sb-link sb-sub" href="/geonuris/license/list" data-prefix="/geonuris"><i class="fas fa-key"></i><span>GeoNURIS</span></a>
+    <!-- 라이선스 그룹 (License4J / GeoNURIS = authLicense, LSA = authLsa) -->
+    <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE') or (#authentication.principal.user?.authLsa != null and #authentication.principal.user.authLsa != 'NONE')}" sec:authorize="isAuthenticated()">
+      <div class="sb-group">라이선스</div>
+      <a class="sb-link sb-sub" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" href="/license/registry/list" data-prefix="/license"><i class="fas fa-clipboard-list"></i><span>License4J</span></a>
+      <a class="sb-link sb-sub" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLicense != null and #authentication.principal.user.authLicense != 'NONE')}" href="/geonuris/license/list" data-prefix="/geonuris"><i class="fas fa-key"></i><span>GeoNURIS</span></a>
+      <a class="sb-link sb-sub" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLsa != null and #authentication.principal.user.authLsa != 'NONE')}" href="/lsa/list" data-prefix="/lsa"><i class="fas fa-certificate"></i><span>LSA</span></a>
     </th:block>
     <!-- 견적서 그룹 -->
     <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}" sec:authorize="isAuthenticated()">

@@ -108,6 +108,7 @@ GET /license/registry/list
 GET /license/registry/upload
 GET /login
 GET /logout
+GET /lsa/list
 GET /mypage
 GET /ops-doc/api/attachments/{docId}
 GET /ops-doc/api/engineers

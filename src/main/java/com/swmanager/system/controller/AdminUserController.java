@@ -216,6 +216,7 @@ public class AdminUserController {
             @RequestParam("authPerson") String authPerson,
             @RequestParam("authInfra") String authInfra,
             @RequestParam(value = "authLicense", required = false, defaultValue = "NONE") String authLicense,
+            @RequestParam(value = "authLsa", required = false, defaultValue = "NONE") String authLsa,
             @RequestParam(value = "authQuotation", required = false, defaultValue = "NONE") String authQuotation,
             @RequestParam(value = "authWorkPlan", required = false, defaultValue = "NONE") String authWorkPlan,
             @RequestParam(value = "authDocument", required = false, defaultValue = "NONE") String authDocument,
@@ -235,6 +236,7 @@ public class AdminUserController {
         user.setAuthPerson(authPerson);
         user.setAuthInfra(authInfra);
         user.setAuthLicense(authLicense);
+        user.setAuthLsa(authLsa);
         user.setAuthQuotation(authQuotation);
         user.setAuthWorkPlan(authWorkPlan);
         user.setAuthDocument(authDocument);
@@ -275,6 +277,7 @@ public class AdminUserController {
             @RequestParam("authPerson") String authPerson,
             @RequestParam("authInfra") String authInfra,
             @RequestParam(value = "authLicense", required = false, defaultValue = "NONE") String authLicense,
+            @RequestParam(value = "authLsa", required = false, defaultValue = "NONE") String authLsa,
             @RequestParam(value = "authQuotation", required = false, defaultValue = "NONE") String authQuotation,
             @RequestParam(value = "authWorkPlan", required = false, defaultValue = "NONE") String authWorkPlan,
             @RequestParam(value = "authDocument", required = false, defaultValue = "NONE") String authDocument,
@@ -307,6 +310,7 @@ public class AdminUserController {
         user.setAuthPerson(authPerson);
         user.setAuthInfra(authInfra);
         user.setAuthLicense(authLicense);
+        user.setAuthLsa(authLsa);
         user.setAuthQuotation(authQuotation);
         user.setAuthWorkPlan(authWorkPlan);
         user.setAuthDocument(authDocument);

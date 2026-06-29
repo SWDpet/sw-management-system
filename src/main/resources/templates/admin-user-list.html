@@ -159,6 +159,12 @@
                             <option value="VIEW" th:selected="${u.authLicense == 'VIEW'}">라이선스: 조회</option>
                             <option value="EDIT" th:selected="${u.authLicense == 'EDIT'}">라이선스: 편집</option>
                         </select>
+                        <!-- ✨ LSA 권한 추가 -->
+                        <select name="authLsa" style="border: 1px solid var(--border2);" th:attr="form='approveForm' + ${u.userSeq}">
+                            <option value="NONE" th:selected="${u.authLsa == 'NONE' or u.authLsa == null}">LSA: X</option>
+                            <option value="VIEW" th:selected="${u.authLsa == 'VIEW'}">LSA: 조회</option>
+                            <option value="EDIT" th:selected="${u.authLsa == 'EDIT'}">LSA: 편집</option>
+                        </select>
                         <!-- ✨ 견적서 권한 추가 -->
                         <select name="authQuotation" style="border: 1px solid var(--border2);" th:attr="form='approveForm' + ${u.userSeq}">
                             <option value="NONE" th:selected="${u.authQuotation == 'NONE' or u.authQuotation == null}">견적서: X</option>
@@ -424,6 +430,11 @@
                                             <option value="NONE" th:selected="${u.authLicense == 'NONE' or u.authLicense == null}">라이선스: X</option>
                                             <option value="VIEW" th:selected="${u.authLicense == 'VIEW'}">라이선스: 조회</option>
                                             <option value="EDIT" th:selected="${u.authLicense == 'EDIT'}">라이선스: 편집</option>
+                                        </select>
+                                        <select name="authLsa">
+                                            <option value="NONE" th:selected="${u.authLsa == 'NONE' or u.authLsa == null}">LSA: X</option>
+                                            <option value="VIEW" th:selected="${u.authLsa == 'VIEW'}">LSA: 조회</option>
+                                            <option value="EDIT" th:selected="${u.authLsa == 'EDIT'}">LSA: 편집</option>
                                         </select>
                                         <select name="authQuotation">
                                             <option value="NONE" th:selected="${u.authQuotation == 'NONE' or u.authQuotation == null}">견적서: X</option>
