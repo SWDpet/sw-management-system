@@ -455,6 +455,13 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                                  부분커버 진단 대상(ExcelExportService rounddown·SwService normalize·LogService·
                                  LoginAttemptService)은 정규 테스트로 보호하며 게이트 제외. 측정 이력=docs/exec-plans/pit-baseline.md.
                                  백로그=InspectionQrBatchService(44%, 89생존) — 보강 후 편입. -->
+                            <!-- 로케일 고정: PIT 는 자체 JVM 을 fork 하므로 surefire argLine(-Duser.language=ko)을
+                                 못 물려받음 → targetClass MessageResolver 의 테스트가 CI(en) 에서 영어 번들로 실패.
+                                 PIT 포크 JVM 에 직접 ko 로케일 주입(CI gates 로케일 버그의 PIT 판). -->
+                            <jvmArgs>
+                                <param>-Duser.language=ko</param>
+                                <param>-Duser.country=KR</param>
+                            </jvmArgs>
                             <targetClasses>
                                 <param>com.swmanager.system.response.ApiResult</param>
                                 <param>com.swmanager.system.util.MaskingDetector</param>
