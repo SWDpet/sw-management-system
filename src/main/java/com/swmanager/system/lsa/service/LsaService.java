@@ -1,6 +1,7 @@
 package com.swmanager.system.lsa.service;
 
 import com.swmanager.system.domain.PersonInfo;
+import com.swmanager.system.exception.ResourceNotFoundException;
 import com.swmanager.system.lsa.domain.Lsa;
 import com.swmanager.system.lsa.dto.LsaDTO;
 import com.swmanager.system.lsa.dto.LsaForm;
@@ -59,16 +60,57 @@ public class LsaService {
      * @param issuer  발급자(컨트롤러가 비관리자=로그인 실명 강제, 관리자=폼값 검증 후 전달)
      * @param createdBy 작성자 userid
      */
+    /** 상세/수정 prefill 공용 — 없으면 NotFound. */
+    public LsaDTO getById(Long id) {
+        return lsaRepository.findById(id).map(LsaDTO::fromEntity)
+                .orElseThrow(() -> new ResourceNotFoundException("LSA", id));
+    }
+
     @Transactional
     public Long create(LsaForm form, String issuer, String createdBy) {
+        validateRequired(form);
+        Lsa lsa = new Lsa();
+        applyForm(lsa, form);
+        lsa.setIssuer(issuer);
+        lsa.setPsInfoId(upsertPersonInfo(form));
+        lsa.setCreatedBy(createdBy);
+        return lsaRepository.save(lsa).getId();
+    }
+
+    /**
+     * 수정 — 기존 행 로드(NotFound) + 필드 갱신 + ps_info 재대조 + updatedBy/At.
+     * @param issuerOverride 관리자가 변경한 발급자(null=기존 발급자 보존 — 편집자 이름으로 덮어쓰지 않음).
+     */
+    @Transactional
+    public Long update(Long id, LsaForm form, String issuerOverride, String updatedBy) {
+        validateRequired(form);
+        Lsa lsa = lsaRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("LSA", id));
+        applyForm(lsa, form);
+        if (issuerOverride != null && !issuerOverride.isBlank()) lsa.setIssuer(issuerOverride.trim());
+        // else: 기존 발급자(lsa.issuer) 보존
+        lsa.setPsInfoId(upsertPersonInfo(form));   // 담당자 변경 시 재대조(기존 person 보존)
+        lsa.setUpdatedBy(updatedBy);
+        lsa.setUpdatedAt(java.time.LocalDateTime.now());
+        return lsaRepository.save(lsa).getId();
+    }
+
+    /** 삭제 — lsa_license 행만(ps_info 보존). 없으면 NotFound. */
+    @Transactional
+    public void delete(Long id) {
+        Lsa lsa = lsaRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("LSA", id));
+        lsaRepository.delete(lsa);
+    }
+
+    private void validateRequired(LsaForm form) {
         // 서버측 필수값 검증(클라이언트 required 우회 방어) — 지자체·담당자·버전
         if (blankToNull(form.getCityNm()) == null || blankToNull(form.getDistNm()) == null
                 || blankToNull(form.getUserNm()) == null || blankToNull(form.getVersion()) == null) {
             throw new IllegalArgumentException("필수 항목 누락: 시도·시군구·담당자 이름·버전은 필수입니다.");
         }
-        Long psInfoId = upsertPersonInfo(form);
+    }
 
-        Lsa lsa = new Lsa();
+    /** 폼 → Lsa 필드 매핑(create/update 공용, issuer/createdBy/updatedBy 제외). */
+    private void applyForm(Lsa lsa, LsaForm form) {
         lsa.setCityNm(blankToNull(form.getCityNm()));
         lsa.setDistNm(blankToNull(form.getDistNm()));
         lsa.setDeptNm(blankToNull(form.getDeptNm()));
@@ -77,10 +119,6 @@ public class LsaService {
         lsa.setTel(blankToNull(form.getTel()));
         lsa.setEmail(blankToNull(form.getEmail()));
         lsa.setVersion(blankToNull(form.getVersion()));
-        lsa.setIssuer(issuer);
-        lsa.setPsInfoId(psInfoId);
-        lsa.setCreatedBy(createdBy);
-        return lsaRepository.save(lsa).getId();
     }
 
     /** ps_info 대조 → 기존 담당자 id 재사용 또는 새 행 INSERT. */

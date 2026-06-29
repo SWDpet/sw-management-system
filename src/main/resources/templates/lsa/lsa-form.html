@@ -33,30 +33,37 @@
 
 <div class="container">
     <div class="form-header">
-        <h2 class="form-title"><i class="fas fa-certificate" style="color:var(--primary);"></i> LSA 발급 작성</h2>
+        <h2 class="form-title"><i class="fas fa-certificate" style="color:var(--primary);"></i>
+            <span th:text="${lsa != null} ? 'LSA 발급 수정' : 'LSA 발급 작성'">LSA 발급 작성</span></h2>
     </div>
 
     <form method="post" th:action="@{/lsa/save}">
+        <input type="hidden" name="id" th:value="${lsa != null} ? ${lsa.id()} : ''">
         <div class="form-section">
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label">시도 <span style="color:var(--danger,#DA1F1F)">*</span></label>
-                    <select id="cityNm" name="cityNm" required>
+                    <select id="cityNm" name="cityNm" required th:attr="data-sel=${lsa != null ? lsa.cityNm() : ''}">
                         <option value="">-- 시도 선택 --</option>
-                        <option th:each="s : ${sidoList}" th:value="${s}" th:text="${s}"></option>
+                        <option th:each="s : ${sidoList}" th:value="${s}" th:text="${s}"
+                                th:selected="${lsa != null and lsa.cityNm() == s}"></option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">시군구 <span style="color:var(--danger,#DA1F1F)">*</span></label>
-                    <select id="distNm" name="distNm" required><option value="">-- 시군구 선택 --</option></select>
+                    <select id="distNm" name="distNm" required th:attr="data-sel=${lsa != null ? lsa.distNm() : ''}">
+                        <option value="">-- 시군구 선택 --</option>
+                        <option th:if="${lsa != null and lsa.distNm() != null}" th:value="${lsa.distNm()}"
+                                th:text="${lsa.distNm()}" selected></option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">부서</label>
-                    <input type="text" id="deptNm" name="deptNm">
+                    <input type="text" id="deptNm" name="deptNm" th:value="${lsa != null ? lsa.deptNm() : ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">팀</label>
-                    <input type="text" id="teamNm" name="teamNm">
+                    <input type="text" id="teamNm" name="teamNm" th:value="${lsa != null ? lsa.teamNm() : ''}">
                 </div>
             </div>
             <div style="margin:4px 0 16px;">
@@ -66,24 +73,25 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label">이름 <span style="color:var(--danger,#DA1F1F)">*</span></label>
-                    <input type="text" id="userNm" name="userNm" list="personList" required>
+                    <input type="text" id="userNm" name="userNm" list="personList" required th:value="${lsa != null ? lsa.userNm() : ''}">
                     <datalist id="personList"></datalist>
                 </div>
                 <div class="form-group">
                     <label class="form-label">전화번호</label>
-                    <input type="text" id="tel" name="tel">
+                    <input type="text" id="tel" name="tel" th:value="${lsa != null ? lsa.tel() : ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">이메일</label>
-                    <input type="text" id="email" name="email">
+                    <input type="text" id="email" name="email" th:value="${lsa != null ? lsa.email() : ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">버전 <span style="color:var(--danger,#DA1F1F)">*</span></label>
-                    <input type="text" id="version" name="version" required>
+                    <input type="text" id="version" name="version" required th:value="${lsa != null ? lsa.version() : ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">발급자</label>
-                    <input type="text" id="issuer" name="issuer" th:value="${issuer}"
+                    <input type="text" id="issuer" name="issuer"
+                           th:value="${lsa != null ? lsa.issuer() : issuer}"
                            th:readonly="${!isAdmin}">
                     <span class="hint" th:if="${!isAdmin}">로그인 사용자로 자동 기록됩니다.</span>
                     <span class="hint" th:if="${isAdmin}">관리자는 발급자를 변경할 수 있습니다.</span>
@@ -98,19 +106,28 @@
 </div>
 
 <script th:inline="none">
-    // 시군구 캐스케이드
-    document.getElementById('cityNm').addEventListener('change', function () {
-        var sido = this.value, dist = document.getElementById('distNm');
+    // 시군구 캐스케이드 (keep=유지할 기존 선택값)
+    function loadDistricts(sido, keep) {
+        var dist = document.getElementById('distNm');
         dist.innerHTML = '<option value="">-- 시군구 선택 --</option>';
         if (!sido) return;
-        fetch('/lsa/api/districts?sido=' + encodeURIComponent(sido))
+        return fetch('/lsa/api/districts?sido=' + encodeURIComponent(sido))
             .then(function (r) { return r.json(); })
             .then(function (list) {
                 list.forEach(function (sgg) {
-                    var o = document.createElement('option'); o.value = sgg; o.textContent = sgg; dist.appendChild(o);
+                    var o = document.createElement('option'); o.value = sgg; o.textContent = sgg;
+                    if (keep && sgg === keep) o.selected = true;
+                    dist.appendChild(o);
                 });
             });
-    });
+    }
+    document.getElementById('cityNm').addEventListener('change', function () { loadDistricts(this.value, null); });
+    // 수정 모드: 저장된 시도가 있으면 시군구 전체 목록 로드(기존 선택 유지)
+    (function initEdit() {
+        var city = document.getElementById('cityNm');
+        var savedDist = document.getElementById('distNm').getAttribute('data-sel');
+        if (city.value) loadDistricts(city.value, savedDist);
+    })();
     // ps_info 담당자 prefill
     var lastCandidates = [];
     function loadPersons() {

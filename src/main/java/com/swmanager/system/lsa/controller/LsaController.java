@@ -94,15 +94,52 @@ public class LsaController {
         return "lsa/lsa-form";
     }
 
-    /** LSA 저장 — 발급자: 비관리자=로그인 실명 강제, 관리자=폼값 */
+    /** LSA 상세 (VIEW) */
+    @GetMapping("/{id:\\d+}")
+    public String detail(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
+        checkViewAuth();
+        model.addAttribute("lsa", lsaService.getById(id));
+        CustomUserDetails cu = getCurrentUser();
+        model.addAttribute("canEdit", "ROLE_ADMIN".equals(cu.getUser().getUserRole())
+                || "EDIT".equals(cu.getUser().getAuthLsa()));
+        return "lsa/lsa-detail";
+    }
+
+    /** LSA 수정 폼 (EDIT|admin) — 작성 폼 재사용 + 기존값 prefill */
+    @GetMapping("/{id:\\d+}/edit")
+    public String editForm(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
+        checkEditAuth();
+        model.addAttribute("lsa", lsaService.getById(id));
+        model.addAttribute("sidoList", lsaService.sidoList());
+        model.addAttribute("isAdmin", isAdmin());
+        model.addAttribute("issuer", getCurrentUser().getUser().getUsername());
+        return "lsa/lsa-form";
+    }
+
+    /** LSA 저장(신규/수정) — 발급자: 비관리자=로그인 실명 강제, 관리자=폼값. id 있으면 update. */
     @PostMapping("/save")
     public String save(@ModelAttribute LsaForm form) {
         checkEditAuth();
         CustomUserDetails cu = getCurrentUser();
         String loginName = cu.getUser().getUsername();
-        String issuer = isAdmin() && form.getIssuer() != null && !form.getIssuer().isBlank()
-                ? form.getIssuer().trim() : loginName;   // 위조 방지: 비관리자 폼값 무시
-        lsaService.create(form, issuer, cu.getUsername());
+        boolean adminIssuerChange = isAdmin() && form.getIssuer() != null && !form.getIssuer().isBlank();
+        if (form.getId() != null) {
+            // 수정: 발급자 보존(비관리자 override=null), 관리자만 폼값으로 변경
+            String issuerOverride = adminIssuerChange ? form.getIssuer().trim() : null;
+            lsaService.update(form.getId(), form, issuerOverride, cu.getUsername());
+        } else {
+            // 신규: 비관리자=로그인 실명 강제(위조 방지), 관리자=폼값
+            String issuer = adminIssuerChange ? form.getIssuer().trim() : loginName;
+            lsaService.create(form, issuer, cu.getUsername());
+        }
+        return "redirect:/lsa/list";
+    }
+
+    /** LSA 삭제 (EDIT|admin) — lsa_license 만, ps_info 보존 */
+    @PostMapping("/{id:\\d+}/delete")
+    public String delete(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        checkEditAuth();
+        lsaService.delete(id);
         return "redirect:/lsa/list";
     }
 

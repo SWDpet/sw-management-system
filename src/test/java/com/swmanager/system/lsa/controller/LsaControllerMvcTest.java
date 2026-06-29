@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -164,5 +165,82 @@ class LsaControllerMvcTest {
         mockMvc.perform(get("/lsa/api/persons").param("city", "전라남도").param("dist", "강진군"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"));
+    }
+
+    private com.swmanager.system.lsa.dto.LsaDTO dto() {
+        return new com.swmanager.system.lsa.dto.LsaDTO(5L, "전라남도", "강진군", "정보화", "GIS",
+                "홍길동", "061-1", "h@x.kr", "v1", "박욱진", null, "ukjin", null, null);
+    }
+
+    // ── 12. /{id} 상세 VIEW → 200 lsa-detail + model ─────────────────────────
+    @Test
+    void detail_view_renders() throws Exception {
+        login("VIEW", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dto());
+        mockMvc.perform(get("/lsa/5"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lsa/lsa-detail"))
+                .andExpect(model().attributeExists("lsa"))
+                .andExpect(model().attribute("canEdit", false));
+    }
+
+    // ── 13. /{id} 상세 NONE → 403 ────────────────────────────────────────────
+    @Test
+    void detail_none_403() throws Exception {
+        login("NONE", "ROLE_USER");
+        mockMvc.perform(get("/lsa/5")).andExpect(status().isForbidden());
+        verify(lsaService, never()).getById(any());
+    }
+
+    // ── 14. /{id}/edit EDIT → 200 lsa-form + prefill ─────────────────────────
+    @Test
+    void editForm_edit_renders() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dto());
+        when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
+        mockMvc.perform(get("/lsa/5/edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lsa/lsa-form"))
+                .andExpect(model().attributeExists("lsa", "sidoList"));
+    }
+
+    // ── 15. /{id}/edit VIEW → 403 ────────────────────────────────────────────
+    @Test
+    void editForm_viewOnly_403() throws Exception {
+        login("VIEW", "ROLE_USER");
+        mockMvc.perform(get("/lsa/5/edit")).andExpect(status().isForbidden());
+    }
+
+    // ── 16. POST /save with id → update 분기(create 아님) ────────────────────
+    @Test
+    void save_withId_callsUpdate() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.update(eq(5L), any(), any(), any())).thenReturn(5L);
+        mockMvc.perform(post("/lsa/save")
+                        .param("id", "5").param("cityNm", "전라남도").param("distNm", "강진군")
+                        .param("userNm", "홍길동").param("version", "v2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/lsa/list"));
+        // 비관리자 수정 → issuerOverride=null(기존 발급자 보존), updatedBy=userid
+        verify(lsaService).update(eq(5L), any(), isNull(), eq("tester"));
+        verify(lsaService, never()).create(any(), any(), any());
+    }
+
+    // ── 17. POST /{id}/delete EDIT → 3xx + service.delete ────────────────────
+    @Test
+    void delete_edit_redirectsAndDeletes() throws Exception {
+        login("EDIT", "ROLE_USER");
+        mockMvc.perform(post("/lsa/5/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/lsa/list"));
+        verify(lsaService).delete(5L);
+    }
+
+    // ── 18. POST /{id}/delete VIEW → 403 ─────────────────────────────────────
+    @Test
+    void delete_viewOnly_403() throws Exception {
+        login("VIEW", "ROLE_USER");
+        mockMvc.perform(post("/lsa/5/delete")).andExpect(status().isForbidden());
+        verify(lsaService, never()).delete(any());
     }
 }

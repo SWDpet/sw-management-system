@@ -171,6 +171,83 @@ class LsaServiceTest {
         verify(personRepo, never()).save(any());
     }
 
+    // ===== getById / update / delete (P4) =====
+
+    @Test
+    void getById_found_mapsDto() {
+        when(repo.findById(7L)).thenReturn(java.util.Optional.of(sample()));
+        assertThat(service.getById(7L).userNm()).isEqualTo("홍길동");
+    }
+
+    @Test
+    void getById_notFound_throws() {
+        when(repo.findById(404L)).thenReturn(java.util.Optional.empty());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.getById(404L))
+                .isInstanceOf(com.swmanager.system.exception.ResourceNotFoundException.class);
+    }
+
+    @Test
+    void update_existing_updatesFieldsAndUpdatedBy() {
+        Lsa existing = sample();
+        when(repo.findById(7L)).thenReturn(java.util.Optional.of(existing));
+        when(personRepo.findCandidates(any(), any(), any(), any())).thenReturn(List.of());
+        when(personRepo.save(any(PersonInfo.class))).thenAnswer(i -> { PersonInfo p = i.getArgument(0); p.setId(88L); return p; });
+        when(repo.save(any(Lsa.class))).thenAnswer(i -> i.getArgument(0));
+
+        LsaForm f = form(); f.setVersion("v9.9");
+        service.update(7L, f, "수정발급자", "editor");
+
+        ArgumentCaptor<Lsa> cap = ArgumentCaptor.forClass(Lsa.class);
+        verify(repo).save(cap.capture());
+        Lsa saved = cap.getValue();
+        assertThat(saved.getVersion()).isEqualTo("v9.9");
+        assertThat(saved.getIssuer()).isEqualTo("수정발급자");
+        assertThat(saved.getUpdatedBy()).isEqualTo("editor");
+        assertThat(saved.getUpdatedAt()).isNotNull();
+        assertThat(saved.getPsInfoId()).isEqualTo(88L);
+    }
+
+    /** 발급자 보존: issuerOverride=null → 기존 발급자 유지(편집자 이름 덮어쓰기 금지). */
+    @Test
+    void update_nullIssuerOverride_preservesExistingIssuer() {
+        Lsa existing = sample();   // issuer="박욱진"
+        when(repo.findById(7L)).thenReturn(java.util.Optional.of(existing));
+        when(personRepo.findCandidates(any(), any(), any(), any())).thenReturn(List.of());
+        when(personRepo.save(any(PersonInfo.class))).thenAnswer(i -> { PersonInfo p = i.getArgument(0); p.setId(1L); return p; });
+        when(repo.save(any(Lsa.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.update(7L, form(), null, "editor");   // override=null
+
+        ArgumentCaptor<Lsa> cap = ArgumentCaptor.forClass(Lsa.class);
+        verify(repo).save(cap.capture());
+        assertThat(cap.getValue().getIssuer()).isEqualTo("박욱진");   // 기존 발급자 보존
+        assertThat(cap.getValue().getUpdatedBy()).isEqualTo("editor");
+    }
+
+    @Test
+    void update_notFound_throws() {
+        when(repo.findById(404L)).thenReturn(java.util.Optional.empty());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.update(404L, form(), "i", "u"))
+                .isInstanceOf(com.swmanager.system.exception.ResourceNotFoundException.class);
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void delete_existing_deletesLsaOnly() {
+        Lsa existing = sample();
+        when(repo.findById(7L)).thenReturn(java.util.Optional.of(existing));
+        service.delete(7L);
+        verify(repo).delete(existing);
+        verify(personRepo, never()).delete(any());   // ps_info 보존
+    }
+
+    @Test
+    void delete_notFound_throws() {
+        when(repo.findById(404L)).thenReturn(java.util.Optional.empty());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.delete(404L))
+                .isInstanceOf(com.swmanager.system.exception.ResourceNotFoundException.class);
+    }
+
     // ===== 캐스케이드 =====
     @Test
     void districtList_mapsSggNmDistinct() {

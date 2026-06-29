@@ -18,12 +18,15 @@ public record LsaDTO(
         String email,
         String version,
         String issuer,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String createdBy,
+        LocalDateTime updatedAt,
+        String updatedBy
 ) {
     public static LsaDTO fromEntity(Lsa l) {
         return new LsaDTO(
                 l.getId(), l.getCityNm(), l.getDistNm(), l.getDeptNm(), l.getTeamNm(),
                 l.getUserNm(), l.getTel(), l.getEmail(), l.getVersion(), l.getIssuer(),
-                l.getCreatedAt());
+                l.getCreatedAt(), l.getCreatedBy(), l.getUpdatedAt(), l.getUpdatedBy());
     }
 }

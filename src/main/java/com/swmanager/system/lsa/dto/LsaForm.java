@@ -9,6 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LsaForm {
+    private Long id;         // null=신규, 값=수정
     private String cityNm;   // 시도
     private String distNm;   // 시군구
     private String deptNm;   // 부서

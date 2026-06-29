@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>LSA 발급 상세 - SW Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <link rel="stylesheet" href="/css/design-system.css">
+    <style>
+        body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); margin:0; color:var(--text); font-size:13.5px; }
+        .container { max-width:1000px; margin:auto; padding:28px 32px 56px; }
+        .page-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+        .page-title h2 { margin:0; font-size:1.4rem; font-weight:700; display:flex; align-items:center; gap:10px; }
+        .card { background:var(--surface); padding:26px 28px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.06); border:1px solid var(--border); }
+        .detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px 28px; }
+        .detail-item { display:flex; flex-direction:column; gap:5px; }
+        .detail-label { font-size:0.78rem; color:var(--muted); font-weight:600; }
+        .detail-value { font-size:0.92rem; color:var(--text); }
+        .btn { display:inline-flex; align-items:center; gap:5px; padding:8px 16px; border-radius:8px; font-size:0.84rem; font-weight:600; text-decoration:none; border:none; cursor:pointer; font-family:'Noto Sans KR',sans-serif; }
+        .btn-primary { background:var(--primary); color:#fff; } .btn-primary:hover { background:var(--primary2); }
+        .btn-ghost { background:var(--surface); color:var(--text2); border:1.5px solid var(--border2); }
+        .btn-danger { background:var(--danger,#DA1F1F); color:#fff; }
+        .actions { display:flex; gap:8px; }
+    </style>
+</head>
+<body>
+<div th:replace="~{fragments/top-nav :: nav}"></div>
+
+<div class="container">
+    <div class="page-title">
+        <h2><i class="fas fa-certificate" style="color:var(--primary);"></i> LSA 발급 상세</h2>
+        <div class="actions">
+            <a class="btn btn-ghost" th:href="@{/lsa/list}"><i class="fas fa-list"></i> 목록</a>
+            <a class="btn btn-primary" th:if="${canEdit}" th:href="@{'/lsa/' + ${lsa.id()} + '/edit'}"><i class="fas fa-pen"></i> 수정</a>
+            <form th:if="${canEdit}" method="post" th:action="@{'/lsa/' + ${lsa.id()} + '/delete'}"
+                  onsubmit="return confirm('이 LSA 발급 내역을 삭제하시겠습니까? (담당자 정보는 보존됩니다)');" style="display:inline;">
+                <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> 삭제</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="detail-grid">
+            <div class="detail-item"><span class="detail-label">지자체</span><span class="detail-value" th:text="${(lsa.cityNm() ?: '') + ' ' + (lsa.distNm() ?: '')}"></span></div>
+            <div class="detail-item"><span class="detail-label">부서</span><span class="detail-value" th:text="${lsa.deptNm()}"></span></div>
+            <div class="detail-item"><span class="detail-label">팀</span><span class="detail-value" th:text="${lsa.teamNm()}"></span></div>
+            <div class="detail-item"><span class="detail-label">담당자</span><span class="detail-value" th:text="${lsa.userNm()}"></span></div>
+            <div class="detail-item"><span class="detail-label">전화번호</span><span class="detail-value" th:text="${lsa.tel()}"></span></div>
+            <div class="detail-item"><span class="detail-label">이메일</span><span class="detail-value" th:text="${lsa.email()}"></span></div>
+            <div class="detail-item"><span class="detail-label">버전</span><span class="detail-value" th:text="${lsa.version()}"></span></div>
+            <div class="detail-item"><span class="detail-label">발급자</span><span class="detail-value" th:text="${lsa.issuer()}"></span></div>
+            <div class="detail-item"><span class="detail-label">등록일</span><span class="detail-value" th:text="${lsa.createdAt() != null ? #temporals.format(lsa.createdAt(), 'yyyy-MM-dd HH:mm') : ''}"></span></div>
+            <div class="detail-item" th:if="${lsa.updatedAt() != null}"><span class="detail-label">수정일</span><span class="detail-value" th:text="${#temporals.format(lsa.updatedAt(), 'yyyy-MM-dd HH:mm')}"></span></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
