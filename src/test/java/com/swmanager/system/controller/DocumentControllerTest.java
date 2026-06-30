@@ -36,6 +36,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -134,6 +135,14 @@ class DocumentControllerTest {
         Document d = new Document();
         if (id != null) d.setDocId(id);
         d.setAuthor(testerUser());
+        return d;
+    }
+    /** [owner-edit-guard] 타인(userSeq=2)이 작성한 문서 — 비소유 EDIT 사용자의 거부 경로 검증용. */
+    private static Document docOwnedByOther(Integer id) {
+        Document d = new Document();
+        if (id != null) d.setDocId(id);
+        User other = new User(); other.setUserSeq(2L); other.setUserid("other");
+        d.setAuthor(other);
         return d;
     }
 
@@ -337,6 +346,35 @@ class DocumentControllerTest {
         String view = controller.deleteDocument(1, rttr());
         assertThat(view).isEqualTo("redirect:/document/list");
         verify(documentService).deleteDocument(1);
+    }
+
+    // [owner-edit-guard] EDIT 권한자라도 타인 작성건은 수정/상태변경/삭제 불가 (deny 경로 = 보안 핵심)
+    @Test
+    void saveDocument_updateNonOwner_forbidden() {
+        loginEdit();
+        when(documentService.getDocumentById(100)).thenReturn(docOwnedByOther(100));
+        Map<String, Object> req = new HashMap<>();
+        req.put("docType", "COMMENCE");
+        req.put("docId", 100);   // 수정 분기 (projId 없음 → 중복체크 우회)
+        ResponseEntity<?> res = controller.saveDocument(req);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void changeStatus_nonOwner_forbidden() {
+        loginEdit();
+        when(documentService.getDocumentById(1)).thenReturn(docOwnedByOther(1));
+        ResponseEntity<?> res = controller.changeStatus(1, DocumentStatus.COMPLETED, null);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void deleteDocument_nonOwner_redirectsWithoutDelete() {
+        loginEdit();
+        when(documentService.getDocumentById(1)).thenReturn(docOwnedByOther(1));
+        String view = controller.deleteDocument(1, rttr());
+        assertThat(view).isEqualTo("redirect:/document/list");
+        verify(documentService, never()).deleteDocument(1);
     }
 
     // ───────────────────────── 미리보기/출력 ─────────────────────────

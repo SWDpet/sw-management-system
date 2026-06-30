@@ -370,6 +370,25 @@ class OpsDocControllerTest {
         verify(opsDocService).update(eq(60L), any(), any(), any());
     }
 
+    // [owner-edit-guard] EDIT 권한자라도 타인 작성건은 수정 불가 (requireOwnerOrAdmin/canManage deny = 보안 핵심)
+    @Test
+    void update_nonOwner_forbidden() {
+        OpsDocument others = new OpsDocument(); others.setDocId(60L); others.setCreatedBy("other");
+        when(opsDocService.findById(60L)).thenReturn(Optional.of(others));
+        ResponseEntity<?> res = controller.update("FAULT", 60L, minimalForm(), editUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(opsDocService, never()).update(anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void editForm_nonOwner_redirectsDetail() {
+        OpsDocument others = new OpsDocument();
+        others.setDocId(7L); others.setDocType(OpsDocType.FAULT); others.setCreatedBy("other");
+        when(opsDocService.findById(7L)).thenReturn(Optional.of(others));
+        // 비소유 EDIT 사용자는 수정폼 진입 차단 → 상세로 redirect
+        assertThat(controller.editForm("FAULT", 7L, model(), editUser())).isEqualTo("redirect:/ops-doc/FAULT/7");
+    }
+
     // ───────────────────────── 지원파일 업로드/다운로드/삭제 ─────────────────────────
 
     @Test

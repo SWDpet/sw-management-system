@@ -83,6 +83,13 @@ class WorkPlanControllerTest {
     /** [owner-edit-guard] 로그인 tester(userSeq=1) 가 작성자인 업무계획. */
     private static User testerUser() { User u = new User(); u.setUserSeq(1L); u.setUserid("tester"); return u; }
     private static WorkPlan ownedByTester() { WorkPlan w = new WorkPlan(); w.setCreatedBy(testerUser()); return w; }
+    /** [owner-edit-guard] 타인(userSeq=2)이 작성한 업무계획 — 비소유 EDIT 거부 경로 검증용. */
+    private static WorkPlan ownedByOther() {
+        WorkPlan w = new WorkPlan();
+        User o = new User(); o.setUserSeq(2L); o.setUserid("other");
+        w.setCreatedBy(o);
+        return w;
+    }
 
     @AfterEach
     void tearDown() { SecurityContextHolder.clearContext(); }
@@ -282,6 +289,40 @@ class WorkPlanControllerTest {
         when(workPlanService.getWorkPlanById(1)).thenReturn(target);
         assertThat(controller.delete(1, rttr())).isEqualTo("redirect:/workplan/calendar");
         verify(workPlanService).deleteWorkPlan(1);
+    }
+
+    // [owner-edit-guard] EDIT 권한자라도 타인 작성건은 수정/삭제/상태변경 불가 (deny 경로 = 보안 핵심)
+    @Test
+    void editForm_editNonOwner_redirectsCalendar() {
+        loginEdit();
+        when(workPlanService.getWorkPlanById(7)).thenReturn(ownedByOther());
+        assertThat(controller.editForm(7, model(), rttr())).isEqualTo("redirect:/workplan/calendar");
+    }
+
+    @Test
+    void save_updateNonOwner_redirectsWithoutSave() {
+        loginEdit();
+        when(workPlanService.getWorkPlanById(7)).thenReturn(ownedByOther());
+        WorkPlanDTO dto = new WorkPlanDTO(); dto.setPlanId(7);   // 기존 수정
+        assertThat(controller.save(dto, rttr())).isEqualTo("redirect:/workplan/calendar");
+        verify(workPlanService, never()).saveWorkPlan(any(), any());
+    }
+
+    @Test
+    void delete_nonOwner_redirectsWithoutDelete() {
+        loginEdit();
+        when(workPlanService.getWorkPlanById(7)).thenReturn(ownedByOther());
+        assertThat(controller.delete(7, rttr())).isEqualTo("redirect:/workplan/calendar");
+        verify(workPlanService, never()).deleteWorkPlan(7);
+    }
+
+    @Test
+    void updateStatus_nonOwner_forbidden() {
+        loginEdit();
+        when(workPlanService.getWorkPlanById(7)).thenReturn(ownedByOther());
+        ResponseEntity<?> res = controller.updateStatus(7, "DONE", null);
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(workPlanService, never()).updateStatus(anyInt(), any(), any());
     }
 
     // ───────────────────────── 상태 변경 API (EDIT) ─────────────────────────
