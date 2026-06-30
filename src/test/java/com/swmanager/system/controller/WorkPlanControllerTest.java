@@ -74,8 +74,15 @@ class WorkPlanControllerTest {
         inject("sigunguCodeRepository", sigunguCodeRepository);
         inject("swProjectRepository", swProjectRepository);
         inject("logService", logService);
+        // [owner-edit-guard] 기본: 대상 업무계획은 로그인 tester(userSeq=1) 소유(개별 테스트 override 가능)
+        org.mockito.Mockito.lenient().when(workPlanService.getWorkPlanById(anyInt()))
+                .thenReturn(ownedByTester());
         SecurityContextHolder.clearContext();
     }
+
+    /** [owner-edit-guard] 로그인 tester(userSeq=1) 가 작성자인 업무계획. */
+    private static User testerUser() { User u = new User(); u.setUserSeq(1L); u.setUserid("tester"); return u; }
+    private static WorkPlan ownedByTester() { WorkPlan w = new WorkPlan(); w.setCreatedBy(testerUser()); return w; }
 
     @AfterEach
     void tearDown() { SecurityContextHolder.clearContext(); }
@@ -189,7 +196,7 @@ class WorkPlanControllerTest {
     void editForm_edit_loadsEntity() {
         loginEdit();
         stubFormAttributes();
-        when(workPlanService.getWorkPlanById(1)).thenReturn(new WorkPlan());
+        when(workPlanService.getWorkPlanById(1)).thenReturn(ownedByTester());   // 작성자 본인
         Model m = model();
         assertThat(controller.editForm(1, m, rttr())).isEqualTo("workplan/workplan-form");
         assertThat(m.containsAttribute("workPlan")).isTrue();
@@ -270,7 +277,7 @@ class WorkPlanControllerTest {
     @Test
     void delete_edit_deletesAndRedirects() {
         loginEdit();
-        WorkPlan target = new WorkPlan();
+        WorkPlan target = ownedByTester();   // 작성자 본인
         target.setTitle("삭제대상");
         when(workPlanService.getWorkPlanById(1)).thenReturn(target);
         assertThat(controller.delete(1, rttr())).isEqualTo("redirect:/workplan/calendar");

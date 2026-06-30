@@ -2,9 +2,12 @@ package com.swmanager.system.controller.ops;
 
 import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.domain.User;
+import com.swmanager.system.domain.ops.OpsDocument;
 import com.swmanager.system.domain.ops.OpsDocumentAttachment;
 import com.swmanager.system.service.ops.OpsDocAttachmentService;
 import com.swmanager.system.service.ops.OpsDocService;
+
+import java.util.Optional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,12 @@ class OpsDocControllerAttachmentGuardTest {
         opsDocService = mock(OpsDocService.class);
         inject("attachmentService", attachmentService);
         inject("opsDocService", opsDocService);
+
+        // [owner-edit-guard] 기본: 대상 문서는 로그인 tester 소유(EDIT 사용자=작성자 가정).
+        OpsDocument ownedByTester = new OpsDocument();
+        ownedByTester.setCreatedBy("tester");
+        lenient().when(opsDocService.findById(anyLong())).thenReturn(Optional.of(ownedByTester));
+        lenient().when(attachmentService.docIdByAttach(anyLong())).thenReturn(10L);
     }
 
     private void inject(String field, Object value) throws Exception {

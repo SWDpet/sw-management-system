@@ -85,6 +85,14 @@ public class WorkPlanController {
         return (auth != null) ? auth : "NONE";
     }
 
+    /** 현재 사용자가 업무계획 작성자인지 (createdBy = User FK, PK=userSeq). */
+    private boolean isOwnerOf(Integer id) {
+        WorkPlan w = workPlanService.getWorkPlanById(id);
+        CustomUserDetails cu = getCurrentUser();
+        return w != null && w.getCreatedBy() != null && cu != null && cu.getUser() != null
+                && w.getCreatedBy().getUserSeq().equals(cu.getUser().getUserSeq());
+    }
+
     // === P-01: 업무 캘린더 (메인 화면) ===
 
     @GetMapping("/calendar")
@@ -101,6 +109,10 @@ public class WorkPlanController {
         model.addAttribute("infraList", infraList);
         model.addAttribute("users", users);
         model.addAttribute("userAuth", auth);
+        // [owner-edit-guard] 팝오버 수정/삭제 버튼 행단위 소유권 판정용(JS)
+        CustomUserDetails cu = getCurrentUser();
+        model.addAttribute("currentUserSeq", (cu != null && cu.getUser() != null) ? cu.getUser().getUserSeq() : null);
+        model.addAttribute("isAdmin", isAdmin());
 
         logService.log(MenuName.WORK_PLAN, AccessActionType.VIEW, "업무 캘린더 조회");
         return "workplan/workplan-calendar";
@@ -207,6 +219,11 @@ public class WorkPlanController {
             rttr.addFlashAttribute("errorMessage", "수정 권한이 없습니다.");
             return "redirect:/workplan/calendar";
         }
+        // [owner-edit-guard] 비소유·비관리자는 수정폼 진입 차단
+        if (!isAdmin() && !isOwnerOf(id)) {
+            rttr.addFlashAttribute("errorMessage", "작성자 본인 또는 관리자만 수정할 수 있습니다.");
+            return "redirect:/workplan/calendar";
+        }
 
         if (!model.containsAttribute("workPlan")) {
             WorkPlan entity = workPlanService.getWorkPlanById(id);
@@ -239,6 +256,11 @@ public class WorkPlanController {
         User user = (currentUser != null) ? currentUser.getUser() : null;
 
         boolean isNew = (dto.getPlanId() == null);
+        // [owner-edit-guard] 수정은 작성자 본인 또는 관리자만 (신규작성은 무제한)
+        if (!isNew && !isAdmin() && !isOwnerOf(dto.getPlanId())) {
+            rttr.addFlashAttribute("errorMessage", "작성자 본인 또는 관리자만 수정할 수 있습니다.");
+            return "redirect:/workplan/calendar";
+        }
         WorkPlan saved;
         try {
             saved = workPlanService.saveWorkPlan(dto, user);
@@ -264,6 +286,11 @@ public class WorkPlanController {
             rttr.addFlashAttribute("errorMessage", "삭제 권한이 없습니다.");
             return "redirect:/workplan/calendar";
         }
+        // [owner-edit-guard] 작성자 본인 또는 관리자만 삭제
+        if (!isAdmin() && !isOwnerOf(id)) {
+            rttr.addFlashAttribute("errorMessage", "작성자 본인 또는 관리자만 삭제할 수 있습니다.");
+            return "redirect:/workplan/calendar";
+        }
 
         WorkPlan target = workPlanService.getWorkPlanById(id);
         String title = target.getTitle();
@@ -285,6 +312,10 @@ public class WorkPlanController {
 
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
+        }
+        // [owner-edit-guard] 상태변경=편집 성격 → 작성자 본인 또는 관리자만
+        if (!isAdmin() && !isOwnerOf(id)) {
+            return ResponseEntity.status(403).body(Map.of("error", "작성자 본인 또는 관리자만 상태를 변경할 수 있습니다."));
         }
 
         WorkPlan updated = workPlanService.updateStatus(id, status, reason);

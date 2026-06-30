@@ -66,6 +66,14 @@ public class OpsDocAttachmentService {
         return attachmentRepository.findByDocument_DocIdOrderByUploadedAtDesc(docId);
     }
 
+    /** 첨부의 부모 문서 docId — 소유권 가드용(attachId→docId 해소). 없으면 null. */
+    @Transactional(readOnly = true)
+    public Long docIdByAttach(Long attachId) {
+        return attachmentRepository.findById(attachId)
+                .map(a -> a.getDocument() != null ? a.getDocument().getDocId() : null)
+                .orElse(null);
+    }
+
     public void deleteAttachment(Long attachId) {
         OpsDocumentAttachment att = attachmentRepository.findById(attachId)
                 .orElseThrow(() -> new IllegalArgumentException("attachment not found: " + attachId));

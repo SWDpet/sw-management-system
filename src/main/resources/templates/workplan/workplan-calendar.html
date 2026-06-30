@@ -165,6 +165,7 @@
             <button class="btn-status" onclick="openStatusModal()"><i class="fas fa-exchange-alt"></i> 상태변경</button>
             <button class="btn-delete" onclick="confirmDelete()"><i class="fas fa-trash"></i> 삭제</button>
         </div>
+        <div id="popOwnerHint" th:if="${userAuth == 'EDIT'}" style="display:none;font-size:0.78rem;color:var(--muted);margin-top:8px;">작성자 본인 또는 관리자만 수정·삭제할 수 있습니다.</div>
     </div>
 
     <!-- 상태변경 모달 -->
@@ -193,6 +194,9 @@
         var calendar;
         var currentEventId = null;
         var userAuth = '[[${userAuth}]]';
+        // [owner-edit-guard] 팝오버 수정/삭제 버튼 행단위 소유권 판정 (assignee 아닌 createdBy 기준)
+        var currentUserSeq = [[${currentUserSeq}]];
+        var isAdmin = [[${isAdmin}]];
 
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
@@ -327,6 +331,15 @@
             // 수정 링크
             var editLink = document.getElementById('popEditLink');
             if (editLink) editLink.href = '/workplan/edit/' + event.id;
+
+            // [owner-edit-guard] 관리자 또는 작성자 본인만 수정/상태변경/삭제 노출
+            var popActions = document.getElementById('popActions');
+            if (popActions) {
+                var canManage = isAdmin || (ep.createdById != null && ep.createdById === currentUserSeq);
+                popActions.style.display = canManage ? '' : 'none';
+                var popHint = document.getElementById('popOwnerHint');
+                if (popHint) popHint.style.display = canManage ? 'none' : 'block';
+            }
 
             // 위치 계산
             var x = jsEvent.pageX;

@@ -50,7 +50,7 @@
                    placeholder="지자체·이름·버전·발급자 검색">
             <button type="submit" class="btn btn-outline"><i class="fas fa-search"></i> 검색</button>
         </div>
-        <a class="btn btn-primary" th:if="${canEdit}" th:href="@{/lsa/new}"><i class="fas fa-plus"></i> 작성</a>
+        <a class="btn btn-primary" th:if="${canEditBase}" th:href="@{/lsa/new}"><i class="fas fa-plus"></i> 작성</a>
     </form>
 
     <div class="table-section">
@@ -73,15 +73,15 @@
                 <td class="text-center" th:text="${row.createdAt() != null ? #temporals.format(row.createdAt(), 'yyyy-MM-dd') : ''}">등록일</td>
                 <td class="text-center" style="white-space:nowrap;">
                     <a class="row-act" th:href="@{'/lsa/' + ${row.id()}}" title="상세"><i class="fas fa-eye"></i></a>
-                    <a class="row-act" th:if="${canEdit}" th:href="@{'/lsa/' + ${row.id()} + '/edit'}" title="수정"><i class="fas fa-pen"></i></a>
-                    <form th:if="${canEdit}" method="post" th:action="@{'/lsa/' + ${row.id()} + '/delete'}" style="display:inline;"
+                    <a class="row-act" th:if="${canEditBase and (isAdmin or row.createdBy() == currentUserId)}" th:href="@{'/lsa/' + ${row.id()} + '/edit'}" title="수정"><i class="fas fa-pen"></i></a>
+                    <form th:if="${canEditBase and (isAdmin or row.createdBy() == currentUserId)}" method="post" th:action="@{'/lsa/' + ${row.id()} + '/delete'}" style="display:inline;"
                           onsubmit="return confirm('이 LSA 발급 내역을 삭제하시겠습니까? (담당자 정보는 보존됩니다)');">
                         <button type="submit" class="row-act danger" title="삭제"><i class="fas fa-trash"></i></button>
                     </form>
                 </td>
             </tr>
             <tr class="empty-row" th:if="${#lists.isEmpty(lsaList)}">
-                <td colspan="9">등록된 LSA 발급 내역이 없습니다. <span th:if="${canEdit}">'작성'으로 추가하세요.</span></td>
+                <td colspan="9">등록된 LSA 발급 내역이 없습니다. <span th:if="${canEditBase}">'작성'으로 추가하세요.</span></td>
             </tr>
             </tbody>
         </table>

@@ -128,6 +128,15 @@ class DocumentControllerTest {
     private static Model model() { return new ExtendedModelMap(); }
     private static RedirectAttributes rttr() { return new RedirectAttributesModelMap(); }
 
+    /** [owner-edit-guard] 로그인 tester(userSeq=1) 가 작성자인 문서. */
+    private static User testerUser() { User u = new User(); u.setUserSeq(1L); u.setUserid("tester"); return u; }
+    private static Document docOwnedByTester(Integer id) {
+        Document d = new Document();
+        if (id != null) d.setDocId(id);
+        d.setAuthor(testerUser());
+        return d;
+    }
+
     // ───────────────────────── D-01 문서 목록 ─────────────────────────
 
     @Test
@@ -247,11 +256,38 @@ class DocumentControllerTest {
         Document existing = new Document();
         existing.setDocId(7);
         existing.setTitle("기존문서");
+        existing.setAuthor(testerUser());   // [owner-edit-guard] 작성자 본인
         when(documentService.getDocumentById(7)).thenReturn(existing);
         Model m = model();
         controller.createForm("COMMENCE", null, null, 7, null, m, rttr());
         assertThat(m.getAttribute("existingDocId")).isEqualTo(7);
         assertThat(m.containsAttribute("existingDoc")).isTrue();
+    }
+
+    @Test
+    void createForm_editMode_nonOwner_redirectsList() {
+        loginEdit();
+        stubCreateFormLookups();
+        Document other = new Document(); other.setDocId(7);
+        User someoneElse = new User(); someoneElse.setUserSeq(2L);   // 작성자=타인
+        other.setAuthor(someoneElse);
+        when(documentService.getDocumentById(7)).thenReturn(other);
+        // [owner-edit-guard] 비소유 EDIT 사용자는 수정폼 진입 차단
+        String view = controller.createForm("COMMENCE", null, null, 7, null, model(), rttr());
+        assertThat(view).isEqualTo("redirect:/document/list");
+    }
+
+    @Test
+    void createForm_editMode_adminNonOwner_loadsExistingDoc() {
+        loginAdmin();
+        stubCreateFormLookups();
+        Document other = new Document(); other.setDocId(7); other.setTitle("타인문서");
+        User someoneElse = new User(); someoneElse.setUserSeq(2L);
+        other.setAuthor(someoneElse);
+        when(documentService.getDocumentById(7)).thenReturn(other);
+        Model m = model();
+        controller.createForm("COMMENCE", null, null, 7, null, m, rttr());
+        assertThat(m.containsAttribute("existingDoc")).isTrue();   // 관리자는 타인건도 진입
     }
 
     private void stubCreateFormLookups() {
@@ -297,6 +333,7 @@ class DocumentControllerTest {
     @Test
     void deleteDocument_edit_deletesAndRedirects() {
         loginEdit();
+        when(documentService.getDocumentById(1)).thenReturn(docOwnedByTester(1));   // 작성자 본인
         String view = controller.deleteDocument(1, rttr());
         assertThat(view).isEqualTo("redirect:/document/list");
         verify(documentService).deleteDocument(1);
@@ -325,6 +362,7 @@ class DocumentControllerTest {
         Document existing = new Document();
         existing.setDocId(7); existing.setTitle("기존문서"); existing.setSysType("UPIS");
         existing.setProject(p);
+        existing.setAuthor(testerUser());   // [owner-edit-guard] 작성자 본인
         DocumentDetail det = new DocumentDetail();
         det.setSectionKey("cover"); det.setSectionData(Map.of("k", "v"));
         existing.setDetails(List.of(det));
@@ -357,6 +395,7 @@ class DocumentControllerTest {
         inf.setCityNm("부산"); inf.setDistNm("해운대"); inf.setSysNm("KRAS");
         Document existing = new Document();
         existing.setDocId(8); existing.setProject(null); existing.setInfra(inf); // project=null → infra 분기
+        existing.setAuthor(testerUser());   // [owner-edit-guard] 작성자 본인
         when(documentService.getDocumentById(8)).thenReturn(existing);
 
         Model m = model();
@@ -403,7 +442,7 @@ class DocumentControllerTest {
     @Test
     void saveDocument_update_existingDoc_blankDocNoCleared() throws Exception {
         loginEdit();
-        Document existing = new Document(); existing.setDocId(100);
+        Document existing = new Document(); existing.setDocId(100); existing.setAuthor(testerUser());   // 작성자 본인
         when(documentService.getDocumentById(100)).thenReturn(existing);
 
         ResponseEntity<?> res = controller.saveDocument(Map.of(
@@ -462,6 +501,7 @@ class DocumentControllerTest {
     @Test
     void changeStatus_edit_changesAndLogs() {
         loginEdit();
+        when(documentService.getDocumentById(1)).thenReturn(docOwnedByTester(1));   // 작성자 본인(상태변경 가드)
         Document doc = new Document(); doc.setStatus(DocumentStatus.COMPLETED);
         when(documentService.changeStatus(eq(1), eq(DocumentStatus.COMPLETED), any(), anyString()))
                 .thenReturn(doc);

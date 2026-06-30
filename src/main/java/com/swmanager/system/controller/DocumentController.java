@@ -67,6 +67,14 @@ public class DocumentController {
 
     private String getAuth() { return access.getAuth(); }
 
+    /** 현재 사용자가 해당 문서 작성자인지 (author = User FK, PK=userSeq). */
+    private boolean isAuthorOf(Integer docId) {
+        Document d = documentService.getDocumentById(docId);
+        CustomUserDetails cu = getCurrentUser();
+        return d != null && d.getAuthor() != null && cu != null && cu.getUser() != null
+                && d.getAuthor().getUserSeq().equals(cu.getUser().getUserSeq());
+    }
+
     // === D-01: 문서 목록 ===
 
     @GetMapping("/list")
@@ -131,10 +139,16 @@ public class DocumentController {
         DocumentDTO dto = DocumentDTO.fromEntity(doc);
         List<DocumentHistory> histories = documentService.getDocumentHistory(id);
 
+        // [owner-edit-guard] 수정/삭제 버튼 노출 — 관리자 또는 작성자 본인만(서버 가드와 일치)
+        CustomUserDetails cu = getCurrentUser();
+        boolean canManage = isAdmin() || (doc.getAuthor() != null && cu != null && cu.getUser() != null
+                && doc.getAuthor().getUserSeq().equals(cu.getUser().getUserSeq()));
+
         model.addAttribute("doc", dto);
         model.addAttribute("document", doc);
         model.addAttribute("histories", histories);
         model.addAttribute("userAuth", auth);
+        model.addAttribute("canManage", canManage);
         model.addAttribute("users", userRepository.findByEnabledTrue());
 
         logService.log(MenuName.DOCUMENT, AccessActionType.VIEW, "문서 상세 조회 (ID: " + id + ")");
@@ -171,6 +185,13 @@ public class DocumentController {
         if (docId != null) {
             try {
                 Document existingDoc = documentService.getDocumentById(docId);
+                // [owner-edit-guard] 비소유·비관리자는 수정폼 진입 차단(save API 와 일치, 정보노출 방지).
+                // 로드 직후 검사 → 로드실패는 하단 catch 가 graceful 처리(기존 동작 보존), 이중조회 없음.
+                if (!isAdmin() && (existingDoc.getAuthor() == null || getCurrentUser() == null
+                        || !existingDoc.getAuthor().getUserSeq().equals(getCurrentUser().getUser().getUserSeq()))) {
+                    rttr.addFlashAttribute("errorMessage", "작성자 본인 또는 관리자만 수정할 수 있습니다.");
+                    return "redirect:/document/list";
+                }
                 Map<String, Object> existingData = new HashMap<>();
                 existingData.put("docId", existingDoc.getDocId());
                 existingData.put("docNo", existingDoc.getDocNo());
@@ -323,6 +344,11 @@ public class DocumentController {
             Document doc;
             if (docId != null) {
                 doc = documentService.getDocumentById(docId);
+                // [owner-edit-guard] 수정은 작성자 본인 또는 관리자만 (신규작성은 무제한)
+                if (!isAdmin() && (doc.getAuthor() == null || author == null
+                        || !doc.getAuthor().getUserSeq().equals(author.getUserSeq()))) {
+                    return ResponseEntity.status(403).body(Map.of("error", "작성자 본인 또는 관리자만 수정할 수 있습니다."));
+                }
                 doc.setTitle(title);
                 doc.setSysType(sysType);
             } else {
@@ -373,6 +399,10 @@ public class DocumentController {
         if (!"EDIT".equals(getAuth())) {
             return ResponseEntity.status(403).body(Map.of("error", "권한이 없습니다."));
         }
+        // [owner-edit-guard] 상태변경(DRAFT↔COMPLETED)=편집 성격 → 작성자 본인 또는 관리자만
+        if (!isAdmin() && !isAuthorOf(id)) {
+            return ResponseEntity.status(403).body(Map.of("error", "작성자 본인 또는 관리자만 상태를 변경할 수 있습니다."));
+        }
 
         // ConverterFactory 가 DRAFT/COMPLETED 만 허용. 그 외는 400 자동 응답.
 
@@ -391,6 +421,11 @@ public class DocumentController {
     public String deleteDocument(@PathVariable Integer id, RedirectAttributes rttr) {
         if (!"EDIT".equals(getAuth())) {
             rttr.addFlashAttribute("errorMessage", "삭제 권한이 없습니다.");
+            return "redirect:/document/list";
+        }
+        // [owner-edit-guard] 작성자 본인 또는 관리자만 삭제
+        if (!isAdmin() && !isAuthorOf(id)) {
+            rttr.addFlashAttribute("errorMessage", "작성자 본인 또는 관리자만 삭제할 수 있습니다.");
             return "redirect:/document/list";
         }
 

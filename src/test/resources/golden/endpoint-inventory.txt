@@ -212,6 +212,7 @@ POST /infra/delete/{id}
 POST /infra/save
 POST /license/registry/update
 POST /license/registry/upload
+POST /license/sync/run
 POST /lsa/save
 POST /lsa/{id:\d+}/delete
 POST /mypage/password

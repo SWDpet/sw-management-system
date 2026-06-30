@@ -51,6 +51,8 @@ public class WorkPlanDTO {
     // FullCalendar용 필드
     private String color;          // 유형별 색상
 
+    private Long createdById;       // [owner-edit-guard] 작성자 userSeq (소유권 UI 판정용, assignee 와 별개)
+
     /**
      * Entity → DTO 변환
      */
@@ -83,6 +85,7 @@ public class WorkPlanDTO {
                 .status(entity.getStatus())
                 .statusReason(entity.getStatusReason())
                 .color(getTypeColor(entity.getPlanType()))
+                .createdById(entity.getCreatedBy() != null ? entity.getCreatedBy().getUserSeq() : null)
                 .build();
     }
 

@@ -147,6 +147,7 @@
            th:href="@{'/ops-doc/support/' + ${doc.docId} + '/edit'}"><i class="fas fa-pen"></i> 수정</a>
         <button th:if="${mode == 'view' and canEdit}" class="ops-btn ops-btn-danger" onclick="deleteDoc()">
             <i class="fas fa-trash"></i> 삭제</button>
+        <span th:if="${mode == 'view' and canEditBase and !canEdit}" style="font-size:0.8rem;color:var(--muted);align-self:center;">작성자 본인 또는 관리자만 수정·삭제할 수 있습니다.</span>
     </div>
 </main>
 

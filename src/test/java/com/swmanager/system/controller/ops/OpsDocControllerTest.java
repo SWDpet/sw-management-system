@@ -124,6 +124,12 @@ class OpsDocControllerTest {
                 personInfoRepository, orgUnitRepository, partnerContactRepository, kbMatcher,
                 opsKbFeedbackRepository, partnerRepository, opsDocPartnerRepository, sysMstRepository,
                 staffRepository);
+
+        // [owner-edit-guard] 기본: docId 조회 문서는 로그인 tester 소유(개별 테스트가 필요 시 findById override)
+        OpsDocument ownedByTester = new OpsDocument();
+        ownedByTester.setCreatedBy("tester");
+        org.mockito.Mockito.lenient().when(opsDocService.findById(anyLong()))
+                .thenReturn(Optional.of(ownedByTester));
     }
 
     private static Model model() { return new ExtendedModelMap(); }
@@ -249,7 +255,7 @@ class OpsDocControllerTest {
     @Test
     void editForm_fault_returnsTemplate() {
         OpsDocument doc = new OpsDocument();
-        doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT);
+        doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT); doc.setCreatedBy("tester");
         when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
         when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
         assertThat(controller.editForm("FAULT", 7L, model(), editUser())).isEqualTo("ops-doc/doc-fault");
@@ -274,7 +280,7 @@ class OpsDocControllerTest {
     @Test
     void detail_fault_returnsTemplate_editUserCanEdit() {
         OpsDocument doc = new OpsDocument();
-        doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT);
+        doc.setDocId(7L); doc.setDocType(OpsDocType.FAULT); doc.setCreatedBy("tester");
         when(opsDocService.findById(7L)).thenReturn(Optional.of(doc));
         when(sigunguCodeRepository.findDistinctSidoNm()).thenReturn(List.of());
         Model m = model();
@@ -513,6 +519,22 @@ class OpsDocControllerTest {
     void kbFeedback_edit_ok() {
         ResponseEntity<?> res = controller.kbFeedback(new FeedbackForm(7L, 3L, "IGNORED"), editUser());
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(opsKbFeedbackRepository).save(any());
+    }
+
+    @Test
+    void kbFeedback_nonOwnerWithDocId_forbidden() {
+        OpsDocument others = new OpsDocument(); others.setCreatedBy("other");   // 타인 작성 문서
+        when(opsDocService.findById(3L)).thenReturn(Optional.of(others));
+        ResponseEntity<?> res = controller.kbFeedback(new FeedbackForm(7L, 3L, "IGNORED"), editUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(opsKbFeedbackRepository, never()).save(any());
+    }
+
+    @Test
+    void kbFeedback_newDoc_nullDocId_ok() {
+        ResponseEntity<?> res = controller.kbFeedback(new FeedbackForm(7L, null, "APPLIED"), editUser());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);   // 신규작성 중(docId=null) 무제한
         verify(opsKbFeedbackRepository).save(any());
     }
 

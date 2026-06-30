@@ -22,7 +22,7 @@ public record CalendarEvent(Integer id, String title, String start, String end,
     /** FullCalendar extendedProps (현행 Map.of 8키와 동치, null→""/0 fallback 보존). */
     public record ExtendedProps(String planType, String planTypeLabel, String status,
                                 String statusLabel, String assigneeName, String infraName,
-                                Integer processStep, String stepLabel) {
+                                Integer processStep, String stepLabel, Long createdById) {
 
         public static ExtendedProps from(WorkPlanDTO p) {
             return new ExtendedProps(
@@ -33,7 +33,8 @@ public record CalendarEvent(Integer id, String title, String start, String end,
                     p.getAssigneeName() != null ? p.getAssigneeName() : "",
                     p.getTargetLabel(),
                     p.getProcessStep() != null ? p.getProcessStep() : 0,
-                    WorkPlanDTO.getStepLabel(p.getProcessStep()));
+                    WorkPlanDTO.getStepLabel(p.getProcessStep()),
+                    p.getCreatedById());   // [owner-edit-guard] 소유권 UI 판정용 (null 가능)
         }
     }
 }

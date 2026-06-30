@@ -1,6 +1,7 @@
 package com.swmanager.system.lsa.controller;
 
 import com.swmanager.system.exception.InsufficientPermissionException;
+import com.swmanager.system.lsa.dto.LsaDTO;
 import com.swmanager.system.lsa.dto.LsaForm;
 import com.swmanager.system.lsa.dto.PersonRow;
 import com.swmanager.system.lsa.service.LsaService;
@@ -71,6 +72,22 @@ public class LsaController {
         return cu != null && "ROLE_ADMIN".equals(cu.getUser().getUserRole());
     }
 
+    /** 현재 사용자가 해당 LSA 작성자인지 (createdBy = 로그인 ID — getDisplayName 실명 아님). */
+    private boolean isOwner(LsaDTO l) {
+        CustomUserDetails cu = getCurrentUser();
+        return l != null && l.createdBy() != null && cu != null
+                && l.createdBy().equals(cu.getUsername());
+    }
+
+    /** 편집 권한(EDIT|admin) + 소유권(또는 관리자) 게이트. 작성자 본인 아니면 403. */
+    private void checkEditOwnership(Long id) {
+        checkEditAuth();   // EDIT|admin 1차 (위조 1차 차단)
+        if (!isAdmin() && !isOwner(lsaService.getById(id))) {
+            log.warn("LSA 작성자 본인 아님 - 사용자: {}, lsaId: {}", getCurrentUser().getUsername(), id);
+            throw new InsufficientPermissionException("LSA 작성자 본인");
+        }
+    }
+
     /** LSA 목록 + 키워드 검색 (지자체/이름/버전/발급자) */
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String keyword, Model model) {
@@ -80,7 +97,11 @@ public class LsaController {
         CustomUserDetails cu = getCurrentUser();
         String role = cu.getUser().getUserRole();
         String authLsa = cu.getUser().getAuthLsa();
-        model.addAttribute("canEdit", "ROLE_ADMIN".equals(role) || "EDIT".equals(authLsa));
+        boolean admin = "ROLE_ADMIN".equals(role);
+        // 행단위 소유권 판정용: admin 은 전체, EDIT 는 본인 작성건만 (템플릿에서 dto.createdBy 대조).
+        model.addAttribute("isAdmin", admin);
+        model.addAttribute("canEditBase", admin || "EDIT".equals(authLsa));
+        model.addAttribute("currentUserId", cu.getUsername());   // 로그인 ID(createdBy 와 동일 소스)
         return "lsa/lsa-list";
     }
 
@@ -99,17 +120,19 @@ public class LsaController {
     @GetMapping("/{id:\\d+}")
     public String detail(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
         checkViewAuth();
-        model.addAttribute("lsa", lsaService.getById(id));
-        CustomUserDetails cu = getCurrentUser();
-        model.addAttribute("canEdit", "ROLE_ADMIN".equals(cu.getUser().getUserRole())
-                || "EDIT".equals(cu.getUser().getAuthLsa()));
+        LsaDTO lsa = lsaService.getById(id);
+        model.addAttribute("lsa", lsa);
+        // 수정/삭제 버튼: 관리자=전체, EDIT=본인 작성건만 (서버 가드 checkEditOwnership 와 일치)
+        boolean canEdit = isAdmin()
+                || ("EDIT".equals(getCurrentUser().getUser().getAuthLsa()) && isOwner(lsa));
+        model.addAttribute("canEdit", canEdit);
         return "lsa/lsa-detail";
     }
 
-    /** LSA 수정 폼 (EDIT|admin) — 작성 폼 재사용 + 기존값 prefill */
+    /** LSA 수정 폼 (EDIT|admin + 작성자 본인) — 작성 폼 재사용 + 기존값 prefill */
     @GetMapping("/{id:\\d+}/edit")
     public String editForm(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
-        checkEditAuth();
+        checkEditOwnership(id);
         model.addAttribute("lsa", lsaService.getById(id));
         model.addAttribute("sidoList", lsaService.sidoList());
         model.addAttribute("isAdmin", isAdmin());
@@ -121,15 +144,22 @@ public class LsaController {
     /** LSA 저장(신규/수정) — 발급자: 비관리자=로그인 실명 강제, 관리자=폼값. id 있으면 update. */
     @PostMapping("/save")
     public String save(@ModelAttribute LsaForm form) {
-        checkEditAuth();
-        CustomUserDetails cu = getCurrentUser();
-        String loginName = cu.getUser().getUsername();
-        boolean adminIssuerChange = isAdmin() && form.getIssuer() != null && !form.getIssuer().isBlank();
+        boolean adminIssuerChange;
+        CustomUserDetails cu;
         if (form.getId() != null) {
+            // 수정: EDIT|admin + 작성자 본인(관리자 우회). create 와 달리 소유권 가드.
+            checkEditOwnership(form.getId());
+            cu = getCurrentUser();
+            adminIssuerChange = isAdmin() && form.getIssuer() != null && !form.getIssuer().isBlank();
             // 수정: 발급자 보존(비관리자 override=null), 관리자만 폼값으로 변경
             String issuerOverride = adminIssuerChange ? form.getIssuer().trim() : null;
             lsaService.update(form.getId(), form, issuerOverride, cu.getUsername());
         } else {
+            // 신규: 소유권 제한 없음(EDIT면 누구나 작성)
+            checkEditAuth();
+            cu = getCurrentUser();
+            String loginName = cu.getUser().getUsername();
+            adminIssuerChange = isAdmin() && form.getIssuer() != null && !form.getIssuer().isBlank();
             // 신규: 비관리자=로그인 실명 강제(위조 방지), 관리자=폼값
             String issuer = adminIssuerChange ? form.getIssuer().trim() : loginName;
             lsaService.create(form, issuer, cu.getUsername());
@@ -137,10 +167,10 @@ public class LsaController {
         return "redirect:/lsa/list";
     }
 
-    /** LSA 삭제 (EDIT|admin) — lsa_license 만, ps_info 보존 */
+    /** LSA 삭제 (EDIT|admin + 작성자 본인) — lsa_license 만, ps_info 보존 */
     @PostMapping("/{id:\\d+}/delete")
     public String delete(@org.springframework.web.bind.annotation.PathVariable Long id) {
-        checkEditAuth();
+        checkEditOwnership(id);
         lsaService.delete(id);
         return "redirect:/lsa/list";
     }

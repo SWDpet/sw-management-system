@@ -86,7 +86,12 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">버전 <span style="color:var(--danger,#DA1F1F)">*</span></label>
-                    <input type="text" id="version" name="version" required th:value="${lsa != null ? lsa.version() : '3.0'}">
+                    <input type="text" id="version" name="version" list="versionList" required
+                           th:value="${lsa != null ? lsa.version() : ''}">
+                    <datalist id="versionList">
+                        <option value="Basic 3.0"></option>
+                        <option value="Pro 3.0"></option>
+                    </datalist>
                 </div>
                 <div class="form-group">
                     <label class="form-label">발급자</label>

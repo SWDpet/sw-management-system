@@ -1,6 +1,9 @@
 package com.swmanager.system.controller;
 
+import com.swmanager.system.domain.User;
+import com.swmanager.system.domain.workplan.Document;
 import com.swmanager.system.exception.GlobalExceptionHandler;
+import com.swmanager.system.security.CustomUserDetails;
 import com.swmanager.system.repository.InfraRepository;
 import com.swmanager.system.repository.OrgUnitRepository;
 import com.swmanager.system.repository.SwProjectRepository;
@@ -129,6 +132,11 @@ class DocumentControllerMvcTest {
     @Test
     void delete_edit_redirectsAndDeletes() throws Exception {
         when(access.getAuth()).thenReturn("EDIT");
+        // [owner-edit-guard] EDIT 사용자가 작성자 본인인 경우 삭제 허용
+        User u = new User(); u.setUserSeq(1L); u.setUserid("tester");
+        when(access.getCurrentUser()).thenReturn(new CustomUserDetails(u));
+        Document d = new Document(); d.setDocId(9); d.setAuthor(u);
+        when(documentService.getDocumentById(9)).thenReturn(d);
         mockMvc.perform(post("/document/delete/9"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/document/list"));

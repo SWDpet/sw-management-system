@@ -2,13 +2,13 @@ package com.swmanager.system.lsa.controller;
 
 import com.swmanager.system.domain.User;
 import com.swmanager.system.exception.GlobalExceptionHandler;
+import com.swmanager.system.lsa.dto.LsaDTO;
 import com.swmanager.system.lsa.dto.LsaForm;
 import com.swmanager.system.lsa.service.LsaService;
 import com.swmanager.system.security.CustomUserDetails;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * [P2] LsaController HTTP 표면 net — standalone MockMvc (mock LsaService 주입).
- * 인증=auth_lsa(VIEW이상 또는 ROLE_ADMIN), throw → GlobalExceptionHandler 403.
+ * 인증=auth_lsa(VIEW이상 또는 ROLE_ADMIN). [owner-edit-guard] 수정/삭제는 작성자 본인(createdBy=로그인ID) 또는 관리자.
  */
 class LsaControllerMvcTest {
 
@@ -43,32 +43,42 @@ class LsaControllerMvcTest {
     @AfterEach
     void tearDown() { SecurityContextHolder.clearContext(); }
 
+    /** 로그인 — userid 고정 "tester"(=createdBy 비교 소스). */
     private void login(String authLsa, String role) {
+        loginAs("tester", authLsa, role);
+    }
+
+    private void loginAs(String userid, String authLsa, String role) {
         User u = new User();
-        u.setUserSeq(1L); u.setUserid("tester"); u.setUsername("테스터");
+        u.setUserSeq(1L); u.setUserid(userid); u.setUsername("표시명");
         u.setUserRole(role); u.setAuthLsa(authLsa);
         CustomUserDetails cud = new CustomUserDetails(u);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(cud, "N/A", cud.getAuthorities()));
     }
 
-    // ── 1. 미인증 → 403 ──────────────────────────────────────────────────────
+    /** createdBy 지정 LsaDTO (소유권 케이스용). */
+    private LsaDTO dtoBy(String createdBy) {
+        return new LsaDTO(5L, "전라남도", "강진군", "정보화", "GIS",
+                "홍길동", "061-1", "h@x.kr", "Basic 3.0", "박욱진", null, createdBy, null, null);
+    }
+
+    // ── 미인증/권한 ─────────────────────────────────────────────────────────
     @Test
     void list_notAuthenticated_403() throws Exception {
         mockMvc.perform(get("/lsa/list")).andExpect(status().isForbidden());
         verify(lsaService, never()).list(any());
     }
 
-    // ── 2. authLsa NONE → 403 ────────────────────────────────────────────────
     @Test
     void list_none_403() throws Exception {
         login("NONE", "ROLE_USER");
         mockMvc.perform(get("/lsa/list")).andExpect(status().isForbidden());
     }
 
-    // ── 3. VIEW → 200 + view + model(lsaList/keyword/canEdit=false) + keyword 바인딩 ──
+    // ── 목록 모델: canEditBase / isAdmin / currentUserId ──────────────────────
     @Test
-    void list_view_rendersWithModelAndKeyword() throws Exception {
+    void list_view_rendersWithRowOwnershipModel() throws Exception {
         login("VIEW", "ROLE_USER");
         when(lsaService.list("강진")).thenReturn(java.util.List.of());
         mockMvc.perform(get("/lsa/list").param("keyword", "강진"))
@@ -76,32 +86,33 @@ class LsaControllerMvcTest {
                 .andExpect(view().name("lsa/lsa-list"))
                 .andExpect(model().attributeExists("lsaList"))
                 .andExpect(model().attribute("keyword", "강진"))
-                .andExpect(model().attribute("canEdit", false));   // VIEW → 편집 불가
+                .andExpect(model().attribute("canEditBase", false))   // VIEW → 작성 불가
+                .andExpect(model().attribute("isAdmin", false))
+                .andExpect(model().attribute("currentUserId", "tester"));
         verify(lsaService).list("강진");
     }
 
-    // ── 4. EDIT → canEdit=true ───────────────────────────────────────────────
     @Test
-    void list_edit_canEditTrue() throws Exception {
+    void list_edit_canEditBaseTrue() throws Exception {
         login("EDIT", "ROLE_USER");
         when(lsaService.list(any())).thenReturn(java.util.List.of());
         mockMvc.perform(get("/lsa/list"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("canEdit", true));
+                .andExpect(model().attribute("canEditBase", true))
+                .andExpect(model().attribute("isAdmin", false));
     }
 
-    // ── 5. authLsa NONE 이지만 ROLE_ADMIN → 200 + canEdit=true (관리자 전권) ───
     @Test
-    void list_adminBypassesNone_canEditTrue() throws Exception {
+    void list_adminBypassesNone_canEditBaseTrue() throws Exception {
         login("NONE", "ROLE_ADMIN");
         when(lsaService.list(any())).thenReturn(java.util.List.of());
         mockMvc.perform(get("/lsa/list"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("lsa/lsa-list"))
-                .andExpect(model().attribute("canEdit", true));
+                .andExpect(model().attribute("canEditBase", true))
+                .andExpect(model().attribute("isAdmin", true));
     }
 
-    // ── 6. /new EDIT → 200 + lsa-form + model(sidoList/isAdmin/issuer) ───────
+    // ── 작성 폼 ──────────────────────────────────────────────────────────────
     @Test
     void newForm_edit_rendersForm() throws Exception {
         login("EDIT", "ROLE_USER");
@@ -111,11 +122,9 @@ class LsaControllerMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("lsa/lsa-form"))
                 .andExpect(model().attributeExists("sidoList", "userList"))
-                .andExpect(model().attribute("isAdmin", false))
-                .andExpect(model().attribute("issuer", "테스터"));   // 로그인 실명
+                .andExpect(model().attribute("isAdmin", false));
     }
 
-    // ── 7. /new VIEW(편집권한 부족) → checkEditAuth 403 ───────────────────────
     @Test
     void newForm_viewOnly_403() throws Exception {
         login("VIEW", "ROLE_USER");
@@ -123,23 +132,140 @@ class LsaControllerMvcTest {
         verify(lsaService, never()).sidoList();
     }
 
-    // ── 8. POST /save EDIT → 3xx /lsa/list + 비관리자 발급자 강제(실명) ────────
+    // ── 상세 canEdit 행단위 소유권 ───────────────────────────────────────────
     @Test
-    void save_edit_nonAdmin_forcesIssuerToLoginName() throws Exception {
+    void detail_viewUser_canEditFalse() throws Exception {
+        login("VIEW", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("tester"));   // 소유자여도 VIEW 권한이라 편집 불가
+        mockMvc.perform(get("/lsa/5"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lsa/lsa-detail"))
+                .andExpect(model().attribute("canEdit", false));
+    }
+
+    @Test
+    void detail_editOwner_canEditTrue() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("tester"));   // 본인 작성건
+        mockMvc.perform(get("/lsa/5"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canEdit", true));
+    }
+
+    @Test
+    void detail_editNonOwner_canEditFalse() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));    // 타인 작성건
+        mockMvc.perform(get("/lsa/5"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canEdit", false));
+    }
+
+    @Test
+    void detail_adminNonOwner_canEditTrue() throws Exception {
+        login("NONE", "ROLE_ADMIN");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        mockMvc.perform(get("/lsa/5"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("canEdit", true));
+    }
+
+    @Test
+    void detail_none_403() throws Exception {
+        login("NONE", "ROLE_USER");
+        mockMvc.perform(get("/lsa/5")).andExpect(status().isForbidden());
+        verify(lsaService, never()).getById(any());
+    }
+
+    // ── 수정 폼 진입: 소유권 가드 ────────────────────────────────────────────
+    @Test
+    void editForm_editOwner_renders() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("tester"));
+        when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
+        when(lsaService.issuerCandidates()).thenReturn(java.util.List.of("박욱진"));
+        mockMvc.perform(get("/lsa/5/edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lsa/lsa-form"))
+                .andExpect(model().attributeExists("lsa", "sidoList", "userList"));
+    }
+
+    @Test
+    void editForm_editNonOwner_403() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        mockMvc.perform(get("/lsa/5/edit")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void editForm_adminNonOwner_renders() throws Exception {
+        login("NONE", "ROLE_ADMIN");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
+        when(lsaService.issuerCandidates()).thenReturn(java.util.List.of("박욱진"));
+        mockMvc.perform(get("/lsa/5/edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lsa/lsa-form"));
+    }
+
+    @Test
+    void editForm_viewOnly_403() throws Exception {
+        login("VIEW", "ROLE_USER");
+        mockMvc.perform(get("/lsa/5/edit")).andExpect(status().isForbidden());
+        verify(lsaService, never()).getById(any());   // checkEditAuth 가 먼저 차단
+    }
+
+    // ── 저장: 신규=소유권 무제한, 수정=소유권 가드 ───────────────────────────
+    @Test
+    void save_create_nonAdmin_forcesIssuerToLoginName() throws Exception {
         login("EDIT", "ROLE_USER");
         when(lsaService.create(any(), any(), any())).thenReturn(1L);
         mockMvc.perform(post("/lsa/save")
                         .param("cityNm", "전라남도").param("distNm", "강진군")
-                        .param("userNm", "홍길동").param("issuer", "위조된관리자"))   // 폼 위조 시도
+                        .param("userNm", "홍길동").param("issuer", "위조된관리자"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/lsa/list"));
-        ArgumentCaptor<String> issuer = ArgumentCaptor.forClass(String.class);
-        verify(lsaService).create(any(LsaForm.class), issuer.capture(), eq("tester"));
-        // 비관리자 → 폼 issuer 무시, 로그인 실명("테스터") 강제
-        org.assertj.core.api.Assertions.assertThat(issuer.getValue()).isEqualTo("테스터");
+        // 비관리자 신규 → 폼 issuer 무시, 로그인 표시명 강제, createdBy=userid
+        verify(lsaService).create(any(LsaForm.class), eq("표시명"), eq("tester"));
     }
 
-    // ── 9. POST /save VIEW → checkEditAuth 403 ───────────────────────────────
+    @Test
+    void save_updateOwner_callsUpdate() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("tester"));   // 소유권 통과
+        when(lsaService.update(eq(5L), any(), any(), any())).thenReturn(5L);
+        mockMvc.perform(post("/lsa/save")
+                        .param("id", "5").param("cityNm", "전라남도").param("distNm", "강진군")
+                        .param("userNm", "홍길동").param("version", "Pro 3.0"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/lsa/list"));
+        verify(lsaService).update(eq(5L), any(), isNull(), eq("tester"));
+        verify(lsaService, never()).create(any(), any(), any());
+    }
+
+    @Test
+    void save_updateNonOwner_403() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        mockMvc.perform(post("/lsa/save")
+                        .param("id", "5").param("cityNm", "전라남도").param("distNm", "강진군")
+                        .param("userNm", "홍길동").param("version", "Pro 3.0"))
+                .andExpect(status().isForbidden());
+        verify(lsaService, never()).update(any(), any(), any(), any());
+    }
+
+    @Test
+    void save_updateAdminNonOwner_callsUpdate() throws Exception {
+        login("NONE", "ROLE_ADMIN");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        when(lsaService.update(eq(5L), any(), any(), any())).thenReturn(5L);
+        mockMvc.perform(post("/lsa/save")
+                        .param("id", "5").param("cityNm", "전라남도").param("distNm", "강진군")
+                        .param("userNm", "홍길동").param("version", "Pro 3.0").param("issuer", "박욱진"))
+                .andExpect(status().is3xxRedirection());
+        verify(lsaService).update(eq(5L), any(), eq("박욱진"), eq("tester"));
+    }
+
     @Test
     void save_viewOnly_403() throws Exception {
         login("VIEW", "ROLE_USER");
@@ -147,7 +273,41 @@ class LsaControllerMvcTest {
         verify(lsaService, never()).create(any(), any(), any());
     }
 
-    // ── 10. /api/districts VIEW → JSON ───────────────────────────────────────
+    // ── 삭제: 소유권 가드 ────────────────────────────────────────────────────
+    @Test
+    void delete_owner_deletes() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("tester"));
+        mockMvc.perform(post("/lsa/5/delete"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/lsa/list"));
+        verify(lsaService).delete(5L);
+    }
+
+    @Test
+    void delete_nonOwner_403() throws Exception {
+        login("EDIT", "ROLE_USER");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        mockMvc.perform(post("/lsa/5/delete")).andExpect(status().isForbidden());
+        verify(lsaService, never()).delete(any());
+    }
+
+    @Test
+    void delete_adminNonOwner_deletes() throws Exception {
+        login("NONE", "ROLE_ADMIN");
+        when(lsaService.getById(5L)).thenReturn(dtoBy("other"));
+        mockMvc.perform(post("/lsa/5/delete")).andExpect(status().is3xxRedirection());
+        verify(lsaService).delete(5L);
+    }
+
+    @Test
+    void delete_viewOnly_403() throws Exception {
+        login("VIEW", "ROLE_USER");
+        mockMvc.perform(post("/lsa/5/delete")).andExpect(status().isForbidden());
+        verify(lsaService, never()).delete(any());
+    }
+
+    // ── 캐스케이드 API (조회 권한) ───────────────────────────────────────────
     @Test
     void districts_api_returnsJson() throws Exception {
         login("VIEW", "ROLE_USER");
@@ -158,7 +318,6 @@ class LsaControllerMvcTest {
                 .andExpect(jsonPath("$[0]").value("강진군"));
     }
 
-    // ── 11. /api/persons VIEW → JSON (prefill 후보) ──────────────────────────
     @Test
     void persons_api_returnsJson() throws Exception {
         login("VIEW", "ROLE_USER");
@@ -166,83 +325,5 @@ class LsaControllerMvcTest {
         mockMvc.perform(get("/lsa/api/persons").param("city", "전라남도").param("dist", "강진군"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"));
-    }
-
-    private com.swmanager.system.lsa.dto.LsaDTO dto() {
-        return new com.swmanager.system.lsa.dto.LsaDTO(5L, "전라남도", "강진군", "정보화", "GIS",
-                "홍길동", "061-1", "h@x.kr", "v1", "박욱진", null, "ukjin", null, null);
-    }
-
-    // ── 12. /{id} 상세 VIEW → 200 lsa-detail + model ─────────────────────────
-    @Test
-    void detail_view_renders() throws Exception {
-        login("VIEW", "ROLE_USER");
-        when(lsaService.getById(5L)).thenReturn(dto());
-        mockMvc.perform(get("/lsa/5"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("lsa/lsa-detail"))
-                .andExpect(model().attributeExists("lsa"))
-                .andExpect(model().attribute("canEdit", false));
-    }
-
-    // ── 13. /{id} 상세 NONE → 403 ────────────────────────────────────────────
-    @Test
-    void detail_none_403() throws Exception {
-        login("NONE", "ROLE_USER");
-        mockMvc.perform(get("/lsa/5")).andExpect(status().isForbidden());
-        verify(lsaService, never()).getById(any());
-    }
-
-    // ── 14. /{id}/edit EDIT → 200 lsa-form + prefill ─────────────────────────
-    @Test
-    void editForm_edit_renders() throws Exception {
-        login("EDIT", "ROLE_USER");
-        when(lsaService.getById(5L)).thenReturn(dto());
-        when(lsaService.sidoList()).thenReturn(java.util.List.of("전라남도"));
-        when(lsaService.issuerCandidates()).thenReturn(java.util.List.of("박욱진"));
-        mockMvc.perform(get("/lsa/5/edit"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("lsa/lsa-form"))
-                .andExpect(model().attributeExists("lsa", "sidoList", "userList"));
-    }
-
-    // ── 15. /{id}/edit VIEW → 403 ────────────────────────────────────────────
-    @Test
-    void editForm_viewOnly_403() throws Exception {
-        login("VIEW", "ROLE_USER");
-        mockMvc.perform(get("/lsa/5/edit")).andExpect(status().isForbidden());
-    }
-
-    // ── 16. POST /save with id → update 분기(create 아님) ────────────────────
-    @Test
-    void save_withId_callsUpdate() throws Exception {
-        login("EDIT", "ROLE_USER");
-        when(lsaService.update(eq(5L), any(), any(), any())).thenReturn(5L);
-        mockMvc.perform(post("/lsa/save")
-                        .param("id", "5").param("cityNm", "전라남도").param("distNm", "강진군")
-                        .param("userNm", "홍길동").param("version", "v2"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/lsa/list"));
-        // 비관리자 수정 → issuerOverride=null(기존 발급자 보존), updatedBy=userid
-        verify(lsaService).update(eq(5L), any(), isNull(), eq("tester"));
-        verify(lsaService, never()).create(any(), any(), any());
-    }
-
-    // ── 17. POST /{id}/delete EDIT → 3xx + service.delete ────────────────────
-    @Test
-    void delete_edit_redirectsAndDeletes() throws Exception {
-        login("EDIT", "ROLE_USER");
-        mockMvc.perform(post("/lsa/5/delete"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/lsa/list"));
-        verify(lsaService).delete(5L);
-    }
-
-    // ── 18. POST /{id}/delete VIEW → 403 ─────────────────────────────────────
-    @Test
-    void delete_viewOnly_403() throws Exception {
-        login("VIEW", "ROLE_USER");
-        mockMvc.perform(post("/lsa/5/delete")).andExpect(status().isForbidden());
-        verify(lsaService, never()).delete(any());
     }
 }

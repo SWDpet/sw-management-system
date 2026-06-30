@@ -264,11 +264,15 @@ public class OpsDocController {
                     ? "redirect:/document/inspect-detail/" + reportId
                     : "redirect:/ops-doc/list";
         }
+        // [owner-edit-guard] 비소유·비관리자는 수정폼 진입 차단 → 상세로 redirect
+        if (!canManage(doc, currentUser)) {
+            return "redirect:/ops-doc/" + type + "/" + docId;
+        }
         model.addAttribute("docType", docType);
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);
         model.addAttribute("mode", "edit");
-        model.addAttribute("canEdit", hasDocEdit(currentUser));  // [viewer-action-button-guard]
+        model.addAttribute("canEdit", canManage(doc, currentUser));  // [owner-edit-guard]
         model.addAttribute("sectionData", mainSectionData(doc));
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
@@ -292,8 +296,9 @@ public class OpsDocController {
         model.addAttribute("doc", doc);
         model.addAttribute("isEdit", true);   // 상세=기존 문서 → 템플릿 ${!isEdit}/${isEdit} 분기 null 방지(백지 해소)
         model.addAttribute("mode", "view");    // 읽기전용 상세 + 수정/삭제 버튼
-        // [viewer-action-button-guard] 조회자(VIEW)에게 수정/삭제/지원파일편집 숨김용 — EDIT 또는 ADMIN 만 true
-        model.addAttribute("canEdit", hasDocEdit(currentUser));
+        // [owner-edit-guard] 수정/삭제/지원파일편집 노출 — 관리자 또는 작성자 본인만(서버 가드와 일치)
+        model.addAttribute("canEdit", canManage(doc, currentUser));
+        model.addAttribute("canEditBase", hasDocEdit(currentUser));   // 힌트 노출 조건용(EDIT인데 비소유자)
         model.addAttribute("sectionData", mainSectionData(doc));
         model.addAttribute("activeMenu", "ops");
         model.addAttribute("sidoList", sigunguCodeRepository.findDistinctSidoNm());  // [region-cascade]
@@ -368,6 +373,8 @@ public class OpsDocController {
         }
         ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);  // [M2 codex#5]
         if (denied != null) return denied;
+        denied = requireOwnerOrAdmin(docId, currentUser);   // [owner-edit-guard] 작성자 본인|관리자
+        if (denied != null) return denied;
 
         OpsDocument changes = new OpsDocument();
         changes.setDocType(docType);
@@ -394,6 +401,8 @@ public class OpsDocController {
     public ResponseEntity<?> delete(@PathVariable Long docId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        if (denied != null) return denied;
+        denied = requireOwnerOrAdmin(docId, currentUser);   // [owner-edit-guard] 작성자 본인|관리자
         if (denied != null) return denied;
         opsDocService.delete(docId);
         return ResponseEntity.ok(ApiResult.ok());
@@ -433,6 +442,31 @@ public class OpsDocController {
         return ResponseEntity.status(403).body(ApiResult.fail("FORBIDDEN", "문서 편집 권한(authDocument=EDIT)이 필요합니다."));
     }
 
+    /** 관리자 여부 — 파라미터 사용자 기반(이 컨트롤러의 권한은 @AuthenticationPrincipal 파라미터가 정본). */
+    private boolean isAdmin(CustomUserDetails u) {
+        return u != null && u.getUser() != null && "ROLE_ADMIN".equals(u.getUser().getUserRole());
+    }
+
+    /** 현재 사용자가 문서 작성자인지 (createdBy = 로그인 ID — author·createdBy 등가, ops-kb 동형). */
+    private boolean isOwner(OpsDocument doc, CustomUserDetails u) {
+        return doc != null && doc.getCreatedBy() != null && u != null
+                && doc.getCreatedBy().equals(u.getUsername());
+    }
+
+    /** 관리자 또는 작성자 본인 (수정/삭제 UI 노출용). */
+    private boolean canManage(OpsDocument doc, CustomUserDetails u) {
+        return isAdmin(u) || (hasDocEdit(u) && isOwner(doc, u));
+    }
+
+    /** docId 기반 변경/삭제 소유권 가드 — 편집권한 통과 후 (관리자 또는 작성자 본인). 허용 null, 아니면 403. */
+    private ResponseEntity<ApiResult> requireOwnerOrAdmin(Long docId, CustomUserDetails u) {
+        if (isAdmin(u)) return null;
+        OpsDocument doc = (docId != null) ? opsDocService.findById(docId).orElse(null) : null;
+        if (isOwner(doc, u)) return null;
+        return ResponseEntity.status(403).body(
+                ApiResult.fail("FORBIDDEN", "작성자 본인 또는 관리자만 수정·삭제할 수 있습니다."));
+    }
+
     // ===== [ops-support-doc-upload] 업무지원 지원문서 업로드/다운로드/삭제 =====
 
     @ResponseBody
@@ -442,6 +476,8 @@ public class OpsDocController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);
+        if (denied != null) return denied;
+        denied = requireOwnerOrAdmin(docId, currentUser);   // [owner-edit-guard]
         if (denied != null) return denied;
         try {
             Long uploaderSeq = (currentUser != null && currentUser.getUser() != null)
@@ -485,6 +521,8 @@ public class OpsDocController {
     public ResponseEntity<?> deleteSupportFile(
             @PathVariable Long docId, @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);
+        if (denied != null) return denied;
+        denied = requireOwnerOrAdmin(docId, currentUser);   // [owner-edit-guard]
         if (denied != null) return denied;
         try {
             supportFileService.delete(docId);
@@ -603,6 +641,11 @@ public class OpsDocController {
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEdit(currentUser);
         if (denied != null) return denied;
+        // [owner-edit-guard] 기존 문서에 연결된 피드백이면 작성자 본인|관리자만(신규작성 중 docId=null 은 무제한)
+        if (form.docId() != null) {
+            denied = requireOwnerOrAdmin(form.docId(), currentUser);
+            if (denied != null) return denied;
+        }
         if (form.kbId() == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false,
                     "error", Map.of("code", "INVALID_INPUT", "message", "kb_id 가 필요합니다.")));
@@ -760,6 +803,8 @@ public class OpsDocController {
             @AuthenticationPrincipal CustomUserDetails currentUser) throws java.io.IOException {
         ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
         if (denied != null) return denied;
+        denied = requireOwnerOrAdmin(docId, currentUser);   // [owner-edit-guard]
+        if (denied != null) return denied;
         OpsDocumentAttachment att = attachmentService.saveAttachment(docId, file);
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -773,6 +818,10 @@ public class OpsDocController {
     public ResponseEntity<?> deleteAttachment(@PathVariable Long attachId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         ResponseEntity<ApiResult> denied = requireDocEditOrAdmin(currentUser);  // [S1 보안가드]
+        if (denied != null) return denied;
+        // [owner-edit-guard] attachId→부모 docId 해소 후 소유권 검증
+        Long docId = attachmentService.docIdByAttach(attachId);
+        denied = requireOwnerOrAdmin(docId, currentUser);
         if (denied != null) return denied;
         attachmentService.deleteAttachment(attachId);
         Map<String, Object> result = new HashMap<>();

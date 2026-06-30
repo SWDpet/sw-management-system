@@ -38,6 +38,7 @@
                   onsubmit="return confirm('이 LSA 발급 내역을 삭제하시겠습니까? (담당자 정보는 보존됩니다)');" style="display:inline;">
                 <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> 삭제</button>
             </form>
+            <span th:unless="${canEdit}" style="font-size:0.8rem;color:var(--muted);align-self:center;">작성자 본인 또는 관리자만 수정·삭제할 수 있습니다.</span>
         </div>
     </div>
 

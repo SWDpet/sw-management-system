@@ -67,12 +67,13 @@
         <div class="page-header">
             <h2><i class="fas fa-file-alt"></i> 문서 상세 (D-10)</h2>
             <div class="header-actions">
-                <th:block th:if="${userAuth == 'EDIT'}">
+                <th:block th:if="${userAuth == 'EDIT' and canManage}">
                     <a th:href="@{/document/create(docType=${doc.docType}, infraId=${doc.infraId}, docId=${doc.docId})}" class="btn-edit"><i class="fas fa-edit"></i> 수정</a>
                     <form th:action="@{'/document/delete/' + ${doc.docId}}" method="post" style="display:inline;" onsubmit="return confirm('삭제하시겠습니까?');">
                         <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> 삭제</button>
                     </form>
                 </th:block>
+                <span th:if="${userAuth == 'EDIT' and !canManage}" style="font-size:0.8rem;color:var(--muted);align-self:center;">작성자 본인 또는 관리자만 수정·삭제할 수 있습니다.</span>
 
                 <!-- HWPX 한글 다운로드 (문서유형별) -->
                 <th:block th:if="${doc.docType?.name() == 'COMMENCE' || doc.docType?.name() == 'INTERIM' || doc.docType?.name() == 'COMPLETION'}">

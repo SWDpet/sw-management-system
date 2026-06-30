@@ -21,7 +21,7 @@ class CalendarEventTest {
 
     private final ObjectMapper om = new ObjectMapper();
 
-    /** 현행 컨트롤러 로직을 그대로 복제한 레거시 응답(검증 기준). */
+    /** 현행 컨트롤러 로직을 그대로 복제한 레거시 응답(검증 기준). createdById 는 null 가능 → HashMap. */
     private Map<String, Object> legacy(WorkPlanDTO p) {
         Map<String, Object> event = new HashMap<>();
         event.put("id", p.getPlanId());
@@ -29,16 +29,17 @@ class CalendarEventTest {
         event.put("start", p.getStartDate());
         event.put("end", p.getEndDate());
         event.put("color", p.getColor());
-        event.put("extendedProps", Map.of(
-                "planType", p.getPlanType() != null ? p.getPlanType() : "",
-                "planTypeLabel", WorkPlanDTO.getTypeLabel(p.getPlanType()),
-                "status", p.getStatus() != null ? p.getStatus() : "",
-                "statusLabel", WorkPlanDTO.getStatusLabel(p.getStatus()),
-                "assigneeName", p.getAssigneeName() != null ? p.getAssigneeName() : "",
-                "infraName", p.getTargetLabel(),
-                "processStep", p.getProcessStep() != null ? p.getProcessStep() : 0,
-                "stepLabel", WorkPlanDTO.getStepLabel(p.getProcessStep())
-        ));
+        Map<String, Object> ext = new HashMap<>();
+        ext.put("planType", p.getPlanType() != null ? p.getPlanType() : "");
+        ext.put("planTypeLabel", WorkPlanDTO.getTypeLabel(p.getPlanType()));
+        ext.put("status", p.getStatus() != null ? p.getStatus() : "");
+        ext.put("statusLabel", WorkPlanDTO.getStatusLabel(p.getStatus()));
+        ext.put("assigneeName", p.getAssigneeName() != null ? p.getAssigneeName() : "");
+        ext.put("infraName", p.getTargetLabel());
+        ext.put("processStep", p.getProcessStep() != null ? p.getProcessStep() : 0);
+        ext.put("stepLabel", WorkPlanDTO.getStepLabel(p.getProcessStep()));
+        ext.put("createdById", p.getCreatedById());   // [owner-edit-guard] 소유권 UI 판정용(null 가능)
+        event.put("extendedProps", ext);
         return event;
     }
 
@@ -55,6 +56,7 @@ class CalendarEventTest {
         p.setProcessStep(5);
         p.setRegionDistNm("강릉시");
         p.setTargetSysNm("도시계획정보체계");
+        p.setCreatedById(7L);   // [owner-edit-guard] 작성자 userSeq (assignee 와 별개)
         return p;
     }
 
@@ -77,11 +79,12 @@ class CalendarEventTest {
         assertThat(a).isEqualTo(b);
 
         JsonNode ext = a.get("extendedProps");
-        assertThat(ext.size()).isEqualTo(8);
+        assertThat(ext.size()).isEqualTo(9);   // 8키 + createdById
         assertThat(ext.get("planType").asText()).isEmpty();
         assertThat(ext.get("status").asText()).isEmpty();
         assertThat(ext.get("assigneeName").asText()).isEmpty();
         assertThat(ext.get("processStep").asInt()).isZero();
+        assertThat(ext.get("createdById").isNull()).isTrue();   // 작성자 미설정 → null
 
         // top-level: title 등 null 키 보존
         assertThat(a.has("title")).isTrue();
