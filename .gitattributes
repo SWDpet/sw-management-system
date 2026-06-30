@@ -1,2 +1,4 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# Golden 베이스라인은 테스트가 LF 기준으로 비교 → autocrlf=true Windows 체크아웃에서 CRLF로 깨지는 것 방지
+src/test/resources/golden/** text eol=lf
