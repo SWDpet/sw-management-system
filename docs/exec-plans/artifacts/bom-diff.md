@@ -19,6 +19,6 @@ parent 상향만으로 아래 관리버전이 일괄 변경됨(CVE 해소 근거
 | org.testcontainers | 1.19.3 | **1.21.4** | (테스트 인프라) |
 
 ## 검증
-- **P1 회귀**: `clean test` → **1638 tests green, 0 실패**(3.2→3.5 3-minor 점프 무회귀).
+- **P1 회귀**: `clean test` → **1638 tests green, 0 실패**(3.2→3.5 3-minor 점프, 큰 회귀 징후 없음. 외부 Tomcat WAR 배포·실 DB·실 문서 렌더링은 별도 검증 필요 — 완전 무회귀 확정은 아님).
 - 명시버전(poi/jfreechart/pdfbox)은 P2 에서 별도 처리(BOM 미관리).
 - tomcat/spring/postgresql/thymeleaf/jackson 등 **critical 대다수가 이 표로 해소** — P4 재스캔으로 최종 확인.

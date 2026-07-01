@@ -21,8 +21,10 @@
                    Network Server/DRDA 경로). 공격 표면 = 네트워크 서버 + LDAP authenticator.
 
          본 앱 적용 불가 근거(코드/설정 grep 실증, 2026-07-01):
-           ① 임베디드 read-only 전용: DerbyLicenseReader.java:80
-              = "jdbc:derby:" + dbPath + ";readOnly=true" (EmbeddedDriver, line 44).
+           ① 임베디드 접근만: 데이터 조회 연결은 read-only(DerbyLicenseReader.java:80
+              = "jdbc:derby:" + dbPath + ";readOnly=true", EmbeddedDriver line 44).
+              종료는 shutdown=true(line 108) — 엔진 lifecycle(파일락 해제)이며 데이터 쓰기 아님.
+              어느 경로도 Network Server/DRDA 미경유.
            ② Derby Network Server 미기동: NetworkServerControl / derby.drda / jdbc:derby://
               소스 전체 grep 결과 0건.
            ③ LDAP/JNDI authenticator 부재: derby.authentication.provider /
@@ -34,7 +36,7 @@
                       본 억제 해제하고 CVE 재평가.
     -->
     <suppress>
-        <notes>derby 10.14.2.0: 임베디드 read-only(License4J DB 읽기) 전용, Network Server/LDAP 미사용 → CVE-2022-46337 벡터 도달불가. 버전은 10.10 read 호환 P0 게이트로 고정. 재검토=network 방식 변경 or 버전 상향 시.</notes>
+        <notes>derby 10.14.2.0: License4J DB 임베디드 접근(조회 연결 read-only, 종료는 engine shutdown=데이터 쓰기 아님), Network Server/LDAP 미사용 → CVE-2022-46337(LDAP/DRDA 벡터) 도달불가. 버전은 10.10 read 호환 P0 게이트로 고정. 재검토=network 방식 변경 or 버전 상향 시.</notes>
         <filePath regex="true">.*[\\/]derby-10\.14\.2\.0\.jar$</filePath>
         <cve>CVE-2022-46337</cve>
     </suppress>

@@ -108,7 +108,7 @@
 
 ### 오탐 억제
 - `dependency-check-suppressions.xml` — CVE 단위 근거 억제. wildcard CPE 광역억제 지양.
-- **derby CVE-2022-46337(9.8) 억제**(2026-07-01): License4J Derby 를 **임베디드 read-only**(`jdbc:derby:...;readOnly=true`, EmbeddedDriver)로만 접근 — Network Server/LDAP 미사용(소스 grep 실증) → LDAP 인증우회 벡터 도달불가. 버전은 10.10 read 호환 P0 게이트로 고정. 재검토=연동 방식 변경 시.
+- **derby CVE-2022-46337(9.8) 억제**(2026-07-01): License4J Derby 를 **임베디드 접근**(조회 연결 `readOnly=true`, 종료는 `shutdown=true`=엔진 lifecycle·데이터 쓰기 아님, EmbeddedDriver)만 사용 — Network Server/LDAP 미사용(소스 grep 실증) → LDAP 인증우회 벡터 도달불가. 버전은 10.10 read 호환 P0 게이트로 고정. 재검토=연동 방식 변경 시.
 - OSS Index(Sonatype) 분석기는 **비활성**(`ossindexAnalyzerEnabled=false`) — 익명 접근이 401 Unauthorized(계정 필수화)로 분석 중단 유발. NVD 를 정본 취약점 소스로 사용.
 
 ### 첫 완주 결과 (2026-07-01, `dependency-cve-upgrade` 스프린트)
