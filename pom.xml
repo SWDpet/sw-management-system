@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.1</version> <relativePath/> </parent>
+        <version>3.5.16</version> <relativePath/> </parent>
 
     <groupId>com.swmanager</groupId>
     <artifactId>sw-manager</artifactId>
@@ -23,6 +23,30 @@
         <!-- 재현 가능 빌드(reproducible) — 고정 timestamp. inspect-agent zip 결정성(NFR-5)에 사용. -->
         <project.build.outputTimestamp>2026-06-02T00:00:00Z</project.build.outputTimestamp>
     </properties>
+
+    <!-- [dependency-cve-upgrade] pdfbox 계열 정렬 — openhtmltopdf-pdfbox 1.0.10(dormant)이
+         pdfbox 2.0.24 를 transitive 로 물어옴. CVE-2026-23907/33929 대응 위해 pdfbox·fontbox·xmpbox
+         3종을 2.x 최신(2.0.36)으로 일괄 상향(3.x 는 API 파괴적이라 회피). pdfbox 단독 override 시
+         fontbox/xmpbox 불일치 위험 → dependencyManagement 로 3종 정렬. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>2.0.36</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>fontbox</artifactId>
+                <version>2.0.36</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>xmpbox</artifactId>
+                <version>2.0.36</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -136,11 +160,11 @@
             <version>3.5.3</version>
         </dependency>
 
-        <!-- Apache POI for Excel export -->
+        <!-- Apache POI for Excel export — 5.2.5→5.5.1 (CVE-2025-31672 대응, dependency-cve-upgrade) -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.2.5</version>
+            <version>5.5.1</version>
         </dependency>
 
         <!-- OpenHTMLToPDF for PDF generation -->
@@ -155,11 +179,12 @@
             <version>1.0.10</version>
         </dependency>
 
-        <!-- JFreeChart — inspect-report-d-v6 Phase D: 30일 메트릭 추이 차트 PNG 렌더 -->
+        <!-- JFreeChart — inspect-report-d-v6 Phase D: 30일 메트릭 추이 차트 PNG 렌더.
+             1.5.4→1.5.6 (CVE-2024-22949 등 대응, dependency-cve-upgrade) -->
         <dependency>
             <groupId>org.jfree</groupId>
             <artifactId>jfreechart</artifactId>
-            <version>1.5.4</version>
+            <version>1.5.6</version>
         </dependency>
 
         <!-- Apache Derby (embedded) — license4j-monthly-sync: License4J Derby 10.10 DB read-only 읽기.
@@ -448,12 +473,15 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                     <plugin>
                         <groupId>org.pitest</groupId>
                         <artifactId>pitest-maven</artifactId>
-                        <version>1.15.0</version>
+                        <!-- [dependency-cve-upgrade 2026-07-01] 1.15.0→1.25.5: Boot 3.5.16 의 JUnit
+                             Platform 1.12(junit-jupiter 5.12.2) 와 호환. 구버전은 coverage minion
+                             UNKNOWN_ERROR 로 실패. junit5-plugin 도 1.2.1→1.2.3 동반 상향. -->
+                        <version>1.25.5</version>
                         <dependencies>
                             <dependency>
                                 <groupId>org.pitest</groupId>
                                 <artifactId>pitest-junit5-plugin</artifactId>
-                                <version>1.2.1</version>
+                                <version>1.2.3</version>
                             </dependency>
                         </dependencies>
                         <configuration>
@@ -561,6 +589,11 @@ log.info("[inspect-agent] release-manifest 생성: version=${ver}, files=${hashe
                             </suppressionFiles>
                             <!-- critical(CVSS≥9) 발견 시 실패 = 보안 신호. NVD 동기화 실패와는 별개(로그/summary 로 구분). -->
                             <failBuildOnCVSS>9</failBuildOnCVSS>
+                            <!-- [dependency-cve-upgrade 2026-07-01] OSS Index(Sonatype) 분석기 비활성.
+                                 사유: 익명 접근이 401 Unauthorized(계정 필수로 정책 변경) → 분석 중단으로
+                                 CVSS 게이트 자체가 실행 불가. NVD 를 정본 취약점 소스로 사용(nvdApiKey 정식 키).
+                                 OSS Index 는 보조 소스로, 계정 확보 시 재활성 고려. -->
+                            <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
                             <!-- 평가 정확도 향상: retired/experimental 분석기 비활성(기본), assembly 풀린 의존성 노이즈 축소는 suppression 으로. -->
                         </configuration>
                     </plugin>

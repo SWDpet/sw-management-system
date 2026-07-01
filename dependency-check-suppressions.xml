@@ -13,5 +13,30 @@
   스키마: https://jeremylong.github.io/DependencyCheck/general/suppression.html
 -->
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-    <!-- 초기 빈 상태. 첫 스캔 리포트 검토 후 항목 추가. -->
+
+    <!-- ============================================================
+         [dependency-cve-upgrade, 2026-07-01] derby CVE-2022-46337 (CVSS 9.8)
+         ============================================================
+         CVE 성격: Apache Derby LDAP/JNDI 인증 우회(authenticationProvider=LDAP +
+                   Network Server/DRDA 경로). 공격 표면 = 네트워크 서버 + LDAP authenticator.
+
+         본 앱 적용 불가 근거(코드/설정 grep 실증, 2026-07-01):
+           ① 임베디드 read-only 전용: DerbyLicenseReader.java:80
+              = "jdbc:derby:" + dbPath + ";readOnly=true" (EmbeddedDriver, line 44).
+           ② Derby Network Server 미기동: NetworkServerControl / derby.drda / jdbc:derby://
+              소스 전체 grep 결과 0건.
+           ③ LDAP/JNDI authenticator 부재: derby.authentication.provider /
+              System.setProperty("derby...) / derby.properties 0건.
+           ④ 버전 상향 불가: License4J 원본 DB(Derby 10.10) read 호환을 위해 10.14.2.0 고정
+              (P0 게이트 2026-06-29 검증). 상향 시 10.10 포맷 read 호환 재검증 필요.
+
+         재검토 조건: License4J 연동을 Network Server 방식으로 변경하거나 derby 버전 상향 시
+                      본 억제 해제하고 CVE 재평가.
+    -->
+    <suppress>
+        <notes>derby 10.14.2.0: 임베디드 read-only(License4J DB 읽기) 전용, Network Server/LDAP 미사용 → CVE-2022-46337 벡터 도달불가. 버전은 10.10 read 호환 P0 게이트로 고정. 재검토=network 방식 변경 or 버전 상향 시.</notes>
+        <filePath regex="true">.*[\\/]derby-10\.14\.2\.0\.jar$</filePath>
+        <cve>CVE-2022-46337</cve>
+    </suppress>
+
 </suppressions>

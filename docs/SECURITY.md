@@ -107,9 +107,18 @@
 - NVD DB 는 워크플로에서 `actions/cache`(`.dependency-check-data`)로 캐시 → 첫 동기화 후 재사용.
 
 ### 오탐 억제
-- `dependency-check-suppressions.xml` — 첫 리포트 triage 후 false positive 추가(예: 내부 `GeoNURIS_License.jar` 오탐).
-- ⚠ **검증 한계**: 본 스캔은 NVD 외부 의존 → PIT/CI/CSRF 와 달리 **첫 실제 실행 검증은 `NVD_API_KEY` secret 추가 후** 가능(스캐폴드까지 구축됨).
+- `dependency-check-suppressions.xml` — CVE 단위 근거 억제. wildcard CPE 광역억제 지양.
+- **derby CVE-2022-46337(9.8) 억제**(2026-07-01): License4J Derby 를 **임베디드 read-only**(`jdbc:derby:...;readOnly=true`, EmbeddedDriver)로만 접근 — Network Server/LDAP 미사용(소스 grep 실증) → LDAP 인증우회 벡터 도달불가. 버전은 10.10 read 호환 P0 게이트로 고정. 재검토=연동 방식 변경 시.
+- OSS Index(Sonatype) 분석기는 **비활성**(`ossindexAnalyzerEnabled=false`) — 익명 접근이 401 Unauthorized(계정 필수화)로 분석 중단 유발. NVD 를 정본 취약점 소스로 사용.
+
+### 첫 완주 결과 (2026-07-01, `dependency-cve-upgrade` 스프린트)
+NVD 정식 API 키로 **첫 실제 완주** → CVSS≥9 critical **12개 라이브러리 발견**(게이트 정상작동, 빌드 실패). 대응:
+- **Spring Boot 3.2.1 → 3.5.16**: BOM 일괄 상향으로 tomcat(11건)·spring-core/web·postgresql·thymeleaf·jackson·spring-security·hibernate-validator·log4j 등 transitive critical 해소.
+- **명시버전**: poi 5.2.5→5.5.1, jfreechart 1.5.4→1.5.6(CVE-2024-22949 등 해소), pdfbox/fontbox/xmpbox 2.0.24→2.0.36(dependencyManagement 정렬).
+- **derby**: 억제(위 근거).
+- **결과: CVSS≥9 critical = 0** (재스캔 BUILD SUCCESS). 잔여 HIGH 5건(log4j-api 4·angus 1)은 이미 최신버전·패치 미출시 → 백로그(log4j 는 log4j-core 부재로 실행경로 없음). triage: `docs/exec-plans/artifacts/high-triage.md`.
+- 검증: 전 게이트 green·1638 테스트·PIT 96%·부팅·Security/CSRF·DB(ddl-auto=none)·WAR lib·재스캔.
 
 ---
 
-*Last updated: 2026-06-29 · §3 CSRF 정식화 + §9 의존성 스캔 추가 (beyond-A)*
+*Last updated: 2026-07-01 · §9 dependency-check 첫 완주(critical 12→0) + derby 억제 + OSS Index 비활성 (dependency-cve-upgrade)*

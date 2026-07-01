@@ -17,7 +17,7 @@
 | Enum/Master sync (arch test) | 마스터 drift 0 | ✅ |
 | **CI 자동 강제 (GitHub Actions `ci.yml`)** | **위 전 게이트를 매 push/PR 자동 강제** (gates=verify·fresh-init-smoke·mutation 3 job) | ✅ |
 | fresh-init smoke (CI) | 빈 postgres:16 에 부트스트랩 DDL replay + Testcontainers `BootstrapSchemaContainerTest` | ✅ |
-| 의존성 CVE 스캔 (OWASP, scheduled) | 주1회 dependency-check (NVD 키 후 완주) | ◑ |
+| 의존성 CVE 스캔 (OWASP, scheduled) | 주1회 dependency-check. **첫 완주 완료(2026-07-01, NVD 정식키) → CVSS≥9 critical 0**(억제 근거 = derby read-only). OSS Index 분석기는 익명 401 로 비활성(NVD 정본) | ✅ |
 
 ## 1. 평가 기준
 
@@ -37,7 +37,7 @@
 | 차원 | 등급 | 근거 |
 |------|------|------|
 | SQL/데이터접근 | 🟢 **A+** | 전건 파라미터 바인딩 + fresh-init smoke(CI) + Testcontainers 부트스트랩 검증. ⚠ V*.sql 전체 replay 미검증 + DB enum/master sync 테스트가 `RUN_DB_TESTS` 게이트(기본 CI skip) → S 보류 |
-| 보안 | 🟢 **A+** | 인증/권한 가드 + **CSRF 정식화** + 마스킹 + **owner-edit-guard 전도메인(LSA/document/workplan/ops-doc 변경경로 서버가드 + 비소유 deny 테스트)** + 의존성스캔 scaffold. S=dependency-check push/PR 차단(현 scheduled) + owner-guard 상시 PIT 게이트화 |
+| 보안 | 🟢 **A+ (→S 근접)** | 인증/권한 가드 + **CSRF 정식화** + 마스킹 + **owner-edit-guard 전도메인** + **dependency-check 첫 완주(NVD 정식키) + CVSS≥9 critical 12→0 대응(Boot 3.5.16 상향+명시버전+derby 억제, 2026-07-01)**. S=dependency-check push/PR 차단(현 scheduled) + owner-guard 상시 PIT 게이트화 + 잔여 HIGH(log4j-api 등, 실행경로 없음) 후속 |
 | 테스트 | 🟢 **S** | **beyond-A** — JaCoCo floor(실측 ~81%/66%)·**PIT 15종 게이트(실측 96%, threshold 93)**·골든·Enum + **CI 매 push 강제(3 job)** + **MockMvc net** + Testcontainers + **owner-guard deny 테스트 +9**(소유권 가드 라인 42 뮤테이션 1회성 측정 전건 KILLED) |
 | 문서 | 🟢 **A** | 라이브 레퍼런스 코드 대조 + QUALITY_SCORE/SECURITY/RELIABILITY 현행화. ⚠ 게이트 수치 stale 보정(JaCoCo floor 18/14→**78/64 실측**, controller→repo 295→**303**) — 본 재평가에서 수정 |
 | 코드품질 | 🟡 **B+** | DTO/record 전환 진행 + **plateau**(MapDebt baseline 188 = Excel/HWPX/JSONB 동적데이터·legacy envelope·@RequestBody Map 보존군). A는 응답계약 변경(프론트 동반) 필요 — codex·Claude "0으로 만들지 말 것" |
@@ -80,4 +80,5 @@
 
 ---
 
-*Last updated: 2026-06-30 · codex×Claude 재평가(owner-guard 전도메인+PIT deny 보강 후): 종합 **A+** 수렴. SQL/운영 S−→A+ 보정, 보안/테스트 owner-guard 강화 반영, 게이트 stale 수치 보정(JaCoCo floor 78/64·ctrl→repo 303). 독립검증 caveat: owner-guard 42뮤테이션은 1회성 측정(기본 -Ppit 15종 게이트와 별개), 소유권 판정 컨트롤러 분산. 등급=게이트 강제 불변식*
+*Last updated: 2026-07-01 · dependency-cve-upgrade 스프린트: OWASP dependency-check 첫 완주(NVD 정식키) → **CVSS≥9 critical 12→0**. Spring Boot 3.2.1→3.5.16(BOM 일괄: tomcat/spring/postgresql/thymeleaf/jackson 등)+poi 5.5.1·jfreechart 1.5.6·pdfbox/fontbox/xmpbox 2.0.36+derby 억제(read-only 근거). PIT plugin 1.15→1.25.5(JUnit 5.12 호환)·logback rolling policy 마이그레이션. 전 게이트 green·1638 테스트·스모크 통과. 보안 A+→S 근접.*
+*2026-06-30 · codex×Claude 재평가(owner-guard+PIT deny): 종합 A+ 수렴. 게이트 stale 수치 보정(JaCoCo floor 78/64·ctrl→repo 303). 등급=게이트 강제 불변식*

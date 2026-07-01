@@ -115,6 +115,8 @@ inspection-poc/docs/report-drafts/build/
 # OWASP dependency-check NVD 로컬 DB(대용량 53MB+) + 리포트 — repo 미포함(워크플로 캐시/artifact)
 .dependency-check-data/
 dependency-check-report.*
+# 스프린트 산출물 중 대용량 원본 JSON 리포트(요약=high-triage.md 로 커밋)
+docs/exec-plans/artifacts/scan-after.json
 
 # === inspector agent 런타임 산물 ===
 inspection-poc/agent-windows/snapshots/
