@@ -22,6 +22,10 @@
         <java.version>17</java.version>
         <!-- 재현 가능 빌드(reproducible) — 고정 timestamp. inspect-agent zip 결정성(NFR-5)에 사용. -->
         <project.build.outputTimestamp>2026-06-02T00:00:00Z</project.build.outputTimestamp>
+        <!-- [dependency-cve-upgrade 후속 2026-07-01] log4j2 BOM 관리버전 override 2.24.3→2.26.0:
+             잔여 HIGH(CVE-2026-34478~34481) 대응. Spring Boot 는 logback 사용(log4j-core 부재),
+             log4j-api 는 log4j-to-slf4j 브릿지 경유 → API 계열 상향으로 정리. -->
+        <log4j2.version>2.26.0</log4j2.version>
     </properties>
 
     <!-- [dependency-cve-upgrade] pdfbox 계열 정렬 — openhtmltopdf-pdfbox 1.0.10(dormant)이

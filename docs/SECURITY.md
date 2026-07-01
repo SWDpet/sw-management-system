@@ -116,7 +116,8 @@ NVD 정식 API 키로 **첫 실제 완주** → CVSS≥9 critical **12개 라이
 - **Spring Boot 3.2.1 → 3.5.16**: BOM 일괄 상향으로 tomcat(11건)·spring-core/web·postgresql·thymeleaf·jackson·spring-security·hibernate-validator·log4j 등 transitive critical 해소.
 - **명시버전**: poi 5.2.5→5.5.1, jfreechart 1.5.4→1.5.6(CVE-2024-22949 등 해소), pdfbox/fontbox/xmpbox 2.0.24→2.0.36(dependencyManagement 정렬).
 - **derby**: 억제(위 근거).
-- **결과: CVSS≥9 critical = 0** (재스캔 BUILD SUCCESS). 잔여 HIGH 5건(log4j-api 4·angus 1)은 이미 최신버전·패치 미출시 → 백로그(log4j 는 log4j-core 부재로 실행경로 없음). triage: `docs/exec-plans/artifacts/high-triage.md`.
+- **결과: CVSS≥9 critical = 0** (재스캔 BUILD SUCCESS).
+- **후속(2026-07-01)**: log4j2 `<log4j2.version>` 2.24.3→2.26.0 override 로 HIGH 4건(CVE-2026-34478~34481) 해소 → **HIGH 5→1건**. 잔여 HIGH = angus-activation 2.0.3 CVE-2025-7962(안정 패치 부재, 억제 안 함) 백로그. triage: `docs/exec-plans/artifacts/high-triage.md`.
 - 검증: 전 게이트 green·1638 테스트·PIT 96%·부팅·Security/CSRF·DB(ddl-auto=none)·WAR lib·재스캔.
 
 ---

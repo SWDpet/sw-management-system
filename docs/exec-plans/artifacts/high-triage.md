@@ -11,17 +11,17 @@
 | HIGH(7.0~8.9) | (다수) | **5건**(log4j-api 4 + angus-activation 1) |
 | medium 이하 | 다수 | 7건 |
 
-## 2. HIGH(7.0~8.9) triage — 5건
+## 2. HIGH(7.0~8.9) triage — 5건 → **후속 조치 후 1건**
 
-| artifact | CVE | CVSS | 상향 가능 | runtime 영향 | 조치 |
-|---|---|---|---|---|---|
-| log4j-api 2.24.3 | CVE-2026-34478 | 7.5 | ❌ 이미 최신(Boot 3.5.16 BOM 관리) | **낮음** — 앱은 **logback** 사용, **log4j-core 부재**(deptree 확인). log4j-api 는 transitive API 표면만, 로깅 백엔드 미동작 | **백로그**(패치 릴리스 시 BOM 상향으로 자동 해소). 실행경로 없어 실위험 낮음 |
-| log4j-api 2.24.3 | CVE-2026-34479 | 7.5 | ❌ 동일 | 동일 | 동일 |
-| log4j-api 2.24.3 | CVE-2026-34480 | 7.5 | ❌ 동일 | 동일 | 동일 |
-| log4j-api 2.24.3 | CVE-2026-34481 | 7.5 | ❌ 동일 | 동일 | 동일 |
-| angus-activation 2.0.3 | CVE-2025-7962 | 7.5 | ❌ 이미 최신(BOM 관리) | 낮음 — Jakarta Activation impl(transitive), 파일 첨부/메일 경로 간접 | **백로그**(패치 릴리스 시 BOM 상향) |
+| artifact | CVE | CVSS | 조치 결과 |
+|---|---|---|---|
+| ~~log4j-api 2.24.3~~ | CVE-2026-34478 | 7.5 | ✅ **해소** — `log4j2.version` 2.24.3→**2.26.0** override(2026-07-01 후속) |
+| ~~log4j-api 2.24.3~~ | CVE-2026-34479 | 7.5 | ✅ 해소(2.26.0) |
+| ~~log4j-api 2.24.3~~ | CVE-2026-34480 | 7.5 | ✅ 해소(2.26.0) |
+| ~~log4j-api 2.24.3~~ | CVE-2026-34481 | 7.5 | ✅ 해소(2.26.0) |
+| angus-activation 2.0.3 | CVE-2025-7962 | 7.5 | ⏳ **백로그** — 안정 패치 없음(2.0.3=최신 stable, 2.1.0=milestone뿐). BOM 관리. Jakarta Activation impl(transitive). 게이트(CVSS≥9) 무영향. Boot 패치 시 자동 해소 |
 
-**공통**: 5건 모두 **이미 최신 관리버전**이라 현재 상향으로 해소 불가(패치 미출시). 억제하지 않고 **백로그**로 명시 추적 — 게이트(CVSS≥9)는 미차단, 향후 Boot 패치 상향 시 자동 해소. log4j 4건은 log4j-core 부재로 실행경로가 없어 실위험 낮음.
+**결과**: HIGH **5→1건**. log4j 4건은 `log4j2.version` property override(2.26.0)로 해소(Boot 는 logback 백엔드, log4j-api 는 log4j-to-slf4j 브릿지 경유). angus 1건만 안정 패치 부재로 백로그 — 억제하지 않음(위험 은폐 지양, 게이트 무차단이라 강제 아님).
 
 ## 3. jfreechart 개별 판정 (codex 요청)
 
@@ -59,6 +59,6 @@
 ## 6. 결론
 
 - **CVSS≥9 critical: 12개 라이브러리 → 0** (게이트 통과, BUILD SUCCESS).
-- 잔존 HIGH 5건 = 이미 최신버전, 패치 미출시 → 백로그(log4j 는 실행경로 없음).
+- HIGH: 5 → **1건**(log4j 4건 = 2.26.0 override 해소 / angus 1건 = 안정 패치 부재 백로그).
 - 억제 = derby 1건(근거 실증), 오탐 광역억제 0.
-- **후속**: Boot 정기 패치 상향 시 log4j-api/angus/jackson 등 HIGH·medium 자동 해소 예상.
+- **잔여 전체 6건**: HIGH angus 1 + medium 5(jackson·hibernate-validator·commons-lang3·pdfbox·xmpbox) — 전부 최신버전·패치미출시, 게이트 무차단, Boot 정기 패치 시 자동 해소 예상.
