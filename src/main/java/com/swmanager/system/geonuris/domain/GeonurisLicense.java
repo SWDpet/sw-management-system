@@ -24,7 +24,7 @@ public class GeonurisLicense {
     @Column(name = "file_name", length = 100)
     private String fileName;             // GSS.lic / GeoNURISDesktop.lic / SETLAgent.lic / SETLProxy.lic
 
-    // ── 수혜자 정보 ────────────────────────────────────────────
+    // ── 사용자 정보 ────────────────────────────────────────────
     @Column(name = "user_name", length = 100)
     private String userName;
 
