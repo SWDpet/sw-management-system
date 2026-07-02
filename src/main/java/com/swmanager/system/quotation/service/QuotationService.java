@@ -384,8 +384,13 @@ public class QuotationService {
     @Transactional(readOnly = true)
     public Map<String, Object> getStats() {
         long total = quotationRepository.count();
+        // 대시보드 KPI '이번 달 발급'(additive 키) — created_at 기준 현재 연·월 [start, end)
+        java.time.LocalDateTime monthStart = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        long monthCount = quotationRepository
+                .countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(monthStart, monthStart.plusMonths(1));
         return Map.of(
                 "total", total,
+                "monthCount", monthCount,   // 신규 additive 키 (기존 키·소비처 불변)
                 // S8: Enum 기반 리터럴 제거 (통계 map key 는 기존 호환 유지)
                 QtCategory.SERVICE.getLabel() + "_count",       quotationRepository.countByCategory(QtCategory.SERVICE.getLabel()),
                 QtCategory.SERVICE.getLabel() + "_amount",      quotationRepository.sumAmountByCategory(QtCategory.SERVICE.getLabel()),

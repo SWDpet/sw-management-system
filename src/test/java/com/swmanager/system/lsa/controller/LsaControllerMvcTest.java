@@ -326,4 +326,51 @@ class LsaControllerMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"));
     }
+
+    // ── 대시보드 KPI 통계 (graceful: 권한 없어도 throw 아님, zero 반환) ─────────
+    @Test
+    void dashboardStats_view_returnsStats() throws Exception {
+        login("VIEW", "ROLE_USER");
+        when(lsaService.getDashboardStats()).thenReturn(java.util.Map.of("total", 34L, "monthCount", 3L));
+        mockMvc.perform(get("/lsa/dashboard-stats"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.total").value(34))
+                .andExpect(jsonPath("$.monthCount").value(3));
+        verify(lsaService).getDashboardStats();
+    }
+
+    @Test
+    void dashboardStats_admin_returnsStats() throws Exception {
+        login("NONE", "ROLE_ADMIN");   // admin 은 authLsa=NONE 이어도 통과
+        when(lsaService.getDashboardStats()).thenReturn(java.util.Map.of("total", 34L, "monthCount", 3L));
+        mockMvc.perform(get("/lsa/dashboard-stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(34));
+        verify(lsaService).getDashboardStats();
+    }
+
+    /** 권한 없는(authLsa=NONE) 사용자 → 403 아님, graceful {total:0, monthCount:0}. 건수 미노출. */
+    @Test
+    void dashboardStats_none_gracefulZero() throws Exception {
+        login("NONE", "ROLE_USER");
+        mockMvc.perform(get("/lsa/dashboard-stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.monthCount").value(0));
+        verify(lsaService, never()).getDashboardStats();   // 권한 없으면 서비스 미호출(유출 없음)
+    }
+
+    /**
+     * SecurityContext 가 없어도 컨트롤러 자체는 graceful zero (throw 아님).
+     * (standalone MockMvc 라 실제 SecurityFilterChain 은 미검증 — 실제 앱은 SecurityConfig
+     *  anyRequest().authenticated() 가 /lsa/** 를 로그인 요구로 먼저 차단한다.)
+     */
+    @Test
+    void dashboardStats_noSecurityContext_controllerGracefulZero() throws Exception {
+        mockMvc.perform(get("/lsa/dashboard-stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0));
+        verify(lsaService, never()).getDashboardStats();
+    }
 }

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -17,4 +18,7 @@ public interface LsaRepository extends JpaRepository<Lsa, Long> {
            "l.userNm LIKE %:kw% OR l.version LIKE %:kw% OR l.issuer LIKE %:kw%) " +
            "ORDER BY l.createdAt DESC, l.id DESC")
     List<Lsa> search(@Param("kw") String keyword);
+
+    /** 대시보드 KPI '이번 달 발급' — created_at 이 [start, end) 범위(월 경계, 포함/미포함)에 드는 건수. */
+    long countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(LocalDateTime start, LocalDateTime end);
 }

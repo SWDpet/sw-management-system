@@ -56,6 +56,17 @@ public class LsaService {
         return lsaRepository.search(kw).stream().map(LsaDTO::fromEntity).toList();
     }
 
+    /** 대시보드 KPI: 전체 누적 발급 + 이번 달(현재 연·월) 발급 건수. created_at 기준. */
+    public java.util.Map<String, Object> getDashboardStats() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDateTime monthStart = today.withDayOfMonth(1).atStartOfDay();
+        java.time.LocalDateTime monthEnd = monthStart.plusMonths(1);
+        long total = lsaRepository.count();
+        long monthCount = lsaRepository
+                .countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(monthStart, monthEnd);
+        return java.util.Map.of("total", total, "monthCount", monthCount);
+    }
+
     /** prefill 후보 (지자체+부서·팀 매칭 담당자 — userNm/tel/email 만). */
     public List<PersonRow> findPersonCandidates(String city, String dist, String dept, String team) {
         if (blankToNull(city) == null || blankToNull(dist) == null) return List.of();

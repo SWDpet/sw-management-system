@@ -513,6 +513,34 @@ class QuotationServiceTest {
                 .containsEntry(QtCategory.MAINTENANCE.getLabel() + "_amount", 500L);
     }
 
+    /** [dashboard KPI] getStats 에 monthCount additive 키 추가 — 기존 키 불변 + 월 경계 [1일00:00, 다음달1일00:00). */
+    @Test
+    void getStats_includesMonthCount_additive_keepsExistingKeys() {
+        when(quotationRepository.count()).thenReturn(10L);
+        when(quotationRepository.countByCategory(anyString())).thenReturn(0L);
+        when(quotationRepository.sumAmountByCategory(anyString())).thenReturn(0L);
+        when(quotationRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any()))
+                .thenReturn(4L);
+
+        Map<String, Object> stats = service.getStats();
+
+        assertThat(stats).containsEntry("total", 10L).containsEntry("monthCount", 4L);
+        // 기존 키 유지(회귀 방지)
+        assertThat(stats).containsKeys(
+                QtCategory.SERVICE.getLabel() + "_count", QtCategory.SERVICE.getLabel() + "_amount",
+                QtCategory.PRODUCT.getLabel() + "_count", QtCategory.PRODUCT.getLabel() + "_amount",
+                QtCategory.MAINTENANCE.getLabel() + "_count", QtCategory.MAINTENANCE.getLabel() + "_amount");
+
+        // 월 경계: start = 이번달1일00:00, end = 다음달1일00:00 (>= start, < end)
+        ArgumentCaptor<java.time.LocalDateTime> sc = ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+        ArgumentCaptor<java.time.LocalDateTime> ec = ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+        verify(quotationRepository)
+                .countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(sc.capture(), ec.capture());
+        java.time.LocalDate today = java.time.LocalDate.now();
+        assertThat(sc.getValue()).isEqualTo(today.withDayOfMonth(1).atStartOfDay());
+        assertThat(ec.getValue()).isEqualTo(today.withDayOfMonth(1).atStartOfDay().plusMonths(1));
+    }
+
     // ===== getRemarksPatterns =====
 
     @Test

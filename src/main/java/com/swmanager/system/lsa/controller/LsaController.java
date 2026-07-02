@@ -43,14 +43,22 @@ public class LsaController {
         return null;
     }
 
-    /** LSA 조회 권한 체크 (VIEW 이상 또는 관리자) */
-    private void checkViewAuth() {
+    /** LSA 조회 권한(VIEW 이상 또는 관리자) — throw 하지 않는 순수 판정. 게이팅/graceful 재사용. */
+    private boolean canViewLsa() {
         CustomUserDetails cu = getCurrentUser();
-        if (cu == null) throw new InsufficientPermissionException("로그인");
+        if (cu == null) return false;
         String role = cu.getUser().getUserRole();
         String authLsa = cu.getUser().getAuthLsa();
-        if (!"ROLE_ADMIN".equals(role) && (authLsa == null || "NONE".equals(authLsa))) {
-            log.warn("LSA 접근 권한 없음 - 사용자: {}, authLsa: {}", cu.getUsername(), authLsa);
+        return "ROLE_ADMIN".equals(role) || (authLsa != null && !"NONE".equals(authLsa));
+    }
+
+    /** LSA 조회 권한 체크 (VIEW 이상 또는 관리자) */
+    private void checkViewAuth() {
+        if (!canViewLsa()) {
+            CustomUserDetails cu = getCurrentUser();
+            log.warn("LSA 접근 권한 없음 - 사용자: {}, authLsa: {}",
+                    cu != null ? cu.getUsername() : "anonymous",
+                    cu != null ? cu.getUser().getAuthLsa() : null);
             throw new InsufficientPermissionException("LSA 조회");
         }
     }
@@ -103,6 +111,19 @@ public class LsaController {
         model.addAttribute("canEditBase", admin || "EDIT".equals(authLsa));
         model.addAttribute("currentUserId", cu.getUsername());   // 로그인 ID(createdBy 와 동일 소스)
         return "lsa/lsa-list";
+    }
+
+    /**
+     * 대시보드 KPI 카드용 통계 (전체 누적 / 이번 달 발급).
+     * 다른 /lsa 엔드포인트와 달리 권한 없으면 throw 하지 않고 graceful {total:0, monthCount:0} 반환
+     * (대시보드 fetch 콘솔 에러 방지). 건수 미노출 = 유출 아님.
+     * 미인증 요청은 SecurityConfig anyRequest().authenticated() 로 이미 로그인 요구됨(여기 도달 = 인증 사용자).
+     */
+    @GetMapping("/dashboard-stats")
+    @ResponseBody
+    public java.util.Map<String, Object> dashboardStats() {
+        if (!canViewLsa()) return java.util.Map.of("total", 0L, "monthCount", 0L);
+        return lsaService.getDashboardStats();
     }
 
     /** LSA 작성 폼 (EDIT|admin) */

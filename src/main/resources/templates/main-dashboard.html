@@ -36,10 +36,10 @@
   .hbar-row .fill{display:block;height:100%;min-width:3px;background:var(--cat-2);border-radius:6px;}
   .hbar-row .v{width:42px;text-align:right;color:var(--text2);font-weight:700;}
   .stat-empty{color:var(--muted);font-size:.8rem;padding:18px 0;text-align:center;}
-  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;}
-  @media (max-width:1280px){.kpis{grid-template-columns:repeat(3,1fr);}}
+  .kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:16px;}
+  @media (max-width:1280px){.kpis{grid-template-columns:repeat(4,1fr);}}
   @media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr);}}
-  .kc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;}
+  .kc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 16px;min-width:0;}
   .kc .l{font-size:.74rem;color:var(--text2);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:6px;}.kc .l i{color:var(--muted);}
   .kc .n{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;}.kc .n .u{font-size:.5em;color:var(--muted);margin-left:2px;}
   .kc .sub{font-size:.72rem;color:var(--muted);margin-top:4px;}
@@ -126,6 +126,20 @@
     <div class="kc"><div class="l"><i class="fas fa-spinner"></i>진행 사업</div><div class="n"><span th:text="${#numbers.formatInteger(totalInProgress,1,'COMMA')}">0</span><span class="u">건</span></div><div class="sub">진행중</div></div>
     <div class="kc click" onclick="location.href='/license/registry/list'"><div class="l"><i class="fas fa-clipboard-list"></i>라이선스 대장</div><div class="n"><span id="licenseCount" class="skeleton">-</span></div><div class="sub" id="licenseSub">불러오는 중…</div></div>
     <div class="kc click" onclick="location.href='/geonuris/license/list'"><div class="l"><i class="fas fa-key"></i>GeoNURIS</div><div class="n"><span id="geonurisCount" class="skeleton">-</span></div><div class="sub">발급 라이선스</div></div>
+    <!-- 견적서 발급 (authQuotation 또는 admin 만 노출) -->
+    <div class="kc click" onclick="location.href='/quotation/ledger'"
+         th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}">
+      <div class="l"><i class="fas fa-file-invoice-dollar"></i>견적서 발급</div>
+      <div class="n"><span id="quotationCount" class="skeleton">-</span></div>
+      <div class="sub" id="quotationSub">불러오는 중…</div>
+    </div>
+    <!-- LSA 발급 (authLsa 또는 admin 만 노출) -->
+    <div class="kc click" onclick="location.href='/lsa/list'"
+         th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLsa != null and #authentication.principal.user.authLsa != 'NONE')}">
+      <div class="l"><i class="fas fa-certificate"></i>LSA 발급</div>
+      <div class="n"><span id="lsaCount" class="skeleton">-</span></div>
+      <div class="sub" id="lsaSub">불러오는 중…</div>
+    </div>
   </div>
 
   <!-- 차트 행 -->
@@ -300,5 +314,27 @@ window.addEventListener('DOMContentLoaded', function(){
 });
 /*]]>*/
 </script>
+<!-- 견적서 KPI: 권한자에게만 스크립트 방출(1차) + DOM 가드(2차) → 비권한자 fetch 미발생 -->
+<script th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authQuotation != null and #authentication.principal.user.authQuotation != 'NONE')}">/*<![CDATA[*/
+(function(){
+  var el = document.getElementById('quotationCount'); if(!el) return;
+  fetch('/api/quotation/stats').then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(d){ el.textContent=(d.total||0)+'건'; el.classList.remove('skeleton');
+      var s=document.getElementById('quotationSub'); if(s) s.textContent='이번 달 '+(d.monthCount||0)+'건 발급'; })
+    .catch(function(){ el.textContent='0건'; el.classList.remove('skeleton');
+      var s=document.getElementById('quotationSub'); if(s) s.textContent='-'; });
+})();
+/*]]>*/</script>
+<!-- LSA KPI: 권한자에게만 스크립트 방출(1차) + DOM 가드(2차) -->
+<script th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')') or (#authentication.principal.user?.authLsa != null and #authentication.principal.user.authLsa != 'NONE')}">/*<![CDATA[*/
+(function(){
+  var el = document.getElementById('lsaCount'); if(!el) return;
+  fetch('/lsa/dashboard-stats').then(function(r){return r.ok?r.json():Promise.reject();})
+    .then(function(d){ el.textContent=(d.total||0)+'건'; el.classList.remove('skeleton');
+      var s=document.getElementById('lsaSub'); if(s) s.textContent='이번 달 '+(d.monthCount||0)+'건 발급'; })
+    .catch(function(){ el.textContent='0건'; el.classList.remove('skeleton');
+      var s=document.getElementById('lsaSub'); if(s) s.textContent='-'; });
+})();
+/*]]>*/</script>
 </body>
 </html>
