@@ -91,4 +91,30 @@ bash server-restart.sh
 
 ---
 
-*Last updated: 2026-06-29 · §8 Testcontainers 통합테스트 추가 (beyond-A)*
+## 9. Thymeleaf 템플릿 함정
+
+### 9-1. `th:data-*` 제한(restricted) 평가 컨텍스트 — Thymeleaf 3.1.3+ (`TL31-DATA`, 2026-07-02)
+
+**증상**: 페이지가 HTTP 500 / 백지. 로그에
+`org.thymeleaf.exceptions.TemplateProcessingException: Instantiation of new objects and access to static classes or parameters is forbidden in this context (template: "...", line N)`.
+
+**원인**: Thymeleaf 3.1.3의 보안 하드닝으로 **`th:data-*` 커스텀 속성 표현식이 "제한된(restricted) 컨텍스트"** 로 평가된다. 이 컨텍스트에서는 **스프링 빈 접근(`@bean`) · 정적 클래스(`T(...)`) · 객체 생성(`new`) · 요청 파라미터(`param`)** 가 금지된다. (일반 변수/프로퍼티 접근은 허용.) `th:value`·`th:text` 등 일반 속성은 제한 대상이 아니라, **같은 표현식이 `th:value` 에선 되고 `th:data-*` 에선 터지는** 비대칭이 특징.
+- 트리거 이력: Spring Boot 3.2.1(Thymeleaf **3.1.2**) → 3.5.16(Thymeleaf **3.1.5**) 상향 시 3.1.3 하드닝이 적용되어 회귀.
+
+**회피책**: `th:with` 로 **정상(비제한) 컨텍스트에서 값을 선계산**한 뒤, `th:data-*` 는 그 변수만 참조한다.
+```html
+<section th:with="maskedTel=${@sensitiveMask.tel(u.tel)}">
+  <input th:value="${maskedTel}" th:data-mask-initial="${maskedTel}">
+</section>
+```
+
+**재유입 방지 grep** (0건 유지):
+```bash
+grep -rnE 'th:data-[a-z-]+="\$\{[^}]*(@|T\(|new )' src/main/resources/templates/
+```
+
+**검증 주의**: 이 부류 백지는 **HTTP 200 이 아니라 500** 이지만, 리다이렉트 선점 등으로 상태코드가 흐려질 수 있다. 템플릿 수정 검증은 **상태코드만 보지 말고 서버 로그에 `TemplateProcessingException` 부재 + 실제 화면 육안**까지 확인.
+
+---
+
+*Last updated: 2026-07-02 · §9 Thymeleaf th:data-* 제한 컨텍스트 함정 추가 (TL31-DATA)*
